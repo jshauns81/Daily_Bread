@@ -1,0 +1,19 @@
+@page "/child-test"
+@attribute [Authorize]
+
+<PageTitle>Child Test</PageTitle>
+
+<h1>Child Test Page</h1>
+
+<div class="alert alert-info">
+    <h4>?? Authenticated Access</h4>
+    <p>You have successfully accessed this page because you are logged in.</p>
+    <p>This page is accessible to <strong>any authenticated user</strong> (both Parent and Child roles).</p>
+</div>
+
+<AuthorizeView>
+    <Authorized>
+        <p><strong>Logged in as:</strong> @context.User.Identity?.Name</p>
+        <p><strong>Roles:</strong> @string.Join(", ", context.User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value))</p>
+    </Authorized>
+</AuthorizeView>

@@ -1,0 +1,31 @@
+.manage-chores-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Day selector buttons */
+.btn-group[role="group"] {
+    gap: 0;
+}
+
+.btn-group[role="group"] .btn-check:checked + .btn-outline-primary {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+/* Modal backdrop */
+.modal.d-block {
+    display: block !important;
+}
