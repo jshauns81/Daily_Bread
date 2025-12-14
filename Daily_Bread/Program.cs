@@ -19,6 +19,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         (connectionString.Contains("Host=") || connectionString.Contains("Server=")))
     {
         // PostgreSQL connection string detected (for production/Render)
+        // Test
         options.UseNpgsql(connectionString);
     }
     else
