@@ -1,0 +1,418 @@
+@page "/calendar"
+@page "/calendar/{YearParam:int}/{MonthParam:int}"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Daily_Bread.Services
+
+@inject ICalendarService CalendarService
+@inject IChildProfileService ProfileService
+@inject IDateProvider DateProvider
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Chore Calendar</PageTitle>
+
+<div class="calendar-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><span class="bi bi-calendar3"></span> Chore Calendar</h1>
+        
+        @if (IsParent && _childProfiles.Count > 0)
+        {
+            <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0">View:</label>
+                <select class="form-select form-select-sm" style="width: auto;" @bind="_selectedUserId" @bind:after="LoadCalendarAsync">
+                    <option value="">All Children</option>
+                    @foreach (var child in _childProfiles)
+                    {
+                        <option value="@child.UserId">@child.DisplayName</option>
+                    }
+                </select>
+            </div>
+        }
+    </div>
+
+    <!-- Month Navigation -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn btn-outline-secondary" @onclick="PreviousMonth">
+                    <span class="bi bi-chevron-left"></span> Previous
+                </button>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <select class="form-select" style="width: auto;" @bind="_selectedMonth" @bind:after="LoadCalendarAsync">
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            var monthName = new DateTime(2000, m, 1).ToString("MMMM");
+                            <option value="@m">@monthName</option>
+                        }
+                    </select>
+                    
+                    <select class="form-select" style="width: auto;" @bind="_selectedYear" @bind:after="LoadCalendarAsync">
+                        @for (int y = DateTime.Now.Year - 2; y <= DateTime.Now.Year + 1; y++)
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    </select>
+                    
+                    @if (_selectedYear != _today.Year || _selectedMonth != _today.Month)
+                    {
+                        <button class="btn btn-outline-primary btn-sm" @onclick="GoToToday">
+                            Today
+                        </button>
+                    }
+                </div>
+                
+                <button class="btn btn-outline-secondary" @onclick="NextMonth">
+                    Next <span class="bi bi-chevron-right"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Summary -->
+    @if (_monthSummary != null)
+    {
+        <div class="row mb-4 g-2">
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value text-success">@_monthSummary.DaysWithAllComplete</span>
+                    <span class="summary-label">Perfect Days</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value">@_monthSummary.TotalCompleted / @_monthSummary.TotalChores</span>
+                    <span class="summary-label">Completed</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value text-danger">@_monthSummary.TotalMissed</span>
+                    <span class="summary-label">Missed</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value text-success">$@_monthSummary.TotalEarned.ToString("F2")</span>
+                    <span class="summary-label">Earned</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value text-warning"><span class="bi bi-fire"></span> @_monthSummary.CurrentStreak</span>
+                    <span class="summary-label">Current Streak</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value text-info"><span class="bi bi-trophy"></span> @_monthSummary.LongestStreak</span>
+                    <span class="summary-label">Best Streak</span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Calendar Grid -->
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (_monthSummary != null)
+    {
+        <div class="card">
+            <div class="card-body p-2">
+                <!-- Day Headers -->
+                <div class="calendar-grid">
+                    <div class="calendar-header">Sun</div>
+                    <div class="calendar-header">Mon</div>
+                    <div class="calendar-header">Tue</div>
+                    <div class="calendar-header">Wed</div>
+                    <div class="calendar-header">Thu</div>
+                    <div class="calendar-header">Fri</div>
+                    <div class="calendar-header">Sat</div>
+
+                    @{
+                        var firstDay = new DateOnly(_selectedYear, _selectedMonth, 1);
+                        var startOffset = (int)firstDay.DayOfWeek;
+                        var daysInMonth = DateTime.DaysInMonth(_selectedYear, _selectedMonth);
+                    }
+
+                    <!-- Empty cells for days before month starts -->
+                    @for (int i = 0; i < startOffset; i++)
+                    {
+                        <div class="calendar-day empty"></div>
+                    }
+
+                    <!-- Days of the month -->
+                    @foreach (var day in _monthSummary.Days)
+                    {
+                        <div class="calendar-day @GetDayClass(day) @(day.Date == _today ? "today" : "")"
+                             @onclick="() => NavigateToDay(day.Date)"
+                             title="@GetDayTooltip(day)">
+                            <div class="day-number">@day.Date.Day</div>
+                            @if (day.TotalChores > 0)
+                            {
+                                <div class="day-stats">
+                                    @if (day.Status != DayCompletionStatus.Future)
+                                    {
+                                        <span class="completion-indicator">
+                                            @(day.CompletedChores + day.ApprovedChores)/@day.TotalChores
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="chore-count">@day.TotalChores chores</span>
+                                    }
+                                </div>
+                                @if (day.EarnedAmount > 0)
+                                {
+                                    <div class="day-earnings">$@day.EarnedAmount.ToString("F2")</div>
+                                }
+                            }
+                        </div>
+                    }
+
+                    @{
+                        var totalCells = startOffset + daysInMonth;
+                        var remainingCells = (7 - (totalCells % 7)) % 7;
+                    }
+                    @for (int i = 0; i < remainingCells; i++)
+                    {
+                        <div class="calendar-day empty"></div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-3 d-flex justify-content-center gap-4 flex-wrap">
+            <div class="d-flex align-items-center gap-1">
+                <div class="legend-box bg-success"></div>
+                <small>All Complete</small>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <div class="legend-box bg-warning"></div>
+                <small>Partial</small>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <div class="legend-box bg-danger"></div>
+                <small>None Complete</small>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <div class="legend-box bg-secondary"></div>
+                <small>No Chores</small>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <div class="legend-box bg-light border"></div>
+                <small>Future</small>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Day Detail Modal -->
+@if (_selectedDay != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.7);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@_selectedDay.Date.ToString("dddd, MMMM d, yyyy")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (_selectedDay.TotalChores == 0)
+                    {
+                        <p class="text-muted text-center py-3">No chores scheduled for this day.</p>
+                    }
+                    else
+                    {
+                        <div class="row text-center mb-3 g-2">
+                            <div class="col-3">
+                                <div class="summary-card">
+                                    <span class="summary-value">@_selectedDay.TotalChores</span>
+                                    <span class="summary-label">Total</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="summary-card">
+                                    <span class="summary-value text-success">@(_selectedDay.CompletedChores + _selectedDay.ApprovedChores)</span>
+                                    <span class="summary-label">Done</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="summary-card">
+                                    <span class="summary-value text-danger">@_selectedDay.MissedChores</span>
+                                    <span class="summary-label">Missed</span>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="summary-card">
+                                    <span class="summary-value text-warning">@_selectedDay.PendingChores</span>
+                                    <span class="summary-label">Pending</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (_selectedDay.EarnedAmount > 0 || _selectedDay.PotentialAmount > 0)
+                        {
+                            <div class="alert alert-info mb-0">
+                                <strong>Earned:</strong> $@_selectedDay.EarnedAmount.ToString("F2")
+                                @if (_selectedDay.Status != DayCompletionStatus.Future && _selectedDay.PotentialAmount > _selectedDay.EarnedAmount)
+                                {
+                                    <span class="text-muted"> / $@_selectedDay.PotentialAmount.ToString("F2") potential</span>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                    <a href="/tracker/@_selectedDay.Date.ToString("yyyy-MM-dd")" class="btn btn-primary">
+                        View in Tracker
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int? YearParam { get; set; }
+
+    [Parameter]
+    public int? MonthParam { get; set; }
+
+    private int _selectedYear;
+    private int _selectedMonth;
+    private DateOnly _today;
+    private bool _isLoading = true;
+    private bool IsParent;
+    private string? _userId;
+    private string? _selectedUserId;
+
+    private MonthSummary? _monthSummary;
+    private DaySummary? _selectedDay;
+    private List<ChildProfileSummary> _childProfiles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        _userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        IsParent = user.IsInRole("Parent") || user.IsInRole("Admin");
+
+        _today = DateProvider.Today;
+
+        _selectedYear = YearParam ?? _today.Year;
+        _selectedMonth = MonthParam ?? _today.Month;
+
+        if (!IsParent)
+        {
+            _selectedUserId = _userId;
+        }
+        else
+        {
+            _childProfiles = await ProfileService.GetAllChildProfilesAsync();
+        }
+
+        await LoadCalendarAsync();
+    }
+
+    private async Task LoadCalendarAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            _monthSummary = await CalendarService.GetMonthSummaryAsync(
+                _selectedYear, 
+                _selectedMonth, 
+                IsParent ? _selectedUserId : _userId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading calendar: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void PreviousMonth()
+    {
+        if (_selectedMonth == 1)
+        {
+            _selectedMonth = 12;
+            _selectedYear--;
+        }
+        else
+        {
+            _selectedMonth--;
+        }
+        _ = LoadCalendarAsync();
+    }
+
+    private void NextMonth()
+    {
+        if (_selectedMonth == 12)
+        {
+            _selectedMonth = 1;
+            _selectedYear++;
+        }
+        else
+        {
+            _selectedMonth++;
+        }
+        _ = LoadCalendarAsync();
+    }
+
+    private void GoToToday()
+    {
+        _selectedYear = _today.Year;
+        _selectedMonth = _today.Month;
+        _ = LoadCalendarAsync();
+    }
+
+    private void NavigateToDay(DateOnly date)
+    {
+        _selectedDay = _monthSummary?.Days.FirstOrDefault(d => d.Date == date);
+    }
+
+    private void CloseModal()
+    {
+        _selectedDay = null;
+    }
+
+    private static string GetDayClass(DaySummary day) => day.Status switch
+    {
+        DayCompletionStatus.AllComplete => "all-complete",
+        DayCompletionStatus.PartialComplete => "partial-complete",
+        DayCompletionStatus.NoneComplete => "none-complete",
+        DayCompletionStatus.NoChores => "no-chores",
+        DayCompletionStatus.Future => "future",
+        _ => ""
+    };
+
+    private static string GetDayTooltip(DaySummary day)
+    {
+        if (day.TotalChores == 0)
+            return "No chores scheduled";
+
+        if (day.Status == DayCompletionStatus.Future)
+            return $"{day.TotalChores} chores scheduled";
+
+        var done = day.CompletedChores + day.ApprovedChores;
+        return $"{done}/{day.TotalChores} completed • ${day.EarnedAmount:F2} earned";
+    }
+}

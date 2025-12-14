@@ -1,0 +1,265 @@
+.dashboard-container h1 {
+    color: var(--nord6);
+}
+
+/* Home Brand Icon for unauthenticated view */
+.home-brand-icon {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+}
+
+/* Child Dashboard */
+.child-dashboard {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.child-dashboard h1 {
+    color: var(--nord6);
+}
+
+.wave {
+    display: inline-block;
+    animation: wave-animation 2s ease-in-out infinite;
+}
+
+/* Streak Display */
+.streak-display {
+    background: linear-gradient(135deg, var(--nord12) 0%, var(--nord11) 100%);
+    color: var(--nord6);
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: var(--radius-full);
+    display: inline-block;
+}
+
+.streak-fire {
+    font-size: var(--font-size-xl);
+    margin-right: var(--space-sm);
+}
+
+.streak-fire .bi-fire {
+    color: var(--nord13);
+}
+
+.streak-count {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-lg);
+}
+
+.animate-pulse {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.animate-bounce {
+    animation: bounce 0.5s ease-out;
+}
+
+/* Balance Card */
+.balance-card {
+    background: linear-gradient(135deg, rgba(163, 190, 140, 0.2) 0%, rgba(163, 190, 140, 0.1) 100%);
+    border-color: var(--nord14) !important;
+}
+
+/* Savings Goal Card */
+.savings-goal-card {
+    background: linear-gradient(135deg, rgba(136, 192, 208, 0.2) 0%, rgba(136, 192, 208, 0.1) 100%);
+    border-color: var(--nord8) !important;
+}
+
+.goal-image {
+    max-width: 80px;
+    max-height: 80px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+}
+
+/* Weekly Stats Card */
+.weekly-stats-card {
+    background: linear-gradient(135deg, rgba(180, 142, 173, 0.2) 0%, rgba(180, 142, 173, 0.1) 100%);
+    border-color: var(--nord15) !important;
+}
+
+/* Chore Checklist */
+.chore-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.chore-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-lg);
+    background: var(--nord2);
+    text-decoration: none;
+    color: var(--nord4);
+    transition: all var(--transition-fast);
+}
+
+.chore-item:hover {
+    background: var(--nord3);
+    transform: translateX(4px);
+    color: var(--nord6);
+}
+
+.chore-item.completed {
+    background: rgba(163, 190, 140, 0.2);
+}
+
+.chore-item.approved {
+    background: rgba(163, 190, 140, 0.15);
+    opacity: 0.8;
+}
+
+.chore-item.missed {
+    background: rgba(191, 97, 106, 0.2);
+}
+
+.chore-checkbox {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid var(--nord3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: var(--space-sm);
+    flex-shrink: 0;
+}
+
+.check-icon {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+}
+
+.check-icon.approved {
+    color: var(--nord14);
+}
+
+.check-icon.pending {
+    color: var(--nord8);
+}
+
+.check-icon.missed {
+    color: var(--nord11);
+}
+
+.chore-details {
+    flex: 1;
+}
+
+.chore-item .chore-name {
+    font-weight: var(--font-weight-medium);
+    display: block;
+    color: var(--nord6);
+}
+
+.chore-value {
+    font-weight: var(--font-weight-bold);
+    color: var(--nord14);
+    font-size: var(--font-size-lg);
+}
+
+.pulse-button {
+    animation: pulse-shadow 2s ease-in-out infinite;
+}
+
+/* Achievements */
+.achievements-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    justify-content: center;
+}
+
+.achievement-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--nord2);
+    border-radius: var(--radius-lg);
+    min-width: 80px;
+}
+
+.achievement-badge.new {
+    background: linear-gradient(135deg, rgba(235, 203, 139, 0.3) 0%, rgba(235, 203, 139, 0.5) 100%);
+    animation: glow 1s ease-in-out infinite alternate;
+}
+
+.badge-icon {
+    font-size: var(--font-size-2xl);
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+}
+
+.badge-name {
+    font-size: var(--font-size-xs);
+    text-align: center;
+    margin-top: var(--space-xs);
+    color: var(--nord4);
+}
+
+/* Achievement Celebration */
+.achievement-celebration {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.achievement-toast {
+    background: linear-gradient(135deg, var(--nord13) 0%, var(--nord12) 100%);
+    color: var(--nord0);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    box-shadow: var(--shadow-lg);
+}
+
+.achievement-icon {
+    font-size: var(--font-size-2xl);
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+}
+
+.all-done-celebration {
+    animation: celebrate 0.5s ease-out;
+}
+
+/* Animations */
+@keyframes wave-animation {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(20deg); }
+    75% { transform: rotate(-10deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes bounce {
+    0% { transform: translateY(-20px); opacity: 0; }
+    50% { transform: translateY(5px); }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes glow {
+    from { box-shadow: 0 0 5px var(--nord13); }
+    to { box-shadow: 0 0 15px var(--nord13); }
+}
+
+@keyframes pulse-shadow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(94, 129, 172, 0.4); }
+    50% { box-shadow: 0 0 0 15px rgba(94, 129, 172, 0); }
+}
+
+@keyframes celebrate {
+    0% { transform: scale(0.8); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}

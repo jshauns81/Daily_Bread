@@ -1,0 +1,42 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=DailyBread.db",
+    "_PostgreSQL_Example": "Host=your-host.render.com;Database=dailybread;Username=user;Password=secret;SSL Mode=Require;Trust Server Certificate=true"
+  },
+  "SeedUsers": {
+    "Parent1": {
+      "UserName": "parent1",
+      "Email": "parent1@dailybread.local",
+      "Password": "YOUR_SECURE_PASSWORD_HERE"
+    },
+    "Parent2": {
+      "UserName": "parent2",
+      "Email": "parent2@dailybread.local",
+      "Password": "YOUR_SECURE_PASSWORD_HERE"
+    },
+    "Child1": {
+      "UserName": "child1",
+      "Email": "child1@dailybread.local",
+      "Password": "YOUR_SECURE_PASSWORD_HERE"
+    }
+  },
+  "_Notes": {
+    "DatabaseProvider": "The app auto-detects PostgreSQL vs SQLite based on connection string format. If it contains 'Host=' or 'Server=' it uses PostgreSQL, otherwise SQLite.",
+    "Production": "For Render, set environment variable: ConnectionStrings__DefaultConnection"
+  }
+}
+
+// ============================================
+// PRODUCTION (Render) - Set via Environment Variable:
+// ============================================
+// ConnectionStrings__DefaultConnection=Host=your-host.render.com;Database=dailybread;Username=user;Password=secret;SSL Mode=Require;Trust Server Certificate=true
+//
+// The app auto-detects PostgreSQL vs SQLite based on connection string format.
+// - If connection string contains "Host=" or "Server=" -> PostgreSQL
+// - Otherwise -> SQLite

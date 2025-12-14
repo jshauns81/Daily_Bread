@@ -1,0 +1,71 @@
+.balance-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.balance-main {
+    text-align: center;
+}
+
+.balance-label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--bs-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.balance-amount {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.balance-user {
+    display: block;
+    font-size: 1rem;
+    color: var(--bs-secondary);
+    margin-top: 0.25rem;
+}
+
+.balance-info {
+    padding: 0 1rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+.info-label {
+    color: var(--bs-secondary);
+}
+
+.info-value {
+    font-weight: 500;
+}
+
+.balance-actions {
+    padding: 0 1rem;
+}
+
+@media (max-width: 768px) {
+    .balance-main {
+        margin-bottom: 1rem;
+    }
+
+    .balance-info {
+        margin-bottom: 1rem;
+        padding: 0;
+    }
+
+    .balance-actions {
+        padding: 0;
+    }
+}
