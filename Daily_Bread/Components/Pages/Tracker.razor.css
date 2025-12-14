@@ -1,0 +1,147 @@
+.tracker-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.tracker-header {
+    margin-bottom: var(--space-lg);
+}
+
+.tracker-header h1 {
+    margin-bottom: var(--space-md);
+    color: var(--nord6);
+}
+
+.date-navigation {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.current-date {
+    display: flex;
+    align-items: center;
+    min-width: 280px;
+    justify-content: center;
+}
+
+.date-display {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--nord6);
+}
+
+.balance-display {
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--nord2);
+    border-radius: var(--radius-md);
+    display: inline-block;
+    color: var(--nord6);
+    border: 1px solid var(--nord3);
+}
+
+/* Table styling */
+.chore-table {
+    margin-top: var(--space-md);
+}
+
+.chore-table thead th {
+    color: var(--nord6) !important;
+}
+
+.chore-table tbody td {
+    color: var(--nord4) !important;
+}
+
+/* Make small text under chore names readable */
+.chore-table td small,
+.chore-table td .text-muted {
+    color: var(--nord4) !important;
+}
+
+.chore-checkbox {
+    width: 1.5rem;
+    height: 1.5rem;
+    cursor: pointer;
+    accent-color: var(--nord14);
+}
+
+.chore-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.chore-name {
+    font-weight: var(--font-weight-medium);
+    color: var(--nord6) !important;
+}
+
+.chore-name.completed {
+    text-decoration: line-through;
+    color: var(--nord4) !important;
+}
+
+/* Summary section */
+.tracker-summary {
+    padding: var(--space-md);
+    background-color: var(--nord1);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--nord3);
+    margin-top: var(--space-lg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .date-navigation {
+        justify-content: center;
+    }
+
+    .current-date {
+        order: -1;
+        width: 100%;
+        margin-bottom: var(--space-sm);
+    }
+}
+
+/* Action buttons - Separate buttons with gap */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.action-buttons .btn-outline-danger {
+    color: var(--nord11) !important;
+    border-color: var(--nord11) !important;
+    background-color: transparent !important;
+}
+
+.action-buttons .btn-outline-danger:hover {
+    color: var(--nord6) !important;
+    background-color: var(--nord11) !important;
+    border-color: var(--nord11) !important;
+}
+
+.action-buttons .btn-outline-info {
+    color: var(--nord8) !important;
+    border-color: var(--nord8) !important;
+    background-color: transparent !important;
+}
+
+.action-buttons .btn-outline-info:hover {
+    color: var(--nord0) !important;
+    background-color: var(--nord8) !important;
+    border-color: var(--nord8) !important;
+}
+
+.action-buttons .btn-success {
+    background-color: var(--nord14) !important;
+    border-color: var(--nord14) !important;
+    color: var(--nord0) !important;
+}
+
+.action-buttons .btn-success:hover {
+    background-color: #8fbf7f !important;
+    border-color: #8fbf7f !important;
+}

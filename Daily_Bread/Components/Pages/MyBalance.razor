@@ -1,0 +1,246 @@
+@page "/my-balance"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared
+
+@inject ILedgerService LedgerService
+@inject IPayoutService PayoutService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>My Balance</PageTitle>
+
+<div class="my-balance-container">
+    <h1>My Balance</h1>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @SuccessMessage
+            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (Balance != null)
+    {
+        <!-- Balance Display -->
+        <div class="card balance-hero mb-4">
+            <div class="card-body text-center py-5">
+                <span class="balance-label">YOUR BALANCE</span>
+                <h1 class="balance-amount @(Balance.CurrentBalance >= 0 ? "text-success" : "text-danger")">
+                    $@Balance.CurrentBalance.ToString("F2")
+                </h1>
+                @if (Balance.CanCashOut)
+                {
+                    <button class="btn btn-success btn-lg mt-2" @onclick="ShowCashOutModal">
+                        Ready to cash out! $
+                    </button>
+                }
+                else
+                {
+                    <span class="text-muted">
+                        $@((Balance.CashOutThreshold - Balance.CurrentBalance).ToString("F2")) more until cash out
+                    </span>
+                }
+            </div>
+        </div>
+
+        <!-- Progress to Cash Out -->
+        @if (!Balance.CanCashOut)
+        {
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Progress to Cash Out</h5>
+                    <div class="progress" style="height: 25px;">
+                        @{
+                            var progress = Balance.CashOutThreshold > 0 
+                                ? Math.Min(100, (Balance.CurrentBalance / Balance.CashOutThreshold) * 100)
+                                : 0;
+                        }
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: @progress.ToString("F0")%;">
+                            $@Balance.CurrentBalance.ToString("F2") / $@Balance.CashOutThreshold.ToString("F2")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Stats -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="text-success">$@Balance.TotalEarned.ToString("F2")</h3>
+                        <p class="text-muted mb-0">Total Earned</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="text-danger">$@Balance.TotalDeducted.ToString("F2")</h3>
+                        <p class="text-muted mb-0">Total Deducted</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3>$@Balance.TotalPaidOut.ToString("F2")</h3>
+                        <p class="text-muted mb-0">Cashed Out</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Transactions</h5>
+            </div>
+            <div class="card-body">
+                @if (Transactions.Count == 0)
+                {
+                    <div class="alert alert-info mb-0">
+                        No transactions yet. Complete some chores to start earning!
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var txn in Transactions.Take(20))
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge @GetTypeBadgeClass(txn.Type) me-2">
+                                        @GetTypeLabel(txn.Type)
+                                    </span>
+                                    <span>@txn.Description</span>
+                                    <br />
+                                    <small class="text-muted">@txn.TransactionDate.ToString("MMM d, yyyy")</small>
+                                </div>
+                                <span class="@(txn.Amount >= 0 ? "text-success" : "text-danger") fw-bold fs-5">
+                                    @(txn.Amount >= 0 ? "+" : "")$@txn.Amount.ToString("F2")
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    @if (Transactions.Count > 20)
+                    {
+                        <div class="text-center mt-3">
+                            <small class="text-muted">Showing 20 of @Transactions.Count transactions</small>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (ShowCashOut && Balance != null)
+{
+    <CashOutModal Balance="Balance" 
+                  OnConfirm="HandleCashOut" 
+                  OnCancel="() => ShowCashOut = false" />
+}
+
+@code {
+    private BalanceSummary? Balance { get; set; }
+    private List<LedgerTransaction> Transactions { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private bool ShowCashOut { get; set; }
+    private string? UserId { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        UserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+
+        if (!string.IsNullOrEmpty(UserId))
+        {
+            Balance = await PayoutService.GetBalanceSummaryAsync(UserId);
+            Transactions = await LedgerService.GetUserTransactionsAsync(UserId);
+        }
+
+        IsLoading = false;
+    }
+
+    private void ShowCashOutModal()
+    {
+        ShowCashOut = true;
+    }
+
+    private async Task HandleCashOut(decimal amount)
+    {
+        if (string.IsNullOrEmpty(UserId)) return;
+
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        // Note: For a child to cash out, a parent would typically need to approve
+        // For now, we allow it but in a real app you'd add parent approval
+        var result = await PayoutService.ProcessCashOutAsync(UserId, amount, UserId, "Self cash-out request");
+
+        if (result.Success)
+        {
+            SuccessMessage = $"Cash out of ${amount:F2} processed successfully!";
+            ShowCashOut = false;
+            await LoadDataAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private string GetTypeBadgeClass(TransactionType type) => type switch
+    {
+        TransactionType.ChoreEarning => "bg-success",
+        TransactionType.ChoreDeduction => "bg-danger",
+        TransactionType.Bonus => "bg-info",
+        TransactionType.Penalty => "bg-warning text-dark",
+        TransactionType.Adjustment => "bg-secondary",
+        TransactionType.Payout => "bg-primary",
+        _ => "bg-secondary"
+    };
+
+    private string GetTypeLabel(TransactionType type) => type switch
+    {
+        TransactionType.ChoreEarning => "Earned",
+        TransactionType.ChoreDeduction => "Missed",
+        TransactionType.Bonus => "Bonus",
+        TransactionType.Penalty => "Penalty",
+        TransactionType.Adjustment => "Adjust",
+        TransactionType.Payout => "Payout",
+        _ => "Other"
+    };
+}

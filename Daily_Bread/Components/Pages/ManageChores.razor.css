@@ -1,0 +1,49 @@
+.manage-chores-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.manage-chores-container h1 {
+    color: var(--nord6);
+}
+
+/* Button group */
+.btn-group .btn {
+    padding: var(--space-xs) var(--space-sm);
+}
+
+/* Day selector buttons */
+.btn-group[role="group"] {
+    gap: 0;
+}
+
+.btn-group[role="group"] .btn-check:checked + .btn-outline-primary {
+    background-color: var(--nord10);
+    border-color: var(--nord10);
+    color: var(--nord6);
+}
+
+.btn-group[role="group"] .btn-outline-primary {
+    color: var(--nord4);
+    border-color: var(--nord3);
+}
+
+.btn-group[role="group"] .btn-outline-primary:hover {
+    background-color: var(--nord2);
+    color: var(--nord6);
+}
+
+/* Modal backdrop */
+.modal.d-block {
+    display: block !important;
+}
+
+/* Form switch styling */
+.form-check-input:checked {
+    background-color: var(--nord10);
+    border-color: var(--nord10);
+}
+
+.form-check-label {
+    color: var(--nord4);
+}

@@ -1,0 +1,432 @@
+@page "/goals"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Daily_Bread.Services
+
+@inject ISavingsGoalService GoalService
+@inject ILedgerService LedgerService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Savings Goals</PageTitle>
+
+<div class="goals-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><span class="bi bi-bullseye"></span> My Savings Goals</h1>
+        <button class="btn btn-primary" @onclick="ShowCreateForm">
+            <span class="bi bi-plus-circle"></span> Add Goal
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible">
+            @_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <div class="alert alert-success alert-dismissible">
+            @_successMessage
+            <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
+        </div>
+    }
+
+    <!-- Current Balance -->
+    <div class="card mb-4 bg-success-subtle">
+        <div class="card-body text-center">
+            <p class="mb-1">Your Current Balance</p>
+            <h2 class="text-success mb-0">$@_balance.ToString("F2")</h2>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (_goals.Count == 0)
+    {
+        <div class="text-center py-5">
+            <span class="bi bi-bullseye" style="font-size: 5rem; color: #0dcaf0;"></span>
+            <h3 class="mt-3">No Savings Goals Yet</h3>
+            <p class="text-muted">What are you saving for? Create your first goal!</p>
+            <button class="btn btn-primary btn-lg" @onclick="ShowCreateForm">
+                Create Your First Goal
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="goals-list">
+            @foreach (var goal in _goals)
+            {
+                <div class="card mb-3 @(goal.IsPrimary ? "border-primary" : "") @(goal.IsCompleted ? "opacity-75" : "")">
+                    @if (goal.IsPrimary && !goal.IsCompleted)
+                    {
+                        <div class="card-header bg-primary text-white py-1">
+                            <small><span class="bi bi-star-fill"></span> Primary Goal</small>
+                        </div>
+                    }
+                    @if (goal.IsCompleted)
+                    {
+                        <div class="card-header bg-success text-white py-1">
+                            <small><span class="bi bi-check-circle-fill"></span> Completed!</small>
+                        </div>
+                    }
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                @if (!string.IsNullOrEmpty(goal.ImageUrl))
+                                {
+                                    <img src="@goal.ImageUrl" alt="@goal.Name" class="goal-thumbnail" />
+                                }
+                                else
+                                {
+                                    <div class="goal-thumbnail-placeholder"><span class="bi bi-gift"></span></div>
+                                }
+                            </div>
+                            <div class="col">
+                                <h5 class="mb-1">@goal.Name</h5>
+                                @if (!string.IsNullOrEmpty(goal.Description))
+                                {
+                                    <p class="text-muted small mb-2">@goal.Description</p>
+                                }
+                                
+                                @if (!goal.IsCompleted)
+                                {
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div class="progress-bar @(goal.CanComplete ? "bg-success" : "bg-info") progress-bar-striped" 
+                                             style="width: @goal.ProgressPercent%;">
+                                            @goal.ProgressPercent%
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between small">
+                                        <span>$@_balance.ToString("F2") saved</span>
+                                        <span class="text-muted">$@goal.TargetAmount.ToString("F2") goal</span>
+                                    </div>
+                                    
+                                    @if (goal.CanComplete)
+                                    {
+                                        <div class="alert alert-success py-2 mt-2 mb-0">
+                                            <span class="bi bi-check-circle"></span> You can afford this! 
+                                            <button class="btn btn-success btn-sm ms-2" @onclick="() => CompleteGoal(goal.Id)">
+                                                Mark as Achieved
+                                            </button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted small mb-0 mt-1">
+                                            $@goal.AmountRemaining.ToString("F2") more to go!
+                                        </p>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-success mb-0">
+                                        <strong>Achieved on @goal.CompletedAt?.ToString("MMM d, yyyy")</strong>
+                                    </p>
+                                }
+                            </div>
+                            <div class="col-auto">
+                                @if (!goal.IsCompleted)
+                                {
+                                    <div class="btn-group-vertical">
+                                        @if (!goal.IsPrimary)
+                                        {
+                                            <button class="btn btn-outline-primary btn-sm" 
+                                                    @onclick="() => SetPrimary(goal.Id)"
+                                                    title="Make Primary">
+                                                <span class="bi bi-star"></span>
+                                            </button>
+                                        }
+                                        <button class="btn btn-outline-secondary btn-sm" 
+                                                @onclick="() => EditGoal(goal)"
+                                                title="Edit">
+                                            <span class="bi bi-pencil"></span>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" 
+                                                @onclick="() => DeleteGoal(goal.Id)"
+                                                title="Delete">
+                                            <span class="bi bi-trash"></span>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Create/Edit Modal -->
+@if (_showForm)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingGoal?.Id > 0 ? "Edit Goal" : "New Savings Goal")</h5>
+                    <button type="button" class="btn-close" @onclick="HideForm"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">What are you saving for? *</label>
+                        <input type="text" class="form-control" @bind="_editingGoal!.Name" 
+                               placeholder="e.g., Nintendo Switch Game, New Bike" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">How much does it cost? *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" @bind="_editingGoal.TargetAmount" 
+                                   step="0.01" min="0.01" placeholder="0.00" />
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description (optional)</label>
+                        <textarea class="form-control" @bind="_editingGoal.Description" rows="2"
+                                  placeholder="Any notes about this goal..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Image URL (optional)</label>
+                        <input type="url" class="form-control" @bind="_editingGoal.ImageUrl" 
+                               placeholder="https://..." />
+                        <small class="text-muted">Paste a link to a picture of what you're saving for</small>
+                        @if (!string.IsNullOrEmpty(_editingGoal.ImageUrl))
+                        {
+                            <div class="mt-2">
+                                <img src="@_editingGoal.ImageUrl" alt="Preview" class="img-thumbnail" style="max-height: 100px;" />
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="isPrimary" @bind="_editingGoal.IsPrimary" />
+                        <label class="form-check-label" for="isPrimary">
+                            Make this my primary goal (shown on dashboard)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="HideForm">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveGoal">
+                        @(_editingGoal.Id > 0 ? "Save Changes" : "Create Goal")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .goals-container {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .goal-thumbnail {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: #f8f9fa;
+    }
+
+    .goal-thumbnail-placeholder {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        color: #6c757d;
+    }
+</style>
+
+@code {
+    private string? _userId;
+    private decimal _balance;
+    private List<SavingsGoalProgress> _goals = [];
+    private bool _isLoading = true;
+    private bool _showForm;
+    private SavingsGoalDto? _editingGoal;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        if (string.IsNullOrEmpty(_userId)) return;
+
+        _isLoading = true;
+
+        try
+        {
+            _balance = await LedgerService.GetUserBalanceAsync(_userId);
+            _goals = await GoalService.GetGoalsWithProgressAsync(_userId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading goals: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ShowCreateForm()
+    {
+        _editingGoal = new SavingsGoalDto
+        {
+            Name = "",
+            TargetAmount = 0,
+            IsPrimary = _goals.Count == 0 // First goal is automatically primary
+        };
+        _showForm = true;
+        ClearMessages();
+    }
+
+    private void EditGoal(SavingsGoalProgress goal)
+    {
+        _editingGoal = new SavingsGoalDto
+        {
+            Id = goal.Id,
+            Name = goal.Name,
+            Description = goal.Description,
+            TargetAmount = goal.TargetAmount,
+            ImageUrl = goal.ImageUrl,
+            Priority = goal.Priority,
+            IsPrimary = goal.IsPrimary
+        };
+        _showForm = true;
+        ClearMessages();
+    }
+
+    private void HideForm()
+    {
+        _showForm = false;
+        _editingGoal = null;
+    }
+
+    private async Task SaveGoal()
+    {
+        if (string.IsNullOrEmpty(_userId) || _editingGoal == null) return;
+
+        ClearMessages();
+
+        try
+        {
+            ServiceResult result;
+            if (_editingGoal.Id > 0)
+            {
+                result = await GoalService.UpdateGoalAsync(_userId, _editingGoal);
+                if (result.Success)
+                    _successMessage = "Goal updated!";
+            }
+            else
+            {
+                var createResult = await GoalService.CreateGoalAsync(_userId, _editingGoal);
+                result = createResult;
+                if (createResult.Success)
+                    _successMessage = "Goal created!";
+            }
+
+            if (result.Success)
+            {
+                HideForm();
+                await LoadDataAsync();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error saving goal: {ex.Message}";
+        }
+    }
+
+    private async Task SetPrimary(int goalId)
+    {
+        if (string.IsNullOrEmpty(_userId)) return;
+
+        ClearMessages();
+
+        var result = await GoalService.SetPrimaryGoalAsync(_userId, goalId);
+        if (result.Success)
+        {
+            _successMessage = "Primary goal updated!";
+            await LoadDataAsync();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+
+    private async Task CompleteGoal(int goalId)
+    {
+        if (string.IsNullOrEmpty(_userId)) return;
+
+        ClearMessages();
+
+        var result = await GoalService.CompleteGoalAsync(_userId, goalId);
+        if (result.Success)
+        {
+            _successMessage = "Congratulations! Goal achieved!";
+            await LoadDataAsync();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+
+    private async Task DeleteGoal(int goalId)
+    {
+        if (string.IsNullOrEmpty(_userId)) return;
+
+        ClearMessages();
+
+        var result = await GoalService.DeleteGoalAsync(_userId, goalId);
+        if (result.Success)
+        {
+            _successMessage = "Goal removed.";
+            await LoadDataAsync();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+
+    private void ClearMessages()
+    {
+        _errorMessage = null;
+        _successMessage = null;
+    }
+}

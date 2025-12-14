@@ -1,0 +1,105 @@
+@page "/Account/Login"
+@using Microsoft.AspNetCore.Identity
+@using Daily_Bread.Data
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+
+<PageTitle>Login - Daily Bread</PageTitle>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <img src="images/bread-icon.png" alt="Daily Bread" class="brand-icon" />
+            <h1>Daily Bread</h1>
+            <p class="tagline">Earn your daily bread, one chore at a time</p>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">
+                @errorMessage
+            </div>
+        }
+
+        <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            
+            <div class="mb-4">
+                <label class="form-label">Username</label>
+                <InputText @bind-Value="Input.UserName" class="form-control" autocomplete="username" aria-required="true" placeholder="Enter your username" />
+                <ValidationMessage For="() => Input.UserName" class="text-danger" />
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label">Password</label>
+                <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Enter your password" />
+                <ValidationMessage For="() => Input.Password" class="text-danger" />
+            </div>
+            
+            <div class="form-check mb-4">
+                <InputCheckbox @bind-Value="Input.RememberMe" class="form-check-input" id="rememberMe" />
+                <label class="form-check-label" for="rememberMe">Remember me on this device</label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-login">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+            </button>
+        </EditForm>
+        
+        <div class="login-footer">
+            <a href="/kid" class="kid-mode-link">
+                <i class="bi bi-emoji-smile me-2"></i>Kid Mode (PIN Login)
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? errorMessage;
+
+    [SupplyParameterFromForm]
+    private LoginInputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private async Task LoginUser()
+    {
+        var result = await SignInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        
+        if (result.Succeeded)
+        {
+            // Check if user is Admin-only (not also a Parent) - redirect to user management
+            var user = await UserManager.FindByNameAsync(Input.UserName);
+            if (user != null)
+            {
+                var roles = await UserManager.GetRolesAsync(user);
+                if (roles.Contains("Admin") && !roles.Contains("Parent"))
+                {
+                    Navigation.NavigateTo("/admin/users", forceLoad: true);
+                    return;
+                }
+            }
+            
+            Navigation.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
+        }
+        else
+        {
+            errorMessage = "Invalid login attempt.";
+        }
+    }
+
+    private sealed class LoginInputModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string UserName { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Password)]
+        public string Password { get; set; } = "";
+
+        public bool RememberMe { get; set; }
+    }
+}

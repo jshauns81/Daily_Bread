@@ -1,0 +1,148 @@
+.calendar-container h1 {
+    color: var(--nord6);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendar-header {
+    text-align: center;
+    font-weight: var(--font-weight-semibold);
+    padding: var(--space-sm);
+    background-color: var(--nord2);
+    color: var(--nord4);
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.calendar-day {
+    min-height: 85px;
+    padding: var(--space-sm);
+    border: 1px solid var(--nord3);
+    background-color: var(--nord1);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    border-radius: var(--radius-sm);
+}
+
+.calendar-day:hover:not(.empty) {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--nord8);
+}
+
+.calendar-day.empty {
+    background-color: var(--nord0);
+    cursor: default;
+    opacity: 0.5;
+}
+
+.calendar-day.today {
+    border: 2px solid var(--nord8);
+    box-shadow: var(--shadow-glow-blue);
+}
+
+.calendar-day.all-complete {
+    background: linear-gradient(135deg, rgba(163, 190, 140, 0.25) 0%, rgba(163, 190, 140, 0.1) 100%);
+    border-color: var(--nord14);
+}
+
+.calendar-day.partial-complete {
+    background: linear-gradient(135deg, rgba(235, 203, 139, 0.25) 0%, rgba(235, 203, 139, 0.1) 100%);
+    border-color: var(--nord13);
+}
+
+.calendar-day.none-complete {
+    background: linear-gradient(135deg, rgba(191, 97, 106, 0.25) 0%, rgba(191, 97, 106, 0.1) 100%);
+    border-color: var(--nord11);
+}
+
+.calendar-day.no-chores {
+    background-color: var(--nord2);
+}
+
+.calendar-day.future {
+    background-color: var(--nord1);
+    opacity: 0.6;
+}
+
+.day-number {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-md);
+    color: var(--nord6);
+}
+
+.day-stats {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+    margin-top: var(--space-xs);
+}
+
+.day-earnings {
+    font-size: var(--font-size-xs);
+    color: var(--nord14);
+    font-weight: var(--font-weight-semibold);
+    margin-top: 2px;
+}
+
+.completion-indicator {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+}
+
+.chore-count {
+    font-size: 0.7rem;
+    color: var(--nord3);
+}
+
+.legend-box {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-sm);
+}
+
+.legend-box.bg-success {
+    background: linear-gradient(135deg, var(--nord14) 0%, rgba(163, 190, 140, 0.7) 100%) !important;
+}
+
+.legend-box.bg-warning {
+    background: linear-gradient(135deg, var(--nord13) 0%, rgba(235, 203, 139, 0.7) 100%) !important;
+}
+
+.legend-box.bg-danger {
+    background: linear-gradient(135deg, var(--nord11) 0%, rgba(191, 97, 106, 0.7) 100%) !important;
+}
+
+.legend-box.bg-secondary {
+    background-color: var(--nord2) !important;
+}
+
+.legend-box.bg-light {
+    background-color: var(--nord1) !important;
+    border-color: var(--nord3) !important;
+}
+
+.mt-3 small {
+    color: var(--nord4);
+}
+
+@media (max-width: 768px) {
+    .calendar-day {
+        min-height: 65px;
+        font-size: var(--font-size-sm);
+        padding: var(--space-xs);
+    }
+    
+    .day-stats, .day-earnings {
+        font-size: 0.65rem;
+    }
+
+    .day-number {
+        font-size: var(--font-size-sm);
+    }
+}

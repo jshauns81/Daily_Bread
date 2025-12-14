@@ -1,0 +1,90 @@
+@using Daily_Bread.Services
+
+<div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">$ Cash Out</h5>
+                <button type="button" class="btn-close" @onclick="OnCancel"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <p class="mb-1">Current Balance</p>
+                    <h2 class="text-success">$@Balance.CurrentBalance.ToString("F2")</h2>
+                    <p class="text-muted">@Balance.UserName</p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Amount to Cash Out</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" step="0.01" min="0.01" 
+                               max="@Balance.CurrentBalance" @bind="Amount" />
+                    </div>
+                    @if (Amount > Balance.CurrentBalance)
+                    {
+                        <small class="text-danger">Amount exceeds available balance.</small>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => Amount = Balance.CurrentBalance * 0.25m">
+                        25%
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => Amount = Balance.CurrentBalance * 0.5m">
+                        50%
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => Amount = Balance.CurrentBalance * 0.75m">
+                        75%
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" @onclick="() => Amount = Balance.CurrentBalance">
+                        All
+                    </button>
+                </div>
+
+                <div class="alert alert-info">
+                    <small>
+                        <strong>Cash out threshold:</strong> $@Balance.CashOutThreshold.ToString("F2")<br/>
+                        After this cash out, balance will be: $@((Balance.CurrentBalance - Amount).ToString("F2"))
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="OnCancel">Cancel</button>
+                <button type="button" class="btn btn-success" 
+                        @onclick="HandleConfirm"
+                        disabled="@(!IsValid)">
+                    Cash Out $@Amount.ToString("F2")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public required BalanceSummary Balance { get; set; }
+
+    [Parameter]
+    public EventCallback<decimal> OnConfirm { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private decimal Amount { get; set; }
+
+    private bool IsValid => Amount > 0 && Amount <= Balance.CurrentBalance;
+
+    protected override void OnInitialized()
+    {
+        Amount = Balance.CurrentBalance;
+    }
+
+    private async Task HandleConfirm()
+    {
+        if (IsValid)
+        {
+            await OnConfirm.InvokeAsync(Math.Round(Amount, 2));
+        }
+    }
+}

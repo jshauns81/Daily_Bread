@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build results
+**/bin/
+**/obj/
+**/out/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# Test results
+**/TestResults/
+
+# Documentation
+*.md
+!README.md
+
+# Docker
+.dockerignore
+
+# CI/CD
+.github/
+azure-pipelines.yml
+
+# Misc
+.env
+.env.*
+*.local.json
+appsettings.Development.json
+appsettings.Local.json

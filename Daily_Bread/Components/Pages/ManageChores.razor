@@ -1,0 +1,329 @@
+@page "/manage-chores"
+@attribute [Authorize(Roles = "Parent")]
+@rendermode InteractiveServer
+
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared
+
+@inject IChoreManagementService ChoreService
+
+<PageTitle>Manage Chores</PageTitle>
+
+<div class="manage-chores-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Manage Chores</h1>
+        <div class="d-flex gap-2">
+            @if (!ShowForm)
+            {
+                <button class="btn btn-primary" @onclick="ShowCreateForm">
+                    + Add Chore
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @SuccessMessage
+            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
+        </div>
+    }
+
+    <!-- View Mode Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <button class="nav-link @(_viewMode == ViewMode.WeekScheduler ? "active" : "")" 
+                    @onclick="() => _viewMode = ViewMode.WeekScheduler">
+                <span class="bi bi-calendar-week me-1"></span> Week Scheduler
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(_viewMode == ViewMode.List ? "active" : "")" 
+                    @onclick="() => _viewMode = ViewMode.List">
+                <span class="bi bi-list-ul me-1"></span> Chore List
+            </button>
+        </li>
+    </ul>
+
+    @if (ShowForm)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">@(EditingChore?.Id > 0 ? "Edit Chore" : "Create New Chore")</h5>
+            </div>
+            <div class="card-body">
+                <ChoreForm Chore="EditingChore" 
+                           Users="Users" 
+                           OnSubmit="HandleFormSubmit" 
+                           OnCancel="HideForm" />
+            </div>
+        </div>
+    }
+
+    @if (ShowDeleteConfirm && ChoreToDelete != null)
+    {
+        <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete the chore "<strong>@ChoreToDelete.Name</strong>"?</p>
+                        @if (ChoreToDelete.ChoreLogs.Count > 0)
+                        {
+                            <div class="alert alert-warning">
+                                <strong>Note:</strong> This chore has @ChoreToDelete.ChoreLogs.Count log entries. 
+                                It will be deactivated instead of deleted to preserve history.
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Cancel</button>
+                        <button type="button" class="btn btn-danger" @onclick="ConfirmDelete">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_viewMode == ViewMode.List)
+    {
+        <div class="mb-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="showInactive" 
+                       @bind="ShowInactive" @bind:after="LoadChoresAsync" />
+                <label class="form-check-label" for="showInactive">Show inactive chores</label>
+            </div>
+        </div>
+
+        @if (IsLoading)
+        {
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <ChoreList Chores="Chores"
+                       OnEdit="HandleEdit"
+                       OnDelete="HandleDelete"
+                       OnToggleActive="HandleToggleActive" />
+        }
+    }
+    else if (_viewMode == ViewMode.WeekScheduler)
+    {
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <span class="bi bi-arrows-move me-2"></span>
+                        Drag & Drop Scheduler
+                    </h5>
+                    <div class="form-text">
+                        Drag chores between days to create one-time schedule overrides. 
+                        The base schedule (set in chore settings) remains unchanged.
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <WeekScheduler OnScheduleChanged="HandleScheduleChanged" />
+            </div>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+            <strong><span class="bi bi-lightbulb"></span> Tip:</strong> Use the Week Scheduler to make one-time changes (like moving a chore to a different day). 
+            For permanent schedule changes, edit the chore directly in the <strong>Chore List</strong> tab.
+        </div>
+    }
+</div>
+
+@code {
+    private enum ViewMode { List, WeekScheduler }
+    private ViewMode _viewMode = ViewMode.WeekScheduler;
+
+    private List<ChoreDefinition> Chores { get; set; } = [];
+    private List<UserSelectItem> Users { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private bool ShowForm { get; set; }
+    private bool ShowInactive { get; set; }
+    private bool ShowDeleteConfirm { get; set; }
+    private ChoreDefinitionDto? EditingChore { get; set; }
+    private ChoreDefinition? ChoreToDelete { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Users = await ChoreService.GetAssignableUsersAsync();
+        await LoadChoresAsync();
+    }
+
+    private async Task LoadChoresAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Chores = await ChoreService.GetAllChoresAsync(ShowInactive);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading chores: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ShowCreateForm()
+    {
+        EditingChore = new ChoreDefinitionDto
+        {
+            ActiveDays = DaysOfWeek.All,
+            IsActive = true,
+            Value = 1.00m
+        };
+        ShowForm = true;
+        ClearMessages();
+    }
+
+    private void HandleEdit(ChoreDefinition chore)
+    {
+        EditingChore = new ChoreDefinitionDto
+        {
+            Id = chore.Id,
+            Name = chore.Name,
+            Description = chore.Description,
+            AssignedUserId = chore.AssignedUserId,
+            Value = chore.Value,
+            ActiveDays = chore.ActiveDays,
+            StartDate = chore.StartDate,
+            EndDate = chore.EndDate,
+            IsActive = chore.IsActive,
+            AutoApprove = chore.AutoApprove,
+            SortOrder = chore.SortOrder
+        };
+        ShowForm = true;
+        _viewMode = ViewMode.List; // Switch to list view when editing
+        ClearMessages();
+    }
+
+    private void HideForm()
+    {
+        ShowForm = false;
+        EditingChore = null;
+    }
+
+    private async Task HandleFormSubmit(ChoreDefinitionDto dto)
+    {
+        ClearMessages();
+
+        ServiceResult result;
+        if (dto.Id > 0)
+        {
+            result = await ChoreService.UpdateChoreAsync(dto);
+            if (result.Success)
+            {
+                SuccessMessage = $"Chore '{dto.Name}' updated successfully!";
+            }
+        }
+        else
+        {
+            var createResult = await ChoreService.CreateChoreAsync(dto);
+            result = createResult;
+            if (createResult.Success)
+            {
+                SuccessMessage = $"Chore '{dto.Name}' created successfully!";
+            }
+        }
+
+        if (result.Success)
+        {
+            HideForm();
+            await LoadChoresAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private void HandleDelete(ChoreDefinition chore)
+    {
+        ChoreToDelete = chore;
+        ShowDeleteConfirm = true;
+        ClearMessages();
+    }
+
+    private void CancelDelete()
+    {
+        ShowDeleteConfirm = false;
+        ChoreToDelete = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (ChoreToDelete == null) return;
+
+        var result = await ChoreService.DeleteChoreAsync(ChoreToDelete.Id);
+        
+        if (result.Success)
+        {
+            SuccessMessage = $"Chore '{ChoreToDelete.Name}' deleted successfully!";
+            await LoadChoresAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+
+        ShowDeleteConfirm = false;
+        ChoreToDelete = null;
+    }
+
+    private async Task HandleToggleActive(ChoreDefinition chore)
+    {
+        ClearMessages();
+
+        var result = await ChoreService.ToggleActiveAsync(chore.Id);
+        
+        if (result.Success)
+        {
+            var newStatus = chore.IsActive ? "deactivated" : "activated";
+            SuccessMessage = $"Chore '{chore.Name}' {newStatus}!";
+            await LoadChoresAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private void HandleScheduleChanged()
+    {
+        SuccessMessage = "Schedule updated!";
+        StateHasChanged();
+    }
+
+    private void ClearMessages()
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+}

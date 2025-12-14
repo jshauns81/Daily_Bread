@@ -1,0 +1,90 @@
+<div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@Title</h5>
+                <button type="button" class="btn-close" @onclick="OnCancel"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">@AmountLabel</label>
+                    <div class="input-group">
+                        @if (!AllowNegative)
+                        {
+                            <span class="input-group-text">@(IsPositive ? "+" : "-")$</span>
+                        }
+                        else
+                        {
+                            <span class="input-group-text">$</span>
+                        }
+                        <input type="number" class="form-control" step="0.01" 
+                               min="@(AllowNegative ? null : "0.01")"
+                               @bind="Amount" />
+                    </div>
+                    @if (!AllowNegative && Amount <= 0)
+                    {
+                        <small class="text-danger">Amount must be greater than zero.</small>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Description <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" @bind="Description" 
+                           placeholder="Reason for this transaction..." />
+                    @if (string.IsNullOrWhiteSpace(Description))
+                    {
+                        <small class="text-danger">Description is required.</small>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="OnCancel">Cancel</button>
+                <button type="button" class="btn @(IsPositive ? "btn-success" : "btn-danger")" 
+                        @onclick="HandleConfirm"
+                        disabled="@(!IsValid)">
+                    @(IsPositive ? "Add" : "Apply") @(AllowNegative && Amount < 0 ? "-" : "")$@Math.Abs(Amount).ToString("F2")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Add Transaction";
+
+    [Parameter]
+    public string AmountLabel { get; set; } = "Amount";
+
+    [Parameter]
+    public bool IsPositive { get; set; } = true;
+
+    [Parameter]
+    public bool AllowNegative { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<(decimal Amount, string Description)> OnConfirm { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private decimal Amount { get; set; } = 1.00m;
+    private string Description { get; set; } = string.Empty;
+
+    private bool IsValid => 
+        (AllowNegative ? Amount != 0 : Amount > 0) && 
+        !string.IsNullOrWhiteSpace(Description);
+
+    private async Task HandleConfirm()
+    {
+        if (IsValid)
+        {
+            var finalAmount = AllowNegative ? Amount : Math.Abs(Amount);
+            if (!IsPositive && !AllowNegative)
+            {
+                finalAmount = Math.Abs(Amount); // Penalty is stored as positive, service will negate
+            }
+            await OnConfirm.InvokeAsync((Math.Round(finalAmount, 2), Description.Trim()));
+        }
+    }
+}
