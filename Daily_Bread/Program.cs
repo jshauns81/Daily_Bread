@@ -10,9 +10,23 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add EF Core with SQLite
+// Add EF Core with automatic provider selection (PostgreSQL or SQLite)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (!string.IsNullOrEmpty(connectionString) && 
+        (connectionString.Contains("Host=") || connectionString.Contains("Server=")))
+    {
+        // PostgreSQL connection string detected (for production/Render)
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        // SQLite for local development
+        options.UseSqlite(connectionString ?? "Data Source=DailyBread.db");
+    }
+});
 
 // Add Identity services
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
