@@ -1,0 +1,149 @@
+@using Daily_Bread.Data.Models
+
+<div class="chore-list">
+    @if (Chores == null || Chores.Count == 0)
+    {
+        <div class="alert alert-info">
+            <p>No chores defined yet. Click <strong>Add Chore</strong> to create your first chore.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Assigned To</th>
+                        <th>Value</th>
+                        <th>Schedule</th>
+                        <th>Status</th>
+                        <th style="width: 180px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var chore in Chores)
+                    {
+                        <tr class="@(chore.IsActive ? "" : "table-secondary")">
+                            <td>
+                                <strong>@chore.Name</strong>
+                                @if (!string.IsNullOrEmpty(chore.Description))
+                                {
+                                    <br />
+                                    <small class="text-muted">@chore.Description</small>
+                                }
+                            </td>
+                            <td>
+                                @if (chore.AssignedUser != null)
+                                {
+                                    <span>@chore.AssignedUser.UserName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Unassigned</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-success">$@chore.Value.ToString("F2")</span>
+                            </td>
+                            <td>
+                                <small>@FormatSchedule(chore)</small>
+                            </td>
+                            <td>
+                                @if (chore.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm" 
+                                            @onclick="() => OnEdit.InvokeAsync(chore)"
+                                            title="Edit">
+                                        Edit
+                                    </button>
+                                    <button class="btn @(chore.IsActive ? "btn-outline-warning" : "btn-outline-success") btn-sm"
+                                            @onclick="() => OnToggleActive.InvokeAsync(chore)"
+                                            title="@(chore.IsActive ? "Deactivate" : "Activate")">
+                                        @(chore.IsActive ? "Pause" : "Start")
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm"
+                                            @onclick="() => OnDelete.InvokeAsync(chore)"
+                                            title="Delete">
+                                        Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<ChoreDefinition> Chores { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<ChoreDefinition> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<ChoreDefinition> OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback<ChoreDefinition> OnToggleActive { get; set; }
+
+    private string FormatSchedule(ChoreDefinition chore)
+    {
+        var days = FormatDays(chore.ActiveDays);
+        var dateRange = FormatDateRange(chore.StartDate, chore.EndDate);
+        
+        if (!string.IsNullOrEmpty(dateRange))
+        {
+            return $"{days} ({dateRange})";
+        }
+        return days;
+    }
+
+    private string FormatDays(DaysOfWeek days)
+    {
+        if (days == DaysOfWeek.All) return "Every day";
+        if (days == DaysOfWeek.Weekdays) return "Weekdays";
+        if (days == DaysOfWeek.Weekends) return "Weekends";
+        if (days == DaysOfWeek.None) return "Never";
+
+        var dayNames = new List<string>();
+        if (days.HasFlag(DaysOfWeek.Sunday)) dayNames.Add("Sun");
+        if (days.HasFlag(DaysOfWeek.Monday)) dayNames.Add("Mon");
+        if (days.HasFlag(DaysOfWeek.Tuesday)) dayNames.Add("Tue");
+        if (days.HasFlag(DaysOfWeek.Wednesday)) dayNames.Add("Wed");
+        if (days.HasFlag(DaysOfWeek.Thursday)) dayNames.Add("Thu");
+        if (days.HasFlag(DaysOfWeek.Friday)) dayNames.Add("Fri");
+        if (days.HasFlag(DaysOfWeek.Saturday)) dayNames.Add("Sat");
+
+        return string.Join(", ", dayNames);
+    }
+
+    private string? FormatDateRange(DateOnly? start, DateOnly? end)
+    {
+        if (start.HasValue && end.HasValue)
+        {
+            return $"{start.Value:MMM d} - {end.Value:MMM d}";
+        }
+        if (start.HasValue)
+        {
+            return $"From {start.Value:MMM d}";
+        }
+        if (end.HasValue)
+        {
+            return $"Until {end.Value:MMM d}";
+        }
+        return null;
+    }
+}

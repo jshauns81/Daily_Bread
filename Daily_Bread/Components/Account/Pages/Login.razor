@@ -1,0 +1,91 @@
+@page "/Account/Login"
+@using Microsoft.AspNetCore.Identity
+@using Daily_Bread.Data
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-4">
+        <h1>Login</h1>
+        <hr />
+        
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.UserName" class="form-control" autocomplete="username" aria-required="true" placeholder="username" />
+                <label for="username" class="form-label">Username</label>
+                <ValidationMessage For="() => Input.UserName" class="text-danger" />
+            </div>
+            
+            <div class="form-floating mb-3">
+                <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
+                <label for="password" class="form-label">Password</label>
+                <ValidationMessage For="() => Input.Password" class="text-danger" />
+            </div>
+            
+            <div class="checkbox mb-3">
+                <label class="form-label">
+                    <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
+                    Remember me
+                </label>
+            </div>
+            
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Login</button>
+        </EditForm>
+        
+        <hr />
+        <div class="mt-3">
+            <h5>Development Accounts:</h5>
+            <ul>
+                <li><strong>parent1</strong> / Parent1@Dev123 (Parent role)</li>
+                <li><strong>parent2</strong> / Parent2@Dev123 (Parent role)</li>
+                <li><strong>child1</strong> / Child1@Dev123 (Child role)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? errorMessage;
+
+    [SupplyParameterFromForm]
+    private LoginInputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private async Task LoginUser()
+    {
+        var result = await SignInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
+        }
+        else
+        {
+            errorMessage = "Invalid login attempt.";
+        }
+    }
+
+    private sealed class LoginInputModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string UserName { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Password)]
+        public string Password { get; set; } = "";
+
+        public bool RememberMe { get; set; }
+    }
+}

@@ -1,0 +1,251 @@
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+@using System.ComponentModel.DataAnnotations
+
+<div class="chore-form">
+    <EditForm Model="FormModel" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Chore Name <span class="text-danger">*</span></label>
+                    <InputText id="name" @bind-Value="FormModel.Name" class="form-control" placeholder="e.g., Make Bed" />
+                    <ValidationMessage For="() => FormModel.Name" class="text-danger" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="value" class="form-label">Value ($) <span class="text-danger">*</span></label>
+                    <InputNumber id="value" @bind-Value="FormModel.Value" class="form-control" step="0.25" min="0" />
+                    <ValidationMessage For="() => FormModel.Value" class="text-danger" />
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <InputTextArea id="description" @bind-Value="FormModel.Description" class="form-control" rows="2" placeholder="Optional details about the chore..." />
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="assignedUser" class="form-label">Assigned To</label>
+                    <InputSelect id="assignedUser" @bind-Value="FormModel.AssignedUserId" class="form-select">
+                        <option value="">-- Unassigned --</option>
+                        @foreach (var user in Users)
+                        {
+                            <option value="@user.Id">@user.UserName (@user.Role)</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="sortOrder" class="form-label">Sort Order</label>
+                    <InputNumber id="sortOrder" @bind-Value="FormModel.SortOrder" class="form-control" />
+                    <small class="text-muted">Lower numbers appear first</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Active Days</label>
+            <div class="btn-group d-flex flex-wrap" role="group">
+                @foreach (var day in DayOptions)
+                {
+                    <input type="checkbox" 
+                           class="btn-check" 
+                           id="day-@day.Value" 
+                           checked="@IsDaySelected(day.Value)"
+                           @onchange="() => ToggleDay(day.Value)" />
+                    <label class="btn btn-outline-primary" for="day-@day.Value">@day.Label</label>
+                }
+            </div>
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectAllDays">All</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectWeekdays">Weekdays</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectWeekends">Weekends</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearDays">Clear</button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="startDate" class="form-label">Start Date (optional)</label>
+                    <InputDate id="startDate" @bind-Value="FormModel.StartDate" class="form-control" />
+                    <small class="text-muted">Leave empty for no start restriction</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="endDate" class="form-label">End Date (optional)</label>
+                    <InputDate id="endDate" @bind-Value="FormModel.EndDate" class="form-control" />
+                    <small class="text-muted">Leave empty for no end restriction</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <div class="form-check">
+                <InputCheckbox id="isActive" @bind-Value="FormModel.IsActive" class="form-check-input" />
+                <label class="form-check-label" for="isActive">
+                    Active (appears in daily tracker)
+                </label>
+            </div>
+        </div>
+
+        <hr />
+
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary" @onclick="HandleCancel">
+                Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">
+                @if (IsSubmitting)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                }
+                @(IsEditing ? "Save Changes" : "Create Chore")
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public ChoreDefinitionDto? Chore { get; set; }
+
+    [Parameter]
+    public List<UserSelectItem> Users { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<ChoreDefinitionDto> OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private ChoreFormModel FormModel { get; set; } = new();
+    private bool IsEditing => Chore?.Id > 0;
+    private bool IsSubmitting { get; set; }
+
+    private static readonly List<(DaysOfWeek Value, string Label)> DayOptions =
+    [
+        (DaysOfWeek.Sunday, "Sun"),
+        (DaysOfWeek.Monday, "Mon"),
+        (DaysOfWeek.Tuesday, "Tue"),
+        (DaysOfWeek.Wednesday, "Wed"),
+        (DaysOfWeek.Thursday, "Thu"),
+        (DaysOfWeek.Friday, "Fri"),
+        (DaysOfWeek.Saturday, "Sat")
+    ];
+
+    protected override void OnParametersSet()
+    {
+        if (Chore != null)
+        {
+            FormModel = new ChoreFormModel
+            {
+                Id = Chore.Id,
+                Name = Chore.Name,
+                Description = Chore.Description,
+                AssignedUserId = Chore.AssignedUserId,
+                Value = Chore.Value,
+                ActiveDays = Chore.ActiveDays,
+                StartDate = Chore.StartDate,
+                EndDate = Chore.EndDate,
+                IsActive = Chore.IsActive,
+                SortOrder = Chore.SortOrder
+            };
+        }
+        else
+        {
+            FormModel = new ChoreFormModel
+            {
+                ActiveDays = DaysOfWeek.All,
+                IsActive = true,
+                Value = 1.00m
+            };
+        }
+    }
+
+    private bool IsDaySelected(DaysOfWeek day) => FormModel.ActiveDays.HasFlag(day);
+
+    private void ToggleDay(DaysOfWeek day)
+    {
+        if (FormModel.ActiveDays.HasFlag(day))
+        {
+            FormModel.ActiveDays &= ~day;
+        }
+        else
+        {
+            FormModel.ActiveDays |= day;
+        }
+    }
+
+    private void SelectAllDays() => FormModel.ActiveDays = DaysOfWeek.All;
+    private void SelectWeekdays() => FormModel.ActiveDays = DaysOfWeek.Weekdays;
+    private void SelectWeekends() => FormModel.ActiveDays = DaysOfWeek.Weekends;
+    private void ClearDays() => FormModel.ActiveDays = DaysOfWeek.None;
+
+    private async Task HandleSubmit()
+    {
+        IsSubmitting = true;
+        try
+        {
+            var dto = new ChoreDefinitionDto
+            {
+                Id = FormModel.Id,
+                Name = FormModel.Name,
+                Description = FormModel.Description,
+                AssignedUserId = string.IsNullOrEmpty(FormModel.AssignedUserId) ? null : FormModel.AssignedUserId,
+                Value = FormModel.Value,
+                ActiveDays = FormModel.ActiveDays,
+                StartDate = FormModel.StartDate,
+                EndDate = FormModel.EndDate,
+                IsActive = FormModel.IsActive,
+                SortOrder = FormModel.SortOrder
+            };
+
+            await OnSubmit.InvokeAsync(dto);
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+
+    private class ChoreFormModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Chore name is required")]
+        [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        public string? Description { get; set; }
+
+        public string? AssignedUserId { get; set; }
+
+        [Range(0, 1000, ErrorMessage = "Value must be between $0 and $1000")]
+        public decimal Value { get; set; }
+
+        public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
+
+        public DateOnly? StartDate { get; set; }
+
+        public DateOnly? EndDate { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        public int SortOrder { get; set; }
+    }
+}

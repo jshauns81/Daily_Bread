@@ -1,0 +1,524 @@
+@page "/ledger"
+@page "/ledger/{ProfileIdParam:int?}"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared
+
+@inject ILedgerService LedgerService
+@inject IPayoutService PayoutService
+@inject IChildProfileService ProfileService
+@inject IDateProvider DateProvider
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Ledger</PageTitle>
+
+<div class="ledger-container">
+    <h1>Ledger</h1>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @SuccessMessage
+            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
+        </div>
+    }
+
+    <!-- Child/Account Selection - Only visible to Parents -->
+    @if (IsParent)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Select Child</label>
+                        <select class="form-select" @bind="SelectedProfileId" @bind:after="OnProfileChanged">
+                            <option value="0">-- Select a Child --</option>
+                            @foreach (var profile in ChildProfiles)
+                            {
+                                <option value="@profile.ProfileId">@profile.DisplayName (Balance: $@profile.TotalBalance.ToString("F2"))</option>
+                            }
+                        </select>
+                    </div>
+                    @if (SelectedProfileId > 0 && Accounts.Count > 1)
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label">Account</label>
+                            <select class="form-select" @bind="SelectedAccountId" @bind:after="OnAccountChanged">
+                                @foreach (var account in Accounts)
+                                {
+                                    <option value="@account.Id">@account.Name</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="col-md-2">
+                        <label class="form-label">From Date</label>
+                        <InputDate @bind-Value="FromDate" class="form-control" @bind-Value:after="LoadTransactionsAsync" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">To Date</label>
+                        <InputDate @bind-Value="ToDate" class="form-control" @bind-Value:after="LoadTransactionsAsync" />
+                    </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters" title="Clear Filters">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (SelectedAccountId > 0 && SelectedBalance != null)
+    {
+        <!-- Balance Card -->
+        <BalanceCard Balance="@CreateLegacyBalance()" 
+                     OnCashOut="ShowCashOutModal" 
+                     OnBonus="ShowBonusModal"
+                     OnPenalty="ShowPenaltyModal" />
+
+        <!-- Quick Stats -->
+        @if (Stats != null)
+        {
+            <div class="row mb-4">
+                <div class="col-md-2">
+                    <div class="stat-card bg-success-subtle">
+                        <span class="stat-value text-success">$@Stats.TotalEarnings.ToString("F2")</span>
+                        <span class="stat-label">Earned</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card bg-danger-subtle">
+                        <span class="stat-value text-danger">$@Stats.TotalDeductions.ToString("F2")</span>
+                        <span class="stat-label">Deductions</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card bg-info-subtle">
+                        <span class="stat-value text-info">$@Stats.TotalBonuses.ToString("F2")</span>
+                        <span class="stat-label">Bonuses</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card bg-warning-subtle">
+                        <span class="stat-value text-warning">$@Stats.TotalPenalties.ToString("F2")</span>
+                        <span class="stat-label">Penalties</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card bg-secondary-subtle">
+                        <span class="stat-value">$@Stats.TotalPayouts.ToString("F2")</span>
+                        <span class="stat-label">Paid Out</span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card">
+                        <span class="stat-value">@Stats.TransactionCount</span>
+                        <span class="stat-label">Transactions</span>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else if (!IsParent && SelectedAccountId == 0)
+    {
+        <div class="alert alert-warning">
+            No account found. Please contact a parent to set up your account.
+        </div>
+    }
+    else if (IsParent && SelectedProfileId == 0)
+    {
+        <div class="alert alert-info">
+            Select a child above to view their ledger.
+        </div>
+    }
+
+    @if (SelectedAccountId > 0)
+    {
+        <!-- Transactions Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Transaction History</h5>
+                @if (IsParent)
+                {
+                    <button class="btn btn-outline-primary btn-sm" @onclick="ShowAdjustmentModal">
+                        + Add Adjustment
+                    </button>
+                }
+            </div>
+            <div class="card-body">
+                @if (IsLoading)
+                {
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (Transactions.Count == 0)
+                {
+                    <div class="alert alert-info mb-0">
+                        No transactions found for the selected criteria.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var txn in Transactions)
+                                {
+                                    <tr>
+                                        <td>@txn.TransactionDate.ToString("MMM d, yyyy")</td>
+                                        <td>
+                                            <span class="badge @GetTypeBadgeClass(txn.Type)">
+                                                @GetTypeDisplay(txn.Type)
+                                            </span>
+                                        </td>
+                                        <td>@txn.Description</td>
+                                        <td class="text-end">
+                                            <span class="@(txn.Amount >= 0 ? "text-success" : "text-danger") fw-bold">
+                                                @(txn.Amount >= 0 ? "+" : "")$@txn.Amount.ToString("F2")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Cash Out Modal -->
+@if (ShowCashOut && SelectedBalance != null)
+{
+    <CashOutModal Balance="@CreateLegacyBalance()"
+                  OnConfirm="ProcessCashOut"
+                  OnCancel="() => ShowCashOut = false" />
+}
+
+<!-- Bonus Modal -->
+@if (ShowBonus)
+{
+    <TransactionModal Title="Add Bonus"
+                      AmountLabel="Bonus Amount"
+                      IsPositive="true"
+                      OnConfirm="ProcessBonus"
+                      OnCancel="() => ShowBonus = false" />
+}
+
+<!-- Penalty Modal -->
+@if (ShowPenalty)
+{
+    <TransactionModal Title="Add Penalty"
+                      AmountLabel="Penalty Amount"
+                      IsPositive="false"
+                      OnConfirm="ProcessPenalty"
+                      OnCancel="() => ShowPenalty = false" />
+}
+
+<!-- Adjustment Modal -->
+@if (ShowAdjustment)
+{
+    <TransactionModal Title="Add Adjustment"
+                      AmountLabel="Adjustment Amount"
+                      AllowNegative="true"
+                      OnConfirm="ProcessAdjustment"
+                      OnCancel="() => ShowAdjustment = false" />
+}
+
+@code {
+    [Parameter]
+    public int? ProfileIdParam { get; set; }
+
+    private List<ChildProfileSummary> ChildProfiles { get; set; } = [];
+    private List<LedgerAccount> Accounts { get; set; } = [];
+    private List<LedgerTransaction> Transactions { get; set; } = [];
+    private AccountBalanceSummary? SelectedBalance { get; set; }
+    private TransactionStats? Stats { get; set; }
+    
+    private int SelectedProfileId { get; set; }
+    private int SelectedAccountId { get; set; }
+    private DateOnly? FromDate { get; set; }
+    private DateOnly? ToDate { get; set; }
+    
+    private bool IsLoading { get; set; } = true;
+    private bool IsParent { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+    private string? CurrentUserId { get; set; }
+
+    private bool ShowCashOut { get; set; }
+    private bool ShowBonus { get; set; }
+    private bool ShowPenalty { get; set; }
+    private bool ShowAdjustment { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        CurrentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        IsParent = authState.User.IsInRole("Parent");
+
+        if (IsParent)
+        {
+            // Load all child profiles for selection
+            ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
+            
+            // Use route parameter if provided
+            if (ProfileIdParam.HasValue && ProfileIdParam.Value > 0)
+            {
+                SelectedProfileId = ProfileIdParam.Value;
+                await OnProfileChanged();
+            }
+        }
+        else
+        {
+            // Child user - load their own profile and account
+            if (!string.IsNullOrEmpty(CurrentUserId))
+            {
+                var profile = await ProfileService.GetProfileByUserIdAsync(CurrentUserId);
+                if (profile != null)
+                {
+                    SelectedProfileId = profile.Id;
+                    Accounts = await ProfileService.GetAccountsAsync(profile.Id);
+                    var defaultAccount = Accounts.FirstOrDefault(a => a.IsDefault) ?? Accounts.FirstOrDefault();
+                    if (defaultAccount != null)
+                    {
+                        SelectedAccountId = defaultAccount.Id;
+                        await LoadTransactionsAsync();
+                    }
+                }
+            }
+        }
+
+        IsLoading = false;
+    }
+
+    private async Task OnProfileChanged()
+    {
+        SelectedAccountId = 0;
+        SelectedBalance = null;
+        Stats = null;
+        Transactions = [];
+
+        if (SelectedProfileId > 0)
+        {
+            // Authorization check
+            if (!IsParent && !await ProfileService.CanAccessProfileAsync(CurrentUserId!, IsParent, SelectedProfileId))
+            {
+                ErrorMessage = "Access denied.";
+                return;
+            }
+
+            Accounts = await ProfileService.GetAccountsAsync(SelectedProfileId);
+            var defaultAccount = Accounts.FirstOrDefault(a => a.IsDefault) ?? Accounts.FirstOrDefault();
+            if (defaultAccount != null)
+            {
+                SelectedAccountId = defaultAccount.Id;
+                await LoadTransactionsAsync();
+            }
+        }
+    }
+
+    private async Task OnAccountChanged()
+    {
+        if (SelectedAccountId > 0)
+        {
+            // Authorization check
+            if (!IsParent && !await ProfileService.CanAccessAccountAsync(CurrentUserId!, IsParent, SelectedAccountId))
+            {
+                ErrorMessage = "Access denied.";
+                return;
+            }
+
+            await LoadTransactionsAsync();
+        }
+    }
+
+    private async Task LoadTransactionsAsync()
+    {
+        if (SelectedAccountId == 0) return;
+
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Transactions = await LedgerService.GetAccountTransactionsAsync(SelectedAccountId, FromDate, ToDate);
+            SelectedBalance = await PayoutService.GetAccountBalanceSummaryAsync(SelectedAccountId);
+            Stats = await LedgerService.GetAccountTransactionStatsAsync(SelectedAccountId, FromDate, ToDate);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading transactions: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ClearFilters()
+    {
+        FromDate = null;
+        ToDate = null;
+        await LoadTransactionsAsync();
+    }
+
+    private BalanceSummary CreateLegacyBalance()
+    {
+        if (SelectedBalance == null)
+        {
+            return new BalanceSummary
+            {
+                UserId = "",
+                UserName = "Unknown",
+                CurrentBalance = 0,
+                TotalEarned = 0,
+                TotalDeducted = 0,
+                TotalPaidOut = 0,
+                CashOutThreshold = 10
+            };
+        }
+
+        return new BalanceSummary
+        {
+            UserId = SelectedBalance.UserId,
+            UserName = SelectedBalance.ChildDisplayName,
+            CurrentBalance = SelectedBalance.CurrentBalance,
+            TotalEarned = SelectedBalance.TotalEarned,
+            TotalDeducted = SelectedBalance.TotalDeducted,
+            TotalPaidOut = SelectedBalance.TotalPaidOut,
+            CashOutThreshold = SelectedBalance.CashOutThreshold
+        };
+    }
+
+    private void ShowCashOutModal() => ShowCashOut = true;
+    private void ShowBonusModal() => ShowBonus = true;
+    private void ShowPenaltyModal() => ShowPenalty = true;
+    private void ShowAdjustmentModal() => ShowAdjustment = true;
+
+    private async Task ProcessCashOut(decimal amount)
+    {
+        if (SelectedAccountId == 0) return;
+
+        var result = await PayoutService.ProcessAccountCashOutAsync(SelectedAccountId, amount, CurrentUserId!);
+        
+        if (result.Success)
+        {
+            SuccessMessage = $"Cash out of ${amount:F2} processed successfully!";
+            ShowCashOut = false;
+            ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
+            await LoadTransactionsAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private async Task ProcessBonus((decimal Amount, string Description) bonus)
+    {
+        if (SelectedAccountId == 0) return;
+
+        var result = await PayoutService.AddAccountBonusAsync(SelectedAccountId, bonus.Amount, CurrentUserId!, bonus.Description);
+        
+        if (result.Success)
+        {
+            SuccessMessage = $"Bonus of ${bonus.Amount:F2} added!";
+            ShowBonus = false;
+            ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
+            await LoadTransactionsAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private async Task ProcessPenalty((decimal Amount, string Description) penalty)
+    {
+        if (SelectedAccountId == 0) return;
+
+        var result = await PayoutService.AddAccountPenaltyAsync(SelectedAccountId, penalty.Amount, CurrentUserId!, penalty.Description);
+        
+        if (result.Success)
+        {
+            SuccessMessage = $"Penalty of ${penalty.Amount:F2} applied.";
+            ShowPenalty = false;
+            ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
+            await LoadTransactionsAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private async Task ProcessAdjustment((decimal Amount, string Description) adjustment)
+    {
+        if (SelectedAccountId == 0) return;
+
+        var result = await PayoutService.AddAccountAdjustmentAsync(SelectedAccountId, adjustment.Amount, CurrentUserId!, adjustment.Description);
+        
+        if (result.Success)
+        {
+            var sign = adjustment.Amount >= 0 ? "+" : "";
+            SuccessMessage = $"Adjustment of {sign}${adjustment.Amount:F2} applied.";
+            ShowAdjustment = false;
+            ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
+            await LoadTransactionsAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private string GetTypeBadgeClass(TransactionType type) => type switch
+    {
+        TransactionType.ChoreEarning => "bg-success",
+        TransactionType.ChoreDeduction => "bg-danger",
+        TransactionType.Bonus => "bg-info",
+        TransactionType.Penalty => "bg-warning text-dark",
+        TransactionType.Adjustment => "bg-secondary",
+        TransactionType.Payout => "bg-primary",
+        TransactionType.Transfer => "bg-purple",
+        _ => "bg-secondary"
+    };
+
+    private string GetTypeDisplay(TransactionType type) => type switch
+    {
+        TransactionType.ChoreEarning => "Chore",
+        TransactionType.ChoreDeduction => "Missed",
+        TransactionType.Bonus => "Bonus",
+        TransactionType.Penalty => "Penalty",
+        TransactionType.Adjustment => "Adjustment",
+        TransactionType.Payout => "Payout",
+        TransactionType.Transfer => "Transfer",
+        _ => type.ToString()
+    };
+}

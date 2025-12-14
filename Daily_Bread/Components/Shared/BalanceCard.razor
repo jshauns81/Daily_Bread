@@ -1,0 +1,71 @@
+@using Daily_Bread.Services
+
+<div class="balance-card card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <div class="balance-main">
+                    <span class="balance-label">Current Balance</span>
+                    <span class="balance-amount @(Balance.CurrentBalance >= 0 ? "text-success" : "text-danger")">
+                        $@Balance.CurrentBalance.ToString("F2")
+                    </span>
+                    <span class="balance-user">@Balance.UserName</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="balance-info">
+                    <div class="info-row">
+                        <span class="info-label">Total Earned:</span>
+                        <span class="info-value text-success">$@Balance.TotalEarned.ToString("F2")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Deducted:</span>
+                        <span class="info-value text-danger">$@Balance.TotalDeducted.ToString("F2")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Paid Out:</span>
+                        <span class="info-value">$@Balance.TotalPaidOut.ToString("F2")</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="balance-actions">
+                    @if (Balance.CanCashOut)
+                    {
+                        <button class="btn btn-success mb-2 w-100" @onclick="OnCashOut">
+                            $ Cash Out ($@Balance.AvailableForCashOut.ToString("F2") available)
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning mb-2 py-2 text-center">
+                            <small>Need $@Balance.CashOutThreshold.ToString("F2") to cash out</small>
+                        </div>
+                    }
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-success" @onclick="OnBonus">
+                            + Bonus
+                        </button>
+                        <button class="btn btn-outline-danger" @onclick="OnPenalty">
+                            - Penalty
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public required BalanceSummary Balance { get; set; }
+
+    [Parameter]
+    public EventCallback OnCashOut { get; set; }
+
+    [Parameter]
+    public EventCallback OnBonus { get; set; }
+
+    [Parameter]
+    public EventCallback OnPenalty { get; set; }
+}

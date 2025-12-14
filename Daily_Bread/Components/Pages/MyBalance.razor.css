@@ -1,0 +1,38 @@
+.my-balance-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.balance-hero {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.balance-label {
+    display: block;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    color: var(--bs-secondary);
+    letter-spacing: 0.1em;
+}
+
+.balance-amount {
+    font-size: 4rem;
+    font-weight: bold;
+    line-height: 1.2;
+    margin: 0.5rem 0;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+    .list-group-item:first-child {
+        border-top: none;
+    }
+
+@media (max-width: 768px) {
+    .balance-amount {
+        font-size: 3rem;
+    }
+}

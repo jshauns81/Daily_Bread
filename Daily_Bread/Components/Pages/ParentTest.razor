@@ -1,0 +1,18 @@
+@page "/parent-test"
+@attribute [Authorize(Roles = "Parent")]
+
+<PageTitle>Parent Test</PageTitle>
+
+<h1>Parent Panel</h1>
+
+<div class="alert alert-success">
+    <h4>?? Welcome, Parent!</h4>
+    <p>You have successfully accessed this page because you are logged in with the <strong>Parent</strong> role.</p>
+</div>
+
+<AuthorizeView>
+    <Authorized>
+        <p><strong>Logged in as:</strong> @context.User.Identity?.Name</p>
+        <p><strong>Roles:</strong> @string.Join(", ", context.User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value))</p>
+    </Authorized>
+</AuthorizeView>
