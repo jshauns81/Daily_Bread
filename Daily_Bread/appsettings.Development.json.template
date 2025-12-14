@@ -12,17 +12,17 @@
     "Parent1": {
       "UserName": "parent1",
       "Email": "parent1@dailybread.local",
-      "Password": "Parent1@Dev123"
+      "Password": "YOUR_SECURE_PASSWORD_HERE"
     },
     "Parent2": {
       "UserName": "parent2",
       "Email": "parent2@dailybread.local",
-      "Password": "Parent2@Dev123"
+      "Password": "YOUR_SECURE_PASSWORD_HERE"
     },
     "Child1": {
       "UserName": "child1",
       "Email": "child1@dailybread.local",
-      "Password": "Child1@Dev123"
+      "Password": "YOUR_SECURE_PASSWORD_HERE"
     }
   }
 }
