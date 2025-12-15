@@ -70,7 +70,14 @@ builder.Services.AddScoped<IChildProfileService, ChildProfileService>();
 
 var app = builder.Build();
 
-// Seed roles and users on startup
+// Ensure database schema is up to date
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+}
+
+// Seed roles and admin user on startup
 await SeedData.InitializeAsync(app.Services, app.Configuration);
 
 // Configure the HTTP request pipeline.
