@@ -1,73 +1,54 @@
 using Daily_Bread.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Daily_Bread.Data;
 
 /// <summary>
-/// Helper class to seed roles and development users on application startup.
+/// Helper class to seed roles and bootstrap admin user on application startup.
 /// Idempotent: safe to run on every startup without creating duplicates.
 /// </summary>
 public static class SeedData
 {
+    public const string AdminRole = "Admin";
     public const string ParentRole = "Parent";
     public const string ChildRole = "Child";
 
     public static async Task InitializeAsync(IServiceProvider serviceProvider, IConfiguration configuration)
     {
         using var scope = serviceProvider.CreateScope();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger("SeedData");
+
+        // Check if seeding is enabled (default: true)
+        var runSeed = configuration.GetValue<bool?>("Seed:Run") ?? true;
+        if (!runSeed)
+        {
+            logger.LogInformation("Seed:Run is false. Skipping all seeding.");
+            return;
+        }
+
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-        // Ensure database is created and migrations applied
-        await context.Database.MigrateAsync();
-
-        // Seed roles
+        // Seed roles: Admin, Parent, Child
+        await EnsureRoleAsync(roleManager, AdminRole);
         await EnsureRoleAsync(roleManager, ParentRole);
         await EnsureRoleAsync(roleManager, ChildRole);
 
-        // Seed development users from configuration
-        var seedUsers = configuration.GetSection("SeedUsers");
-        
-        // Parent1
-        var parent1Config = seedUsers.GetSection("Parent1");
-        if (parent1Config.Exists())
+        // Seed bootstrap admin user from configuration
+        var adminUserName = configuration["Seed:AdminUserName"];
+        var adminPassword = configuration["Seed:AdminPassword"];
+
+        if (string.IsNullOrWhiteSpace(adminUserName) || string.IsNullOrWhiteSpace(adminPassword))
         {
-            await EnsureUserAsync(userManager,
-                parent1Config["UserName"]!,
-                parent1Config["Email"]!,
-                parent1Config["Password"]!,
-                ParentRole);
+            logger.LogInformation("Seed:AdminUserName or Seed:AdminPassword not configured. Skipping admin user creation.");
+            return;
         }
 
-        // Parent2
-        var parent2Config = seedUsers.GetSection("Parent2");
-        if (parent2Config.Exists())
-        {
-            await EnsureUserAsync(userManager,
-                parent2Config["UserName"]!,
-                parent2Config["Email"]!,
-                parent2Config["Password"]!,
-                ParentRole);
-        }
-
-        // Child1
-        var child1Config = seedUsers.GetSection("Child1");
-        if (child1Config.Exists())
-        {
-            var childUser = await EnsureUserAsync(userManager,
-                child1Config["UserName"]!,
-                child1Config["Email"]!,
-                child1Config["Password"]!,
-                ChildRole);
-            
-            // Create ChildProfile and LedgerAccount for this child
-            await EnsureChildProfileAndAccountAsync(context, childUser);
-        }
-
-        // Migrate any existing transactions to ledger accounts
-        await MigrateExistingTransactionsAsync(context);
+        await EnsureAdminUserAsync(userManager, adminUserName, adminPassword, logger);
     }
 
     private static async Task EnsureRoleAsync(RoleManager<IdentityRole> roleManager, string roleName)
@@ -82,156 +63,48 @@ public static class SeedData
         }
     }
 
-    private static async Task<ApplicationUser> EnsureUserAsync(
-        UserManager<ApplicationUser> userManager, 
-        string userName, 
-        string email, 
-        string password, 
-        string role)
+    private static async Task EnsureAdminUserAsync(
+        UserManager<ApplicationUser> userManager,
+        string userName,
+        string password,
+        ILogger logger)
     {
-        var user = await userManager.FindByNameAsync(userName);
-        
-        if (user == null)
+        var existingUser = await userManager.FindByNameAsync(userName);
+
+        if (existingUser != null)
         {
-            user = new ApplicationUser
+            // Ensure existing user is in Admin role
+            if (!await userManager.IsInRoleAsync(existingUser, AdminRole))
             {
-                UserName = userName,
-                Email = email,
-                EmailConfirmed = true // Skip email confirmation for dev users
-            };
-
-            var result = await userManager.CreateAsync(user, password);
-            if (!result.Succeeded)
-            {
-                throw new Exception($"Failed to create user '{userName}': {string.Join(", ", result.Errors.Select(e => e.Description))}");
-            }
-        }
-
-        // Ensure user is in the specified role
-        if (!await userManager.IsInRoleAsync(user, role))
-        {
-            var result = await userManager.AddToRoleAsync(user, role);
-            if (!result.Succeeded)
-            {
-                throw new Exception($"Failed to add user '{userName}' to role '{role}': {string.Join(", ", result.Errors.Select(e => e.Description))}");
-            }
-        }
-
-        return user;
-    }
-
-    private static async Task EnsureChildProfileAndAccountAsync(ApplicationDbContext context, ApplicationUser user)
-    {
-        // Check if profile already exists
-        var existingProfile = await context.ChildProfiles
-            .Include(p => p.LedgerAccounts)
-            .FirstOrDefaultAsync(p => p.UserId == user.Id);
-
-        if (existingProfile != null)
-        {
-            // Ensure at least one account exists
-            if (!existingProfile.LedgerAccounts.Any())
-            {
-                existingProfile.LedgerAccounts.Add(new LedgerAccount
+                var roleResult = await userManager.AddToRoleAsync(existingUser, AdminRole);
+                if (!roleResult.Succeeded)
                 {
-                    Name = "Main",
-                    IsDefault = true,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                });
-                await context.SaveChangesAsync();
+                    throw new Exception($"Failed to add existing user '{userName}' to role '{AdminRole}': {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
+                }
             }
+            logger.LogInformation("Admin user '{UserName}' already exists.", userName);
             return;
         }
 
-        // Create new profile with default account
-        var profile = new ChildProfile
+        // Create new admin user
+        var adminUser = new ApplicationUser
         {
-            UserId = user.Id,
-            DisplayName = user.UserName ?? "Child",
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            UserName = userName,
+            EmailConfirmed = true
         };
 
-        profile.LedgerAccounts.Add(new LedgerAccount
+        var createResult = await userManager.CreateAsync(adminUser, password);
+        if (!createResult.Succeeded)
         {
-            Name = "Main",
-            IsDefault = true,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        });
-
-        context.ChildProfiles.Add(profile);
-        await context.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Migrates any existing LedgerTransactions that don't have a LedgerAccountId
-    /// to the appropriate child's default account.
-    /// </summary>
-    private static async Task MigrateExistingTransactionsAsync(ApplicationDbContext context)
-    {
-        // Find transactions without a LedgerAccountId (legacy data)
-        var orphanedTransactions = await context.LedgerTransactions
-            .Where(t => t.LedgerAccountId == 0)
-            .ToListAsync();
-
-        if (!orphanedTransactions.Any())
-        {
-            return;
+            throw new Exception($"Failed to create admin user '{userName}': {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
         }
 
-        // Group by UserId
-        var transactionsByUser = orphanedTransactions.GroupBy(t => t.UserId);
-
-        foreach (var userGroup in transactionsByUser)
+        var addRoleResult = await userManager.AddToRoleAsync(adminUser, AdminRole);
+        if (!addRoleResult.Succeeded)
         {
-            var userId = userGroup.Key;
-
-            // Find or create the child profile and account
-            var profile = await context.ChildProfiles
-                .Include(p => p.LedgerAccounts)
-                .FirstOrDefaultAsync(p => p.UserId == userId);
-
-            if (profile == null)
-            {
-                // Create profile for this user
-                var user = await context.Users.FindAsync(userId);
-                if (user == null) continue;
-
-                profile = new ChildProfile
-                {
-                    UserId = userId,
-                    DisplayName = user.UserName ?? "Child",
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                profile.LedgerAccounts.Add(new LedgerAccount
-                {
-                    Name = "Main",
-                    IsDefault = true,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                });
-
-                context.ChildProfiles.Add(profile);
-                await context.SaveChangesAsync();
-            }
-
-            // Get the default account
-            var defaultAccount = profile.LedgerAccounts.FirstOrDefault(a => a.IsDefault)
-                ?? profile.LedgerAccounts.FirstOrDefault();
-
-            if (defaultAccount == null) continue;
-
-            // Update all transactions for this user
-            foreach (var txn in userGroup)
-            {
-                txn.LedgerAccountId = defaultAccount.Id;
-            }
+            throw new Exception($"Failed to add admin user '{userName}' to role '{AdminRole}': {string.Join(", ", addRoleResult.Errors.Select(e => e.Description))}");
         }
 
-        await context.SaveChangesAsync();
+        logger.LogInformation("Bootstrap admin user '{UserName}' created successfully.", userName);
     }
 }
