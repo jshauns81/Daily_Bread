@@ -3,36 +3,38 @@
     margin: 0 auto;
 }
 
+.my-balance-container h1 {
+    color: var(--nord6);
+}
+
 .balance-hero {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, var(--nord1) 0%, var(--nord2) 100%);
+    border-color: var(--nord3) !important;
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
 }
 
 .balance-label {
     display: block;
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
     text-transform: uppercase;
-    color: var(--bs-secondary);
+    color: var(--nord4);
     letter-spacing: 0.1em;
 }
 
 .balance-amount {
     font-size: 4rem;
-    font-weight: bold;
-    line-height: 1.2;
-    margin: 0.5rem 0;
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    margin: var(--space-sm) 0;
 }
-
-.list-group-item {
-    border-left: none;
-    border-right: none;
-}
-
-    .list-group-item:first-child {
-        border-top: none;
-    }
 
 @media (max-width: 768px) {
     .balance-amount {
         font-size: 3rem;
+    }
+    
+    .balance-hero {
+        padding: var(--space-lg);
     }
 }

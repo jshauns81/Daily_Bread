@@ -13,12 +13,14 @@
 <div class="manage-chores-container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Manage Chores</h1>
-        @if (!ShowForm)
-        {
-            <button class="btn btn-primary" @onclick="ShowCreateForm">
-                + Add Chore
-            </button>
-        }
+        <div class="d-flex gap-2">
+            @if (!ShowForm)
+            {
+                <button class="btn btn-primary" @onclick="ShowCreateForm">
+                    + Add Chore
+                </button>
+            }
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -36,6 +38,22 @@
             <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
         </div>
     }
+
+    <!-- View Mode Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <button class="nav-link @(_viewMode == ViewMode.List ? "active" : "")" 
+                    @onclick="() => _viewMode = ViewMode.List">
+                <span class="bi bi-list-ul me-1"></span> Chore List
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(_viewMode == ViewMode.WeekScheduler ? "active" : "")" 
+                    @onclick="() => _viewMode = ViewMode.WeekScheduler">
+                <span class="bi bi-calendar-week me-1"></span> Week Scheduler
+            </button>
+        </li>
+    </ul>
 
     @if (ShowForm)
     {
@@ -80,32 +98,63 @@
         </div>
     }
 
-    <div class="mb-3">
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="showInactive" 
-                   @bind="ShowInactive" @bind:after="LoadChoresAsync" />
-            <label class="form-check-label" for="showInactive">Show inactive chores</label>
-        </div>
-    </div>
-
-    @if (IsLoading)
+    @if (_viewMode == ViewMode.List)
     {
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <div class="mb-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="showInactive" 
+                       @bind="ShowInactive" @bind:after="LoadChoresAsync" />
+                <label class="form-check-label" for="showInactive">Show inactive chores</label>
             </div>
         </div>
+
+        @if (IsLoading)
+        {
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <ChoreList Chores="Chores"
+                       OnEdit="HandleEdit"
+                       OnDelete="HandleDelete"
+                       OnToggleActive="HandleToggleActive" />
+        }
     }
-    else
+    else if (_viewMode == ViewMode.WeekScheduler)
     {
-        <ChoreList Chores="Chores"
-                   OnEdit="HandleEdit"
-                   OnDelete="HandleDelete"
-                   OnToggleActive="HandleToggleActive" />
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <span class="bi bi-arrows-move me-2"></span>
+                        Drag & Drop Scheduler
+                    </h5>
+                    <div class="form-text">
+                        Drag chores between days to create one-time schedule overrides. 
+                        The base schedule (set in chore settings) remains unchanged.
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <WeekScheduler OnScheduleChanged="HandleScheduleChanged" />
+            </div>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+            <strong><span class="bi bi-lightbulb"></span> Tip:</strong> Use the Week Scheduler to make one-time changes (like moving a chore to a different day). 
+            For permanent schedule changes, edit the chore directly in the <strong>Chore List</strong> tab.
+        </div>
     }
 </div>
 
 @code {
+    private enum ViewMode { List, WeekScheduler }
+    private ViewMode _viewMode = ViewMode.List;
+
     private List<ChoreDefinition> Chores { get; set; } = [];
     private List<UserSelectItem> Users { get; set; } = [];
     private bool IsLoading { get; set; } = true;
@@ -167,9 +216,11 @@
             StartDate = chore.StartDate,
             EndDate = chore.EndDate,
             IsActive = chore.IsActive,
+            AutoApprove = chore.AutoApprove,
             SortOrder = chore.SortOrder
         };
         ShowForm = true;
+        _viewMode = ViewMode.List; // Switch to list view when editing
         ClearMessages();
     }
 
@@ -262,6 +313,12 @@
         {
             ErrorMessage = result.ErrorMessage;
         }
+    }
+
+    private void HandleScheduleChanged()
+    {
+        SuccessMessage = "Schedule updated!";
+        StateHasChanged();
     }
 
     private void ClearMessages()

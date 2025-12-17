@@ -6,15 +6,15 @@
 
 main {
     flex: 1;
+    background-color: var(--nord0);
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background-color: var(--nord0);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background-color: var(--nord0);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
@@ -25,10 +25,13 @@ main {
         white-space: nowrap;
         margin-left: 1.5rem;
         text-decoration: none;
+        color: var(--nord4);
+        transition: color 150ms ease;
     }
 
     .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
+        text-decoration: none;
+        color: var(--nord8);
     }
 
     .top-row ::deep a:first-child {
@@ -62,6 +65,7 @@ main {
         position: sticky;
         top: 0;
         z-index: 1;
+        background-color: var(--nord0);
     }
 
     .top-row.auth ::deep a:first-child {
@@ -77,10 +81,10 @@ main {
 }
 
 #blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
+    background: var(--nord1);
+    border-top: 3px solid var(--nord12);
     bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
     display: none;
     left: 0;
@@ -88,6 +92,7 @@ main {
     position: fixed;
     width: 100%;
     z-index: 1000;
+    color: var(--nord6);
 }
 
     #blazor-error-ui .dismiss {
@@ -95,4 +100,5 @@ main {
         position: absolute;
         right: 0.75rem;
         top: 0.5rem;
+        color: var(--nord4);
     }

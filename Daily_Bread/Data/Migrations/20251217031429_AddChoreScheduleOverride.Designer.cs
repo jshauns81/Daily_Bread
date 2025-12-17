@@ -3,6 +3,7 @@ using System;
 using Daily_Bread.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Daily_Bread.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251217031429_AddChoreScheduleOverride")]
+    partial class AddChoreScheduleOverride
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
@@ -81,56 +84,6 @@ namespace Daily_Bread.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Daily_Bread.Data.Models.Achievement", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Category")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Icon")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Category");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("IsActive");
-
-                    b.ToTable("Achievements");
-                });
-
             modelBuilder.Entity("Daily_Bread.Data.Models.AppSetting", b =>
                 {
                     b.Property<int>("Id")
@@ -185,9 +138,6 @@ namespace Daily_Bread.Data.Migrations
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("PinHash")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -213,9 +163,6 @@ namespace Daily_Bread.Data.Migrations
 
                     b.Property<string>("AssignedUserId")
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("AutoApprove")
-                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -448,96 +395,6 @@ namespace Daily_Bread.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("LedgerTransactions");
-                });
-
-            modelBuilder.Entity("Daily_Bread.Data.Models.SavingsGoal", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ImageUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsPrimary")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("TargetAmount")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("IsPrimary");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("SavingsGoals");
-                });
-
-            modelBuilder.Entity("Daily_Bread.Data.Models.UserAchievement", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("AchievementId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("EarnedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("HasSeen")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AchievementId");
-
-                    b.HasIndex("EarnedAt");
-
-                    b.HasIndex("UserId", "AchievementId")
-                        .IsUnique();
-
-                    b.ToTable("UserAchievements");
                 });
 
             modelBuilder.Entity("Daily_Bread.Data.Models.UserPreference", b =>
@@ -803,36 +660,6 @@ namespace Daily_Bread.Data.Migrations
                     b.Navigation("ChoreLog");
 
                     b.Navigation("LedgerAccount");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Daily_Bread.Data.Models.SavingsGoal", b =>
-                {
-                    b.HasOne("Daily_Bread.Data.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Daily_Bread.Data.Models.UserAchievement", b =>
-                {
-                    b.HasOne("Daily_Bread.Data.Models.Achievement", "Achievement")
-                        .WithMany()
-                        .HasForeignKey("AchievementId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Daily_Bread.Data.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Achievement");
 
                     b.Navigation("User");
                 });

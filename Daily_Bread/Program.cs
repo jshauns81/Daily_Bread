@@ -67,6 +67,12 @@ builder.Services.AddScoped<ITrackerService, TrackerService>();
 builder.Services.AddScoped<IChoreManagementService, ChoreManagementService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<IChildProfileService, ChildProfileService>();
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddScoped<ISavingsGoalService, SavingsGoalService>();
+builder.Services.AddScoped<IAchievementService, AchievementService>();
+builder.Services.AddScoped<IKidModeService, KidModeService>();
 
 var app = builder.Build();
 
@@ -75,6 +81,10 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
+    
+    // Seed achievements
+    var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
+    await achievementService.SeedAchievementsAsync();
 }
 
 // Seed roles and admin user on startup
@@ -98,5 +108,12 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Map logout endpoint to handle POST with antiforgery token
+app.MapPost("/Account/Logout", async (SignInManager<ApplicationUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/");
+});
 
 app.Run();

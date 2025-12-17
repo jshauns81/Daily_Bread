@@ -49,6 +49,13 @@ public class ChoreDefinition
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// When true, the chore is automatically approved when marked complete.
+    /// Useful for simple tasks like "Make Bed" that don't need inspection.
+    /// When false, a parent must manually approve the completed chore.
+    /// </summary>
+    public bool AutoApprove { get; set; } = false;
+
+    /// <summary>
     /// Sort order for display purposes.
     /// </summary>
     public int SortOrder { get; set; }

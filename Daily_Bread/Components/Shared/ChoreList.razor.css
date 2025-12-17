@@ -1,0 +1,12 @@
+.chore-list .chore-name {
+    color: var(--nord6);
+}
+
+.chore-list .table-secondary .chore-name {
+    color: var(--nord4);
+}
+
+.chore-list .table-responsive {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}

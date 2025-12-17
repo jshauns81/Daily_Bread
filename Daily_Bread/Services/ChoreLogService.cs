@@ -223,6 +223,28 @@ public class ChoreLogService : IChoreLogService
             return ServiceResult.Fail("This chore has already been approved.");
         }
 
+        // Check if chore should be auto-approved
+        var choreDefinition = await _context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        if (choreDefinition != null && choreDefinition.AutoApprove)
+        {
+            // Auto-approve: Set directly to Approved status
+            choreLog.Status = ChoreStatus.Approved;
+            choreLog.CompletedByUserId = userId;
+            choreLog.CompletedAt = DateTime.UtcNow;
+            choreLog.ApprovedByUserId = "SYSTEM"; // Mark as system-approved
+            choreLog.ApprovedAt = DateTime.UtcNow;
+            choreLog.ModifiedAt = DateTime.UtcNow;
+
+            if (!string.IsNullOrWhiteSpace(notes))
+            {
+                choreLog.Notes = notes;
+            }
+
+            await _context.SaveChangesAsync();
+            return ServiceResult.Ok();
+        }
+
+        // Standard flow: mark as completed, requires parent approval
         return await UpdateChoreLogStatusAsync(choreLog.Id, ChoreStatus.Completed, userId, isParent, notes);
     }
 

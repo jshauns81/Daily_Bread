@@ -1,0 +1,250 @@
+@page "/kid"
+@layout KidModeLayout
+@rendermode InteractiveServer
+
+@using Daily_Bread.Services
+
+@inject IKidModeService KidModeService
+@inject NavigationManager Navigation
+
+<PageTitle>Kid Mode - Daily Bread</PageTitle>
+
+<div class="kid-login">
+    <div class="text-center mb-4">
+        <h1 class="display-4 text-white mb-2"><span class="bi bi-house-heart-fill"></span></h1>
+        <h2 class="text-white">Daily Bread</h2>
+        <p class="text-white-50">Enter your PIN</p>
+    </div>
+
+    <div class="card mx-auto" style="max-width: 320px;">
+        <div class="card-body p-4">
+            <!-- PIN Display -->
+            <div class="pin-display mb-4">
+                @for (int i = 0; i < 4; i++)
+                {
+                    <div class="pin-dot @(i < _pin.Length ? "filled" : "")">
+                        @if (i < _pin.Length)
+                        {
+                            <span>&#x25CF;</span>
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger py-2 text-center mb-3">
+                    @_errorMessage
+                </div>
+            }
+
+            <!-- Number Pad -->
+            <div class="numpad">
+                @for (int row = 0; row < 4; row++)
+                {
+                    <div class="numpad-row">
+                        @if (row < 3)
+                        {
+                            @for (int col = 0; col < 3; col++)
+                            {
+                                var num = (row * 3 + col + 1).ToString();
+                                <button class="numpad-btn" @onclick="() => AddDigit(num)" disabled="@_isValidating">
+                                    @num
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <!-- Bottom row: Clear, 0, Backspace -->
+                            <button class="numpad-btn text-danger" @onclick="Clear" disabled="@_isValidating">
+                                <span class="bi bi-x-lg"></span>
+                            </button>
+                            <button class="numpad-btn" @onclick='() => AddDigit("0")' disabled="@_isValidating">
+                                0
+                            </button>
+                            <button class="numpad-btn" @onclick="Backspace" disabled="@_isValidating">
+                                <span class="bi bi-backspace"></span>
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (_isValidating)
+            {
+                <div class="text-center mt-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Checking...</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/" class="text-white-50 small"><span class="bi bi-arrow-left"></span> Back to main site</a>
+    </div>
+</div>
+
+<style>
+    .kid-login {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: calc(100vh - 40px);
+    }
+
+    .pin-display {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+    }
+
+    .pin-dot {
+        width: 50px;
+        height: 50px;
+        border: 3px solid #dee2e6;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #dee2e6;
+        transition: all 0.2s;
+    }
+
+    .pin-dot.filled {
+        border-color: #667eea;
+        color: #667eea;
+        animation: pop 0.15s ease-out;
+    }
+
+    @@keyframes pop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+
+    .numpad {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .numpad-row {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .numpad-btn {
+        width: 70px;
+        height: 70px;
+        border: none;
+        border-radius: 50%;
+        background: #f8f9fa;
+        font-size: 1.8rem;
+        font-weight: 500;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .numpad-btn:hover {
+        background: #e9ecef;
+    }
+
+    .numpad-btn:active {
+        background: #667eea;
+        color: white;
+        transform: scale(0.95);
+    }
+
+    .numpad-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Shake animation for wrong PIN */
+    .shake {
+        animation: shake 0.4s ease-in-out;
+    }
+
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-10px); }
+        40%, 80% { transform: translateX(10px); }
+    }
+</style>
+
+@code {
+    private string _pin = "";
+    private string? _errorMessage;
+    private bool _isValidating;
+
+    private async Task AddDigit(string digit)
+    {
+        if (_pin.Length >= 4 || _isValidating) return;
+
+        _errorMessage = null;
+        _pin += digit;
+
+        // Auto-submit when 4 digits entered
+        if (_pin.Length == 4)
+        {
+            await ValidatePin();
+        }
+    }
+
+    private void Backspace()
+    {
+        if (_pin.Length > 0 && !_isValidating)
+        {
+            _pin = _pin[..^1];
+            _errorMessage = null;
+        }
+    }
+
+    private void Clear()
+    {
+        if (!_isValidating)
+        {
+            _pin = "";
+            _errorMessage = null;
+        }
+    }
+
+    private async Task ValidatePin()
+    {
+        _isValidating = true;
+        _errorMessage = null;
+
+        try
+        {
+            var session = await KidModeService.ValidatePinAsync(_pin);
+
+            if (session != null)
+            {
+                // Store session in browser and navigate to dashboard
+                Navigation.NavigateTo($"/kid/home?pid={session.ProfileId}&uid={session.UserId}", forceLoad: true);
+            }
+            else
+            {
+                _errorMessage = "Wrong PIN. Try again!";
+                _pin = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            _pin = "";
+        }
+        finally
+        {
+            _isValidating = false;
+        }
+    }
+}

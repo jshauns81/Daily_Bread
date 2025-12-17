@@ -102,7 +102,7 @@
                             <th>Assigned To</th>
                         }
                         <th style="width: 100px;">Value</th>
-                        <th style="width: 120px;">Status</th>
+                        <th style="width: 180px;">Status</th>
                         @if (IsParent)
                         {
                             <th style="width: 200px;">Actions</th>
@@ -145,6 +145,17 @@
                                 <span class="badge @GetStatusBadgeClass(item.Status)">
                                     @GetStatusDisplay(item.Status)
                                 </span>
+                                @if (item.IsApproved && !string.IsNullOrEmpty(item.ApprovedByUserName))
+                                {
+                                    <br />
+                                    <small class="text-muted">
+                                        by @item.ApprovedByUserName
+                                        @if (item.ApprovedAt.HasValue)
+                                        {
+                                            <span> • @GetTimeAgo(item.ApprovedAt.Value)</span>
+                                        }
+                                    </small>
+                                }
                             </td>
                             @if (IsParent)
                             {
@@ -197,28 +208,28 @@
         </div>
 
         <div class="tracker-summary mt-3">
-            <div class="row">
-                <div class="col-md-3">
+            <div class="row g-3">
+                <div class="col-md-3 col-6">
                     <div class="summary-card">
                         <span class="summary-value">@ChoreItems.Count</span>
                         <span class="summary-label">Total Chores</span>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="summary-card bg-success-subtle">
-                        <span class="summary-value">@ChoreItems.Count(c => c.IsCompleted)</span>
+                <div class="col-md-3 col-6">
+                    <div class="summary-card">
+                        <span class="summary-value text-success">@ChoreItems.Count(c => c.IsCompleted)</span>
                         <span class="summary-label">Completed</span>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="summary-card bg-warning-subtle">
-                        <span class="summary-value">@ChoreItems.Count(c => c.IsPending)</span>
+                <div class="col-md-3 col-6">
+                    <div class="summary-card">
+                        <span class="summary-value text-warning">@ChoreItems.Count(c => c.IsPending)</span>
                         <span class="summary-label">Pending</span>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-6">
                     <div class="summary-card">
-                        <span class="summary-value">$@ChoreItems.Where(c => c.IsCompleted).Sum(c => c.Value).ToString("F2")</span>
+                        <span class="summary-value text-success">$@ChoreItems.Where(c => c.IsCompleted).Sum(c => c.Value).ToString("F2")</span>
                         <span class="summary-label">Earned Today</span>
                     </div>
                 </div>
@@ -439,6 +450,22 @@
         if (item.Status == ChoreStatus.Skipped) return true;
 
         return false;
+    }
+
+    private static string GetTimeAgo(DateTime timestamp)
+    {
+        var span = DateTime.UtcNow - timestamp;
+
+        if (span.TotalMinutes < 1)
+            return "just now";
+        if (span.TotalMinutes < 60)
+            return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24)
+            return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7)
+            return $"{(int)span.TotalDays}d ago";
+
+        return timestamp.ToString("MMM d");
     }
 
     private string GetRowClass(TrackerChoreItem item) => item.Status switch

@@ -20,6 +20,12 @@ public class ChildProfile
     public required string DisplayName { get; set; }
 
     /// <summary>
+    /// 4-digit PIN for Kid Mode access (no login required).
+    /// Stored as hash for security.
+    /// </summary>
+    public string? PinHash { get; set; }
+
+    /// <summary>
     /// Whether this profile is active.
     /// </summary>
     public bool IsActive { get; set; } = true;

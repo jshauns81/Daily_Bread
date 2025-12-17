@@ -4,21 +4,21 @@
     @if (Chores == null || Chores.Count == 0)
     {
         <div class="alert alert-info">
-            <p>No chores defined yet. Click <strong>Add Chore</strong> to create your first chore.</p>
+            <p class="mb-0">No chores defined yet. Click <strong>Add Chore</strong> to create your first chore.</p>
         </div>
     }
     else
     {
         <div class="table-responsive">
             <table class="table table-hover">
-                <thead class="table-light">
+                <thead>
                     <tr>
                         <th>Name</th>
                         <th>Assigned To</th>
                         <th>Value</th>
                         <th>Schedule</th>
                         <th>Status</th>
-                        <th style="width: 180px;">Actions</th>
+                        <th style="width: 200px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -26,11 +26,15 @@
                     {
                         <tr class="@(chore.IsActive ? "" : "table-secondary")">
                             <td>
-                                <strong>@chore.Name</strong>
+                                <strong class="chore-name">@chore.Name</strong>
+                                @if (chore.AutoApprove)
+                                {
+                                    <span class="badge bg-info ms-2" title="Auto-approved when completed">Auto</span>
+                                }
                                 @if (!string.IsNullOrEmpty(chore.Description))
                                 {
                                     <br />
-                                    <small class="text-muted">@chore.Description</small>
+                                    <small>@chore.Description</small>
                                 }
                             </td>
                             <td>
@@ -44,7 +48,7 @@
                                 }
                             </td>
                             <td>
-                                <span class="badge bg-success">$@chore.Value.ToString("F2")</span>
+                                <span class="value-badge">$@chore.Value.ToString("F2")</span>
                             </td>
                             <td>
                                 <small>@FormatSchedule(chore)</small>
@@ -61,17 +65,17 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm" 
+                                    <button class="btn action-btn edit" 
                                             @onclick="() => OnEdit.InvokeAsync(chore)"
                                             title="Edit">
                                         Edit
                                     </button>
-                                    <button class="btn @(chore.IsActive ? "btn-outline-warning" : "btn-outline-success") btn-sm"
+                                    <button class="btn action-btn @(chore.IsActive ? "pause" : "approve")"
                                             @onclick="() => OnToggleActive.InvokeAsync(chore)"
                                             title="@(chore.IsActive ? "Deactivate" : "Activate")">
                                         @(chore.IsActive ? "Pause" : "Start")
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm"
+                                    <button class="btn action-btn delete"
                                             @onclick="() => OnDelete.InvokeAsync(chore)"
                                             title="Delete">
                                         Delete

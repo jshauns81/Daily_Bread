@@ -2,13 +2,71 @@
 
 <AuthorizeView>
     <Authorized>
-        <span class="text-light me-3">Hello, @context.User.Identity?.Name!</span>
-        <form method="post" action="/Account/Logout" @formname="logout-form" class="d-inline">
-            <AntiforgeryToken />
-            <button type="submit" class="btn btn-link nav-link d-inline p-0">Logout</button>
-        </form>
+        <div class="d-flex align-items-center gap-3">
+            <span class="user-greeting">
+                <span class="greeting-text">Hello, <strong>@context.User.Identity?.Name</strong>!</span>
+            </span>
+            <form method="post" action="/Account/Logout" @formname="logout-form" class="d-inline">
+                <AntiforgeryToken />
+                <button type="submit" class="btn btn-logout">
+                    Logout
+                </button>
+            </form>
+        </div>
     </Authorized>
     <NotAuthorized>
-        <a href="/Account/Login" class="nav-link">Login</a>
+        <a href="/Account/Login" class="btn btn-login">
+            Login
+        </a>
     </NotAuthorized>
 </AuthorizeView>
+
+<style>
+    .user-greeting {
+        color: var(--nord4);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .user-greeting strong {
+        color: var(--nord6);
+    }
+    
+    .btn-logout {
+        background-color: transparent;
+        color: var(--nord4);
+        border: 1px solid var(--nord3);
+        border-radius: 8px;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 150ms ease;
+    }
+    
+    .btn-logout:hover {
+        background-color: var(--nord11);
+        border-color: var(--nord11);
+        color: var(--nord6);
+    }
+    
+    .btn-login {
+        background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%);
+        color: var(--nord6);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 150ms ease;
+        text-decoration: none;
+    }
+    
+    .btn-login:hover {
+        background: linear-gradient(135deg, var(--nord9) 0%, var(--nord10) 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(94, 129, 172, 0.4);
+        color: var(--nord6);
+    }
+</style>
