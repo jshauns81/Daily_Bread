@@ -1,11 +1,881 @@
 @page "/admin/users"
 @using Microsoft.AspNetCore.Authorization
+@using Daily_Bread.Services
 @attribute [Authorize(Roles = "Admin")]
+@inject IUserManagementService UserService
+@inject IKidModeService KidModeService
+@inject IChildProfileService ProfileService
+@rendermode InteractiveServer
 
 <PageTitle>User Management</PageTitle>
 
-<h1>User Management</h1>
+<h1 class="mb-4">User Management</h1>
 
-<div class="alert alert-info">
-    <strong>Coming Soon:</strong> This page will allow administrators to create and manage Parent and Child user accounts.
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @_errorMessage
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_successMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @_successMessage
+        <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
+    </div>
+}
+
+<!-- Kid Mode Quick Access -->
+<div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <strong><span class="bi bi-phone"></span> Kid Mode:</strong> Children can access the app on their phone without logging in using a 4-digit PIN.
+    </div>
+    <a href="/kid" target="_blank" class="btn btn-info btn-sm">
+        Open Kid Mode <span class="bi bi-box-arrow-up-right"></span>
+    </a>
 </div>
+
+<!-- Toolbar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex gap-2">
+        <input type="text" class="form-control" placeholder="Search users..." 
+               @bind="_searchTerm" @bind:event="oninput" style="width: 250px;" />
+        <select class="form-select" @bind="_roleFilter" style="width: 150px;">
+            <option value="">All Roles</option>
+            <option value="Parent">Parent</option>
+            <option value="Child">Child</option>
+            <option value="Admin">Admin</option>
+        </select>
+    </div>
+    <button class="btn btn-primary" @onclick="ShowCreateModal">
+        <span class="bi bi-plus-circle me-1"></span> Create User
+    </button>
+</div>
+
+<!-- User List -->
+@if (_isLoading)
+{
+    <div class="d-flex justify-content-center p-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (_filteredUsers.Count == 0)
+{
+    <div class="alert alert-info">
+        No users found matching your criteria.
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var user in _filteredUsers)
+        {
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100 @(user.IsLockedOut ? "border-warning" : "")">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h5 class="card-title mb-1">@user.UserName</h5>
+                                <small class="text-muted">@(user.Email ?? "No email")</small>
+                            </div>
+                            @foreach (var role in user.Roles)
+                            {
+                                <span class="badge @GetRoleBadgeClass(role)">@role</span>
+                            }
+                        </div>
+                        
+                        <div class="d-flex gap-2 mb-3">
+                            @if (user.IsLockedOut)
+                            {
+                                <span class="badge bg-danger"><span class="bi bi-lock-fill"></span> Locked</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success"><span class="bi bi-check-circle"></span> Active</span>
+                            }
+                            
+                            @if (user.Roles.Contains("Child"))
+                            {
+                                @if (_childPinStatus.TryGetValue(user.Id, out var hasPin) && hasPin)
+                                {
+                                    <span class="badge bg-info"><span class="bi bi-phone"></span> PIN Set</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary"><span class="bi bi-phone"></span> No PIN</span>
+                                }
+                            }
+                        </div>
+                        
+                        @if (!user.Roles.Contains("Admin"))
+                        {
+                            <div class="d-flex flex-wrap gap-1">
+                                @if (user.Roles.Contains("Child"))
+                                {
+                                    <button class="btn btn-sm btn-outline-info" @onclick="() => ShowSetPinModal(user)">
+                                        <span class="bi bi-phone"></span> Set PIN
+                                    </button>
+                                }
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ShowResetPasswordModal(user)">
+                                    <span class="bi bi-key"></span> Password
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowChangeRoleModal(user)">
+                                    <span class="bi bi-person-gear"></span> Role
+                                </button>
+                                
+                                <!-- Blazor-controlled dropdown -->
+                                <div class="position-relative">
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleDropdown(user.Id)" @onclick:stopPropagation="true">
+                                        More <span class="bi bi-chevron-down"></span>
+                                    </button>
+                                    @if (_openDropdownUserId == user.Id)
+                                    {
+                                        <div class="dropdown-menu show position-absolute end-0" style="z-index: 1050;">
+                                            @if (user.IsLockedOut)
+                                            {
+                                                <button class="dropdown-item text-success" @onclick="() => UnlockUser(user.Id)">
+                                                    <span class="bi bi-unlock me-2"></span> Unlock Account
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="dropdown-item text-warning" @onclick="() => LockoutUser(user.Id)">
+                                                    <span class="bi bi-lock me-2"></span> Lock Account
+                                                </button>
+                                            }
+                                            <hr class="dropdown-divider" />
+                                            <button class="dropdown-item text-danger" @onclick="() => ShowDeleteConfirmation(user)">
+                                                <span class="bi bi-trash me-2"></span> Delete User
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <small class="text-muted"><span class="bi bi-shield-lock"></span> Admin accounts are protected</small>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Click outside to close dropdown -->
+@if (_openDropdownUserId != null)
+{
+    <div class="position-fixed top-0 start-0 w-100 h-100" style="z-index: 1040;" @onclick="CloseDropdown"></div>
+}
+
+<!-- Create User Modal -->
+@if (_showCreateModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span class="bi bi-person-plus"></span> Create New User</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_createRequest" OnValidSubmit="CreateUser">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_createRequest.UserName" />
+                            <ValidationMessage For="() => _createRequest.UserName" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText class="form-control" @bind-Value="_createRequest.Email" type="email" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_createRequest.Password" type="password" />
+                            <ValidationMessage For="() => _createRequest.Password" />
+                            <small class="text-muted">At least 8 characters with upper, lower, digit, and special character.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Role <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="_createRequest.Role">
+                                <option value="">-- Select Role --</option>
+                                <option value="Parent">Parent</option>
+                                <option value="Child">Child</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => _createRequest.Role" />
+                        </div>
+                        
+                        @if (_createRequest.Role == "Child")
+                        {
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title"><span class="bi bi-phone"></span> Kid Mode Settings</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Display Name</label>
+                                        <InputText class="form-control" @bind-Value="_createRequest.DisplayName" />
+                                        <small class="text-muted">Optional. Defaults to username if not provided.</small>
+                                    </div>
+                                    
+                                    <div class="mb-0">
+                                        <label class="form-label">Kid Mode PIN (4 digits)</label>
+                                        <InputText class="form-control" @bind-Value="_createRequest.Pin" maxlength="4" 
+                                                   placeholder="e.g., 1234" style="max-width: 120px;" />
+                                        <small class="text-muted">Optional. Allows iPhone access without login.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                                @if (_isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                Create User
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Set PIN Modal -->
+@if (_showSetPinModal && _selectedUser != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span class="bi bi-phone"></span> Kid Mode PIN for @_selectedUser.UserName</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">
+                        Set a 4-digit PIN so <strong>@_selectedUser.UserName</strong> can access their chores on their phone 
+                        by going to <code>/kid</code> - no login required!
+                    </p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">4-Digit PIN</label>
+                        <input type="text" class="form-control text-center" 
+                               @bind="_newPin" maxlength="4" 
+                               placeholder="Enter 4 digits" 
+                               style="max-width: 150px; font-size: 1.5rem; letter-spacing: 0.5rem;" />
+                    </div>
+                    
+                    @{ var userHasPin = _childPinStatus.TryGetValue(_selectedUser.Id, out var pinStatus) && pinStatus; }
+                    @if (userHasPin)
+                    {
+                        <div class="alert alert-info py-2">
+                            <span class="bi bi-info-circle"></span> This user already has a PIN set. Entering a new one will replace it.
+                        </div>
+                    }
+                    
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            @if (userHasPin)
+                            {
+                                <button type="button" class="btn btn-outline-danger" @onclick="ClearPin" disabled="@_isSaving">
+                                    <span class="bi bi-x-circle"></span> Remove PIN
+                                </button>
+                            }
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                            <button type="button" class="btn btn-primary" @onclick="SetPin" 
+                                    disabled="@(string.IsNullOrEmpty(_newPin) || _newPin.Length != 4 || !_newPin.All(char.IsDigit) || _isSaving)">
+                                @if (_isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                Set PIN
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Change Role Modal -->
+@if (_showChangeRoleModal && _selectedUser != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span class="bi bi-person-gear"></span> Change Role for @_selectedUser.UserName</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Current Role(s)</label>
+                        <div>
+                            @foreach (var role in _selectedUser.Roles)
+                            {
+                                <span class="badge @GetRoleBadgeClass(role) me-1">@role</span>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">New Role</label>
+                        <select class="form-select" @bind="_newRole">
+                            <option value="">-- Select Role --</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Child">Child</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                        <button type="button" class="btn btn-primary" @onclick="ChangeRole" 
+                                disabled="@(string.IsNullOrEmpty(_newRole) || _isSaving)">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Change Role
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Reset Password Modal -->
+@if (_showResetPasswordModal && _selectedUser != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span class="bi bi-key"></span> Reset Password for @_selectedUser.UserName</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" @bind="_newPassword" />
+                        <small class="text-muted">At least 8 characters with upper, lower, digit, and special character.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" @bind="_confirmPassword" />
+                    </div>
+                    
+                    @if (_newPassword != _confirmPassword && !string.IsNullOrEmpty(_confirmPassword))
+                    {
+                        <div class="alert alert-warning py-2">
+                            <span class="bi bi-exclamation-triangle"></span> Passwords do not match.
+                        </div>
+                    }
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                        <button type="button" class="btn btn-primary" @onclick="ResetPassword" 
+                                disabled="@(string.IsNullOrEmpty(_newPassword) || _newPassword != _confirmPassword || _isSaving)">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Reset Password
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (_showDeleteModal && _selectedUser != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><span class="bi bi-trash"></span> Delete User</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong>@_selectedUser.UserName</strong>?</p>
+                    <div class="alert alert-warning py-2">
+                        <span class="bi bi-exclamation-triangle"></span> <strong>Warning:</strong> This action cannot be undone. 
+                        If this is a Child user, their ledger history will be preserved but they will no longer be able to log in.
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                        <button type="button" class="btn btn-danger" @onclick="DeleteUser" disabled="@_isSaving">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Delete User
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<UserListItem> _users = [];
+    private Dictionary<string, bool> _childPinStatus = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _errorMessage;
+    private string? _successMessage;
+    
+    private string _searchTerm = "";
+    private string _roleFilter = "";
+    
+    private bool _showCreateModal;
+    private bool _showChangeRoleModal;
+    private bool _showResetPasswordModal;
+    private bool _showDeleteModal;
+    private bool _showSetPinModal;
+    private UserListItem? _selectedUser;
+    private string? _openDropdownUserId;
+    
+    private CreateUserModel _createRequest = new();
+    private string _newRole = "";
+    private string _newPassword = "";
+    private string _confirmPassword = "";
+    private string _newPin = "";
+    
+    private List<UserListItem> _filteredUsers => _users
+        .Where(u => string.IsNullOrEmpty(_searchTerm) || 
+                    u.UserName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (u.Email?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+        .Where(u => string.IsNullOrEmpty(_roleFilter) || u.Roles.Contains(_roleFilter))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private void ToggleDropdown(string userId)
+    {
+        _openDropdownUserId = _openDropdownUserId == userId ? null : userId;
+    }
+
+    private void CloseDropdown()
+    {
+        _openDropdownUserId = null;
+    }
+
+    private async Task LoadUsers()
+    {
+        _isLoading = true;
+        try
+        {
+            _users = await UserService.GetAllUsersAsync();
+            
+            _childPinStatus.Clear();
+            foreach (var user in _users.Where(u => u.Roles.Contains("Child")))
+            {
+                var profile = await ProfileService.GetProfileByUserIdAsync(user.Id);
+                if (profile != null)
+                {
+                    _childPinStatus[user.Id] = await KidModeService.HasPinAsync(profile.Id);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load users: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        _createRequest = new CreateUserModel();
+        _showCreateModal = true;
+    }
+
+    private void ShowChangeRoleModal(UserListItem user)
+    {
+        _selectedUser = user;
+        _newRole = user.Roles.FirstOrDefault(r => r != "Admin") ?? "";
+        _showChangeRoleModal = true;
+    }
+
+    private void ShowResetPasswordModal(UserListItem user)
+    {
+        _selectedUser = user;
+        _newPassword = "";
+        _confirmPassword = "";
+        _showResetPasswordModal = true;
+    }
+
+    private void ShowDeleteConfirmation(UserListItem user)
+    {
+        _selectedUser = user;
+        _showDeleteModal = true;
+    }
+
+    private void ShowSetPinModal(UserListItem user)
+    {
+        _selectedUser = user;
+        _newPin = "";
+        _showSetPinModal = true;
+    }
+
+    private void CloseModals()
+    {
+        _showCreateModal = false;
+        _showChangeRoleModal = false;
+        _showResetPasswordModal = false;
+        _showDeleteModal = false;
+        _showSetPinModal = false;
+        _selectedUser = null;
+    }
+
+    private async Task CreateUser()
+    {
+        if (string.IsNullOrWhiteSpace(_createRequest.UserName) || 
+            string.IsNullOrWhiteSpace(_createRequest.Password) ||
+            string.IsNullOrWhiteSpace(_createRequest.Role))
+        {
+            _errorMessage = "Please fill in all required fields.";
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = null;
+        
+        try
+        {
+            var request = new CreateUserRequest
+            {
+                UserName = _createRequest.UserName,
+                Email = _createRequest.Email,
+                Password = _createRequest.Password,
+                Role = _createRequest.Role,
+                DisplayName = _createRequest.DisplayName
+            };
+            
+            var result = await UserService.CreateUserAsync(request);
+            
+            if (result.Success)
+            {
+                if (_createRequest.Role == "Child" && !string.IsNullOrEmpty(_createRequest.Pin) && result.Data != null)
+                {
+                    var profile = await ProfileService.GetProfileByUserIdAsync(result.Data);
+                    if (profile != null)
+                    {
+                        await KidModeService.SetPinAsync(profile.Id, _createRequest.Pin);
+                    }
+                }
+                
+                _successMessage = $"User '{_createRequest.UserName}' created successfully.";
+                CloseModals();
+                await LoadUsers();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task SetPin()
+    {
+        if (_selectedUser == null || string.IsNullOrEmpty(_newPin))
+            return;
+
+        _isSaving = true;
+        _errorMessage = null;
+        
+        try
+        {
+            var profile = await ProfileService.GetProfileByUserIdAsync(_selectedUser.Id);
+            if (profile == null)
+            {
+                _errorMessage = "Child profile not found.";
+                return;
+            }
+
+            var result = await KidModeService.SetPinAsync(profile.Id, _newPin);
+            
+            if (result.Success)
+            {
+                _successMessage = $"PIN set for '{_selectedUser.UserName}'. They can now access Kid Mode at /kid";
+                CloseModals();
+                await LoadUsers();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task ClearPin()
+    {
+        if (_selectedUser == null)
+            return;
+
+        _isSaving = true;
+        _errorMessage = null;
+        
+        try
+        {
+            var profile = await ProfileService.GetProfileByUserIdAsync(_selectedUser.Id);
+            if (profile == null)
+            {
+                _errorMessage = "Child profile not found.";
+                return;
+            }
+
+            var result = await KidModeService.ClearPinAsync(profile.Id);
+            
+            if (result.Success)
+            {
+                _successMessage = $"PIN removed for '{_selectedUser.UserName}'.";
+                CloseModals();
+                await LoadUsers();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task ChangeRole()
+    {
+        if (_selectedUser == null || string.IsNullOrEmpty(_newRole))
+            return;
+
+        _isSaving = true;
+        _errorMessage = null;
+        
+        try
+        {
+            var request = new UpdateUserRoleRequest
+            {
+                UserId = _selectedUser.Id,
+                NewRole = _newRole
+            };
+            
+            var result = await UserService.UpdateUserRoleAsync(request);
+            
+            if (result.Success)
+            {
+                _successMessage = $"Role for '{_selectedUser.UserName}' changed to {_newRole}.";
+                CloseModals();
+                await LoadUsers();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task ResetPassword()
+    {
+        if (_selectedUser == null || string.IsNullOrEmpty(_newPassword))
+            return;
+
+        _isSaving = true;
+        _errorMessage = null;
+        
+        try
+        {
+            var request = new ResetPasswordRequest
+            {
+                UserId = _selectedUser.Id,
+                NewPassword = _newPassword
+            };
+            
+            var result = await UserService.ResetPasswordAsync(request);
+            
+            if (result.Success)
+            {
+                _successMessage = $"Password for '{_selectedUser.UserName}' has been reset.";
+                CloseModals();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task LockoutUser(string userId)
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        
+        try
+        {
+            var result = await UserService.LockoutUserAsync(userId);
+            
+            if (result.Success)
+            {
+                _successMessage = "User account has been locked.";
+                await LoadUsers();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task UnlockUser(string userId)
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        
+        try
+        {
+            var result = await UserService.UnlockUserAsync(userId);
+            
+            if (result.Success)
+            {
+                _successMessage = "User account has been unlocked.";
+                await LoadUsers();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteUser()
+    {
+        if (_selectedUser == null)
+            return;
+
+        _isSaving = true;
+        _errorMessage = null;
+        
+        try
+        {
+            var result = await UserService.DeleteUserAsync(_selectedUser.Id);
+            
+            if (result.Success)
+            {
+                _successMessage = $"User '{_selectedUser.UserName}' has been deleted.";
+                CloseModals();
+                await LoadUsers();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private static string GetRoleBadgeClass(string role) => role switch
+    {
+        "Admin" => "bg-danger",
+        "Parent" => "bg-primary",
+        "Child" => "bg-info",
+        _ => "bg-secondary"
+    };
+
+    private class CreateUserModel
+    {
+        public string UserName { get; set; } = "";
+        public string? Email { get; set; }
+        public string Password { get; set; } = "";
+        public string Role { get; set; } = "";
+        public string? DisplayName { get; set; }
+        public string? Pin { get; set; }
+    }
+}

@@ -16,11 +16,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<ChoreDefinition> ChoreDefinitions => Set<ChoreDefinition>();
     public DbSet<ChoreLog> ChoreLogs => Set<ChoreLog>();
+    public DbSet<ChoreScheduleOverride> ChoreScheduleOverrides => Set<ChoreScheduleOverride>();
     public DbSet<LedgerTransaction> LedgerTransactions => Set<LedgerTransaction>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
     public DbSet<ChildProfile> ChildProfiles => Set<ChildProfile>();
     public DbSet<LedgerAccount> LedgerAccounts => Set<LedgerAccount>();
+    public DbSet<SavingsGoal> SavingsGoals => Set<SavingsGoal>();
+    public DbSet<Achievement> Achievements => Set<Achievement>();
+    public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -69,6 +73,33 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
+        // ChoreScheduleOverride configuration
+        builder.Entity<ChoreScheduleOverride>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OverrideValue).HasPrecision(10, 2);
+
+            // Unique: one override per chore per date
+            entity.HasIndex(e => new { e.ChoreDefinitionId, e.Date }).IsUnique();
+            entity.HasIndex(e => e.Date);
+            entity.HasIndex(e => e.Type);
+
+            entity.HasOne(e => e.ChoreDefinition)
+                .WithMany()
+                .HasForeignKey(e => e.ChoreDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.OverrideAssignedUser)
+                .WithMany()
+                .HasForeignKey(e => e.OverrideAssignedUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
         // ChildProfile configuration
         builder.Entity<ChildProfile>(entity =>
         {
@@ -109,7 +140,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Amount).HasPrecision(10, 2);
             entity.Property(e => e.Description).HasMaxLength(200);
 
-            // Unique index on ChoreLogId only when not null (for chore-related transactions)
             entity.HasIndex(e => e.ChoreLogId)
                 .IsUnique()
                 .HasFilter("[ChoreLogId] IS NOT NULL");
@@ -134,6 +164,59 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete
+        });
+
+        // SavingsGoal configuration
+        builder.Entity<SavingsGoal>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.TargetAmount).HasPrecision(10, 2);
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.IsPrimary);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Achievement configuration
+        builder.Entity<Achievement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Code).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Icon).HasMaxLength(50).IsRequired();
+
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        // UserAchievement configuration
+        builder.Entity<UserAchievement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Unique: one user can earn each achievement only once
+            entity.HasIndex(e => new { e.UserId, e.AchievementId }).IsUnique();
+            entity.HasIndex(e => e.EarnedAt);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Achievement)
+                .WithMany()
+                .HasForeignKey(e => e.AchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // AppSetting configuration

@@ -1,6 +1,14 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using Daily_Bread.Services
+@inject IDashboardService DashboardService
+@inject AuthenticationStateProvider AuthStateProvider
+@rendermode InteractiveServer
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Daily_Bread</a>
+        <a class="navbar-brand" href="">
+            <img src="images/bread-icon.svg" alt="" class="brand-icon" />
+            Daily Bread
+        </a>
     </div>
 </div>
 
@@ -8,24 +16,40 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+        @if (!_isAdminOnly)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
+        }
 
         <AuthorizeView>
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="tracker">
-                        <span class="bi bi-check2-square-nav-menu" aria-hidden="true"></span> Tracker
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="my-balance">
-                        <span class="bi bi-wallet-nav-menu" aria-hidden="true"></span> My Balance
-                    </NavLink>
-                </div>
+                @if (!_isAdminOnly)
+                {
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="tracker">
+                            <span class="bi bi-check2-square-nav-menu" aria-hidden="true"></span> Tracker
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="calendar">
+                            <span class="bi bi-calendar3-nav-menu" aria-hidden="true"></span> Calendar
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="my-balance">
+                            <span class="bi bi-wallet-nav-menu" aria-hidden="true"></span> My Balance
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="goals">
+                            <span class="bi bi-bullseye-nav-menu" aria-hidden="true"></span> Goals
+                        </NavLink>
+                    </div>
+                }
             </Authorized>
         </AuthorizeView>
 
@@ -41,11 +65,28 @@
                         <span class="bi bi-journal-text-nav-menu" aria-hidden="true"></span> Ledger
                     </NavLink>
                 </div>
+                @if (_pendingCount > 0)
+                {
+                    <div class="nav-item px-3">
+                        <a class="nav-link d-flex justify-content-between align-items-center text-warning" href="/">
+                            <span>
+                                <span class="bi bi-exclamation-circle-fill" aria-hidden="true"></span> Approvals
+                            </span>
+                            <span class="badge bg-warning text-dark">@_pendingCount</span>
+                        </a>
+                    </div>
+                }
             </Authorized>
         </AuthorizeView>
 
         <AuthorizeView Roles="Admin">
             <Authorized>
+                @if (_isAdminOnly)
+                {
+                    <div class="nav-item px-3 mt-2">
+                        <small class="text-muted px-2">ADMIN</small>
+                    </div>
+                }
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="admin/users">
                         <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Users
@@ -55,4 +96,30 @@
         </AuthorizeView>
     </nav>
 </div>
+
+@code {
+    private int _pendingCount;
+    private bool _isAdminOnly;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // Check if user is Admin-only (not also a Parent or Child)
+        _isAdminOnly = user.IsInRole("Admin") && !user.IsInRole("Parent") && !user.IsInRole("Child");
+
+        if (user.IsInRole("Parent"))
+        {
+            try
+            {
+                _pendingCount = await DashboardService.GetPendingApprovalsCountAsync();
+            }
+            catch
+            {
+                _pendingCount = 0;
+            }
+        }
+    }
+}
 

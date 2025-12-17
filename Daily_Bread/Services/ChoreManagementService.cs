@@ -19,6 +19,7 @@ public class ChoreDefinitionDto
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool AutoApprove { get; set; } = false;
     public int SortOrder { get; set; }
 }
 
@@ -114,6 +115,7 @@ public class ChoreManagementService : IChoreManagementService
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             IsActive = dto.IsActive,
+            AutoApprove = dto.AutoApprove,
             SortOrder = dto.SortOrder,
             CreatedAt = DateTime.UtcNow
         };
@@ -167,6 +169,7 @@ public class ChoreManagementService : IChoreManagementService
         chore.StartDate = dto.StartDate;
         chore.EndDate = dto.EndDate;
         chore.IsActive = dto.IsActive;
+        chore.AutoApprove = dto.AutoApprove;
         chore.SortOrder = dto.SortOrder;
         chore.ModifiedAt = DateTime.UtcNow;
 

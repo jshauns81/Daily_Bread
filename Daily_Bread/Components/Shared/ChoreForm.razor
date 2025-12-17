@@ -88,6 +88,38 @@
             </div>
         </div>
 
+        <!-- Approval Settings Card -->
+        <div class="card mb-3 @(FormModel.AutoApprove ? "border-success" : "")">
+            <div class="card-body">
+                <div class="form-check form-switch">
+                    <InputCheckbox id="autoApprove" @bind-Value="FormModel.AutoApprove" class="form-check-input" />
+                    <label class="form-check-label fw-bold" for="autoApprove">
+                        <span class="@(FormModel.AutoApprove ? "text-success" : "")">
+                            @(FormModel.AutoApprove ? "Auto-Approve Enabled" : "Requires Parent Approval")
+                        </span>
+                    </label>
+                </div>
+                <div class="mt-2">
+                    @if (FormModel.AutoApprove)
+                    {
+                        <small class="text-success">
+                            <strong>Auto-approve:</strong> When the child marks this chore as done, it will be 
+                            automatically approved and credited to their balance. Best for simple, trust-based tasks 
+                            like <em>Make Bed</em> or <em>Brush Teeth</em>.
+                        </small>
+                    }
+                    else
+                    {
+                        <small class="text-muted">
+                            <strong>Manual approval:</strong> A parent must review and approve this chore before 
+                            it's credited. Best for tasks that need inspection like <em>Mow the Yard</em> or 
+                            <em>Clean Room</em>.
+                        </small>
+                    }
+                </div>
+            </div>
+        </div>
+
         <div class="mb-3">
             <div class="form-check">
                 <InputCheckbox id="isActive" @bind-Value="FormModel.IsActive" class="form-check-input" />
@@ -157,6 +189,7 @@
                 StartDate = Chore.StartDate,
                 EndDate = Chore.EndDate,
                 IsActive = Chore.IsActive,
+                AutoApprove = Chore.AutoApprove,
                 SortOrder = Chore.SortOrder
             };
         }
@@ -166,6 +199,7 @@
             {
                 ActiveDays = DaysOfWeek.All,
                 IsActive = true,
+                AutoApprove = false,
                 Value = 1.00m
             };
         }
@@ -206,6 +240,7 @@
                 StartDate = FormModel.StartDate,
                 EndDate = FormModel.EndDate,
                 IsActive = FormModel.IsActive,
+                AutoApprove = FormModel.AutoApprove,
                 SortOrder = FormModel.SortOrder
             };
 
@@ -245,6 +280,8 @@
         public DateOnly? EndDate { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        public bool AutoApprove { get; set; } = false;
 
         public int SortOrder { get; set; }
     }

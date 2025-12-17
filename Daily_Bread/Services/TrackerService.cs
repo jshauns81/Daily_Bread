@@ -17,6 +17,8 @@ public class TrackerChoreItem
     public ChoreStatus Status { get; init; }
     public string? AssignedUserId { get; init; }
     public string? AssignedUserName { get; init; }
+    public string? ApprovedByUserName { get; init; }
+    public DateTime? ApprovedAt { get; init; }
     public bool IsCompleted => Status is ChoreStatus.Completed or ChoreStatus.Approved;
     public bool IsApproved => Status == ChoreStatus.Approved;
     public bool IsMissed => Status == ChoreStatus.Missed;
@@ -101,7 +103,8 @@ public class TrackerService : ITrackerService
         // Get existing logs for this date
         var existingLogs = await _context.ChoreLogs
             .Include(c => c.ChoreDefinition)
-            .ThenInclude(cd => cd.AssignedUser)
+                .ThenInclude(cd => cd.AssignedUser)
+            .Include(c => c.ApprovedByUser)
             .Where(c => c.Date == date)
             .ToDictionaryAsync(c => c.ChoreDefinitionId);
 
@@ -131,7 +134,8 @@ public class TrackerService : ITrackerService
         // Get existing logs for this user on this date
         var existingLogs = await _context.ChoreLogs
             .Include(c => c.ChoreDefinition)
-            .ThenInclude(cd => cd.AssignedUser)
+                .ThenInclude(cd => cd.AssignedUser)
+            .Include(c => c.ApprovedByUser)
             .Where(c => c.Date == date)
             .Where(c => c.ChoreDefinition.AssignedUserId == userId)
             .ToDictionaryAsync(c => c.ChoreDefinitionId);
@@ -275,7 +279,9 @@ public class TrackerService : ITrackerService
             Value = chore.Value,
             Status = log?.Status ?? ChoreStatus.Pending,
             AssignedUserId = chore.AssignedUserId,
-            AssignedUserName = chore.AssignedUser?.UserName
+            AssignedUserName = chore.AssignedUser?.UserName,
+            ApprovedByUserName = log?.ApprovedByUser?.UserName,
+            ApprovedAt = log?.ApprovedAt
         };
     }
 }

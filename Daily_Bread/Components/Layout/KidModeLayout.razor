@@ -1,0 +1,34 @@
+@inherits LayoutComponentBase
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+</head>
+<body>
+    <div class="kid-mode-container">
+        @Body
+    </div>
+
+    <style>
+        .kid-mode-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        /* Make everything touch-friendly */
+        .kid-mode-container button {
+            min-height: 48px;
+            font-size: 1.1rem;
+        }
+
+        .kid-mode-container .card {
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+    </style>
+</body>
+</html>

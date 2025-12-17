@@ -1,0 +1,310 @@
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+
+<div class="week-scheduler">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousWeek">
+            <span class="bi bi-chevron-left"></span> Previous Week
+        </button>
+        <h5 class="mb-0">
+            @_weekStart.ToString("MMM d") - @_weekEnd.ToString("MMM d, yyyy")
+        </h5>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="NextWeek">
+            Next Week <span class="bi bi-chevron-right"></span>
+        </button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="week-grid">
+            @for (int i = 0; i < 7; i++)
+            {
+                var date = _weekStart.AddDays(i);
+                var dayChores = _weekChores.ContainsKey(date) ? _weekChores[date] : new List<ChoreDefinition>();
+                var isToday = date == _today;
+                var isPast = date < _today;
+
+                <div class="day-column @(isToday ? "today" : "") @(isPast ? "past" : "")"
+                     @ondragover="HandleDragOver"
+                     @ondragover:preventDefault
+                     @ondrop="() => HandleDrop(date)">
+                    <div class="day-header @(isToday ? "bg-primary" : "")">
+                        <div class="day-name">@date.DayOfWeek.ToString().Substring(0, 3)</div>
+                        <div class="day-date">@date.Day</div>
+                    </div>
+                    <div class="day-chores">
+                        @if (dayChores.Count == 0)
+                        {
+                            <div class="empty-day small text-center py-3">
+                                No chores
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var chore in dayChores)
+                            {
+                                var hasOverride = _overrides.Any(o => o.ChoreDefinitionId == chore.Id && o.Date == date);
+                                <div class="chore-card @(hasOverride ? "has-override" : "")"
+                                     draggable="true"
+                                     @ondragstart="() => HandleDragStart(chore, date)"
+                                     @ondragend="HandleDragEnd">
+                                    <div class="chore-name">@chore.Name</div>
+                                    <div class="chore-value small">$@chore.Value.ToString("F2")</div>
+                                    @if (hasOverride)
+                                    {
+                                        <span class="badge bg-info position-absolute" style="top: 2px; right: 2px; font-size: 0.6rem;"
+                                              title="Custom schedule">
+                                            ?
+                                        </span>
+                                    }
+                                    <button class="btn btn-sm btn-link remove-btn p-0"
+                                            @onclick="() => RemoveChoreFromDate(chore.Id, date)"
+                                            @onclick:stopPropagation
+                                            title="Remove from this day">
+                                        <span class="bi bi-x"></span>
+                                    </button>
+                                </div>
+                            }
+                        }
+
+                        @if (_isDragging && !dayChores.Any(c => c.Id == _draggedChore?.Id))
+                        {
+                            <div class="drop-zone">
+                                Drop here
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Available Chores Panel -->
+        <div class="mt-4">
+            <h6>Available Chores (drag to schedule)</h6>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var chore in _allChores)
+                {
+                    <div class="chore-card available"
+                         draggable="true"
+                         @ondragstart="() => HandleDragStart(chore, null)">
+                        <div class="chore-name">@chore.Name</div>
+                        <div class="chore-value small">$@chore.Value.ToString("F2")</div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger mt-3 alert-dismissible">
+        @_errorMessage
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? UserId { get; set; }
+
+    [Parameter]
+    public EventCallback OnScheduleChanged { get; set; }
+
+    [Inject]
+    private IChoreScheduleService ScheduleService { get; set; } = default!;
+
+    [Inject]
+    private IChoreManagementService ChoreManagementService { get; set; } = default!;
+
+    [Inject]
+    private IDateProvider DateProvider { get; set; } = default!;
+
+    [Inject]
+    private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+
+    private DateOnly _today;
+    private DateOnly _weekStart;
+    private DateOnly _weekEnd;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+    private string? _currentUserId;
+
+    private Dictionary<DateOnly, List<ChoreDefinition>> _weekChores = new();
+    private List<ChoreDefinition> _allChores = [];
+    private List<ChoreScheduleOverride> _overrides = [];
+
+    private bool _isDragging;
+    private ChoreDefinition? _draggedChore;
+    private DateOnly? _dragSourceDate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        _today = DateProvider.Today;
+        SetWeekToDate(_today);
+        await LoadWeekDataAsync();
+    }
+
+    private void SetWeekToDate(DateOnly date)
+    {
+        var daysFromSunday = (int)date.DayOfWeek;
+        _weekStart = date.AddDays(-daysFromSunday);
+        _weekEnd = _weekStart.AddDays(6);
+    }
+
+    private async Task LoadWeekDataAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            _weekChores.Clear();
+            for (var date = _weekStart; date <= _weekEnd; date = date.AddDays(1))
+            {
+                var chores = string.IsNullOrEmpty(UserId)
+                    ? await ScheduleService.GetChoresForDateAsync(date)
+                    : await ScheduleService.GetChoresForUserOnDateAsync(UserId, date);
+                _weekChores[date] = chores;
+            }
+
+            _allChores = await ChoreManagementService.GetAllChoresAsync(includeInactive: false);
+            if (!string.IsNullOrEmpty(UserId))
+            {
+                _allChores = _allChores.Where(c => c.AssignedUserId == UserId).ToList();
+            }
+
+            _overrides = await ScheduleService.GetOverridesForDateRangeAsync(_weekStart, _weekEnd);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading schedule: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void PreviousWeek()
+    {
+        _weekStart = _weekStart.AddDays(-7);
+        _weekEnd = _weekEnd.AddDays(-7);
+        _ = LoadWeekDataAsync();
+    }
+
+    private void NextWeek()
+    {
+        _weekStart = _weekStart.AddDays(7);
+        _weekEnd = _weekEnd.AddDays(7);
+        _ = LoadWeekDataAsync();
+    }
+
+    private void HandleDragStart(ChoreDefinition chore, DateOnly? sourceDate)
+    {
+        _isDragging = true;
+        _draggedChore = chore;
+        _dragSourceDate = sourceDate;
+    }
+
+    private void HandleDragEnd()
+    {
+        _isDragging = false;
+        _draggedChore = null;
+        _dragSourceDate = null;
+    }
+
+    private void HandleDragOver() { }
+
+    private async Task HandleDrop(DateOnly targetDate)
+    {
+        if (_draggedChore == null || string.IsNullOrEmpty(_currentUserId))
+        {
+            HandleDragEnd();
+            return;
+        }
+
+        _errorMessage = null;
+
+        try
+        {
+            ServiceResult result;
+
+            if (_dragSourceDate.HasValue && _dragSourceDate != targetDate)
+            {
+                result = await ScheduleService.MoveChoreAsync(
+                    _draggedChore.Id,
+                    _dragSourceDate.Value,
+                    targetDate,
+                    _currentUserId);
+            }
+            else if (!_dragSourceDate.HasValue)
+            {
+                result = await ScheduleService.AddChoreToDateAsync(
+                    _draggedChore.Id,
+                    targetDate,
+                    _currentUserId);
+            }
+            else
+            {
+                HandleDragEnd();
+                return;
+            }
+
+            if (result.Success)
+            {
+                await LoadWeekDataAsync();
+                await OnScheduleChanged.InvokeAsync();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error updating schedule: {ex.Message}";
+        }
+        finally
+        {
+            HandleDragEnd();
+        }
+    }
+
+    private async Task RemoveChoreFromDate(int choreId, DateOnly date)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+            return;
+
+        _errorMessage = null;
+
+        try
+        {
+            var result = await ScheduleService.RemoveChoreFromDateAsync(choreId, date, _currentUserId);
+
+            if (result.Success)
+            {
+                await LoadWeekDataAsync();
+                await OnScheduleChanged.InvokeAsync();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error removing chore: {ex.Message}";
+        }
+    }
+}
