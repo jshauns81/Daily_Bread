@@ -810,6 +810,16 @@ code {
     transform: translateY(-1px);
 }
 
+.action-btn.outline-edit {
+    background: transparent;
+    border: 1px solid var(--nord10);
+    color: var(--nord10);
+}
+.action-btn.outline-edit:hover {
+    background-color: var(--nord10);
+    color: var(--nord6);
+}
+
 .action-btn.pause {
     background: transparent;
     border: 1px solid var(--nord12);

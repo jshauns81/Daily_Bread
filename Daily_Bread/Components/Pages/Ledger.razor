@@ -40,20 +40,23 @@
     {
         <div class="card mb-4">
             <div class="card-body">
-                <div class="row align-items-end">
-                    <div class="col-md-4">
-                        <label class="form-label">Select Child</label>
-                        <select class="form-select" @bind="SelectedProfileId" @bind:after="OnProfileChanged">
-                            <option value="0">-- Select a Child --</option>
-                            @foreach (var profile in ChildProfiles)
-                            {
-                                <option value="@profile.ProfileId">@profile.DisplayName (Balance: $@profile.TotalBalance.ToString("F2"))</option>
-                            }
-                        </select>
-                    </div>
+                <div class="row g-3 align-items-end">
+                    @if (ChildProfiles.Count > 1)
+                    {
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label">Select Child</label>
+                            <select class="form-select" @bind="SelectedProfileId" @bind:after="OnProfileChanged">
+                                <option value="0">-- Select a Child --</option>
+                                @foreach (var profile in ChildProfiles)
+                                {
+                                    <option value="@profile.ProfileId">@profile.DisplayName (Balance: $@profile.TotalBalance.ToString("F2"))</option>
+                                }
+                            </select>
+                        </div>
+                    }
                     @if (SelectedProfileId > 0 && Accounts.Count > 1)
                     {
-                        <div class="col-md-3">
+                        <div class="col-lg-2 col-md-6">
                             <label class="form-label">Account</label>
                             <select class="form-select" @bind="SelectedAccountId" @bind:after="OnAccountChanged">
                                 @foreach (var account in Accounts)
@@ -63,17 +66,17 @@
                             </select>
                         </div>
                     }
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-3 col-6">
                         <label class="form-label">From Date</label>
                         <InputDate @bind-Value="FromDate" class="form-control" @bind-Value:after="LoadTransactionsAsync" />
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-3 col-6">
                         <label class="form-label">To Date</label>
                         <InputDate @bind-Value="ToDate" class="form-control" @bind-Value:after="LoadTransactionsAsync" />
                     </div>
-                    <div class="col-md-1">
-                        <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters" title="Clear Filters">
-                            Clear
+                    <div class="col-lg-auto col-md-auto col-12">
+                        <button class="btn btn-outline-secondary text-nowrap" @onclick="ClearFilters">
+                            <i class="bi bi-x-circle"></i> Clear
                         </button>
                     </div>
                 </div>
@@ -291,6 +294,12 @@
             if (ProfileIdParam.HasValue && ProfileIdParam.Value > 0)
             {
                 SelectedProfileId = ProfileIdParam.Value;
+                await OnProfileChanged();
+            }
+            // Auto-select if there's only one child
+            else if (ChildProfiles.Count == 1)
+            {
+                SelectedProfileId = ChildProfiles[0].ProfileId;
                 await OnProfileChanged();
             }
         }

@@ -6,7 +6,7 @@
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">
-            <img src="images/bread-icon.svg" alt="" class="brand-icon" />
+            <img src="images/bread-icon.png" alt="" class="brand-icon" />
             Daily Bread
         </a>
     </div>
@@ -29,6 +29,7 @@
             <Authorized>
                 @if (!_isAdminOnly)
                 {
+                    <!-- Tracker and Calendar visible to both Parents and Children -->
                     <div class="nav-item px-3">
                         <NavLink class="nav-link" href="tracker">
                             <span class="bi bi-check2-square-nav-menu" aria-hidden="true"></span> Tracker
@@ -39,16 +40,21 @@
                             <span class="bi bi-calendar3-nav-menu" aria-hidden="true"></span> Calendar
                         </NavLink>
                     </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="my-balance">
-                            <span class="bi bi-wallet-nav-menu" aria-hidden="true"></span> My Balance
-                        </NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="goals">
-                            <span class="bi bi-bullseye-nav-menu" aria-hidden="true"></span> Goals
-                        </NavLink>
-                    </div>
+                    
+                    <!-- My Balance and Goals only for Children -->
+                    @if (!_isParentOnly)
+                    {
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="my-balance">
+                                <span class="bi bi-wallet-nav-menu" aria-hidden="true"></span> My Balance
+                            </NavLink>
+                        </div>
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="goals">
+                                <span class="bi bi-bullseye-nav-menu" aria-hidden="true"></span> Goals
+                            </NavLink>
+                        </div>
+                    }
                 }
             </Authorized>
         </AuthorizeView>
@@ -100,6 +106,7 @@
 @code {
     private int _pendingCount;
     private bool _isAdminOnly;
+    private bool _isParentOnly;
 
     protected override async Task OnInitializedAsync()
     {
@@ -108,6 +115,9 @@
 
         // Check if user is Admin-only (not also a Parent or Child)
         _isAdminOnly = user.IsInRole("Admin") && !user.IsInRole("Parent") && !user.IsInRole("Child");
+        
+        // Check if user is Parent-only (not also a Child) - Parents don't need My Balance or Goals
+        _isParentOnly = user.IsInRole("Parent") && !user.IsInRole("Child");
 
         if (user.IsInRole("Parent"))
         {

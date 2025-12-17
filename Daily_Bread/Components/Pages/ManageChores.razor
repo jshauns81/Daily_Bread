@@ -42,15 +42,15 @@
     <!-- View Mode Tabs -->
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
-            <button class="nav-link @(_viewMode == ViewMode.List ? "active" : "")" 
-                    @onclick="() => _viewMode = ViewMode.List">
-                <span class="bi bi-list-ul me-1"></span> Chore List
-            </button>
-        </li>
-        <li class="nav-item">
             <button class="nav-link @(_viewMode == ViewMode.WeekScheduler ? "active" : "")" 
                     @onclick="() => _viewMode = ViewMode.WeekScheduler">
                 <span class="bi bi-calendar-week me-1"></span> Week Scheduler
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(_viewMode == ViewMode.List ? "active" : "")" 
+                    @onclick="() => _viewMode = ViewMode.List">
+                <span class="bi bi-list-ul me-1"></span> Chore List
             </button>
         </li>
     </ul>
@@ -153,7 +153,7 @@
 
 @code {
     private enum ViewMode { List, WeekScheduler }
-    private ViewMode _viewMode = ViewMode.List;
+    private ViewMode _viewMode = ViewMode.WeekScheduler;
 
     private List<ChoreDefinition> Chores { get; set; } = [];
     private List<UserSelectItem> Users { get; set; } = [];

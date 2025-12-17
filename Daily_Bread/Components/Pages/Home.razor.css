@@ -2,6 +2,13 @@
     color: var(--nord6);
 }
 
+/* Home Brand Icon for unauthenticated view */
+.home-brand-icon {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+}
+
 /* Child Dashboard */
 .child-dashboard {
     max-width: 600px;

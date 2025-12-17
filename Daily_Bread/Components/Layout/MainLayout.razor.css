@@ -10,11 +10,12 @@ main {
 }
 
 .sidebar {
-    background-color: var(--nord0);
+    background-color: var(--nord1);
 }
 
 .top-row {
-    background-color: var(--nord0);
+    background-color: var(--nord1);
+    border-bottom: 1px solid var(--nord3);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
@@ -59,13 +60,14 @@ main {
         height: 100vh;
         position: sticky;
         top: 0;
+        border-right: 1px solid var(--nord3);
     }
 
     .top-row {
         position: sticky;
         top: 0;
         z-index: 1;
-        background-color: var(--nord0);
+        background-color: var(--nord1);
     }
 
     .top-row.auth ::deep a:first-child {
