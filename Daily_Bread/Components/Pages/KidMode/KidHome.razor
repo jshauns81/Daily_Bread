@@ -24,7 +24,7 @@
 else if (_isLoading)
 {
     <div class="text-center py-5">
-        <div class="spinner-border text-white" role="status">
+        <div class="spinner-border" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
     </div>
@@ -34,8 +34,8 @@ else
     <div class="kid-dashboard">
         <!-- Header -->
         <div class="text-center mb-4">
-            <h1 class="text-white display-6 mb-1">Hey, @_displayName! <span class="wave">&#x1F44B;</span></h1>
-            <p class="text-white-50 mb-0">@DateProvider.Today.ToString("dddd, MMMM d")</p>
+            <h1 class="greeting mb-1">Hey, @_displayName! <span class="wave emoji">&#x1F44B;</span></h1>
+            <p class="date-display mb-0">@DateProvider.Today.ToString("dddd, MMMM d")</p>
             
             @if (_currentStreak > 0)
             {
@@ -46,17 +46,17 @@ else
         </div>
 
         <!-- Balance Card -->
-        <div class="card mb-3">
+        <div class="card mb-3 balance-card">
             <div class="card-body text-center py-3">
-                <p class="text-muted mb-1 small"><span class="bi bi-wallet2"></span> Your Balance</p>
-                <h2 class="text-success mb-0">$@_balance.ToString("F2")</h2>
+                <p class="balance-label mb-1"><span class="bi bi-wallet2"></span> Your Balance</p>
+                <h2 class="balance-amount mb-0">$@_balance.ToString("F2")</h2>
             </div>
         </div>
 
         <!-- Savings Goal (if set) -->
         @if (_primaryGoal != null)
         {
-            <div class="card mb-3 bg-info-subtle">
+            <div class="card mb-3 goal-card">
                 <div class="card-body py-3">
                     <div class="d-flex align-items-center gap-3">
                         @if (!string.IsNullOrEmpty(_primaryGoal.ImageUrl))
@@ -68,12 +68,12 @@ else
                             <div class="goal-img-placeholder"><span class="bi bi-bullseye"></span></div>
                         }
                         <div class="flex-grow-1">
-                            <p class="mb-1 small text-muted">Saving for:</p>
-                            <strong>@_primaryGoal.Name</strong>
+                            <p class="mb-1 small goal-label">Saving for:</p>
+                            <strong class="goal-name">@_primaryGoal.Name</strong>
                             <div class="progress mt-1" style="height: 10px;">
-                                <div class="progress-bar bg-info" style="width: @_primaryGoal.ProgressPercent%;"></div>
+                                <div class="progress-bar" style="width: @(_primaryGoal.ProgressPercent)%;"></div>
                             </div>
-                            <small class="text-muted">@_primaryGoal.ProgressPercent% there!</small>
+                            <small class="goal-progress">@_primaryGoal.ProgressPercent% there!</small>
                         </div>
                     </div>
                 </div>
@@ -81,20 +81,20 @@ else
         }
 
         <!-- Today's Chores -->
-        <div class="card">
+        <div class="card chores-card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><span class="bi bi-list-check"></span> Today's Chores</h5>
-                <span class="badge @(_completedCount == _totalCount && _totalCount > 0 ? "bg-success" : "bg-warning text-dark")">
+                <span class="badge @(_completedCount == _totalCount && _totalCount > 0 ? "bg-success" : "bg-warning")">
                     @_completedCount / @_totalCount
                 </span>
             </div>
             <div class="card-body p-0">
                 @if (_todayChores.Count == 0)
                 {
-                    <div class="text-center py-5">
-                        <span class="bi bi-emoji-sunglasses" style="font-size: 4rem; color: #ffc107;"></span>
+                    <div class="text-center py-5 day-off">
+                        <span class="emoji day-off-icon">&#x1F60E;</span>
                         <h4 class="mt-2">Day Off!</h4>
-                        <p class="text-muted mb-0">No chores today. Enjoy!</p>
+                        <p class="mb-0">No chores today. Enjoy!</p>
                     </div>
                 }
                 else
@@ -125,7 +125,7 @@ else
                                     <span class="chore-name">@chore.ChoreName</span>
                                     @if (chore.IsCompleted && !chore.IsApproved)
                                     {
-                                        <small class="text-info d-block">Waiting for approval...</small>
+                                        <small class="chore-status d-block">Waiting for approval...</small>
                                     }
                                 </div>
                                 <div class="chore-value">$@chore.Value.ToString("F2")</div>
@@ -135,16 +135,16 @@ else
 
                     @if (_pendingCount > 0)
                     {
-                        <div class="text-center p-3 bg-light">
+                        <div class="text-center p-3 potential-earnings">
                             <p class="mb-2">Complete all chores to earn:</p>
-                            <h4 class="text-success mb-0">$@_potentialEarnings.ToString("F2")</h4>
+                            <h4 class="earnings-amount mb-0">$@_potentialEarnings.ToString("F2")</h4>
                         </div>
                     }
                     else if (_completedCount == _totalCount && _totalCount > 0)
                     {
-                        <div class="text-center p-4 bg-success-subtle all-done">
-                            <span class="bi bi-star-fill" style="font-size: 3rem; color: #ffc107;"></span>
-                            <h4 class="text-success mt-2 mb-0">All Done!</h4>
+                        <div class="text-center p-4 all-done">
+                            <span class="emoji all-done-icon">&#x2B50;</span>
+                            <h4 class="all-done-text mt-2 mb-0">All Done!</h4>
                         </div>
                     }
                 }
@@ -161,134 +161,70 @@ else
 }
 
 <style>
-    .kid-dashboard {
-        max-width: 500px;
-        margin: 0 auto;
-    }
-
-    .wave {
-        display: inline-block;
-        animation: wave-animation 2s ease-in-out infinite;
-    }
-
-    @@keyframes wave-animation {
-        0%, 100% { transform: rotate(0deg); }
-        25% { transform: rotate(20deg); }
-        75% { transform: rotate(-10deg); }
-    }
-
-    .streak-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-        color: white;
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-weight: bold;
-    }
-
-    .streak-badge .bi-fire {
-        color: #ffeb3b;
-    }
-
-    .goal-img, .goal-img-placeholder {
-        width: 60px;
-        height: 60px;
-        border-radius: 8px;
-        object-fit: contain;
-        background: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        color: #0dcaf0;
-    }
-
-    .chore-list {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .chore-item {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        border-bottom: 1px solid #eee;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .chore-item:last-child {
-        border-bottom: none;
-    }
-
-    .chore-item:active {
-        background: #f0f0f0;
-    }
-
-    .chore-item.completed {
-        background: #d1e7dd;
-    }
-
-    .chore-item.approved {
-        background: #d1e7dd;
-        opacity: 0.7;
-    }
-
-    .chore-item.missed {
-        background: #f8d7da;
-        opacity: 0.7;
-    }
-
-    .chore-check {
-        width: 50px;
-        height: 50px;
-        border: 3px solid #dee2e6;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 16px;
-        flex-shrink: 0;
-        font-size: 1.5rem;
-    }
-
-    .check-done {
-        color: #198754;
-        font-weight: bold;
-    }
-
-    .check-pending {
-        color: #0dcaf0;
-    }
-
-    .check-missed {
-        color: #dc3545;
-    }
-
-    .chore-info {
-        flex: 1;
-    }
-
-    .chore-name {
-        font-weight: 500;
-        font-size: 1.1rem;
-    }
-
-    .chore-value {
-        font-weight: bold;
-        color: #198754;
-        font-size: 1.2rem;
-    }
-
-    .all-done {
-        animation: celebrate 0.5s ease-out;
-    }
-
-    @@keyframes celebrate {
-        0% { transform: scale(0.9); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
+    .kid-dashboard { max-width: 500px; margin: 0 auto; }
+    .emoji { font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif; }
+    .greeting { color: var(--nord6); font-size: 1.75rem; font-weight: 600; }
+    .date-display { color: var(--nord4); }
+    .wave { display: inline-block; animation: wave-animation 2s ease-in-out infinite; }
+    @@keyframes wave-animation { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(20deg); } 75% { transform: rotate(-10deg); } }
+    .streak-badge { display: inline-block; background: linear-gradient(135deg, var(--nord12) 0%, var(--nord11) 100%); color: var(--nord6); padding: 8px 20px; border-radius: 20px; font-weight: 600; }
+    .streak-badge .bi-fire { color: var(--nord13); }
+    .balance-card { background: linear-gradient(135deg, rgba(163, 190, 140, 0.2) 0%, rgba(163, 190, 140, 0.1) 100%) !important; border-color: var(--nord14) !important; }
+    .balance-label { color: var(--nord4); font-size: 0.9rem; }
+    .balance-amount { color: var(--nord14); font-size: 2.5rem; font-weight: 700; }
+    .goal-card { background: linear-gradient(135deg, rgba(136, 192, 208, 0.15) 0%, rgba(136, 192, 208, 0.05) 100%) !important; border-color: var(--nord8) !important; }
+    .goal-img, .goal-img-placeholder { width: 60px; height: 60px; border-radius: 12px; object-fit: contain; background: var(--nord2); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--nord8); border: 1px solid var(--nord3); }
+    .goal-label { color: var(--nord4); }
+    .goal-name { color: var(--nord6); }
+    .goal-progress { color: var(--nord8); }
+    .chores-card .card-header { padding: 16px; }
+    .chores-card .card-header h5 { color: var(--nord6); }
+    .chore-list { display: flex; flex-direction: column; }
+    .chore-item { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--nord3); cursor: pointer; transition: background 0.2s; }
+    .chore-item:last-child { border-bottom: none; }
+    .chore-item:active { background: var(--nord2); }
+    .chore-item.completed { background: rgba(163, 190, 140, 0.15); }
+    .chore-item.approved { background: rgba(163, 190, 140, 0.1); opacity: 0.7; }
+    .chore-item.missed { background: rgba(191, 97, 106, 0.15); opacity: 0.7; }
+    .chore-check { width: 50px; height: 50px; border: 3px solid var(--nord3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 16px; flex-shrink: 0; font-size: 1.5rem; background: var(--nord2); }
+    .check-done { color: var(--nord14); font-weight: bold; }
+    .check-pending { color: var(--nord8); }
+    .check-missed { color: var(--nord11); }
+    .chore-info { flex: 1; }
+    .chore-name { font-weight: 500; font-size: 1.1rem; color: var(--nord6); }
+    .chore-status { color: var(--nord8); }
+    .chore-value { font-weight: 700; color: var(--nord14); font-size: 1.2rem; }
+    .day-off { color: var(--nord4); }
+    .day-off-icon { font-size: 4rem; }
+    .day-off h4 { color: var(--nord6); }
+    .potential-earnings { background: var(--nord2); border-top: 1px solid var(--nord3); color: var(--nord4); }
+    .earnings-amount { color: var(--nord14); }
+    .all-done { background: rgba(163, 190, 140, 0.15); border-top: 1px solid var(--nord3); animation: celebrate 0.5s ease-out; }
+    .all-done-icon { font-size: 3rem; color: var(--nord13); }
+    .all-done-text { color: var(--nord14); }
+    @@keyframes celebrate { 0% { transform: scale(0.9); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    .d-flex { display: flex; }
+    .align-items-center { align-items: center; }
+    .justify-content-between { justify-content: space-between; }
+    .gap-3 { gap: 1rem; }
+    .flex-grow-1 { flex-grow: 1; }
+    .text-center { text-align: center; }
+    .text-white { color: var(--nord6) !important; }
+    .mb-0 { margin-bottom: 0; }
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 1rem; }
+    .mb-4 { margin-bottom: 1.5rem; }
+    .mt-1 { margin-top: 0.25rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .mt-4 { margin-top: 1.5rem; }
+    .p-0 { padding: 0; }
+    .p-3 { padding: 1rem; }
+    .p-4 { padding: 1.5rem; }
+    .py-3 { padding-top: 1rem; padding-bottom: 1rem; }
+    .py-5 { padding-top: 3rem; padding-bottom: 3rem; }
+    .small { font-size: 0.875rem; }
+    .d-block { display: block; }
 </style>
 
 @code {
@@ -313,7 +249,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // Validate the session parameters
         if (ProfileId <= 0 || string.IsNullOrEmpty(UserId))
         {
             _isValid = false;
@@ -321,7 +256,6 @@ else
             return;
         }
 
-        // Verify the profile exists and matches
         var profile = await ProfileService.GetProfileByUserIdAsync(UserId);
         if (profile == null || profile.Id != ProfileId)
         {
@@ -332,28 +266,18 @@ else
 
         _isValid = true;
         _displayName = profile.DisplayName;
-
         await LoadDataAsync();
     }
 
     private async Task LoadDataAsync()
     {
         _isLoading = true;
-
         try
         {
             var today = DateProvider.Today;
-
-            // Load balance
             _balance = await LedgerService.GetUserBalanceAsync(UserId!);
-
-            // Load today's chores
             _todayChores = await TrackerService.GetTrackerItemsForUserOnDateAsync(UserId!, today);
-
-            // Load primary goal
             _primaryGoal = await GoalService.GetPrimaryGoalAsync(UserId!);
-
-            // Streak is calculated elsewhere, just show 0 for now
             _currentStreak = 0;
         }
         catch (Exception ex)
@@ -368,22 +292,12 @@ else
 
     private async Task ToggleChore(TrackerChoreItem chore)
     {
-        // Only allow toggling pending chores
         if (!chore.IsPending) return;
-
         try
         {
             var today = DateProvider.Today;
-            var result = await TrackerService.ToggleChoreCompletionAsync(
-                chore.ChoreDefinitionId, 
-                today, 
-                UserId!, 
-                isParent: false);
-                
-            if (result.Success)
-            {
-                await LoadDataAsync();
-            }
+            var result = await TrackerService.ToggleChoreCompletionAsync(chore.ChoreDefinitionId, today, UserId!, isParent: false);
+            if (result.Success) await LoadDataAsync();
         }
         catch (Exception ex)
         {

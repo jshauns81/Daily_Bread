@@ -191,6 +191,7 @@
 
 .badge-icon {
     font-size: var(--font-size-2xl);
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 }
 
 .badge-name {
@@ -222,6 +223,7 @@
 
 .achievement-icon {
     font-size: var(--font-size-2xl);
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 }
 
 .all-done-celebration {

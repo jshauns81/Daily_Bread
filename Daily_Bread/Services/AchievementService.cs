@@ -216,42 +216,95 @@ public class AchievementService : IAchievementService
 
     public async Task SeedAchievementsAsync()
     {
+        // Fix any corrupted icons from previous seeding
+        await FixCorruptedIconsAsync();
+        
         if (await _context.Achievements.AnyAsync())
             return; // Already seeded
 
         var achievements = new List<Achievement>
         {
-            // Getting Started
-            new() { Code = "FIRST_CHORE", Name = "First Steps", Description = "Complete your first chore", Icon = "??", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 1 },
-            new() { Code = "FIRST_DOLLAR", Name = "Money Maker", Description = "Earn your first dollar", Icon = "??", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 2 },
-            new() { Code = "FIRST_GOAL", Name = "Dream Big", Description = "Create your first savings goal", Icon = "??", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 3 },
+            // Getting Started - using Unicode escape sequences
+            new() { Code = "FIRST_CHORE", Name = "First Steps", Description = "Complete your first chore", Icon = "\U0001F463", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 1 },
+            new() { Code = "FIRST_DOLLAR", Name = "Money Maker", Description = "Earn your first dollar", Icon = "\U0001F4B5", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 2 },
+            new() { Code = "FIRST_GOAL", Name = "Dream Big", Description = "Create your first savings goal", Icon = "\U0001F3AF", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 3 },
 
             // Streaks
-            new() { Code = "STREAK_3", Name = "Getting Going", Description = "Complete all chores for 3 days in a row", Icon = "??", Category = AchievementCategory.Streaks, Points = 25, SortOrder = 1 },
-            new() { Code = "STREAK_7", Name = "Week Warrior", Description = "Complete all chores for 7 days in a row", Icon = "????", Category = AchievementCategory.Streaks, Points = 50, SortOrder = 2 },
-            new() { Code = "STREAK_14", Name = "Fortnight Fighter", Description = "Complete all chores for 14 days in a row", Icon = "??????", Category = AchievementCategory.Streaks, Points = 100, SortOrder = 3 },
-            new() { Code = "STREAK_30", Name = "Monthly Master", Description = "Complete all chores for 30 days in a row", Icon = "??", Category = AchievementCategory.Streaks, Points = 200, SortOrder = 4 },
+            new() { Code = "STREAK_3", Name = "Getting Going", Description = "Complete all chores for 3 days in a row", Icon = "\U0001F525", Category = AchievementCategory.Streaks, Points = 25, SortOrder = 1 },
+            new() { Code = "STREAK_7", Name = "Week Warrior", Description = "Complete all chores for 7 days in a row", Icon = "\U0001F525\U0001F525", Category = AchievementCategory.Streaks, Points = 50, SortOrder = 2 },
+            new() { Code = "STREAK_14", Name = "Fortnight Fighter", Description = "Complete all chores for 14 days in a row", Icon = "\U0001F525\U0001F525\U0001F525", Category = AchievementCategory.Streaks, Points = 100, SortOrder = 3 },
+            new() { Code = "STREAK_30", Name = "Monthly Master", Description = "Complete all chores for 30 days in a row", Icon = "\U0001F3C6", Category = AchievementCategory.Streaks, Points = 200, SortOrder = 4 },
 
             // Earnings
-            new() { Code = "EARNED_10", Name = "Tenner", Description = "Earn a total of $10", Icon = "??", Category = AchievementCategory.Earnings, Points = 25, SortOrder = 1 },
-            new() { Code = "EARNED_25", Name = "Quarter Century", Description = "Earn a total of $25", Icon = "????", Category = AchievementCategory.Earnings, Points = 50, SortOrder = 2 },
-            new() { Code = "EARNED_50", Name = "Half Century", Description = "Earn a total of $50", Icon = "??????", Category = AchievementCategory.Earnings, Points = 75, SortOrder = 3 },
-            new() { Code = "EARNED_100", Name = "Benjamin", Description = "Earn a total of $100", Icon = "??", Category = AchievementCategory.Earnings, Points = 150, SortOrder = 4 },
+            new() { Code = "EARNED_10", Name = "Tenner", Description = "Earn a total of $10", Icon = "\U0001F4B0", Category = AchievementCategory.Earnings, Points = 25, SortOrder = 1 },
+            new() { Code = "EARNED_25", Name = "Quarter Century", Description = "Earn a total of $25", Icon = "\U0001F4B0\U0001F4B0", Category = AchievementCategory.Earnings, Points = 50, SortOrder = 2 },
+            new() { Code = "EARNED_50", Name = "Half Century", Description = "Earn a total of $50", Icon = "\U0001F4B0\U0001F4B0\U0001F4B0", Category = AchievementCategory.Earnings, Points = 75, SortOrder = 3 },
+            new() { Code = "EARNED_100", Name = "Benjamin", Description = "Earn a total of $100", Icon = "\U0001F911", Category = AchievementCategory.Earnings, Points = 150, SortOrder = 4 },
 
             // Consistency
-            new() { Code = "CHORES_10", Name = "Helping Hand", Description = "Complete 10 chores", Icon = "?", Category = AchievementCategory.Consistency, Points = 15, SortOrder = 1 },
-            new() { Code = "CHORES_50", Name = "Chore Champion", Description = "Complete 50 chores", Icon = "??", Category = AchievementCategory.Consistency, Points = 50, SortOrder = 2 },
-            new() { Code = "CHORES_100", Name = "Century Club", Description = "Complete 100 chores", Icon = "??", Category = AchievementCategory.Consistency, Points = 100, SortOrder = 3 },
-            new() { Code = "PERFECT_7", Name = "Perfect Week", Description = "Have 7 perfect days (all chores done)", Icon = "?", Category = AchievementCategory.Consistency, Points = 50, SortOrder = 4 },
-            new() { Code = "PERFECT_30", Name = "Perfect Month", Description = "Have 30 perfect days", Icon = "??", Category = AchievementCategory.Consistency, Points = 150, SortOrder = 5 },
+            new() { Code = "CHORES_10", Name = "Helping Hand", Description = "Complete 10 chores", Icon = "\u270B", Category = AchievementCategory.Consistency, Points = 15, SortOrder = 1 },
+            new() { Code = "CHORES_50", Name = "Chore Champion", Description = "Complete 50 chores", Icon = "\U0001F947", Category = AchievementCategory.Consistency, Points = 50, SortOrder = 2 },
+            new() { Code = "CHORES_100", Name = "Century Club", Description = "Complete 100 chores", Icon = "\U0001F4AF", Category = AchievementCategory.Consistency, Points = 100, SortOrder = 3 },
+            new() { Code = "PERFECT_7", Name = "Perfect Week", Description = "Have 7 perfect days (all chores done)", Icon = "\u2B50", Category = AchievementCategory.Consistency, Points = 50, SortOrder = 4 },
+            new() { Code = "PERFECT_30", Name = "Perfect Month", Description = "Have 30 perfect days", Icon = "\U0001F31F", Category = AchievementCategory.Consistency, Points = 150, SortOrder = 5 },
 
             // Special
-            new() { Code = "GOAL_COMPLETE", Name = "Goal Getter", Description = "Complete a savings goal", Icon = "??", Category = AchievementCategory.Special, Points = 100, SortOrder = 1 },
-            new() { Code = "EARLY_BIRD", Name = "Early Bird", Description = "Complete all chores before noon", Icon = "??", Category = AchievementCategory.Special, Points = 25, SortOrder = 2 },
+            new() { Code = "GOAL_COMPLETE", Name = "Goal Getter", Description = "Complete a savings goal", Icon = "\U0001F389", Category = AchievementCategory.Special, Points = 100, SortOrder = 1 },
+            new() { Code = "EARLY_BIRD", Name = "Early Bird", Description = "Complete all chores before noon", Icon = "\U0001F305", Category = AchievementCategory.Special, Points = 25, SortOrder = 2 },
         };
 
         _context.Achievements.AddRange(achievements);
         await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Fixes achievement icons that were corrupted during initial seeding.
+    /// Uses Unicode escape sequences for reliability.
+    /// </summary>
+    private async Task FixCorruptedIconsAsync()
+    {
+        // Using Unicode codepoints that work reliably across all systems
+        var iconMappings = new Dictionary<string, string>
+        {
+            { "FIRST_CHORE", "\U0001F463" },    // ?? footprints
+            { "FIRST_DOLLAR", "\U0001F4B5" },   // ?? dollar
+            { "FIRST_GOAL", "\U0001F3AF" },     // ?? target
+            { "STREAK_3", "\U0001F525" },       // ?? fire
+            { "STREAK_7", "\U0001F525\U0001F525" },      // ????
+            { "STREAK_14", "\U0001F525\U0001F525\U0001F525" },  // ??????
+            { "STREAK_30", "\U0001F3C6" },      // ?? trophy
+            { "EARNED_10", "\U0001F4B0" },      // ?? money bag
+            { "EARNED_25", "\U0001F4B0\U0001F4B0" },     // ????
+            { "EARNED_50", "\U0001F4B0\U0001F4B0\U0001F4B0" },  // ??????
+            { "EARNED_100", "\U0001F911" },     // ?? money face
+            { "CHORES_10", "\u270B" },          // ? hand
+            { "CHORES_50", "\U0001F947" },      // ?? gold medal
+            { "CHORES_100", "\U0001F4AF" },     // ?? hundred
+            { "PERFECT_7", "\u2B50" },          // ? star
+            { "PERFECT_30", "\U0001F31F" },     // ?? glowing star
+            { "GOAL_COMPLETE", "\U0001F389" },  // ?? party
+            { "EARLY_BIRD", "\U0001F305" }      // ?? sunrise
+        };
+
+        var achievements = await _context.Achievements.ToListAsync();
+        var updated = false;
+
+        foreach (var achievement in achievements)
+        {
+            if (iconMappings.TryGetValue(achievement.Code, out var correctIcon))
+            {
+                if (achievement.Icon != correctIcon)
+                {
+                    achievement.Icon = correctIcon;
+                    updated = true;
+                }
+            }
+        }
+
+        if (updated)
+        {
+            await _context.SaveChangesAsync();
+        }
     }
 
     private bool CheckAchievementCriteria(
