@@ -427,7 +427,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .card-footer {
     background-color: var(--nord2);
     border-top: 1px solid var(--nord3);
-    padding: var,--space-md);
+    padding: var(--space-md);
 }
 
 /* ===========================================
@@ -868,7 +868,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .action-btn.delete {
     background: transparent;
     border: 1px solid var(--nord11);
-    color: var(--nord11);
+    color: var,--nord11;
 }
 .action-btn.delete:hover {
     background-color: var(--nord11);
@@ -1047,5 +1047,623 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
         color: black !important;
         margin: 0 !important;
         padding: 0 !important;
+    }
+}
+
+/* ===========================================
+   26. LOGIN PAGE STYLES
+   =========================================== */
+
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+    background: linear-gradient(135deg, var(--nord0) 0%, var(--nord1) 50%, var(--nord2) 100%);
+}
+
+.login-card {
+    background-color: var(--nord1);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-2xl);
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+}
+
+.login-header .brand-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: var(--space-md);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.login-header h1 {
+    font-size: var(--font-size-2xl);
+    color: var(--nord6);
+    margin-bottom: var(--space-xs);
+}
+
+.login-header .tagline {
+    color: var(--nord4);
+    font-size: var(--font-size-sm);
+    margin: 0;
+}
+
+.btn-login {
+    width: 100%;
+    padding: var(--space-md);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+}
+
+.login-footer {
+    margin-top: var(--space-xl);
+    text-align: center;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--nord3);
+}
+
+.kid-mode-link {
+    color: var(--nord8);
+    font-size: var(--font-size-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.kid-mode-link:hover {
+    color: var(--nord7);
+    background-color: rgba(136, 192, 208, 0.1);
+}
+
+/* Mobile-First Login Responsive Styles */
+@media (max-width: 480px) {
+    .login-container {
+        padding: 0;
+        align-items: stretch;
+    }
+    
+    .login-card {
+        max-width: none;
+        min-height: 100vh;
+        border-radius: 0;
+        border: none;
+        padding: var(--space-xl) var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .login-header {
+        margin-bottom: var(--space-2xl);
+    }
+    
+    .login-header .brand-icon {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .login-header h1 {
+        font-size: 2.5rem;
+    }
+    
+    .login-header .tagline {
+        font-size: var(--font-size-md);
+    }
+    
+    /* Larger touch targets for mobile */
+    .login-card .form-control {
+        padding: var(--space-md);
+        font-size: var(--font-size-lg);
+        min-height: 56px;
+    }
+    
+    .login-card .form-label {
+        font-size: var(--font-size-md);
+        margin-bottom: var(--space-sm);
+    }
+    
+    .login-card .mb-4 {
+        margin-bottom: var(--space-lg) !important;
+    }
+    
+    .login-card .form-check {
+        padding: var(--space-sm) 0;
+    }
+    
+    .login-card .form-check-input {
+        width: 24px;
+        height: 24px;
+        margin-right: var(--space-sm);
+    }
+    
+    .login-card .form-check-label {
+        font-size: var(--font-size-md);
+        padding-top: 2px;
+    }
+    
+    .btn-login {
+        padding: var(--space-lg);
+        font-size: var(--font-size-lg);
+        min-height: 60px;
+        border-radius: var(--radius-lg);
+    }
+    
+    .login-footer {
+        margin-top: var(--space-2xl);
+    }
+    
+    .kid-mode-link {
+        font-size: var(--font-size-md);
+        padding: var(--space-md);
+        width: 100%;
+        justify-content: center;
+        background-color: var(--nord2);
+        border-radius: var(--radius-md);
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 481px) and (max-width: 768px) {
+    .login-card {
+        padding: var(--space-xl);
+        max-width: 480px;
+    }
+    
+    .login-card .form-control {
+        padding: var(--space-md);
+        font-size: var(--font-size-md);
+    }
+    
+    .btn-login {
+        padding: var(--space-md);
+        font-size: var(--font-size-md);
+    }
+}
+
+/* ===========================================
+   27. HOME PAGE / DASHBOARD STYLES
+   =========================================== */
+
+.home-brand-icon {
+    width: 120px;
+    height: 120px;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+/* Dashboard Container */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-md);
+}
+
+/* Child Dashboard Styles */
+.child-dashboard {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--space-md);
+}
+
+.streak-display {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: linear-gradient(135deg, var(--nord12) 0%, var(--nord11) 100%);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-full);
+    color: var(--nord6);
+    font-weight: var(--font-weight-semibold);
+}
+
+.streak-fire {
+    font-size: var(--font-size-lg);
+}
+
+.animate-pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.wave {
+    animation: wave 2s ease-in-out infinite;
+    display: inline-block;
+    transform-origin: 70% 70%;
+}
+
+@keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    10%, 30% { transform: rotate(14deg); }
+    20% { transform: rotate(-8deg); }
+    40% { transform: rotate(-4deg); }
+    50%, 70% { transform: rotate(10deg); }
+    60% { transform: rotate(0deg); }
+    80% { transform: rotate(0deg); }
+}
+
+/* Balance Card */
+.balance-card {
+    background: linear-gradient(135deg, var(--nord1) 0%, var(--nord2) 100%);
+    border: 1px solid var(--nord14);
+}
+
+/* Savings Goal Card */
+.savings-goal-card {
+    background: linear-gradient(135deg, var(--nord1) 0%, var(--nord2) 100%);
+    border: 1px solid var(--nord8);
+}
+
+.goal-image {
+    max-width: 100px;
+    max-height: 80px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+
+/* Weekly Stats Card */
+.weekly-stats-card {
+    background: linear-gradient(135deg, var(--nord2) 0%, var(--nord1) 100%);
+}
+
+/* Chore Checklist */
+.chore-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.chore-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background-color: var(--nord2);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--nord6);
+    transition: all var(--transition-fast);
+}
+
+.chore-item:hover {
+    background-color: var(--nord3);
+    transform: translateX(4px);
+    color: var(--nord6);
+}
+
+.chore-item.approved {
+    background-color: rgba(163, 190, 140, 0.15);
+    border-left: 3px solid var(--nord14);
+}
+
+.chore-item.completed {
+    background-color: rgba(136, 192, 208, 0.15);
+    border-left: 3px solid var(--nord8);
+}
+
+.chore-item.missed {
+    background-color: rgba(191, 97, 106, 0.15);
+    border-left: 3px solid var(--nord11);
+}
+
+.chore-checkbox {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background-color: var(--nord1);
+    border: 2px solid var(--nord3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.check-icon {
+    font-size: var(--font-size-md);
+}
+
+.check-icon.approved { color: var(--nord14); }
+.check-icon.pending { color: var(--nord8); }
+.check-icon.missed { color: var(--nord11); }
+.check-icon.empty { display: none; }
+
+.chore-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chore-name {
+    font-weight: var(--font-weight-medium);
+    color: var(--nord6);
+}
+
+.chore-item.approved .chore-name,
+.chore-item.completed .chore-name {
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+
+.chore-value {
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord14);
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+/* Pulse Button */
+.pulse-button {
+    animation: button-pulse 2s ease-in-out infinite;
+}
+
+@keyframes button-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(94, 129, 172, 0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(94, 129, 172, 0); }
+}
+
+/* All Done Celebration */
+.all-done-celebration {
+    animation: celebrate 0.6s ease-out;
+}
+
+@keyframes celebrate {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Achievement Styles */
+.achievement-celebration {
+    position: fixed;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.achievement-toast {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    background: linear-gradient(135deg, var(--nord13) 0%, var(--nord12) 100%);
+    color: var(--nord0);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+}
+
+.animate-bounce {
+    animation: bounce 0.6s ease-out;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.achievement-icon {
+    font-size: var(--font-size-2xl);
+}
+
+.achievements-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    justify-content: center;
+}
+
+.achievement-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+    background-color: var(--nord2);
+    border-radius: var(--radius-md);
+    min-width: 80px;
+}
+
+.achievement-badge.new {
+    background: linear-gradient(135deg, var(--nord13) 0%, var(--nord12) 100%);
+    color: var(--nord0);
+    animation: shine 1s ease-out;
+}
+
+@keyframes shine {
+    0% { box-shadow: 0 0 0 0 rgba(235, 203, 139, 0.6); }
+    100% { box-shadow: 0 0 20px 10px rgba(235, 203, 139, 0); }
+}
+
+.badge-icon {
+    font-size: var(--font-size-xl);
+}
+
+.badge-name {
+    font-size: var(--font-size-xs);
+    text-align: center;
+}
+
+/* Mobile Dashboard Responsive */
+@media (max-width: 768px) {
+    .dashboard-container,
+    .child-dashboard {
+        padding: var(--space-sm);
+    }
+    
+    .achievement-celebration {
+        top: var(--space-sm);
+        right: var(--space-sm);
+        left: var(--space-sm);
+    }
+    
+    .achievement-toast {
+        width: 100%;
+    }
+}
+
+/* ===========================================
+   28. ACCESSIBILITY IMPROVEMENTS
+   =========================================== */
+
+/* Focus-visible for keyboard navigation (not mouse clicks) */
+:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Enhanced button focus-visible */
+.btn:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(94, 129, 172, 0.3);
+}
+
+/* Form control focus-visible */
+.form-control:focus-visible,
+.form-select:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 1px;
+}
+
+/* Link focus-visible */
+a:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Nav link focus-visible */
+.nav-link:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 2px;
+    background-color: rgba(94, 129, 172, 0.1);
+}
+
+/* Dropdown item focus-visible */
+.dropdown-item:focus-visible {
+    outline: none;
+    background-color: var(--nord2);
+    box-shadow: inset 3px 0 0 var(--nord10);
+}
+
+/* Card focus-visible (for clickable cards) */
+.card:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 2px;
+}
+
+/* Checkbox/Radio focus-visible */
+.form-check-input:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+/* Skip to main content link (accessibility) */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--nord10);
+    color: var(--nord6);
+    padding: var(--space-sm) var(--space-md);
+    z-index: 1100;
+    transition: top var(--transition-fast);
+    border-radius: 0 0 var(--radius-md) 0;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .animate-pulse-glow,
+    .animate-float,
+    .animate-pulse,
+    .wave,
+    .pulse-button,
+    .animate-bounce {
+        animation: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.6);
+    }
+    
+    .btn {
+        border: 2px solid currentColor;
+    }
+    
+    .card {
+        border-width: 2px;
+    }
+    
+    .form-control,
+    .form-select {
+        border-width: 2px;
+    }
+}
+
+/* Screen reader only utility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Make sure interactive elements have sufficient touch targets on mobile */
+@media (max-width: 768px) {
+    .btn,
+    .nav-link,
+    .dropdown-item,
+    .form-check-input {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .form-check {
+        padding-top: var(--space-sm);
+        padding-bottom: var(--space-sm);
     }
 }

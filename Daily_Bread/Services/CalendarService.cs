@@ -190,9 +190,9 @@ public class CalendarService : ICalendarService
         Dictionary<DateOnly, List<ChoreLog>> logsByDate,
         List<ChoreDefinition> choreDefinitions)
     {
-        // Count scheduled chores for this date
+        // Count scheduled chores for this date using shared helper
         var scheduledChores = choreDefinitions
-            .Where(cd => IsChoreScheduledForDate(cd, date))
+            .Where(cd => ChoreScheduleHelper.IsChoreScheduledForDate(cd, date))
             .ToList();
 
         // Future dates
@@ -272,33 +272,6 @@ public class CalendarService : ICalendarService
             EarnedAmount = earnedAmount,
             PotentialAmount = potentialAmount
         };
-    }
-
-    private static bool IsChoreScheduledForDate(ChoreDefinition chore, DateOnly date)
-    {
-        if (!chore.IsActive)
-            return false;
-
-        // Check date range
-        if (chore.StartDate.HasValue && date < chore.StartDate.Value)
-            return false;
-        if (chore.EndDate.HasValue && date > chore.EndDate.Value)
-            return false;
-
-        // Check day of week
-        var dayFlag = date.DayOfWeek switch
-        {
-            DayOfWeek.Sunday => DaysOfWeek.Sunday,
-            DayOfWeek.Monday => DaysOfWeek.Monday,
-            DayOfWeek.Tuesday => DaysOfWeek.Tuesday,
-            DayOfWeek.Wednesday => DaysOfWeek.Wednesday,
-            DayOfWeek.Thursday => DaysOfWeek.Thursday,
-            DayOfWeek.Friday => DaysOfWeek.Friday,
-            DayOfWeek.Saturday => DaysOfWeek.Saturday,
-            _ => DaysOfWeek.None
-        };
-
-        return (chore.ActiveDays & dayFlag) != 0;
     }
 
     private static (int currentStreak, int longestStreak) CalculateStreaks(List<DaySummary> days, DateOnly today)

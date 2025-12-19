@@ -78,18 +78,18 @@ public interface ITrackerService
 
 public class TrackerService : ITrackerService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IChoreScheduleService _scheduleService;
     private readonly IChoreLogService _choreLogService;
     private readonly ILedgerService _ledgerService;
 
     public TrackerService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IChoreScheduleService scheduleService,
         IChoreLogService choreLogService,
         ILedgerService ledgerService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _scheduleService = scheduleService;
         _choreLogService = choreLogService;
         _ledgerService = ledgerService;
@@ -101,7 +101,8 @@ public class TrackerService : ITrackerService
         var scheduledChores = await _scheduleService.GetChoresForDateAsync(date);
 
         // Get existing logs for this date
-        var existingLogs = await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existingLogs = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Include(c => c.ApprovedByUser)
@@ -132,7 +133,8 @@ public class TrackerService : ITrackerService
         var scheduledChores = await _scheduleService.GetChoresForUserOnDateAsync(userId, date);
 
         // Get existing logs for this user on this date
-        var existingLogs = await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existingLogs = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Include(c => c.ApprovedByUser)

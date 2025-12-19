@@ -108,12 +108,12 @@ public interface ISavingsGoalService
 /// </summary>
 public class SavingsGoalService : ISavingsGoalService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly ILedgerService _ledgerService;
 
-    public SavingsGoalService(ApplicationDbContext context, ILedgerService ledgerService)
+    public SavingsGoalService(IDbContextFactory<ApplicationDbContext> contextFactory, ILedgerService ledgerService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _ledgerService = ledgerService;
     }
 
@@ -121,7 +121,9 @@ public class SavingsGoalService : ISavingsGoalService
     {
         var balance = await _ledgerService.GetUserBalanceAsync(userId);
 
-        var goals = await _context.SavingsGoals
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var goals = await context.SavingsGoals
             .Where(g => g.UserId == userId && g.IsActive)
             .OrderBy(g => g.Priority)
             .ThenBy(g => g.CreatedAt)
@@ -134,12 +136,14 @@ public class SavingsGoalService : ISavingsGoalService
     {
         var balance = await _ledgerService.GetUserBalanceAsync(userId);
 
-        var goal = await _context.SavingsGoals
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var goal = await context.SavingsGoals
             .Where(g => g.UserId == userId && g.IsActive && g.IsPrimary && !g.IsCompleted)
             .FirstOrDefaultAsync();
 
         // If no primary, get the first active goal
-        goal ??= await _context.SavingsGoals
+        goal ??= await context.SavingsGoals
             .Where(g => g.UserId == userId && g.IsActive && !g.IsCompleted)
             .OrderBy(g => g.Priority)
             .FirstOrDefaultAsync();
@@ -151,7 +155,9 @@ public class SavingsGoalService : ISavingsGoalService
     {
         var balance = await _ledgerService.GetUserBalanceAsync(userId);
 
-        var goal = await _context.SavingsGoals
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var goal = await context.SavingsGoals
             .Where(g => g.Id == goalId && g.UserId == userId)
             .FirstOrDefaultAsync();
 
@@ -170,10 +176,12 @@ public class SavingsGoalService : ISavingsGoalService
             return ServiceResult<int>.Fail("Target amount must be greater than zero.");
         }
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // If this is set as primary, unset other primary goals
         if (dto.IsPrimary)
         {
-            await UnsetPrimaryGoalsAsync(userId);
+            await UnsetPrimaryGoalsAsync(context, userId);
         }
 
         var goal = new SavingsGoal
@@ -189,15 +197,17 @@ public class SavingsGoalService : ISavingsGoalService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.SavingsGoals.Add(goal);
-        await _context.SaveChangesAsync();
+        context.SavingsGoals.Add(goal);
+        await context.SaveChangesAsync();
 
         return ServiceResult<int>.Ok(goal.Id);
     }
 
     public async Task<ServiceResult> UpdateGoalAsync(string userId, SavingsGoalDto dto)
     {
-        var goal = await _context.SavingsGoals
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var goal = await context.SavingsGoals
             .FirstOrDefaultAsync(g => g.Id == dto.Id && g.UserId == userId);
 
         if (goal == null)
@@ -218,7 +228,7 @@ public class SavingsGoalService : ISavingsGoalService
         // If this is set as primary, unset other primary goals
         if (dto.IsPrimary && !goal.IsPrimary)
         {
-            await UnsetPrimaryGoalsAsync(userId);
+            await UnsetPrimaryGoalsAsync(context, userId);
         }
 
         goal.Name = dto.Name.Trim();
@@ -229,14 +239,16 @@ public class SavingsGoalService : ISavingsGoalService
         goal.IsPrimary = dto.IsPrimary;
         goal.ModifiedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> SetPrimaryGoalAsync(string userId, int goalId)
     {
-        var goal = await _context.SavingsGoals
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var goal = await context.SavingsGoals
             .FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId && g.IsActive);
 
         if (goal == null)
@@ -244,19 +256,21 @@ public class SavingsGoalService : ISavingsGoalService
             return ServiceResult.Fail("Goal not found.");
         }
 
-        await UnsetPrimaryGoalsAsync(userId);
+        await UnsetPrimaryGoalsAsync(context, userId);
 
         goal.IsPrimary = true;
         goal.ModifiedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> CompleteGoalAsync(string userId, int goalId)
     {
-        var goal = await _context.SavingsGoals
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var goal = await context.SavingsGoals
             .FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId && g.IsActive);
 
         if (goal == null)
@@ -277,7 +291,7 @@ public class SavingsGoalService : ISavingsGoalService
         if (goal.IsPrimary)
         {
             goal.IsPrimary = false;
-            var nextGoal = await _context.SavingsGoals
+            var nextGoal = await context.SavingsGoals
                 .Where(g => g.UserId == userId && g.IsActive && !g.IsCompleted && g.Id != goalId)
                 .OrderBy(g => g.Priority)
                 .FirstOrDefaultAsync();
@@ -288,14 +302,16 @@ public class SavingsGoalService : ISavingsGoalService
             }
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> DeleteGoalAsync(string userId, int goalId)
     {
-        var goal = await _context.SavingsGoals
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var goal = await context.SavingsGoals
             .FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId);
 
         if (goal == null)
@@ -307,14 +323,16 @@ public class SavingsGoalService : ISavingsGoalService
         goal.IsActive = false;
         goal.ModifiedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> ReorderGoalsAsync(string userId, List<int> goalIdsInOrder)
     {
-        var goals = await _context.SavingsGoals
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var goals = await context.SavingsGoals
             .Where(g => g.UserId == userId && g.IsActive)
             .ToListAsync();
 
@@ -328,14 +346,14 @@ public class SavingsGoalService : ISavingsGoalService
             }
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
 
-    private async Task UnsetPrimaryGoalsAsync(string userId)
+    private static async Task UnsetPrimaryGoalsAsync(ApplicationDbContext context, string userId)
     {
-        var primaryGoals = await _context.SavingsGoals
+        var primaryGoals = await context.SavingsGoals
             .Where(g => g.UserId == userId && g.IsPrimary)
             .ToListAsync();
 

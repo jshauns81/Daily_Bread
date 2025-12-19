@@ -120,8 +120,7 @@ public class ChoreChartService : IChoreChartService
 
     public DateOnly GetWeekStart(DateOnly date)
     {
-        var daysFromSunday = (int)date.DayOfWeek;
-        return date.AddDays(-daysFromSunday);
+        return ChoreScheduleHelper.GetWeekStartDate(date);
     }
 
     public async Task<PrintableChoreChart> GenerateWeeklyChartAsync(DateOnly? weekStartDate = null)
@@ -206,10 +205,10 @@ public class ChoreChartService : IChoreChartService
         {
             var dayChores = new List<ChoreChartEntry>();
 
-            // Add daily scheduled chores
+            // Add daily scheduled chores using shared helper
             foreach (var chore in dailyChores)
             {
-                var isScheduled = IsChoreScheduledForDate(chore, date);
+                var isScheduled = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
                 logsByDateAndChore.TryGetValue((date, chore.Id), out var log);
 
                 if (isScheduled || log != null)
@@ -226,10 +225,10 @@ public class ChoreChartService : IChoreChartService
                 }
             }
 
-            // Add weekly frequency chores (they appear every available day)
+            // Add weekly frequency chores (they appear every available day) using shared helper
             foreach (var chore in weeklyChores)
             {
-                var isAvailableDay = IsChoreScheduledForDate(chore, date);
+                var isAvailableDay = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
                 logsByDateAndChore.TryGetValue((date, chore.Id), out var log);
 
                 if (isAvailableDay)
@@ -291,30 +290,6 @@ public class ChoreChartService : IChoreChartService
             Days = days,
             WeeklyChores = weeklyProgress
         };
-    }
-
-    private static bool IsChoreScheduledForDate(ChoreDefinition chore, DateOnly date)
-    {
-        // Check date range
-        if (chore.StartDate.HasValue && date < chore.StartDate.Value)
-            return false;
-        if (chore.EndDate.HasValue && date > chore.EndDate.Value)
-            return false;
-
-        // Check day of week
-        var dayFlag = date.DayOfWeek switch
-        {
-            DayOfWeek.Sunday => DaysOfWeek.Sunday,
-            DayOfWeek.Monday => DaysOfWeek.Monday,
-            DayOfWeek.Tuesday => DaysOfWeek.Tuesday,
-            DayOfWeek.Wednesday => DaysOfWeek.Wednesday,
-            DayOfWeek.Thursday => DaysOfWeek.Thursday,
-            DayOfWeek.Friday => DaysOfWeek.Friday,
-            DayOfWeek.Saturday => DaysOfWeek.Saturday,
-            _ => DaysOfWeek.None
-        };
-
-        return (chore.ActiveDays & dayFlag) != 0;
     }
 
     private static string GetAvatarEmoji(string name)

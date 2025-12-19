@@ -51,20 +51,22 @@ public interface IChoreManagementService
 
 public class ChoreManagementService : IChoreManagementService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public ChoreManagementService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         UserManager<ApplicationUser> userManager)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _userManager = userManager;
     }
 
     public async Task<List<ChoreDefinition>> GetAllChoresAsync(bool includeInactive = false)
     {
-        var query = _context.ChoreDefinitions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var query = context.ChoreDefinitions
             .Include(c => c.AssignedUser)
             .AsQueryable();
 
@@ -81,7 +83,9 @@ public class ChoreManagementService : IChoreManagementService
 
     public async Task<ChoreDefinition?> GetChoreByIdAsync(int id)
     {
-        return await _context.ChoreDefinitions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.ChoreDefinitions
             .Include(c => c.AssignedUser)
             .FirstOrDefaultAsync(c => c.Id == id);
     }
@@ -109,8 +113,10 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult<ChoreDefinition>.Fail("Weekly target count cannot exceed 7.");
         }
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Check for duplicate name
-        var exists = await _context.ChoreDefinitions
+        var exists = await context.ChoreDefinitions
             .AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower());
 
         if (exists)
@@ -135,11 +141,11 @@ public class ChoreManagementService : IChoreManagementService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.ChoreDefinitions.Add(chore);
-        await _context.SaveChangesAsync();
+        context.ChoreDefinitions.Add(chore);
+        await context.SaveChangesAsync();
 
         // Reload with navigation properties
-        await _context.Entry(chore).Reference(c => c.AssignedUser).LoadAsync();
+        await context.Entry(chore).Reference(c => c.AssignedUser).LoadAsync();
 
         return ServiceResult<ChoreDefinition>.Ok(chore);
     }
@@ -172,14 +178,16 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult.Fail("Weekly target count cannot exceed 7.");
         }
 
-        var chore = await _context.ChoreDefinitions.FindAsync(dto.Id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var chore = await context.ChoreDefinitions.FindAsync(dto.Id);
         if (chore == null)
         {
             return ServiceResult.Fail("Chore not found.");
         }
 
         // Check for duplicate name (excluding current chore)
-        var exists = await _context.ChoreDefinitions
+        var exists = await context.ChoreDefinitions
             .AnyAsync(c => c.Id != dto.Id && c.Name.ToLower() == dto.Name.ToLower());
 
         if (exists)
@@ -201,13 +209,15 @@ public class ChoreManagementService : IChoreManagementService
         chore.SortOrder = dto.SortOrder;
         chore.ModifiedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> DeleteChoreAsync(int id)
     {
-        var chore = await _context.ChoreDefinitions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var chore = await context.ChoreDefinitions
             .Include(c => c.ChoreLogs)
             .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -221,19 +231,21 @@ public class ChoreManagementService : IChoreManagementService
         {
             chore.IsActive = false;
             chore.ModifiedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return ServiceResult.Ok();
         }
 
         // No logs, can hard delete
-        _context.ChoreDefinitions.Remove(chore);
-        await _context.SaveChangesAsync();
+        context.ChoreDefinitions.Remove(chore);
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> ToggleActiveAsync(int id)
     {
-        var chore = await _context.ChoreDefinitions.FindAsync(id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var chore = await context.ChoreDefinitions.FindAsync(id);
         if (chore == null)
         {
             return ServiceResult.Fail("Chore not found.");
@@ -241,7 +253,7 @@ public class ChoreManagementService : IChoreManagementService
 
         chore.IsActive = !chore.IsActive;
         chore.ModifiedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
 

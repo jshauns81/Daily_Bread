@@ -134,7 +134,7 @@ public interface IDashboardService
 /// </summary>
 public class DashboardService : IDashboardService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
     private readonly IChildProfileService _profileService;
     private readonly ITrackerService _trackerService;
@@ -147,7 +147,7 @@ public class DashboardService : IDashboardService
     private const decimal DefaultCashOutThreshold = 10.00m;
 
     public DashboardService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IDateProvider dateProvider,
         IChildProfileService profileService,
         ITrackerService trackerService,
@@ -156,7 +156,7 @@ public class DashboardService : IDashboardService
         ISavingsGoalService savingsGoalService,
         IAchievementService achievementService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _dateProvider = dateProvider;
         _profileService = profileService;
         _trackerService = trackerService;
@@ -170,8 +170,10 @@ public class DashboardService : IDashboardService
     {
         var today = _dateProvider.Today;
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
         // Get pending approvals (completed but not approved chores)
-        var pendingApprovals = await _context.ChoreLogs
+        var pendingApprovals = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Where(cl => cl.Status == ChoreStatus.Completed)
@@ -206,7 +208,7 @@ public class DashboardService : IDashboardService
         var recentActivity = await GetRecentActivityAsync(10);
 
         // Get today's stats
-        var todayLogs = await _context.ChoreLogs
+        var todayLogs = await context.ChoreLogs
             .Where(cl => cl.Date == today)
             .ToListAsync();
 
@@ -295,13 +297,16 @@ public class DashboardService : IDashboardService
 
     public async Task<int> GetPendingApprovalsCountAsync()
     {
-        return await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ChoreLogs
             .CountAsync(cl => cl.Status == ChoreStatus.Completed);
     }
 
     public async Task<ServiceResult> QuickApproveAsync(int choreLogId, string parentUserId)
     {
-        var choreLog = await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var choreLog = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .FirstOrDefaultAsync(cl => cl.Id == choreLogId);
 
@@ -316,7 +321,7 @@ public class DashboardService : IDashboardService
         choreLog.ApprovedAt = DateTime.UtcNow;
         choreLog.ModifiedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         await _ledgerService.ReconcileChoreLogTransactionAsync(choreLogId);
 
         return ServiceResult.Ok();
@@ -324,10 +329,12 @@ public class DashboardService : IDashboardService
 
     private async Task<List<RecentActivityItem>> GetRecentActivityAsync(int count)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var activities = new List<RecentActivityItem>();
 
         // Get recent chore completions/approvals
-        var recentLogs = await _context.ChoreLogs
+        var recentLogs = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Include(cl => cl.ApprovedByUser)
@@ -365,7 +372,7 @@ public class DashboardService : IDashboardService
         }
 
         // Get recent transactions (payouts, bonuses, penalties)
-        var recentTransactions = await _context.LedgerTransactions
+        var recentTransactions = await context.LedgerTransactions
             .Include(t => t.User)
             .Where(t => t.Type == TransactionType.Payout || 
                         t.Type == TransactionType.Bonus || 
@@ -403,6 +410,8 @@ public class DashboardService : IDashboardService
 
     private async Task<(int current, int best)> CalculateStreaksAsync(string userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var today = _dateProvider.Today;
         var currentStreak = 0;
         var bestStreak = 0;
@@ -414,7 +423,7 @@ public class DashboardService : IDashboardService
         for (int i = 0; i < 365; i++)
         {
             // Get chores for this date
-            var choresForDate = await _context.ChoreLogs
+            var choresForDate = await context.ChoreLogs
                 .Include(cl => cl.ChoreDefinition)
                 .Where(cl => cl.Date == currentDate && cl.ChoreDefinition.AssignedUserId == userId)
                 .ToListAsync();
@@ -461,17 +470,19 @@ public class DashboardService : IDashboardService
 
     private async Task<WeeklyComparison> GetWeeklyComparisonAsync(string userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var today = _dateProvider.Today;
         var startOfThisWeek = today.AddDays(-(int)today.DayOfWeek);
         var startOfLastWeek = startOfThisWeek.AddDays(-7);
 
         // This week's stats
-        var thisWeekEarnings = await _context.LedgerTransactions
+        var thisWeekEarnings = await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0 && t.Type == TransactionType.ChoreEarning)
             .Where(t => t.TransactionDate >= startOfThisWeek && t.TransactionDate <= today)
             .SumAsync(t => t.Amount);
 
-        var thisWeekChores = await _context.ChoreLogs
+        var thisWeekChores = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
             .Where(cl => cl.Date >= startOfThisWeek && cl.Date <= today)
@@ -480,12 +491,12 @@ public class DashboardService : IDashboardService
 
         // Last week's stats
         var endOfLastWeek = startOfThisWeek.AddDays(-1);
-        var lastWeekEarnings = await _context.LedgerTransactions
+        var lastWeekEarnings = await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0 && t.Type == TransactionType.ChoreEarning)
             .Where(t => t.TransactionDate >= startOfLastWeek && t.TransactionDate <= endOfLastWeek)
             .SumAsync(t => t.Amount);
 
-        var lastWeekChores = await _context.ChoreLogs
+        var lastWeekChores = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
             .Where(cl => cl.Date >= startOfLastWeek && cl.Date <= endOfLastWeek)
@@ -503,7 +514,8 @@ public class DashboardService : IDashboardService
 
     private async Task<decimal> GetLifetimeEarningsAsync(string userId)
     {
-        return await _context.LedgerTransactions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0)
             .SumAsync(t => t.Amount);
     }
