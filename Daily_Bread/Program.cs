@@ -128,11 +128,24 @@ using (var scope = app.Services.CreateScope())
         
         if (isPostgres)
         {
-            // For PostgreSQL: Use EnsureCreated to create schema directly from model
-            // This avoids SQLite-specific migration issues
-            Console.WriteLine("PostgreSQL detected - using EnsureCreated...");
-            var created = await db.Database.EnsureCreatedAsync();
-            Console.WriteLine($"Database EnsureCreated result: {(created ? "Created new database" : "Database already exists")}");
+            // For PostgreSQL: First delete if exists, then create fresh
+            // This ensures a clean schema from the current model
+            Console.WriteLine("PostgreSQL detected - ensuring fresh database schema...");
+            
+            // Check if tables exist by trying to query
+            try
+            {
+                var hasRoles = await db.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"AspNetRoles\" LIMIT 1");
+                Console.WriteLine("Database tables already exist.");
+            }
+            catch
+            {
+                // Tables don't exist - delete and recreate
+                Console.WriteLine("Tables don't exist - creating fresh schema...");
+                await db.Database.EnsureDeletedAsync();
+                await db.Database.EnsureCreatedAsync();
+                Console.WriteLine("Fresh database schema created.");
+            }
         }
         else
         {
@@ -144,21 +157,16 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("Database setup completed successfully.");
         logger.LogInformation("Database setup completed successfully.");
         
-        // Verify the Achievements table exists before seeding
+        // Seed achievements
         try
         {
-            var achievementCount = await db.Achievements.CountAsync();
-            Console.WriteLine($"Achievements table exists with {achievementCount} records.");
-            
-            // Seed achievements
             var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
             await achievementService.SeedAchievementsAsync();
             Console.WriteLine("Achievement seeding completed.");
         }
         catch (Exception seedEx)
         {
-            Console.WriteLine($"Achievement seeding skipped - table may not exist yet: {seedEx.Message}");
-            // Don't throw - the app can still run without achievements initially
+            Console.WriteLine($"Achievement seeding error (non-fatal): {seedEx.Message}");
         }
     }
     catch (Exception ex)
