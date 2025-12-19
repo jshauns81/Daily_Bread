@@ -121,10 +121,27 @@ using (var scope = app.Services.CreateScope())
     
     try
     {
-        Console.WriteLine("Starting database migration...");
-        await db.Database.MigrateAsync();
-        Console.WriteLine("Database migration completed successfully.");
-        logger.LogInformation("Database migration completed successfully.");
+        Console.WriteLine("Starting database setup...");
+        
+        // Check if we're using PostgreSQL (production) or SQLite (development)
+        var isPostgres = db.Database.ProviderName?.Contains("Npgsql") == true;
+        
+        if (isPostgres)
+        {
+            // For PostgreSQL: Use EnsureCreated to create schema directly from model
+            // This avoids SQLite-specific migration issues
+            Console.WriteLine("PostgreSQL detected - using EnsureCreated...");
+            await db.Database.EnsureCreatedAsync();
+        }
+        else
+        {
+            // For SQLite: Use migrations as usual
+            Console.WriteLine("SQLite detected - using migrations...");
+            await db.Database.MigrateAsync();
+        }
+        
+        Console.WriteLine("Database setup completed successfully.");
+        logger.LogInformation("Database setup completed successfully.");
         
         // Seed achievements
         var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
@@ -133,8 +150,8 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Database migration error: {ex.Message}");
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        Console.WriteLine($"Database setup error: {ex.Message}");
+        logger.LogError(ex, "An error occurred while setting up the database.");
         throw;
     }
 }
