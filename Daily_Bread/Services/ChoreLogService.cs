@@ -4,9 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Daily_Bread.Services;
 
-/// <summary>
-/// Result object for service operations.
-/// </summary>
 public class ServiceResult
 {
     public bool Success { get; init; }
@@ -24,65 +21,19 @@ public class ServiceResult<T> : ServiceResult
     public new static ServiceResult<T> Fail(string message) => new() { Success = false, ErrorMessage = message };
 }
 
-/// <summary>
-/// Service for managing chore logs with role-based date restrictions.
-/// </summary>
 public interface IChoreLogService
 {
-    /// <summary>
-    /// Gets or creates a chore log for the specified chore and date.
-    /// </summary>
     Task<ServiceResult<ChoreLog>> GetOrCreateChoreLogAsync(int choreDefinitionId, DateOnly date);
-
-    /// <summary>
-    /// Gets all chore logs for a date.
-    /// </summary>
     Task<List<ChoreLog>> GetChoreLogsForDateAsync(DateOnly date);
-
-    /// <summary>
-    /// Gets chore logs for a specific user on a date.
-    /// </summary>
     Task<List<ChoreLog>> GetChoreLogsForUserOnDateAsync(string userId, DateOnly date);
-
-    /// <summary>
-    /// Updates a chore log status. Enforces role-based date restrictions.
-    /// </summary>
-    /// <param name="choreLogId">The chore log to update.</param>
-    /// <param name="status">New status.</param>
-    /// <param name="userId">User making the change.</param>
-    /// <param name="isParent">Whether the user has Parent role.</param>
-    /// <param name="notes">Optional notes.</param>
     Task<ServiceResult> UpdateChoreLogStatusAsync(int choreLogId, ChoreStatus status, string userId, bool isParent, string? notes = null);
-
-    /// <summary>
-    /// Marks a chore as completed. Child role can only complete today's chores.
-    /// </summary>
     Task<ServiceResult> MarkChoreCompletedAsync(int choreDefinitionId, DateOnly date, string userId, bool isParent, string? notes = null);
-
-    /// <summary>
-    /// Approves a completed chore. Parent role only.
-    /// </summary>
     Task<ServiceResult> ApproveChoreAsync(int choreLogId, string parentUserId);
-
-    /// <summary>
-    /// Marks a chore as missed. Parent role only.
-    /// </summary>
     Task<ServiceResult> MarkChoreMissedAsync(int choreLogId, string parentUserId);
-
-    /// <summary>
-    /// Gets all chore logs for a user in a given week (for weekly frequency chores).
-    /// </summary>
     Task<List<ChoreLog>> GetChoreLogsForUserInWeekAsync(string userId, DateOnly anyDateInWeek);
-
-    /// <summary>
-    /// Gets weekly frequency chore progress with logs for a user.
-    /// </summary>
     Task<List<WeeklyChoreWithLogs>> GetWeeklyChoresWithLogsAsync(string userId, DateOnly anyDateInWeek);
 }
 
-/// <summary>
-/// Represents a weekly frequency chore with its logs for the week.
-/// </summary>
 public class WeeklyChoreWithLogs
 {
     public ChoreDefinition ChoreDefinition { get; set; } = null!;
@@ -96,29 +47,30 @@ public class WeeklyChoreWithLogs
 
 public class ChoreLogService : IChoreLogService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
     private readonly IChoreScheduleService _scheduleService;
 
     public ChoreLogService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IDateProvider dateProvider,
         IChoreScheduleService scheduleService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _dateProvider = dateProvider;
         _scheduleService = scheduleService;
     }
 
     public async Task<ServiceResult<ChoreLog>> GetOrCreateChoreLogAsync(int choreDefinitionId, DateOnly date)
     {
-        // Check if chore is active on this date
         if (!await _scheduleService.IsChoreActiveOnDateAsync(choreDefinitionId, date))
         {
             return ServiceResult<ChoreLog>.Fail("Chore is not scheduled for this date.");
         }
 
-        var existingLog = await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var existingLog = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
             .FirstOrDefaultAsync(c => c.ChoreDefinitionId == choreDefinitionId && c.Date == date);
 
@@ -135,18 +87,19 @@ public class ChoreLogService : IChoreLogService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.ChoreLogs.Add(choreLog);
-        await _context.SaveChangesAsync();
+        context.ChoreLogs.Add(choreLog);
+        await context.SaveChangesAsync();
 
-        // Reload with navigation properties
-        await _context.Entry(choreLog).Reference(c => c.ChoreDefinition).LoadAsync();
+        await context.Entry(choreLog).Reference(c => c.ChoreDefinition).LoadAsync();
 
         return ServiceResult<ChoreLog>.Ok(choreLog);
     }
 
     public async Task<List<ChoreLog>> GetChoreLogsForDateAsync(DateOnly date)
     {
-        return await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        return await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
             .Include(c => c.LedgerTransaction)
             .Where(c => c.Date == date)
@@ -157,7 +110,9 @@ public class ChoreLogService : IChoreLogService
 
     public async Task<List<ChoreLog>> GetChoreLogsForUserOnDateAsync(string userId, DateOnly date)
     {
-        return await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        return await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
             .Include(c => c.LedgerTransaction)
             .Where(c => c.Date == date)
@@ -174,7 +129,9 @@ public class ChoreLogService : IChoreLogService
         bool isParent,
         string? notes = null)
     {
-        var choreLog = await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var choreLog = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
             .FirstOrDefaultAsync(c => c.Id == choreLogId);
 
@@ -183,14 +140,12 @@ public class ChoreLogService : IChoreLogService
             return ServiceResult.Fail("Chore log not found.");
         }
 
-        // Enforce today-only rule for Child role
         var today = _dateProvider.Today;
         if (!isParent && choreLog.Date != today)
         {
             return ServiceResult.Fail("Children can only modify today's chores.");
         }
 
-        // Children cannot set Approved or Missed status
         if (!isParent && (status == ChoreStatus.Approved || status == ChoreStatus.Missed))
         {
             return ServiceResult.Fail("Only parents can approve chores or mark them as missed.");
@@ -215,7 +170,7 @@ public class ChoreLogService : IChoreLogService
             choreLog.ApprovedAt = DateTime.UtcNow;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
 
@@ -226,7 +181,6 @@ public class ChoreLogService : IChoreLogService
         bool isParent,
         string? notes = null)
     {
-        // Enforce today-only rule for Child role
         var today = _dateProvider.Today;
         if (!isParent && date != today)
         {
@@ -241,40 +195,44 @@ public class ChoreLogService : IChoreLogService
 
         var choreLog = logResult.Data!;
 
-        // Don't allow re-completing already approved chores
         if (choreLog.Status == ChoreStatus.Approved)
         {
             return ServiceResult.Fail("This chore has already been approved.");
         }
 
-        // Check if chore should be auto-approved
-        var choreDefinition = await _context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var choreDefinition = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        
         if (choreDefinition != null && choreDefinition.AutoApprove)
         {
-            // Auto-approve: Set directly to Approved status
-            choreLog.Status = ChoreStatus.Approved;
-            choreLog.CompletedByUserId = userId;
-            choreLog.CompletedAt = DateTime.UtcNow;
-            choreLog.ApprovedByUserId = "SYSTEM"; // Mark as system-approved
-            choreLog.ApprovedAt = DateTime.UtcNow;
-            choreLog.ModifiedAt = DateTime.UtcNow;
-
-            if (!string.IsNullOrWhiteSpace(notes))
+            var logToUpdate = await context.ChoreLogs.FindAsync(choreLog.Id);
+            if (logToUpdate != null)
             {
-                choreLog.Notes = notes;
-            }
+                logToUpdate.Status = ChoreStatus.Approved;
+                logToUpdate.CompletedByUserId = userId;
+                logToUpdate.CompletedAt = DateTime.UtcNow;
+                logToUpdate.ApprovedByUserId = "SYSTEM";
+                logToUpdate.ApprovedAt = DateTime.UtcNow;
+                logToUpdate.ModifiedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+                if (!string.IsNullOrWhiteSpace(notes))
+                {
+                    logToUpdate.Notes = notes;
+                }
+
+                await context.SaveChangesAsync();
+            }
             return ServiceResult.Ok();
         }
 
-        // Standard flow: mark as completed, requires parent approval
         return await UpdateChoreLogStatusAsync(choreLog.Id, ChoreStatus.Completed, userId, isParent, notes);
     }
 
     public async Task<ServiceResult> ApproveChoreAsync(int choreLogId, string parentUserId)
     {
-        var choreLog = await _context.ChoreLogs.FindAsync(choreLogId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var choreLog = await context.ChoreLogs.FindAsync(choreLogId);
+        
         if (choreLog == null)
         {
             return ServiceResult.Fail("Chore log not found.");
@@ -295,10 +253,12 @@ public class ChoreLogService : IChoreLogService
 
     public async Task<List<ChoreLog>> GetChoreLogsForUserInWeekAsync(string userId, DateOnly anyDateInWeek)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
         var weekStart = _scheduleService.GetWeekStartDate(anyDateInWeek);
         var weekEnd = _scheduleService.GetWeekEndDate(anyDateInWeek);
 
-        return await _context.ChoreLogs
+        return await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
             .Include(c => c.LedgerTransaction)
             .Where(c => c.Date >= weekStart && c.Date <= weekEnd)
@@ -312,11 +272,12 @@ public class ChoreLogService : IChoreLogService
 
     public async Task<List<WeeklyChoreWithLogs>> GetWeeklyChoresWithLogsAsync(string userId, DateOnly anyDateInWeek)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
         var weekStart = _scheduleService.GetWeekStartDate(anyDateInWeek);
         var weekEnd = _scheduleService.GetWeekEndDate(anyDateInWeek);
 
-        // Get all weekly frequency chores for this user
-        var weeklyChores = await _context.ChoreDefinitions
+        var weeklyChores = await context.ChoreDefinitions
             .Where(c => c.IsActive)
             .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
             .Where(c => c.AssignedUserId == userId)
@@ -333,8 +294,7 @@ public class ChoreLogService : IChoreLogService
 
         var choreIds = weeklyChores.Select(c => c.Id).ToList();
 
-        // Get all logs for these chores in this week
-        var logs = await _context.ChoreLogs
+        var logs = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
             .Include(c => c.LedgerTransaction)
             .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
@@ -345,22 +305,17 @@ public class ChoreLogService : IChoreLogService
         var logsByChore = logs.GroupBy(l => l.ChoreDefinitionId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        var result = new List<WeeklyChoreWithLogs>();
-
-        foreach (var chore in weeklyChores)
+        return weeklyChores.Select(chore =>
         {
             var choreLogs = logsByChore.GetValueOrDefault(chore.Id, []);
-
-            result.Add(new WeeklyChoreWithLogs
+            return new WeeklyChoreWithLogs
             {
                 ChoreDefinition = chore,
                 TargetCount = chore.WeeklyTargetCount,
                 CompletedCount = choreLogs.Count(l => l.Status == ChoreStatus.Completed || l.Status == ChoreStatus.Approved),
                 ApprovedCount = choreLogs.Count(l => l.Status == ChoreStatus.Approved),
                 LogsThisWeek = choreLogs
-            });
-        }
-
-        return result;
+            };
+        }).ToList();
     }
 }

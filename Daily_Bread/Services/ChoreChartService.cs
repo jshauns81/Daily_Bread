@@ -104,20 +104,17 @@ public interface IChoreChartService
 
 public class ChoreChartService : IChoreChartService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
-    private readonly IChoreScheduleService _scheduleService;
     private readonly IChildProfileService _profileService;
 
     public ChoreChartService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IDateProvider dateProvider,
-        IChoreScheduleService scheduleService,
         IChildProfileService profileService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _dateProvider = dateProvider;
-        _scheduleService = scheduleService;
         _profileService = profileService;
     }
 
@@ -132,9 +129,7 @@ public class ChoreChartService : IChoreChartService
         var weekStart = weekStartDate ?? GetWeekStart(_dateProvider.Today);
         var weekEnd = weekStart.AddDays(6);
 
-        // Get all child profiles
         var profiles = await _profileService.GetAllChildProfilesAsync();
-
         var children = new List<ChildChoreChart>();
 
         foreach (var profile in profiles)
@@ -159,8 +154,9 @@ public class ChoreChartService : IChoreChartService
         var weekStart = weekStartDate ?? GetWeekStart(_dateProvider.Today);
         var weekEnd = weekStart.AddDays(6);
 
-        var profile = await _context.ChildProfiles
-            .Include(p => p.User)
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles
             .FirstOrDefaultAsync(p => p.Id == profileId);
 
         if (profile == null) return null;
@@ -174,8 +170,9 @@ public class ChoreChartService : IChoreChartService
         DateOnly weekStart,
         DateOnly weekEnd)
     {
-        // Get the user ID for this profile
-        var profile = await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles
             .FirstOrDefaultAsync(p => p.Id == profileId);
 
         if (profile == null) return null;
@@ -184,18 +181,17 @@ public class ChoreChartService : IChoreChartService
         var today = _dateProvider.Today;
 
         // Get all chore definitions for this user
-        var userChores = await _context.ChoreDefinitions
+        var userChores = await context.ChoreDefinitions
             .Where(c => c.AssignedUserId == userId && c.IsActive)
             .Where(c => c.StartDate == null || c.StartDate <= weekEnd)
             .Where(c => c.EndDate == null || c.EndDate >= weekStart)
             .ToListAsync();
 
-        // Separate daily chores from weekly frequency chores
         var dailyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.SpecificDays).ToList();
         var weeklyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency).ToList();
 
         // Get all chore logs for the week
-        var choreLogs = await _context.ChoreLogs
+        var choreLogs = await context.ChoreLogs
             .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
             .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
             .ToListAsync();
@@ -266,12 +262,10 @@ public class ChoreChartService : IChoreChartService
         }
 
         // Build weekly frequency progress
-        var weeklyProgress = new List<WeeklyFrequencyChoreProgress>();
-        foreach (var chore in weeklyChores)
+        var weeklyProgress = weeklyChores.Select(chore =>
         {
             var weeklyLogs = choreLogs.Where(cl => cl.ChoreDefinitionId == chore.Id).ToList();
-            
-            weeklyProgress.Add(new WeeklyFrequencyChoreProgress
+            return new WeeklyFrequencyChoreProgress
             {
                 ChoreDefinitionId = chore.Id,
                 ChoreName = chore.Name,
@@ -284,8 +278,8 @@ public class ChoreChartService : IChoreChartService
                     .Select(l => l.Date)
                     .OrderBy(d => d)
                     .ToList()
-            });
-        }
+            };
+        }).ToList();
 
         return new ChildChoreChart
         {
@@ -330,7 +324,7 @@ public class ChoreChartService : IChoreChartService
         return firstChar switch
         {
             >= 'A' and <= 'E' => "??",
-            >= 'F' and <= 'J' => "?",
+            >= 'F' and <= 'J' => "??",
             >= 'K' and <= 'O' => "??",
             >= 'P' and <= 'T' => "??",
             >= 'U' and <= 'Z' => "??",

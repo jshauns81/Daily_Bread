@@ -90,14 +90,14 @@ public interface ICalendarService
 /// </summary>
 public class CalendarService : ICalendarService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
 
     public CalendarService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IDateProvider dateProvider)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _dateProvider = dateProvider;
     }
 
@@ -123,11 +123,13 @@ public class CalendarService : ICalendarService
 
     public async Task<List<DaySummary>> GetDateRangeSummaryAsync(DateOnly startDate, DateOnly endDate, string? userId = null)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var today = _dateProvider.Today;
         var summaries = new List<DaySummary>();
 
         // Get all chore logs in the date range
-        var logsQuery = _context.ChoreLogs
+        var logsQuery = context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.Date >= startDate && cl.Date <= endDate);
 
@@ -140,7 +142,7 @@ public class CalendarService : ICalendarService
         var logsByDate = logs.GroupBy(l => l.Date).ToDictionary(g => g.Key, g => g.ToList());
 
         // Get all chore definitions that might be active in this range
-        var choreDefinitions = await _context.ChoreDefinitions
+        var choreDefinitions = await context.ChoreDefinitions
             .Where(cd => cd.IsActive || cd.ChoreLogs.Any(cl => cl.Date >= startDate && cl.Date <= endDate))
             .Where(cd => string.IsNullOrEmpty(userId) || cd.AssignedUserId == userId)
             .ToListAsync();
@@ -157,10 +159,12 @@ public class CalendarService : ICalendarService
 
     public async Task<DaySummary> GetDaySummaryAsync(DateOnly date, string? userId = null)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var today = _dateProvider.Today;
 
         // Get logs for this specific date
-        var logsQuery = _context.ChoreLogs
+        var logsQuery = context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.Date == date);
 
@@ -172,7 +176,7 @@ public class CalendarService : ICalendarService
         var logs = await logsQuery.ToListAsync();
         var logsByDate = new Dictionary<DateOnly, List<ChoreLog>> { { date, logs } };
 
-        var choreDefinitions = await _context.ChoreDefinitions
+        var choreDefinitions = await context.ChoreDefinitions
             .Where(cd => cd.IsActive)
             .Where(cd => string.IsNullOrEmpty(userId) || cd.AssignedUserId == userId)
             .ToListAsync();
