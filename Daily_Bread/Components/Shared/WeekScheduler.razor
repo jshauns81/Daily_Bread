@@ -57,7 +57,7 @@
                                      @ondragstart="() => HandleDragStart(chore, date)"
                                      @ondragend="HandleDragEnd">
                                     <div class="chore-name">@chore.Name</div>
-                                    <div class="chore-value small">$@chore.Value.ToString("F2")</div>
+                                    <div class="chore-value small">$@chore.EarnValue.ToString("F2")</div>
                                     @if (hasOverride)
                                     {
                                         <span class="badge bg-info position-absolute" style="bottom: 2px; right: 2px; font-size: 0.6rem;"
@@ -96,7 +96,7 @@
                          draggable="true"
                          @ondragstart="() => HandleDragStart(chore, null)">
                         <div class="chore-name">@chore.Name</div>
-                        <div class="chore-value small">$@chore.Value.ToString("F2")</div>
+                        <div class="chore-value small">$@chore.EarnValue.ToString("F2")</div>
                     </div>
                 }
             </div>

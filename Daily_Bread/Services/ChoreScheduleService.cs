@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,7 +42,7 @@ public interface IChoreScheduleService
     /// <summary>
     /// Gets weekly progress for all weekly frequency chores for a user in the specified week.
     /// </summary>
-    Task<Dictionary<int, WeeklyChoreProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek);
+    Task<Dictionary<int, ChoreScheduleWeeklyProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek);
 
     /// <summary>
     /// Checks if a weekly frequency chore has met its target for the week.
@@ -77,8 +77,10 @@ public interface IChoreScheduleService
 
 /// <summary>
 /// Represents the weekly progress for a frequency-based chore.
+/// NOTE: Use Services.WeeklyChoreProgress from WeeklyProgressService for the full implementation.
+/// This is a legacy wrapper for backward compatibility.
 /// </summary>
-public class WeeklyChoreProgress
+public class ChoreScheduleWeeklyProgress
 {
     public int ChoreDefinitionId { get; set; }
     public string ChoreName { get; set; } = string.Empty;
@@ -91,33 +93,38 @@ public class WeeklyChoreProgress
 
 public class ChoreScheduleService : IChoreScheduleService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IFamilySettingsService _familySettingsService;
 
-    public ChoreScheduleService(ApplicationDbContext context)
+    public ChoreScheduleService(
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IFamilySettingsService familySettingsService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
+        _familySettingsService = familySettingsService;
     }
 
     public DateOnly GetWeekStartDate(DateOnly date)
     {
-        // Week starts on Sunday
-        int daysFromSunday = (int)date.DayOfWeek;
-        return date.AddDays(-daysFromSunday);
+        // Synchronous helper - uses default Monday start
+        // For configurable week start, use async method via FamilySettingsService
+        return ChoreScheduleHelper.GetWeekStartDate(date);
     }
 
     public DateOnly GetWeekEndDate(DateOnly date)
     {
-        // Week ends on Saturday
-        int daysToSaturday = 6 - (int)date.DayOfWeek;
-        return date.AddDays(daysToSaturday);
+        // Synchronous helper - uses default Monday start
+        return ChoreScheduleHelper.GetWeekEndDate(date);
     }
 
     public async Task<List<ChoreDefinition>> GetChoresForDateAsync(DateOnly date)
     {
-        var dayOfWeek = GetDayOfWeekFlag(date.DayOfWeek);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var dayOfWeek = ChoreScheduleHelper.GetDayOfWeekFlag(date.DayOfWeek);
 
         // Get base scheduled chores (both SpecificDays and WeeklyFrequency)
-        var baseChores = await _context.ChoreDefinitions
+        var baseChores = await context.ChoreDefinitions
             .Where(c => c.IsActive)
             .Where(c => (c.ActiveDays & dayOfWeek) == dayOfWeek)
             .Where(c => c.StartDate == null || c.StartDate <= date)
@@ -125,7 +132,7 @@ public class ChoreScheduleService : IChoreScheduleService
             .ToListAsync();
 
         // Get overrides for this date
-        var overrides = await _context.ChoreScheduleOverrides
+        var overrides = await context.ChoreScheduleOverrides
             .Include(o => o.ChoreDefinition)
             .Where(o => o.Date == date)
             .ToListAsync();
@@ -171,23 +178,27 @@ public class ChoreScheduleService : IChoreScheduleService
 
     public async Task<int> GetWeeklyCompletionCountAsync(int choreDefinitionId, DateOnly anyDateInWeek)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var weekStart = GetWeekStartDate(anyDateInWeek);
         var weekEnd = GetWeekEndDate(anyDateInWeek);
 
-        return await _context.ChoreLogs
+        return await context.ChoreLogs
             .Where(cl => cl.ChoreDefinitionId == choreDefinitionId)
             .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
             .Where(cl => cl.Status == ChoreStatus.Approved)
             .CountAsync();
     }
 
-    public async Task<Dictionary<int, WeeklyChoreProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek)
+    public async Task<Dictionary<int, ChoreScheduleWeeklyProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var weekStart = GetWeekStartDate(anyDateInWeek);
         var weekEnd = GetWeekEndDate(anyDateInWeek);
 
         // Get all weekly frequency chores for this user
-        var weeklyChores = await _context.ChoreDefinitions
+        var weeklyChores = await context.ChoreDefinitions
             .Where(c => c.IsActive)
             .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
             .Where(c => c.AssignedUserId == userId)
@@ -197,13 +208,13 @@ public class ChoreScheduleService : IChoreScheduleService
 
         if (weeklyChores.Count == 0)
         {
-            return new Dictionary<int, WeeklyChoreProgress>();
+            return new Dictionary<int, ChoreScheduleWeeklyProgress>();
         }
 
         var choreIds = weeklyChores.Select(c => c.Id).ToList();
 
         // Get completion counts for the week
-        var completionCounts = await _context.ChoreLogs
+        var completionCounts = await context.ChoreLogs
             .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
             .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
             .GroupBy(cl => cl.ChoreDefinitionId)
@@ -215,11 +226,11 @@ public class ChoreScheduleService : IChoreScheduleService
             })
             .ToDictionaryAsync(x => x.ChoreDefinitionId);
 
-        var result = new Dictionary<int, WeeklyChoreProgress>();
+        var result = new Dictionary<int, ChoreScheduleWeeklyProgress>();
 
         foreach (var chore in weeklyChores)
         {
-            var progress = new WeeklyChoreProgress
+            var progress = new ChoreScheduleWeeklyProgress
             {
                 ChoreDefinitionId = chore.Id,
                 ChoreName = chore.Name,
@@ -240,7 +251,9 @@ public class ChoreScheduleService : IChoreScheduleService
 
     public async Task<bool> IsWeeklyTargetMetAsync(int choreDefinitionId, DateOnly anyDateInWeek)
     {
-        var chore = await _context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var chore = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
         if (chore == null || chore.ScheduleType != ChoreScheduleType.WeeklyFrequency)
         {
             return false;
@@ -252,14 +265,16 @@ public class ChoreScheduleService : IChoreScheduleService
 
     public async Task<ServiceResult> AddChoreToDateAsync(int choreDefinitionId, DateOnly date, string createdByUserId, string? assignedUserId = null)
     {
-        var chore = await _context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var chore = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
         if (chore == null)
         {
             return ServiceResult.Fail("Chore not found.");
         }
 
         // Check if override already exists
-        var existingOverride = await _context.ChoreScheduleOverrides
+        var existingOverride = await context.ChoreScheduleOverrides
             .FirstOrDefaultAsync(o => o.ChoreDefinitionId == choreDefinitionId && o.Date == date);
 
         if (existingOverride != null)
@@ -282,17 +297,19 @@ public class ChoreScheduleService : IChoreScheduleService
                 CreatedByUserId = createdByUserId,
                 CreatedAt = DateTime.UtcNow
             };
-            _context.ChoreScheduleOverrides.Add(newOverride);
+            context.ChoreScheduleOverrides.Add(newOverride);
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> RemoveChoreFromDateAsync(int choreDefinitionId, DateOnly date, string createdByUserId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Check if override already exists
-        var existingOverride = await _context.ChoreScheduleOverrides
+        var existingOverride = await context.ChoreScheduleOverrides
             .FirstOrDefaultAsync(o => o.ChoreDefinitionId == choreDefinitionId && o.Date == date);
 
         if (existingOverride != null)
@@ -300,7 +317,7 @@ public class ChoreScheduleService : IChoreScheduleService
             if (existingOverride.Type == ScheduleOverrideType.Add)
             {
                 // If it was an Add override, just remove it entirely
-                _context.ChoreScheduleOverrides.Remove(existingOverride);
+                context.ChoreScheduleOverrides.Remove(existingOverride);
             }
             else
             {
@@ -321,10 +338,10 @@ public class ChoreScheduleService : IChoreScheduleService
                 CreatedByUserId = createdByUserId,
                 CreatedAt = DateTime.UtcNow
             };
-            _context.ChoreScheduleOverrides.Add(newOverride);
+            context.ChoreScheduleOverrides.Add(newOverride);
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
 
@@ -338,8 +355,10 @@ public class ChoreScheduleService : IChoreScheduleService
         // Create Remove override for source date
         await RemoveChoreFromDateAsync(choreDefinitionId, fromDate, createdByUserId);
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Create Add/Move override for target date
-        var existingOverride = await _context.ChoreScheduleOverrides
+        var existingOverride = await context.ChoreScheduleOverrides
             .FirstOrDefaultAsync(o => o.ChoreDefinitionId == choreDefinitionId && o.Date == toDate);
 
         if (existingOverride != null)
@@ -358,16 +377,18 @@ public class ChoreScheduleService : IChoreScheduleService
                 CreatedByUserId = createdByUserId,
                 CreatedAt = DateTime.UtcNow
             };
-            _context.ChoreScheduleOverrides.Add(newOverride);
+            context.ChoreScheduleOverrides.Add(newOverride);
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
 
     public async Task<List<ChoreScheduleOverride>> GetOverridesForDateRangeAsync(DateOnly startDate, DateOnly endDate)
     {
-        return await _context.ChoreScheduleOverrides
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.ChoreScheduleOverrides
             .Include(o => o.ChoreDefinition)
             .Include(o => o.OverrideAssignedUser)
             .Where(o => o.Date >= startDate && o.Date <= endDate)
@@ -377,29 +398,16 @@ public class ChoreScheduleService : IChoreScheduleService
 
     public async Task<ServiceResult> RemoveOverrideAsync(int overrideId)
     {
-        var scheduleOverride = await _context.ChoreScheduleOverrides.FindAsync(overrideId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var scheduleOverride = await context.ChoreScheduleOverrides.FindAsync(overrideId);
         if (scheduleOverride == null)
         {
             return ServiceResult.Fail("Override not found.");
         }
 
-        _context.ChoreScheduleOverrides.Remove(scheduleOverride);
-        await _context.SaveChangesAsync();
+        context.ChoreScheduleOverrides.Remove(scheduleOverride);
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
-
-    /// <summary>
-    /// Converts System.DayOfWeek to our DaysOfWeek flags enum.
-    /// </summary>
-    private static DaysOfWeek GetDayOfWeekFlag(DayOfWeek dayOfWeek) => dayOfWeek switch
-    {
-        DayOfWeek.Sunday => DaysOfWeek.Sunday,
-        DayOfWeek.Monday => DaysOfWeek.Monday,
-        DayOfWeek.Tuesday => DaysOfWeek.Tuesday,
-        DayOfWeek.Wednesday => DaysOfWeek.Wednesday,
-        DayOfWeek.Thursday => DaysOfWeek.Thursday,
-        DayOfWeek.Friday => DaysOfWeek.Friday,
-        DayOfWeek.Saturday => DaysOfWeek.Saturday,
-        _ => DaysOfWeek.None
-    };
 }

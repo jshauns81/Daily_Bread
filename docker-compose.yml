@@ -1,0 +1,49 @@
+services:
+  dailybread:
+    build: .
+    container_name: dailybread-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Database connection
+      - DATABASE_URL=Host=dailybread-postgres;Port=5432;Database=${POSTGRES_DB:-dailybread};Username=${POSTGRES_USER:-dailybread};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      # Admin user seeding
+      - Seed__AdminUserName=${ADMIN_USERNAME:-admin}
+      - Seed__AdminPassword=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      # ASP.NET Core settings
+      - ASPNETCORE_URLS=http://+:5000
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dailybread-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: dailybread-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-dailybread}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      - POSTGRES_DB=${POSTGRES_DB:-dailybread}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dailybread} -d ${POSTGRES_DB:-dailybread}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dailybread-net
+
+networks:
+  dailybread-net:
+    driver: bridge
+
+volumes:
+  postgres-data:

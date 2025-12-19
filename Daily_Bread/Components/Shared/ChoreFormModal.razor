@@ -1,0 +1,26 @@
+﻿@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+
+<div class="chore-form-modal">
+    <button class="modal-close-absolute" @onclick="HandleCancel" aria-label="Close">×</button>
+    <div class="modal-header">
+        <h2>@Title</h2>
+    </div>
+    <div class="modal-body">
+        <ChoreForm 
+            Chore="Chore"
+            Users="Users"
+            OnSubmit="OnSubmit"
+            OnCancel="HandleCancel" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Add Labor";
+    [Parameter] public ChoreDefinitionDto? Chore { get; set; }
+    [Parameter] public List<UserSelectItem> Users { get; set; } = [];
+    [Parameter] public EventCallback<ChoreDefinitionDto> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task HandleCancel() => await OnCancel.InvokeAsync();
+}

@@ -1,119 +1,98 @@
 .login-container {
-    min-height: 100vh;
+    min-height: 100vh; /* Fallback for older browsers */
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-xl);
-    background: var(--nord0);
+    padding: var(--ds-space-7);
+    background: var(--ds-bg-base);
 }
 
 .login-card {
-    background: var(--nord1);
-    border: 1px solid var(--nord3);
-    border-radius: var(--radius-xl);
-    padding: var(--space-xl);
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-xl);
+    padding: var(--ds-space-7);
     width: 100%;
     max-width: 420px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--ds-shadow-lg);
 }
 
 .login-header {
     text-align: center;
-    margin-bottom: var(--space-xl);
+    margin-bottom: var(--ds-space-7);
 }
 
 .brand-icon {
     width: 80px;
     height: 80px;
     display: block;
-    margin: 0 auto var(--space-md) auto;
+    margin: 0 auto var(--ds-space-4) auto;
 }
 
 .login-header h1 {
-    color: var(--nord6);
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-    margin-bottom: var(--space-sm);
+    color: var(--ds-text-primary);
+    font-size: var(--ds-text-2xl);
+    font-weight: var(--ds-font-bold);
+    margin-bottom: var(--ds-space-2);
 }
 
 .tagline {
-    color: var(--nord4);
-    font-size: var(--font-size-sm);
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-sm);
     margin: 0;
 }
 
 .login-card .form-label {
-    color: var(--nord4);
-    font-weight: var(--font-weight-medium);
-    margin-bottom: var(--space-sm);
-    font-size: var(--font-size-sm);
-}
-
-.login-card .form-control {
-    height: 50px;
-    background: var(--nord0);
-    border: 2px solid var(--nord3);
-    border-radius: var(--radius-lg);
-    color: var(--nord6);
-    font-size: var(--font-size-md);
-    padding: var(--space-sm) var(--space-md);
-    transition: all var(--transition-fast);
-}
-
-.login-card .form-control:focus {
-    border-color: var(--nord8);
-    background: var(--nord0);
-    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
-    outline: none;
-}
-
-.login-card .form-control::placeholder {
-    color: var(--nord4);
+    color: var(--ds-text-muted);
+    font-weight: var(--ds-font-medium);
+    margin-bottom: var(--ds-space-2);
+    font-size: var(--ds-text-sm);
 }
 
 .login-card .form-check-label {
-    color: var(--nord4);
-    font-size: var(--font-size-sm);
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-sm);
 }
 
 .btn-login {
     width: 100%;
     height: 50px;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%);
+    font-size: var(--ds-text-lg);
+    font-weight: var(--ds-font-semibold);
+    border-radius: var(--ds-radius-lg);
+    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
     border: none;
-    color: var(--nord6);
-    transition: all var(--transition-fast);
+    color: var(--ds-text-primary);
+    transition: all var(--ds-duration-fast) ease;
 }
 
 .btn-login:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 30px rgba(94, 129, 172, 0.4);
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .login-footer {
-    margin-top: var(--space-xl);
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--nord3);
+    margin-top: var(--ds-space-7);
+    padding-top: var(--ds-space-6);
+    border-top: 1px solid var(--ds-bg-muted);
     text-align: center;
 }
 
 .kid-mode-link {
-    color: var(--nord4);
+    color: var(--ds-text-muted);
     text-decoration: none;
-    font-size: var(--font-size-sm);
-    padding: var(--space-sm) var(--space-lg);
-    border-radius: var(--radius-md);
-    background: var(--nord2);
+    font-size: var(--ds-text-sm);
+    padding: var(--ds-space-2) var(--ds-space-6);
+    border-radius: var(--ds-radius-md);
+    background: var(--ds-bg-hover);
     display: inline-block;
-    transition: all var(--transition-fast);
+    transition: all var(--ds-duration-fast) ease;
 }
 
 .kid-mode-link:hover {
-    background: var(--nord3);
-    color: var(--nord6);
+    background: var(--ds-bg-muted);
+    color: var(--ds-text-primary);
     transform: translateY(-1px);
 }

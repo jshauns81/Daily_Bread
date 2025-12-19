@@ -1,6 +1,10 @@
 # =====================================
-# SECRETS AND SENSITIVE FILES
+# CRITICAL SECURITY - PREVENT CREDENTIAL EXPOSURE
 # =====================================
+
+# appsettings.json with real credentials should NOT be committed
+# Only commit appsettings.json.example with placeholder values
+appsettings.json
 
 # Development settings with passwords/secrets
 appsettings.Development.json
@@ -11,9 +15,36 @@ secrets.json
 # Environment files
 .env
 .env.*
+.env.local
 
 # User secrets folder
 **/secrets/
+
+# Directory listing files
+file.txt
+*.txt.bak
+
+# Any files containing credentials or tokens
+*credentials*
+*token*
+*.key
+*.pem
+*.pfx
+
+# SSH keys
+id_rsa
+id_dsa
+*.ppk
+
+# Certificate files (unless specifically needed)
+*.cer
+*.crt
+*.der
+
+# Backup files that might contain secrets
+*.backup
+*.bak
+*-backup
 
 # =====================================
 # DATABASE FILES
@@ -393,3 +424,25 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# =====================================
+# DEVELOPMENT/INTERNAL DOCUMENTATION (keep out of public repo)
+# =====================================
+
+# Internal development summaries and investigation notes
+*_SUMMARY.md
+*_INVESTIGATION.md
+*_REPORT.md
+*FIX_SUMMARY.md
+
+# Railway deployment (removed from project)
+railway.toml
+
+# Archive files (should not be committed)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Git backup folders
+.git-rebase-backup/

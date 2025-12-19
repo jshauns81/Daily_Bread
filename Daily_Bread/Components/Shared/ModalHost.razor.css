@@ -1,0 +1,197 @@
+/* ============================================
+   MODAL HOST - ROOT LEVEL MODAL STYLING
+   Renders modals outside page layout hierarchy
+   to properly cover sidebar, header, and all UI
+   ============================================ */
+
+.modal-host-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--ds-bg-base) 75%, transparent);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: var(--ds-space-4);
+    /* Ensure full viewport coverage */
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    /* Prevent any inherited transforms from affecting positioning */
+    transform: none;
+    /* Block scrolling on background */
+    overflow: hidden;
+}
+
+.modal-host-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    max-height: 90dvh;
+    background: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--ds-shadow-xl);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: modalHostIn 0.25s ease-out;
+}
+
+@keyframes modalHostIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ===========================================
+   CHORE FORM MODAL - Positioning context
+   =========================================== */
+
+.chore-form-modal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ===========================================
+   MODAL HEADER
+   =========================================== */
+
+.chore-form-modal .modal-header,
+.modal-host-container .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 1rem 1.25rem;
+    padding-right: 3rem; /* Make room for absolute close button */
+    background: var(--ds-bg-hover);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    flex-shrink: 0;
+}
+
+.chore-form-modal .modal-header h2,
+.modal-host-container .modal-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ds-text-primary);
+}
+
+/* ===========================================
+   CLOSE BUTTON - Absolute positioned top-right
+   =========================================== */
+
+.chore-form-modal .modal-close-absolute,
+.modal-host-container .modal-close-absolute {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--ds-text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    z-index: 10;
+}
+
+.chore-form-modal .modal-close-absolute:hover,
+.modal-host-container .modal-close-absolute:hover {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+/* Legacy inline close button */
+.modal-host-container .modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ds-text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.modal-host-container .modal-close:hover {
+    background: var(--ds-bg-muted);
+    color: var(--ds-text-primary);
+}
+
+/* ===========================================
+   MODAL BODY - Scrollable content area
+   =========================================== */
+
+.chore-form-modal .modal-body,
+.modal-host-container .modal-body {
+    flex: 1;
+    padding: 1.25rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}
+
+/* ===========================================
+   MOBILE: Centered modal (not bottom sheet)
+   =========================================== */
+
+@media (max-width: 640px) {
+    .modal-host-backdrop {
+        padding: var(--ds-space-4);
+        align-items: center;      /* Vertical center */
+        justify-content: center;  /* Horizontal center */
+    }
+    
+    .modal-host-container {
+        max-width: calc(100% - var(--ds-space-8));
+        max-height: calc(100dvh - var(--ds-space-8));
+        border-radius: var(--ds-radius-lg);
+        margin: auto;  /* Fallback centering */
+    }
+    
+    .chore-form-modal .modal-header,
+    .modal-host-container .modal-header {
+        padding: 0.875rem 1rem;
+        padding-right: 3rem;
+    }
+    
+    .chore-form-modal .modal-header h2,
+    .modal-host-container .modal-header h2 {
+        font-size: 1rem;
+    }
+    
+    .chore-form-modal .modal-body,
+    .modal-host-container .modal-body {
+        padding: 1rem;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100dvh - var(--ds-space-8) - 60px);
+    }
+}
+
+/* Ensure body doesn't scroll when modal is open */
+body:has(.modal-host-backdrop) {
+    overflow: hidden;
+}

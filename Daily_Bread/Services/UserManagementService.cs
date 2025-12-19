@@ -1,4 +1,5 @@
 using Daily_Bread.Data;
+using Daily_Bread.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +16,6 @@ public class UserListItem
     public required List<string> Roles { get; init; }
     public bool IsLockedOut { get; init; }
     public DateTimeOffset? LockoutEnd { get; init; }
-    public DateTime CreatedAt { get; init; }
 }
 
 /// <summary>
@@ -106,18 +106,18 @@ public class UserManagementService : IUserManagementService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IChildProfileService _childProfileService;
 
     public UserManagementService(
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IChildProfileService childProfileService)
     {
         _userManager = userManager;
         _roleManager = roleManager;
-        _context = context;
+        _contextFactory = contextFactory;
         _childProfileService = childProfileService;
     }
 
@@ -364,8 +364,10 @@ public class UserManagementService : IUserManagementService
             return ServiceResult.Fail("Cannot delete an Admin user.");
         }
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Check for child profile and handle related data
-        var childProfile = await _context.ChildProfiles
+        var childProfile = await context.ChildProfiles
             .Include(p => p.LedgerAccounts)
                 .ThenInclude(a => a.LedgerTransactions)
             .FirstOrDefaultAsync(p => p.UserId == userId);
@@ -388,9 +390,8 @@ public class UserManagementService : IUserManagementService
                     account.ModifiedAt = DateTime.UtcNow;
                 }
 
-                // Clear the user reference but keep the profile for historical records
-                // We need to update the ChoreDefinitions to unassign this user
-                var choreDefinitions = await _context.ChoreDefinitions
+                // Unassign chores from this user
+                var choreDefinitions = await context.ChoreDefinitions
                     .Where(c => c.AssignedUserId == userId)
                     .ToListAsync();
                 
@@ -399,17 +400,7 @@ public class UserManagementService : IUserManagementService
                     chore.AssignedUserId = null;
                 }
 
-                await _context.SaveChangesAsync();
-
-                // Now delete the user - the profile will remain orphaned but inactive
-                // First, we need to clear the UserId on the profile to avoid FK constraint
-                // Actually, with Cascade delete on ChildProfile.User, this should work
-                // But we set it to cascade, so deleting user will delete profile
-                // The issue is LedgerAccount has Restrict...
-                
-                // So we need to manually handle this:
-                // 1. Remove the UserId from ChildProfile (make it nullable or handle differently)
-                // Since UserId is required, we can't null it. Let's just lock out the user instead.
+                await context.SaveChangesAsync();
                 
                 return ServiceResult.Fail(
                     "This user has transaction history that must be preserved. " +
@@ -419,17 +410,17 @@ public class UserManagementService : IUserManagementService
             {
                 // No transactions - safe to delete everything
                 // Delete ledger accounts first (they have Restrict delete behavior)
-                _context.LedgerAccounts.RemoveRange(childProfile.LedgerAccounts);
+                context.LedgerAccounts.RemoveRange(childProfile.LedgerAccounts);
                 
                 // Delete child profile
-                _context.ChildProfiles.Remove(childProfile);
+                context.ChildProfiles.Remove(childProfile);
                 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
         }
 
         // Unassign any chores assigned to this user
-        var assignedChores = await _context.ChoreDefinitions
+        var assignedChores = await context.ChoreDefinitions
             .Where(c => c.AssignedUserId == userId)
             .ToListAsync();
         
@@ -439,7 +430,7 @@ public class UserManagementService : IUserManagementService
         }
 
         // Clear any chore log references to this user
-        var completedLogs = await _context.ChoreLogs
+        var completedLogs = await context.ChoreLogs
             .Where(c => c.CompletedByUserId == userId || c.ApprovedByUserId == userId)
             .ToListAsync();
         
@@ -451,7 +442,7 @@ public class UserManagementService : IUserManagementService
                 log.ApprovedByUserId = null;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         // Delete the user
         var result = await _userManager.DeleteAsync(user);

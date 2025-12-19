@@ -1,0 +1,131 @@
+﻿@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@if (_showPrompt)
+{
+    <div class="pwa-install-prompt @(_isVisible ? "visible" : "")">
+        <div class="pwa-install-content">
+            <img src="images/bread-icon.png" alt="" class="pwa-install-icon" />
+            <div class="pwa-install-text">
+                <strong>Install Daily Bread</strong>
+                <span>Add to your home screen for quick access</span>
+            </div>
+        </div>
+        <div class="pwa-install-actions">
+            <button class="pwa-install-dismiss" @onclick="Dismiss">Not now</button>
+            <button class="pwa-install-btn" @onclick="Install">Install</button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _showPrompt = false;
+    private bool _isVisible = false;
+    private bool _disposed = false;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<PwaInstallPrompt>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_disposed)
+        {
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/pwa-install.js");
+                await _module.InvokeVoidAsync("initialize", _dotNetRef);
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit disconnected, ignore
+            }
+            catch (TaskCanceledException)
+            {
+                // Operation cancelled, ignore
+            }
+            catch (ObjectDisposedException)
+            {
+                // Object disposed, ignore
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void ShowInstallPrompt()
+    {
+        if (_disposed) return;
+        
+        _showPrompt = true;
+        StateHasChanged();
+        
+        // Animate in
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(50);
+            if (_disposed) return;
+            _isVisible = true;
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task Install()
+    {
+        if (_module != null && !_disposed)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("promptInstall");
+            }
+            catch
+            {
+                // Ignore JS errors
+            }
+        }
+        await Hide();
+    }
+
+    private async Task Dismiss()
+    {
+        if (_module != null && !_disposed)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("dismissPrompt");
+            }
+            catch
+            {
+                // Ignore JS errors
+            }
+        }
+        await Hide();
+    }
+
+    private async Task Hide()
+    {
+        _isVisible = false;
+        await Task.Delay(300); // Wait for animation
+        _showPrompt = false;
+        if (!_disposed)
+        {
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        
+        if (_module != null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch
+            {
+                // Swallow all exceptions during disposal - circuit may already be disconnected
+            }
+        }
+        _dotNetRef?.Dispose();
+    }
+}

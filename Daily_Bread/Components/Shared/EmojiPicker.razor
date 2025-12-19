@@ -1,0 +1,310 @@
+﻿@inject IJSRuntime JS
+
+<div class="emoji-picker-wrapper" @ref="_wrapperRef">
+    <button type="button" 
+            class="emoji-circle @(string.IsNullOrEmpty(Value) ? "empty" : "")"
+            @onclick="TogglePicker"
+            @onclick:stopPropagation="true"
+            title="Choose icon">
+        @if (!string.IsNullOrEmpty(Value))
+        {
+            <span class="selected-emoji">@Value</span>
+        }
+        else
+        {
+            <span class="emoji-placeholder">☺</span>
+        }
+    </button>
+    
+    @if (_showPicker)
+    {
+        <div class="emoji-picker-backdrop" @onclick="ClosePicker"></div>
+        <div class="emoji-picker-dropdown" 
+             style="@GetDropdownStyle()"
+             @onclick:stopPropagation="true">
+            <div class="emoji-picker-header">
+                <span>Choose an icon</span>
+                <button type="button" class="emoji-picker-close" @onclick="ClosePicker">×</button>
+            </div>
+            
+            <!-- Quick picks for common chores -->
+            <div class="emoji-quick-picks">
+                <span class="quick-picks-label">Quick picks:</span>
+                <div class="quick-picks-grid">
+                    @foreach (var emoji in QuickPickEmojis)
+                    {
+                        <button type="button" 
+                                class="emoji-btn @(Value == emoji ? "selected" : "")" 
+                                @onclick="() => SelectEmoji(emoji)"
+                                title="@GetEmojiName(emoji)">
+                            @emoji
+                        </button>
+                    }
+                </div>
+            </div>
+            
+            <!-- Category sections -->
+            @foreach (var category in EmojiCategories)
+            {
+                <div class="emoji-category">
+                    <span class="category-label">@category.Key</span>
+                    <div class="emoji-grid">
+                        @foreach (var emoji in category.Value)
+                        {
+                            <button type="button" 
+                                    class="emoji-btn @(Value == emoji ? "selected" : "")" 
+                                    @onclick="() => SelectEmoji(emoji)">
+                                @emoji
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+            
+            @if (!string.IsNullOrEmpty(Value))
+            {
+                <div class="emoji-picker-footer">
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="ClearEmoji">
+                        Clear
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Value { get; set; }
+    
+    [Parameter]
+    public EventCallback<string?> ValueChanged { get; set; }
+    
+    private bool _showPicker;
+    private ElementReference _wrapperRef;
+    private DotNetObjectReference<EmojiPicker>? _dotNetRef;
+    private double _dropdownTop;
+    private double _dropdownLeft;
+    
+    // Quick picks - using EmojiConstants for reliable rendering
+    private static readonly string[] QuickPickEmojis =
+    [
+        EmojiConstants.Bed,
+        EmojiConstants.Tooth,
+        EmojiConstants.Dog,
+        EmojiConstants.Plate,
+        EmojiConstants.Broom,
+        EmojiConstants.Trash,
+        EmojiConstants.Books,
+        EmojiConstants.Backpack,
+        EmojiConstants.TShirt,
+        EmojiConstants.Shower,
+        EmojiConstants.Seedling,
+        EmojiConstants.CatFace,
+        EmojiConstants.Cooking,
+        EmojiConstants.Soap,
+        EmojiConstants.Memo,
+        EmojiConstants.Sparkles
+    ];
+    
+    // Categorized emojis using EmojiConstants
+    private static readonly Dictionary<string, string[]> EmojiCategories = new()
+    {
+        ["Cleaning"] = [
+            EmojiConstants.Broom,
+            EmojiConstants.Soap,
+            EmojiConstants.Shower,
+            EmojiConstants.Bathtub,
+            EmojiConstants.TShirt,
+            EmojiConstants.Gloves,
+            EmojiConstants.Sparkles,
+            EmojiConstants.Lotion,
+            EmojiConstants.Toilet,
+            EmojiConstants.Droplet,
+            EmojiConstants.Sponge,
+            EmojiConstants.Trash
+        ],
+        ["Home"] = [
+            EmojiConstants.Bed,
+            EmojiConstants.Couch,
+            EmojiConstants.Door,
+            EmojiConstants.LightBulb,
+            EmojiConstants.Key,
+            EmojiConstants.Package,
+            EmojiConstants.Seedling,
+            EmojiConstants.House,
+            EmojiConstants.HouseGarden,
+            EmojiConstants.Chair,
+            EmojiConstants.Television,
+            EmojiConstants.ShoppingCart
+        ],
+        ["Kitchen"] = [
+            EmojiConstants.Plate,
+            EmojiConstants.Cooking,
+            EmojiConstants.Pan,
+            EmojiConstants.ForkKnife,
+            EmojiConstants.Spoon,
+            EmojiConstants.Knife,
+            EmojiConstants.Coffee,
+            EmojiConstants.Ice,
+            EmojiConstants.Trash,
+            EmojiConstants.Recycle,
+            EmojiConstants.Bowl,
+            EmojiConstants.Pot
+        ],
+        ["Pets"] = [
+            EmojiConstants.Dog,
+            EmojiConstants.Cat,
+            EmojiConstants.CatFace,
+            EmojiConstants.DogFace,
+            EmojiConstants.PawPrints,
+            EmojiConstants.Bone,
+            EmojiConstants.Fish,
+            EmojiConstants.TropicalFish,
+            EmojiConstants.Turtle,
+            EmojiConstants.Hamster,
+            EmojiConstants.Rabbit,
+            EmojiConstants.Parrot
+        ],
+        ["School"] = [
+            EmojiConstants.Books,
+            EmojiConstants.OpenBook,
+            EmojiConstants.Pencil,
+            EmojiConstants.Memo,
+            EmojiConstants.Backpack,
+            EmojiConstants.Notebook,
+            EmojiConstants.Pen,
+            EmojiConstants.Ruler,
+            EmojiConstants.Microscope,
+            EmojiConstants.Art,
+            EmojiConstants.Music,
+            EmojiConstants.Laptop
+        ],
+        ["Outdoor"] = [
+            EmojiConstants.Seedling,
+            EmojiConstants.Sunflower,
+            EmojiConstants.Tree,
+            EmojiConstants.FallenLeaf,
+            EmojiConstants.Leaf,
+            EmojiConstants.Car,
+            EmojiConstants.Bicycle,
+            EmojiConstants.Soccer,
+            EmojiConstants.Basketball,
+            EmojiConstants.Tennis,
+            EmojiConstants.Running,
+            EmojiConstants.Walking
+        ],
+        ["Health"] = [
+            EmojiConstants.Tooth,
+            EmojiConstants.Pill,
+            EmojiConstants.Bandage,
+            EmojiConstants.Sleeping,
+            EmojiConstants.PersonInBed,
+            EmojiConstants.Muscle,
+            EmojiConstants.Weightlifter,
+            EmojiConstants.Droplet,
+            EmojiConstants.Apple,
+            EmojiConstants.Lotion,
+            EmojiConstants.Tap,
+            EmojiConstants.Yoga
+        ],
+        ["Fun"] = [
+            EmojiConstants.VideoGame,
+            EmojiConstants.Television,
+            EmojiConstants.Movie,
+            EmojiConstants.Dice,
+            EmojiConstants.Puzzle,
+            EmojiConstants.Art,
+            EmojiConstants.Theater,
+            EmojiConstants.Circus,
+            EmojiConstants.Star,
+            EmojiConstants.GlowingStar,
+            EmojiConstants.Party,
+            EmojiConstants.Balloon
+        ]
+    };
+    
+    // Emoji names for tooltips
+    private static readonly Dictionary<string, string> EmojiNames = new()
+    {
+        [EmojiConstants.Bed] = "Bed - Make bed",
+        [EmojiConstants.Tooth] = "Tooth - Brush teeth",
+        [EmojiConstants.Dog] = "Dog - Walk dog",
+        [EmojiConstants.Plate] = "Dishes - Set table",
+        [EmojiConstants.Broom] = "Broom - Sweep",
+        [EmojiConstants.Trash] = "Trash - Take out trash",
+        [EmojiConstants.Books] = "Books - Reading/Homework",
+        [EmojiConstants.Backpack] = "Backpack - Pack bag",
+        [EmojiConstants.TShirt] = "Shirt - Laundry",
+        [EmojiConstants.Shower] = "Shower - Take shower",
+        [EmojiConstants.Seedling] = "Plant - Water plants",
+        [EmojiConstants.CatFace] = "Cat - Feed cat",
+        [EmojiConstants.Cooking] = "Cooking - Help cook",
+        [EmojiConstants.Soap] = "Soap - Wash dishes",
+        [EmojiConstants.Memo] = "Notes - Homework",
+        [EmojiConstants.Sparkles] = "Sparkle - Clean room"
+    };
+    
+    private string GetDropdownStyle()
+    {
+        // Position below the button, with some offset
+        // Using viewport-relative positioning since the dropdown is position:fixed
+        return $"top: {_dropdownTop}px; left: {_dropdownLeft}px;";
+    }
+    
+    private async Task TogglePicker()
+    {
+        if (!_showPicker)
+        {
+            // Get button position before showing
+            try
+            {
+                var rect = await JS.InvokeAsync<BoundingClientRect>("eval", 
+                    $"(function(){{ var el = document.querySelector('[_bl_{_wrapperRef.Id}]') || document.querySelector('.emoji-picker-wrapper'); if(el){{ var r = el.getBoundingClientRect(); return {{top:r.top,left:r.left,bottom:r.bottom,right:r.right,width:r.width,height:r.height}}; }} return {{top:100,left:20,bottom:148,right:68,width:48,height:48}}; }})()");
+                
+                _dropdownTop = rect.Bottom + 4; // 4px gap below button
+                _dropdownLeft = rect.Left;
+                
+                // Ensure dropdown doesn't go off-screen
+                if (_dropdownLeft + 320 > rect.Right + 200) // 320 is min-width
+                {
+                    _dropdownLeft = Math.Max(16, rect.Right - 320);
+                }
+            }
+            catch
+            {
+                // Fallback positioning - center of viewport
+                _dropdownTop = 120;
+                _dropdownLeft = 20;
+            }
+        }
+        
+        _showPicker = !_showPicker;
+    }
+    
+    private void ClosePicker()
+    {
+        _showPicker = false;
+    }
+    
+    private async Task SelectEmoji(string emoji)
+    {
+        Value = emoji;
+        await ValueChanged.InvokeAsync(emoji);
+        _showPicker = false;
+    }
+    
+    private async Task ClearEmoji()
+    {
+        Value = null;
+        await ValueChanged.InvokeAsync(null);
+        _showPicker = false;
+    }
+    
+    private static string GetEmojiName(string emoji)
+    {
+        return EmojiNames.TryGetValue(emoji, out var name) ? name : emoji;
+    }
+    
+    private record BoundingClientRect(double Top, double Left, double Bottom, double Right, double Width, double Height);
+}

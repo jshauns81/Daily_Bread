@@ -1,4 +1,4 @@
-namespace Daily_Bread.Data.Models;
+﻿namespace Daily_Bread.Data.Models;
 
 /// <summary>
 /// Records financial transactions (earnings/deductions) tied to a ledger account.
@@ -19,6 +19,19 @@ public class LedgerTransaction
     /// </summary>
     public int? ChoreLogId { get; set; }
     public ChoreLog? ChoreLog { get; set; }
+    
+    /// <summary>
+    /// For weekly penalties: the chore definition this penalty is for.
+    /// Used with WeekEndDate for idempotency checks.
+    /// </summary>
+    public int? ChoreDefinitionId { get; set; }
+    public ChoreDefinition? ChoreDefinition { get; set; }
+    
+    /// <summary>
+    /// For weekly penalties: the week end date this transaction applies to.
+    /// Used with ChoreDefinitionId for idempotency checks.
+    /// </summary>
+    public DateOnly? WeekEndDate { get; set; }
 
     /// <summary>
     /// The user this transaction belongs to (kept for backwards compatibility and quick queries).
@@ -60,6 +73,12 @@ public class LedgerTransaction
     /// Timestamp when the transaction was last modified.
     /// </summary>
     public DateTime? ModifiedAt { get; set; }
+    
+    /// <summary>
+    /// Concurrency token for optimistic locking.
+    /// Incremented on each update. Cross-database compatible.
+    /// </summary>
+    public int Version { get; set; }
 }
 
 /// <summary>

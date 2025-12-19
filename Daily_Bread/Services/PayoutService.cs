@@ -65,12 +65,12 @@ public interface IPayoutService
 
 public class PayoutService : IPayoutService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
 
-    public PayoutService(ApplicationDbContext context, IDateProvider dateProvider)
+    public PayoutService(IDbContextFactory<ApplicationDbContext> contextFactory, IDateProvider dateProvider)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _dateProvider = dateProvider;
     }
 
@@ -78,7 +78,9 @@ public class PayoutService : IPayoutService
 
     public async Task<AccountBalanceSummary> GetAccountBalanceSummaryAsync(int ledgerAccountId)
     {
-        var account = await _context.LedgerAccounts
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var account = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
             .Include(a => a.LedgerTransactions)
             .FirstOrDefaultAsync(a => a.Id == ledgerAccountId);
@@ -133,7 +135,9 @@ public class PayoutService : IPayoutService
 
     public async Task<List<AccountBalanceSummary>> GetAllAccountBalancesAsync()
     {
-        var accounts = await _context.LedgerAccounts
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var accounts = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
             .Include(a => a.LedgerTransactions)
             .Where(a => a.IsActive && a.ChildProfile.IsActive)
@@ -197,6 +201,8 @@ public class PayoutService : IPayoutService
             ? $"Cash out: ${amount:F2}"
             : $"Cash out: ${amount:F2} - {notes}";
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var transaction = new LedgerTransaction
         {
             LedgerAccountId = ledgerAccountId,
@@ -208,8 +214,8 @@ public class PayoutService : IPayoutService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.LedgerTransactions.Add(transaction);
-        await _context.SaveChangesAsync();
+        context.LedgerTransactions.Add(transaction);
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
@@ -230,7 +236,9 @@ public class PayoutService : IPayoutService
             return ServiceResult.Fail("Description is required for bonuses.");
         }
 
-        var account = await _context.LedgerAccounts
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var account = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
             .FirstOrDefaultAsync(a => a.Id == ledgerAccountId);
 
@@ -250,8 +258,8 @@ public class PayoutService : IPayoutService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.LedgerTransactions.Add(transaction);
-        await _context.SaveChangesAsync();
+        context.LedgerTransactions.Add(transaction);
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
@@ -272,7 +280,9 @@ public class PayoutService : IPayoutService
             return ServiceResult.Fail("Description is required for penalties.");
         }
 
-        var account = await _context.LedgerAccounts
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var account = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
             .FirstOrDefaultAsync(a => a.Id == ledgerAccountId);
 
@@ -292,8 +302,8 @@ public class PayoutService : IPayoutService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.LedgerTransactions.Add(transaction);
-        await _context.SaveChangesAsync();
+        context.LedgerTransactions.Add(transaction);
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
@@ -314,7 +324,9 @@ public class PayoutService : IPayoutService
             return ServiceResult.Fail("Description is required for adjustments.");
         }
 
-        var account = await _context.LedgerAccounts
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var account = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
             .FirstOrDefaultAsync(a => a.Id == ledgerAccountId);
 
@@ -335,8 +347,8 @@ public class PayoutService : IPayoutService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.LedgerTransactions.Add(transaction);
-        await _context.SaveChangesAsync();
+        context.LedgerTransactions.Add(transaction);
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
@@ -347,7 +359,9 @@ public class PayoutService : IPayoutService
 
     public async Task<BalanceSummary> GetBalanceSummaryAsync(string userId)
     {
-        var user = await _context.Users.FindAsync(userId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var user = await context.Users.FindAsync(userId);
         if (user == null)
         {
             return new BalanceSummary
@@ -363,7 +377,7 @@ public class PayoutService : IPayoutService
         }
 
         // Get default account for this user
-        var profile = await _context.ChildProfiles
+        var profile = await context.ChildProfiles
             .Include(p => p.LedgerAccounts)
             .ThenInclude(a => a.LedgerTransactions)
             .FirstOrDefaultAsync(p => p.UserId == userId);
@@ -390,7 +404,7 @@ public class PayoutService : IPayoutService
         }
 
         // Fall back to legacy transaction query
-        var transactions = await _context.LedgerTransactions
+        var transactions = await context.LedgerTransactions
             .Where(t => t.UserId == userId)
             .ToListAsync();
 
@@ -445,7 +459,9 @@ public class PayoutService : IPayoutService
 
     public async Task<decimal> GetCashOutThresholdAsync()
     {
-        var setting = await _context.AppSettings
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var setting = await context.AppSettings
             .FirstOrDefaultAsync(s => s.Key == AppSettingKeys.CashOutThreshold);
 
         if (setting != null && decimal.TryParse(setting.Value, out var threshold))
@@ -463,7 +479,9 @@ public class PayoutService : IPayoutService
             return ServiceResult.Fail("Threshold cannot be negative.");
         }
 
-        var setting = await _context.AppSettings
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var setting = await context.AppSettings
             .FirstOrDefaultAsync(s => s.Key == AppSettingKeys.CashOutThreshold);
 
         if (setting == null)
@@ -475,7 +493,7 @@ public class PayoutService : IPayoutService
                 Description = "Minimum balance required before cash out is allowed",
                 DataType = SettingDataType.Decimal
             };
-            _context.AppSettings.Add(setting);
+            context.AppSettings.Add(setting);
         }
         else
         {
@@ -483,7 +501,7 @@ public class PayoutService : IPayoutService
             setting.ModifiedAt = DateTime.UtcNow;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return ServiceResult.Ok();
     }
 
@@ -493,8 +511,10 @@ public class PayoutService : IPayoutService
         string parentUserId,
         string? notes = null)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Find default account and delegate
-        var profile = await _context.ChildProfiles
+        var profile = await context.ChildProfiles
             .Include(p => p.LedgerAccounts)
             .FirstOrDefaultAsync(p => p.UserId == userId);
 
@@ -520,7 +540,9 @@ public class PayoutService : IPayoutService
         string parentUserId,
         string description)
     {
-        var profile = await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles
             .Include(p => p.LedgerAccounts)
             .FirstOrDefaultAsync(p => p.UserId == userId);
 
@@ -546,7 +568,9 @@ public class PayoutService : IPayoutService
         string parentUserId,
         string description)
     {
-        var profile = await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles
             .Include(p => p.LedgerAccounts)
             .FirstOrDefaultAsync(p => p.UserId == userId);
 
@@ -572,7 +596,9 @@ public class PayoutService : IPayoutService
         string parentUserId,
         string description)
     {
-        var profile = await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles
             .Include(p => p.LedgerAccounts)
             .FirstOrDefaultAsync(p => p.UserId == userId);
 

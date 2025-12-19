@@ -70,18 +70,19 @@ public interface IChildProfileService
 
 public class ChildProfileService : IChildProfileService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public ChildProfileService(ApplicationDbContext context)
+    public ChildProfileService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<List<ChildProfileSummary>> GetAllChildProfilesAsync(bool includeInactive = false)
     {
-        var query = _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var query = context.ChildProfiles
             .Include(p => p.LedgerAccounts)
-            .ThenInclude(a => a.LedgerTransactions)
             .AsQueryable();
 
         if (!includeInactive)
@@ -91,24 +92,42 @@ public class ChildProfileService : IChildProfileService
 
         var profiles = await query.ToListAsync();
 
-        return profiles.Select(p => new ChildProfileSummary
+        // Get account IDs for balance calculation
+        var accountIds = profiles
+            .SelectMany(p => p.LedgerAccounts.Where(a => a.IsActive))
+            .Select(a => a.Id)
+            .ToList();
+
+        // Calculate balances in a single query instead of loading all transactions
+        var balancesByAccount = await context.LedgerTransactions
+            .Where(t => accountIds.Contains(t.LedgerAccountId))
+            .GroupBy(t => t.LedgerAccountId)
+            .Select(g => new { AccountId = g.Key, Balance = g.Sum(t => t.Amount) })
+            .ToDictionaryAsync(x => x.AccountId, x => x.Balance);
+
+        return profiles.Select(p =>
         {
-            ProfileId = p.Id,
-            UserId = p.UserId,
-            DisplayName = p.DisplayName,
-            IsActive = p.IsActive,
-            DefaultAccountId = p.LedgerAccounts.FirstOrDefault(a => a.IsDefault)?.Id 
-                ?? p.LedgerAccounts.FirstOrDefault()?.Id ?? 0,
-            TotalBalance = p.LedgerAccounts
-                .Where(a => a.IsActive)
-                .SelectMany(a => a.LedgerTransactions)
-                .Sum(t => t.Amount)
+            var activeAccounts = p.LedgerAccounts.Where(a => a.IsActive).ToList();
+            var totalBalance = activeAccounts.Sum(a => balancesByAccount.GetValueOrDefault(a.Id, 0));
+            
+            return new ChildProfileSummary
+            {
+                ProfileId = p.Id,
+                UserId = p.UserId,
+                DisplayName = p.DisplayName,
+                IsActive = p.IsActive,
+                DefaultAccountId = activeAccounts.FirstOrDefault(a => a.IsDefault)?.Id 
+                    ?? activeAccounts.FirstOrDefault()?.Id ?? 0,
+                TotalBalance = totalBalance
+            };
         }).OrderBy(p => p.DisplayName).ToList();
     }
 
     public async Task<ChildProfile?> GetProfileByIdAsync(int profileId)
     {
-        return await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.ChildProfiles
             .Include(p => p.User)
             .Include(p => p.LedgerAccounts)
             .FirstOrDefaultAsync(p => p.Id == profileId);
@@ -116,7 +135,9 @@ public class ChildProfileService : IChildProfileService
 
     public async Task<ChildProfile?> GetProfileByUserIdAsync(string userId)
     {
-        return await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.ChildProfiles
             .Include(p => p.User)
             .Include(p => p.LedgerAccounts)
             .FirstOrDefaultAsync(p => p.UserId == userId);
@@ -124,7 +145,9 @@ public class ChildProfileService : IChildProfileService
 
     public async Task<LedgerAccount?> GetDefaultAccountAsync(int profileId)
     {
-        return await _context.LedgerAccounts
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.LedgerAccounts
             .Where(a => a.ChildProfileId == profileId && a.IsActive)
             .OrderByDescending(a => a.IsDefault)
             .ThenBy(a => a.Id)
@@ -133,7 +156,9 @@ public class ChildProfileService : IChildProfileService
 
     public async Task<List<LedgerAccount>> GetAccountsAsync(int profileId)
     {
-        return await _context.LedgerAccounts
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.LedgerAccounts
             .Where(a => a.ChildProfileId == profileId && a.IsActive)
             .OrderByDescending(a => a.IsDefault)
             .ThenBy(a => a.Name)
@@ -142,8 +167,10 @@ public class ChildProfileService : IChildProfileService
 
     public async Task<ServiceResult<ChildProfile>> CreateProfileAsync(string userId, string displayName)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Check if profile already exists for this user
-        var existing = await _context.ChildProfiles
+        var existing = await context.ChildProfiles
             .FirstOrDefaultAsync(p => p.UserId == userId);
 
         if (existing != null)
@@ -168,15 +195,17 @@ public class ChildProfileService : IChildProfileService
             CreatedAt = DateTime.UtcNow
         });
 
-        _context.ChildProfiles.Add(profile);
-        await _context.SaveChangesAsync();
+        context.ChildProfiles.Add(profile);
+        await context.SaveChangesAsync();
 
         return ServiceResult<ChildProfile>.Ok(profile);
     }
 
     public async Task<ServiceResult<LedgerAccount>> CreateAccountAsync(int profileId, string name, bool isDefault = false)
     {
-        var profile = await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles
             .Include(p => p.LedgerAccounts)
             .FirstOrDefaultAsync(p => p.Id == profileId);
 
@@ -209,35 +238,39 @@ public class ChildProfileService : IChildProfileService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.LedgerAccounts.Add(newAccount);
-        await _context.SaveChangesAsync();
+        context.LedgerAccounts.Add(newAccount);
+        await context.SaveChangesAsync();
 
         return ServiceResult<LedgerAccount>.Ok(newAccount);
     }
 
     public async Task<bool> CanAccessProfileAsync(string userId, bool isParent, int profileId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Parents can access any profile
         if (isParent)
         {
-            return await _context.ChildProfiles.AnyAsync(p => p.Id == profileId);
+            return await context.ChildProfiles.AnyAsync(p => p.Id == profileId);
         }
 
         // Children can only access their own profile
-        return await _context.ChildProfiles
+        return await context.ChildProfiles
             .AnyAsync(p => p.Id == profileId && p.UserId == userId);
     }
 
     public async Task<bool> CanAccessAccountAsync(string userId, bool isParent, int accountId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Parents can access any account
         if (isParent)
         {
-            return await _context.LedgerAccounts.AnyAsync(a => a.Id == accountId);
+            return await context.LedgerAccounts.AnyAsync(a => a.Id == accountId);
         }
 
         // Children can only access accounts linked to their profile
-        return await _context.LedgerAccounts
+        return await context.LedgerAccounts
             .AnyAsync(a => a.Id == accountId && a.ChildProfile.UserId == userId);
     }
 }

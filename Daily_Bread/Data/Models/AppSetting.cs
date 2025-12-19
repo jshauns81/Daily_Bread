@@ -81,4 +81,15 @@ public static class AppSettingKeys
     /// Default cash out threshold value.
     /// </summary>
     public const decimal DefaultCashOutThreshold = 10.00m;
+
+    /// <summary>
+    /// The family's timezone (IANA timezone ID, e.g., "America/New_York").
+    /// Used for determining "today" and scheduling.
+    /// </summary>
+    public const string TimeZone = "TimeZone";
+
+    /// <summary>
+    /// Default timezone (US Eastern).
+    /// </summary>
+    public const string DefaultTimeZone = "America/New_York";
 }

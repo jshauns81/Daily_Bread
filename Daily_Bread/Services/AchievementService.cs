@@ -1,11 +1,12 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Daily_Bread.Services;
 
 /// <summary>
-/// DTO for displaying an achievement.
+/// DTO for displaying an achievement with progress and bonus information.
 /// </summary>
 public class AchievementDisplay
 {
@@ -13,12 +14,34 @@ public class AchievementDisplay
     public required string Code { get; init; }
     public required string Name { get; init; }
     public required string Description { get; init; }
+    public string? HiddenHint { get; init; }
     public required string Icon { get; init; }
+    public string? LockedIcon { get; init; }
     public AchievementCategory Category { get; init; }
+    public AchievementRarity Rarity { get; init; }
     public int Points { get; init; }
+    public int SortOrder { get; init; }
+    
+    // Visibility
+    public bool IsHidden { get; init; }
+    public bool IsLegendary { get; init; }
+    public bool IsVisibleBeforeUnlock { get; init; }
+    
+    // Earned status
     public bool IsEarned { get; init; }
     public DateTime? EarnedAt { get; init; }
     public bool IsNew { get; init; } // Just earned, hasn't been seen
+    
+    // Progress
+    public int CurrentProgress { get; init; }
+    public int TargetProgress { get; init; }
+    public int ProgressPercent { get; init; }
+    public bool ShowProgress { get; init; }
+    
+    // Bonus
+    public bool HasBonus { get; init; }
+    public string? BonusDescription { get; init; }
+    public AchievementBonusType? BonusType { get; init; }
 }
 
 /// <summary>
@@ -27,7 +50,8 @@ public class AchievementDisplay
 public interface IAchievementService
 {
     /// <summary>
-    /// Gets all achievements with earned status for a user.
+    /// Gets all visible achievements with earned status and progress for a user.
+    /// Hidden achievements are only returned if earned or if IsVisibleBeforeUnlock is true.
     /// </summary>
     Task<List<AchievementDisplay>> GetAllAchievementsAsync(string userId);
 
@@ -58,59 +82,111 @@ public interface IAchievementService
     Task<int> GetTotalPointsAsync(string userId);
 
     /// <summary>
+    /// Gets achievement statistics for a user.
+    /// </summary>
+    Task<AchievementStats> GetStatsAsync(string userId);
+
+    /// <summary>
+    /// Awards a specific achievement to a user manually.
+    /// Used for special awards by parents or triggered by specific events.
+    /// </summary>
+    Task<AchievementDisplay?> AwardAchievementAsync(string userId, string achievementCode, string? notes = null);
+
+    /// <summary>
+    /// Gets progress for all achievements for a user.
+    /// </summary>
+    Task<Dictionary<int, AchievementEvaluationResult>> GetProgressAsync(string userId);
+
+    /// <summary>
     /// Seeds the default achievements (called on startup).
     /// </summary>
     Task SeedAchievementsAsync();
 }
 
 /// <summary>
+/// Achievement statistics for a user.
+/// </summary>
+public record AchievementStats
+{
+    public int TotalAchievements { get; init; }
+    public int EarnedAchievements { get; init; }
+    public int TotalPoints { get; init; }
+    public int EarnedPoints { get; init; }
+    public int HiddenRemaining { get; init; }
+    public int LegendaryEarned { get; init; }
+    public Dictionary<AchievementCategory, int> ByCategory { get; init; } = new();
+    public Dictionary<AchievementRarity, int> ByRarity { get; init; } = new();
+}
+
+/// <summary>
 /// Service for managing achievements/badges.
+/// 
+/// ARCHITECTURE:
+/// - Uses IAchievementConditionEvaluator for data-driven unlock evaluation
+/// - Uses IAchievementBonusService for granting and managing bonuses
+/// - Respects hidden achievement visibility rules
+/// - Tracks progress for progress-based achievements
 /// </summary>
 public class AchievementService : IAchievementService
 {
-    private readonly ApplicationDbContext _context;
-    private readonly ILedgerService _ledgerService;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IAchievementConditionEvaluator _conditionEvaluator;
+    private readonly IAchievementBonusService _bonusService;
     private readonly IDateProvider _dateProvider;
+    private readonly ILogger<AchievementService> _logger;
 
     public AchievementService(
-        ApplicationDbContext context, 
-        ILedgerService ledgerService,
-        IDateProvider dateProvider)
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IAchievementConditionEvaluator conditionEvaluator,
+        IAchievementBonusService bonusService,
+        IDateProvider dateProvider,
+        ILogger<AchievementService> logger)
     {
-        _context = context;
-        _ledgerService = ledgerService;
+        _contextFactory = contextFactory;
+        _conditionEvaluator = conditionEvaluator;
+        _bonusService = bonusService;
         _dateProvider = dateProvider;
+        _logger = logger;
     }
 
     public async Task<List<AchievementDisplay>> GetAllAchievementsAsync(string userId)
     {
-        var achievements = await _context.Achievements
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var achievements = await context.Achievements
             .Where(a => a.IsActive)
             .OrderBy(a => a.Category)
             .ThenBy(a => a.SortOrder)
+            .ThenBy(a => a.Rarity)
             .ToListAsync();
 
-        var earnedIds = await _context.UserAchievements
+        var earnedMap = await context.UserAchievements
             .Where(ua => ua.UserId == userId)
             .ToDictionaryAsync(ua => ua.AchievementId, ua => ua);
 
-        return achievements.Select(a =>
+        // Get progress for all unearned achievements
+        var progressMap = await _conditionEvaluator.EvaluateAllAsync(userId);
+
+        var result = new List<AchievementDisplay>();
+
+        foreach (var a in achievements)
         {
-            earnedIds.TryGetValue(a.Id, out var userAchievement);
-            return new AchievementDisplay
-            {
-                Id = a.Id,
-                Code = a.Code,
-                Name = a.Name,
-                Description = a.Description,
-                Icon = a.Icon,
-                Category = a.Category,
-                Points = a.Points,
-                IsEarned = userAchievement != null,
-                EarnedAt = userAchievement?.EarnedAt,
-                IsNew = userAchievement != null && !userAchievement.HasSeen
-            };
-        }).ToList();
+            earnedMap.TryGetValue(a.Id, out var userAchievement);
+            var isEarned = userAchievement != null;
+            
+            // Hidden achievement visibility rules:
+            // - If earned: always show
+            // - If not earned and IsHidden and !IsVisibleBeforeUnlock: don't show
+            // - If not earned and IsHidden and IsVisibleBeforeUnlock: show with obscured info
+            if (!isEarned && a.IsHidden && !a.IsVisibleBeforeUnlock)
+                continue;
+
+            progressMap.TryGetValue(a.Id, out var progress);
+
+            result.Add(CreateDisplay(a, userAchievement, progress, isEarned));
+        }
+
+        return result;
     }
 
     public async Task<List<AchievementDisplay>> GetEarnedAchievementsAsync(string userId)
@@ -127,7 +203,9 @@ public class AchievementService : IAchievementService
 
     public async Task MarkAchievementsAsSeenAsync(string userId)
     {
-        var unseen = await _context.UserAchievements
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var unseen = await context.UserAchievements
             .Where(ua => ua.UserId == userId && !ua.HasSeen)
             .ToListAsync();
 
@@ -136,41 +214,34 @@ public class AchievementService : IAchievementService
             ua.HasSeen = true;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task<List<AchievementDisplay>> CheckAndAwardAchievementsAsync(string userId)
     {
         var newlyAwarded = new List<AchievementDisplay>();
 
-        // Get user's current stats
-        var balance = await _ledgerService.GetUserBalanceAsync(userId);
-        var totalEarned = await GetTotalEarnedAsync(userId);
-        var currentStreak = await CalculateCurrentStreakAsync(userId);
-        var totalChoresCompleted = await GetTotalChoresCompletedAsync(userId);
-        var perfectDays = await GetPerfectDaysCountAsync(userId);
-
-        // Get all achievements not yet earned
-        var earnedAchievementIds = await _context.UserAchievements
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        // Get all unearned active achievements
+        var earnedAchievementIds = await context.UserAchievements
             .Where(ua => ua.UserId == userId)
             .Select(ua => ua.AchievementId)
             .ToListAsync();
 
-        var unearnedAchievements = await _context.Achievements
+        var unearnedAchievements = await context.Achievements
             .Where(a => a.IsActive && !earnedAchievementIds.Contains(a.Id))
             .ToListAsync();
 
         foreach (var achievement in unearnedAchievements)
         {
-            bool earned = CheckAchievementCriteria(
-                achievement.Code, 
-                balance, 
-                totalEarned, 
-                currentStreak, 
-                totalChoresCompleted,
-                perfectDays);
+            // Skip manual-only achievements
+            if (achievement.UnlockConditionType == UnlockConditionType.Manual)
+                continue;
 
-            if (earned)
+            var evaluation = await _conditionEvaluator.EvaluateAsync(userId, achievement);
+
+            if (evaluation.IsMet)
             {
                 var userAchievement = new UserAchievement
                 {
@@ -180,27 +251,28 @@ public class AchievementService : IAchievementService
                     HasSeen = false
                 };
 
-                _context.UserAchievements.Add(userAchievement);
+                context.UserAchievements.Add(userAchievement);
 
-                newlyAwarded.Add(new AchievementDisplay
-                {
-                    Id = achievement.Id,
-                    Code = achievement.Code,
-                    Name = achievement.Name,
-                    Description = achievement.Description,
-                    Icon = achievement.Icon,
-                    Category = achievement.Category,
-                    Points = achievement.Points,
-                    IsEarned = true,
-                    EarnedAt = DateTime.UtcNow,
-                    IsNew = true
-                });
+                // Update progress if tracked
+                await UpdateProgressAsync(context, userId, achievement, evaluation);
+
+                // Grant bonus if applicable
+                await _bonusService.GrantBonusAsync(userId, achievement);
+
+                newlyAwarded.Add(CreateDisplay(achievement, userAchievement, evaluation, true));
+
+                _logger.LogInformation("User {UserId} earned achievement {Code}", userId, achievement.Code);
+            }
+            else if (achievement.ProgressTarget.HasValue)
+            {
+                // Update progress even if not yet earned
+                await UpdateProgressAsync(context, userId, achievement, evaluation);
             }
         }
 
         if (newlyAwarded.Count > 0)
         {
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         return newlyAwarded;
@@ -208,96 +280,211 @@ public class AchievementService : IAchievementService
 
     public async Task<int> GetTotalPointsAsync(string userId)
     {
-        return await _context.UserAchievements
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.UserAchievements
             .Include(ua => ua.Achievement)
             .Where(ua => ua.UserId == userId)
             .SumAsync(ua => ua.Achievement.Points);
     }
 
-    public async Task SeedAchievementsAsync()
+    public async Task<AchievementStats> GetStatsAsync(string userId)
     {
-        // Check if already seeded first (before trying to fix icons)
-        if (await _context.Achievements.AnyAsync())
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var allAchievements = await context.Achievements
+            .Where(a => a.IsActive)
+            .ToListAsync();
+
+        var earnedIds = await context.UserAchievements
+            .Where(ua => ua.UserId == userId)
+            .Select(ua => ua.AchievementId)
+            .ToListAsync();
+
+        var earnedAchievements = allAchievements.Where(a => earnedIds.Contains(a.Id)).ToList();
+
+        return new AchievementStats
         {
-            // Fix any corrupted icons from previous seeding
-            await FixCorruptedIconsAsync();
-            return; // Already seeded
-        }
-
-        var achievements = new List<Achievement>
-        {
-            // Getting Started - using Unicode escape sequences
-            new() { Code = "FIRST_CHORE", Name = "First Steps", Description = "Complete your first chore", Icon = "\U0001F463", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 1 },
-            new() { Code = "FIRST_DOLLAR", Name = "Money Maker", Description = "Earn your first dollar", Icon = "\U0001F4B5", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 2 },
-            new() { Code = "FIRST_GOAL", Name = "Dream Big", Description = "Create your first savings goal", Icon = "\U0001F3AF", Category = AchievementCategory.GettingStarted, Points = 10, SortOrder = 3 },
-
-            // Streaks
-            new() { Code = "STREAK_3", Name = "Getting Going", Description = "Complete all chores for 3 days in a row", Icon = "\U0001F525", Category = AchievementCategory.Streaks, Points = 25, SortOrder = 1 },
-            new() { Code = "STREAK_7", Name = "Week Warrior", Description = "Complete all chores for 7 days in a row", Icon = "\U0001F525\U0001F525", Category = AchievementCategory.Streaks, Points = 50, SortOrder = 2 },
-            new() { Code = "STREAK_14", Name = "Fortnight Fighter", Description = "Complete all chores for 14 days in a row", Icon = "\U0001F525\U0001F525\U0001F525", Category = AchievementCategory.Streaks, Points = 100, SortOrder = 3 },
-            new() { Code = "STREAK_30", Name = "Monthly Master", Description = "Complete all chores for 30 days in a row", Icon = "\U0001F3C6", Category = AchievementCategory.Streaks, Points = 200, SortOrder = 4 },
-
-            // Earnings
-            new() { Code = "EARNED_10", Name = "Tenner", Description = "Earn a total of $10", Icon = "\U0001F4B0", Category = AchievementCategory.Earnings, Points = 25, SortOrder = 1 },
-            new() { Code = "EARNED_25", Name = "Quarter Century", Description = "Earn a total of $25", Icon = "\U0001F4B0\U0001F4B0", Category = AchievementCategory.Earnings, Points = 50, SortOrder = 2 },
-            new() { Code = "EARNED_50", Name = "Half Century", Description = "Earn a total of $50", Icon = "\U0001F4B0\U0001F4B0\U0001F4B0", Category = AchievementCategory.Earnings, Points = 75, SortOrder = 3 },
-            new() { Code = "EARNED_100", Name = "Benjamin", Description = "Earn a total of $100", Icon = "\U0001F911", Category = AchievementCategory.Earnings, Points = 150, SortOrder = 4 },
-
-            // Consistency
-            new() { Code = "CHORES_10", Name = "Helping Hand", Description = "Complete 10 chores", Icon = "\u270B", Category = AchievementCategory.Consistency, Points = 15, SortOrder = 1 },
-            new() { Code = "CHORES_50", Name = "Chore Champion", Description = "Complete 50 chores", Icon = "\U0001F947", Category = AchievementCategory.Consistency, Points = 50, SortOrder = 2 },
-            new() { Code = "CHORES_100", Name = "Century Club", Description = "Complete 100 chores", Icon = "\U0001F4AF", Category = AchievementCategory.Consistency, Points = 100, SortOrder = 3 },
-            new() { Code = "PERFECT_7", Name = "Perfect Week", Description = "Have 7 perfect days (all chores done)", Icon = "\u2B50", Category = AchievementCategory.Consistency, Points = 50, SortOrder = 4 },
-            new() { Code = "PERFECT_30", Name = "Perfect Month", Description = "Have 30 perfect days", Icon = "\U0001F31F", Category = AchievementCategory.Consistency, Points = 150, SortOrder = 5 },
-
-            // Special
-            new() { Code = "GOAL_COMPLETE", Name = "Goal Getter", Description = "Complete a savings goal", Icon = "\U0001F389", Category = AchievementCategory.Special, Points = 100, SortOrder = 1 },
-            new() { Code = "EARLY_BIRD", Name = "Early Bird", Description = "Complete all chores before noon", Icon = "\U0001F305", Category = AchievementCategory.Special, Points = 25, SortOrder = 2 },
+            TotalAchievements = allAchievements.Count,
+            EarnedAchievements = earnedAchievements.Count,
+            TotalPoints = allAchievements.Sum(a => a.Points),
+            EarnedPoints = earnedAchievements.Sum(a => a.Points),
+            HiddenRemaining = allAchievements.Count(a => a.IsHidden && !earnedIds.Contains(a.Id)),
+            LegendaryEarned = earnedAchievements.Count(a => a.IsLegendary),
+            ByCategory = earnedAchievements.GroupBy(a => a.Category).ToDictionary(g => g.Key, g => g.Count()),
+            ByRarity = earnedAchievements.GroupBy(a => a.Rarity).ToDictionary(g => g.Key, g => g.Count())
         };
-
-        _context.Achievements.AddRange(achievements);
-        await _context.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Fixes achievement icons that were corrupted during initial seeding.
-    /// Uses Unicode escape sequences for reliability.
-    /// </summary>
-    private async Task FixCorruptedIconsAsync()
+    public async Task<AchievementDisplay?> AwardAchievementAsync(string userId, string achievementCode, string? notes = null)
     {
-        // Using Unicode codepoints that work reliably across all systems
-        var iconMappings = new Dictionary<string, string>
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var achievement = await context.Achievements
+            .FirstOrDefaultAsync(a => a.Code == achievementCode && a.IsActive);
+
+        if (achievement == null)
         {
-            { "FIRST_CHORE", "\U0001F463" },    // ?? footprints
-            { "FIRST_DOLLAR", "\U0001F4B5" },   // ?? dollar
-            { "FIRST_GOAL", "\U0001F3AF" },     // ?? target
-            { "STREAK_3", "\U0001F525" },       // ?? fire
-            { "STREAK_7", "\U0001F525\U0001F525" },      // ????
-            { "STREAK_14", "\U0001F525\U0001F525\U0001F525" },  // ??????
-            { "STREAK_30", "\U0001F3C6" },      // ?? trophy
-            { "EARNED_10", "\U0001F4B0" },      // ?? money bag
-            { "EARNED_25", "\U0001F4B0\U0001F4B0" },     // ????
-            { "EARNED_50", "\U0001F4B0\U0001F4B0\U0001F4B0" },  // ??????
-            { "EARNED_100", "\U0001F911" },     // ?? money face
-            { "CHORES_10", "\u270B" },          // ? hand
-            { "CHORES_50", "\U0001F947" },      // ?? gold medal
-            { "CHORES_100", "\U0001F4AF" },     // ?? hundred
-            { "PERFECT_7", "\u2B50" },          // ? star
-            { "PERFECT_30", "\U0001F31F" },     // ?? glowing star
-            { "GOAL_COMPLETE", "\U0001F389" },  // ?? party
-            { "EARLY_BIRD", "\U0001F305" }      // ?? sunrise
+            _logger.LogWarning("Attempted to award non-existent achievement {Code}", achievementCode);
+            return null;
+        }
+
+        // Check if already earned
+        var existing = await context.UserAchievements
+            .FirstOrDefaultAsync(ua => ua.UserId == userId && ua.AchievementId == achievement.Id);
+
+        if (existing != null)
+        {
+            _logger.LogInformation("User {UserId} already has achievement {Code}", userId, achievementCode);
+            return null;
+        }
+
+        var userAchievement = new UserAchievement
+        {
+            UserId = userId,
+            AchievementId = achievement.Id,
+            EarnedAt = DateTime.UtcNow,
+            HasSeen = false,
+            Notes = notes
         };
 
-        var achievements = await _context.Achievements.ToListAsync();
+        context.UserAchievements.Add(userAchievement);
+        await context.SaveChangesAsync();
+
+        // Grant bonus if applicable
+        await _bonusService.GrantBonusAsync(userId, achievement);
+
+        _logger.LogInformation("Manually awarded achievement {Code} to user {UserId}", achievementCode, userId);
+
+        return CreateDisplay(achievement, userAchievement, null, true);
+    }
+
+    public async Task<Dictionary<int, AchievementEvaluationResult>> GetProgressAsync(string userId)
+    {
+        return await _conditionEvaluator.EvaluateAllAsync(userId);
+    }
+
+    public async Task SeedAchievementsAsync()
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var existingCodes = await context.Achievements.Select(a => a.Code).ToListAsync();
+        var achievementsToAdd = GetSeedAchievements()
+            .Where(a => !existingCodes.Contains(a.Code))
+            .ToList();
+
+        if (achievementsToAdd.Count > 0)
+        {
+            context.Achievements.AddRange(achievementsToAdd);
+            await context.SaveChangesAsync();
+            _logger.LogInformation("Seeded {Count} new achievements", achievementsToAdd.Count);
+        }
+
+        // Update existing achievements with new fields if needed
+        await UpdateExistingAchievementsAsync(context);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PRIVATE HELPER METHODS
+    // ═══════════════════════════════════════════════════════════════
+
+    private AchievementDisplay CreateDisplay(
+        Achievement achievement,
+        UserAchievement? userAchievement,
+        AchievementEvaluationResult? progress,
+        bool isEarned)
+    {
+        var showHiddenInfo = !achievement.IsHidden || isEarned;
+        
+        return new AchievementDisplay
+        {
+            Id = achievement.Id,
+            Code = achievement.Code,
+            Name = showHiddenInfo ? achievement.Name : "???",
+            Description = showHiddenInfo ? achievement.Description : (achievement.HiddenHint ?? "A secret achievement..."),
+            HiddenHint = achievement.HiddenHint,
+            Icon = isEarned ? achievement.Icon : (achievement.LockedIcon ?? (achievement.IsHidden ? EmojiConstants.QuestionMark : achievement.Icon)),
+            LockedIcon = achievement.LockedIcon,
+            Category = achievement.Category,
+            Rarity = achievement.Rarity,
+            Points = achievement.Points,
+            SortOrder = achievement.SortOrder,
+            IsHidden = achievement.IsHidden,
+            IsLegendary = achievement.IsLegendary,
+            IsVisibleBeforeUnlock = achievement.IsVisibleBeforeUnlock,
+            IsEarned = isEarned,
+            EarnedAt = userAchievement?.EarnedAt,
+            IsNew = userAchievement != null && !userAchievement.HasSeen,
+            CurrentProgress = progress?.CurrentValue ?? 0,
+            TargetProgress = progress?.TargetValue ?? (achievement.ProgressTarget ?? 0),
+            ProgressPercent = progress?.ProgressPercent ?? 0,
+            ShowProgress = achievement.ProgressTarget.HasValue && !isEarned,
+            HasBonus = achievement.BonusType.HasValue && achievement.BonusType != AchievementBonusType.None,
+            BonusDescription = achievement.BonusDescription,
+            BonusType = achievement.BonusType
+        };
+    }
+
+    private async Task UpdateProgressAsync(
+        ApplicationDbContext context, 
+        string userId, 
+        Achievement achievement, 
+        AchievementEvaluationResult evaluation)
+    {
+        if (!achievement.ProgressTarget.HasValue)
+            return;
+
+        var progress = await context.AchievementProgress
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.AchievementId == achievement.Id);
+
+        if (progress == null)
+        {
+            progress = new AchievementProgress
+            {
+                UserId = userId,
+                AchievementId = achievement.Id,
+                TargetValue = achievement.ProgressTarget.Value,
+                StartedAt = DateTime.UtcNow
+            };
+            context.AchievementProgress.Add(progress);
+        }
+
+        progress.CurrentValue = evaluation.CurrentValue;
+        progress.LastUpdatedAt = DateTime.UtcNow;
+        progress.Metadata = evaluation.Metadata;
+    }
+
+    private async Task UpdateExistingAchievementsAsync(ApplicationDbContext context)
+    {
+        var seedData = GetSeedAchievements().ToDictionary(a => a.Code);
+        var existing = await context.Achievements.ToListAsync();
         var updated = false;
 
-        foreach (var achievement in achievements)
+        foreach (var achievement in existing)
         {
-            if (iconMappings.TryGetValue(achievement.Code, out var correctIcon))
+            if (seedData.TryGetValue(achievement.Code, out var seed))
             {
-                if (achievement.Icon != correctIcon)
+                // Update fields that may have been added or changed
+                if (achievement.UnlockConditionType == UnlockConditionType.Manual && 
+                    seed.UnlockConditionType != UnlockConditionType.Manual)
                 {
-                    achievement.Icon = correctIcon;
+                    achievement.UnlockConditionType = seed.UnlockConditionType;
+                    achievement.UnlockConditionValue = seed.UnlockConditionValue;
+                    achievement.ProgressTarget = seed.ProgressTarget;
+                    updated = true;
+                }
+
+                // Update icons if corrupted
+                if (achievement.Icon != seed.Icon)
+                {
+                    achievement.Icon = seed.Icon;
+                    updated = true;
+                }
+
+                // Add rarity if missing
+                if (achievement.Rarity == 0)
+                {
+                    achievement.Rarity = seed.Rarity;
                     updated = true;
                 }
             }
@@ -305,123 +492,532 @@ public class AchievementService : IAchievementService
 
         if (updated)
         {
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
+            _logger.LogInformation("Updated existing achievements with new fields");
         }
     }
 
-    private bool CheckAchievementCriteria(
-        string code, 
-        decimal balance, 
-        decimal totalEarned, 
-        int currentStreak, 
-        int totalChoresCompleted,
-        int perfectDays)
+    /// <summary>
+    /// Returns seed data for 60+ achievements.
+    /// 
+    /// ADDING NEW ACHIEVEMENTS:
+    /// 1. Add new Achievement object to this list
+    /// 2. Set UnlockConditionType and UnlockConditionValue for automatic evaluation
+    /// 3. Set ProgressTarget for progress-based achievements
+    /// 4. Set BonusType and BonusValue for achievements that grant bonuses
+    /// 5. Run application to seed new achievements
+    /// </summary>
+    private List<Achievement> GetSeedAchievements()
     {
-        return code switch
+        var achievements = new List<Achievement>();
+
+        // ═══════════════════════════════════════════════════════════════
+        // GETTING STARTED (Category 1) - Easy achievements for new users
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
         {
-            // Getting Started
-            "FIRST_CHORE" => totalChoresCompleted >= 1,
-            "FIRST_DOLLAR" => totalEarned >= 1,
-            "FIRST_GOAL" => false, // Checked separately when goal is created
-
-            // Streaks
-            "STREAK_3" => currentStreak >= 3,
-            "STREAK_7" => currentStreak >= 7,
-            "STREAK_14" => currentStreak >= 14,
-            "STREAK_30" => currentStreak >= 30,
-
-            // Earnings
-            "EARNED_10" => totalEarned >= 10,
-            "EARNED_25" => totalEarned >= 25,
-            "EARNED_50" => totalEarned >= 50,
-            "EARNED_100" => totalEarned >= 100,
-
-            // Consistency
-            "CHORES_10" => totalChoresCompleted >= 10,
-            "CHORES_50" => totalChoresCompleted >= 50,
-            "CHORES_100" => totalChoresCompleted >= 100,
-            "PERFECT_7" => perfectDays >= 7,
-            "PERFECT_30" => perfectDays >= 30,
-
-            // Special - these are awarded separately
-            "GOAL_COMPLETE" => false,
-            "EARLY_BIRD" => false,
-
-            _ => false
-        };
-    }
-
-    private async Task<decimal> GetTotalEarnedAsync(string userId)
-    {
-        return await _context.LedgerTransactions
-            .Where(t => t.UserId == userId && t.Amount > 0)
-            .SumAsync(t => t.Amount);
-    }
-
-    private async Task<int> GetTotalChoresCompletedAsync(string userId)
-    {
-        return await _context.ChoreLogs
-            .Include(cl => cl.ChoreDefinition)
-            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
-            .Where(cl => cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved)
-            .CountAsync();
-    }
-
-    private async Task<int> GetPerfectDaysCountAsync(string userId)
-    {
-        var today = _dateProvider.Today;
-        
-        // Get all dates with chores assigned to this user
-        var datesWithChores = await _context.ChoreLogs
-            .Include(cl => cl.ChoreDefinition)
-            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId && cl.Date <= today)
-            .GroupBy(cl => cl.Date)
-            .Select(g => new
+            new Achievement
             {
-                Date = g.Key,
-                Total = g.Count(),
-                Completed = g.Count(cl => cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved || cl.Status == ChoreStatus.Skipped)
-            })
-            .ToListAsync();
+                Code = "FIRST_CHORE", Name = "First Steps", Description = "Complete your first chore",
+                Icon = EmojiConstants.Footprints, Category = AchievementCategory.GettingStarted,
+                Rarity = AchievementRarity.Common, Points = 10, SortOrder = 1,
+                UnlockConditionType = UnlockConditionType.FirstChore
+            },
+            new Achievement
+            {
+                Code = "FIRST_DOLLAR", Name = "First Wages", Description = "Earn your first dollar",
+                Icon = EmojiConstants.Dollar, Category = AchievementCategory.GettingStarted,
+                Rarity = AchievementRarity.Common, Points = 10, SortOrder = 2,
+                UnlockConditionType = UnlockConditionType.FirstDollar
+            },
+            new Achievement
+            {
+                Code = "FIRST_GOAL", Name = "Dream Big", Description = "Create your first savings goal",
+                Icon = EmojiConstants.Target, Category = AchievementCategory.GettingStarted,
+                Rarity = AchievementRarity.Common, Points = 10, SortOrder = 3,
+                UnlockConditionType = UnlockConditionType.FirstGoal
+            },
+            new Achievement
+            {
+                Code = "FIRST_WEEK", Name = "Weekly Warrior", Description = "Complete a full week of chores",
+                Icon = EmojiConstants.Calendar, Category = AchievementCategory.GettingStarted,
+                Rarity = AchievementRarity.Common, Points = 25, SortOrder = 4,
+                UnlockConditionType = UnlockConditionType.PerfectDays, UnlockConditionValue = "{\"count\": 7}",
+                ProgressTarget = 7
+            },
+        });
 
-        return datesWithChores.Count(d => d.Total > 0 && d.Completed == d.Total);
-    }
-
-    private async Task<int> CalculateCurrentStreakAsync(string userId)
-    {
-        var today = _dateProvider.Today;
-        var streak = 0;
-        var currentDate = today;
-
-        for (int i = 0; i < 365; i++)
+        // ═══════════════════════════════════════════════════════════════
+        // STREAKS (Category 2) - Consecutive day achievements
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
         {
-            var choresForDate = await _context.ChoreLogs
-                .Include(cl => cl.ChoreDefinition)
-                .Where(cl => cl.Date == currentDate && cl.ChoreDefinition.AssignedUserId == userId)
-                .ToListAsync();
-
-            if (choresForDate.Count == 0)
+            new Achievement
             {
-                currentDate = currentDate.AddDays(-1);
-                continue;
-            }
-
-            var allCompleted = choresForDate.All(c => 
-                c.Status == ChoreStatus.Completed || 
-                c.Status == ChoreStatus.Approved ||
-                c.Status == ChoreStatus.Skipped);
-
-            if (allCompleted)
+                Code = "STREAK_3", Name = "Getting Going", Description = "Complete all chores for 3 days in a row",
+                Icon = EmojiConstants.Fire, Category = AchievementCategory.Streaks,
+                Rarity = AchievementRarity.Common, Points = 25, SortOrder = 1,
+                UnlockConditionType = UnlockConditionType.StreakDays, UnlockConditionValue = "{\"days\": 3}",
+                ProgressTarget = 3
+            },
+            new Achievement
             {
-                streak++;
-                currentDate = currentDate.AddDays(-1);
-            }
-            else
+                Code = "STREAK_7", Name = "Week Warrior", Description = "Complete all chores for 7 days in a row",
+                Icon = EmojiConstants.FireDouble, Category = AchievementCategory.Streaks,
+                Rarity = AchievementRarity.Uncommon, Points = 50, SortOrder = 2,
+                UnlockConditionType = UnlockConditionType.StreakDays, UnlockConditionValue = "{\"days\": 7}",
+                ProgressTarget = 7,
+                BonusType = AchievementBonusType.StreakProtection, BonusValue = "{\"count\": 1}",
+                BonusDescription = "1x Streak Protection"
+            },
+            new Achievement
             {
-                break;
-            }
-        }
+                Code = "STREAK_14", Name = "Fortnight Fighter", Description = "Complete all chores for 14 days in a row",
+                Icon = EmojiConstants.FireTriple, Category = AchievementCategory.Streaks,
+                Rarity = AchievementRarity.Rare, Points = 100, SortOrder = 3,
+                UnlockConditionType = UnlockConditionType.StreakDays, UnlockConditionValue = "{\"days\": 14}",
+                ProgressTarget = 14,
+                BonusType = AchievementBonusType.PointMultiplier, BonusValue = "{\"multiplier\": 1.1, \"duration_days\": 7}",
+                BonusDescription = "10% point bonus for 7 days"
+            },
+            new Achievement
+            {
+                Code = "STREAK_30", Name = "Monthly Master", Description = "Complete all chores for 30 days in a row",
+                Icon = EmojiConstants.Trophy, Category = AchievementCategory.Streaks,
+                Rarity = AchievementRarity.Epic, Points = 200, SortOrder = 4,
+                UnlockConditionType = UnlockConditionType.StreakDays, UnlockConditionValue = "{\"days\": 30}",
+                ProgressTarget = 30,
+                BonusType = AchievementBonusType.BonusPoints, BonusValue = "{\"amount\": 10.00}",
+                BonusDescription = "$10 bonus!"
+            },
+            new Achievement
+            {
+                Code = "STREAK_60", Name = "Unstoppable", Description = "Complete all chores for 60 days in a row",
+                Icon = EmojiConstants.Star, Category = AchievementCategory.Streaks,
+                Rarity = AchievementRarity.Epic, Points = 400, SortOrder = 5,
+                UnlockConditionType = UnlockConditionType.StreakDays, UnlockConditionValue = "{\"days\": 60}",
+                ProgressTarget = 60,
+                BonusType = AchievementBonusType.TrustIncrease, BonusValue = "{\"level_increase\": 1}",
+                BonusDescription = "Increased autonomy level"
+            },
+            new Achievement
+            {
+                Code = "STREAK_90", Name = "Legendary Dedication", Description = "Complete all chores for 90 days in a row",
+                Icon = EmojiConstants.GlowingStar, Category = AchievementCategory.Streaks,
+                Rarity = AchievementRarity.Legendary, Points = 750, SortOrder = 6,
+                IsLegendary = true,
+                UnlockConditionType = UnlockConditionType.StreakDays, UnlockConditionValue = "{\"days\": 90}",
+                ProgressTarget = 90,
+                BonusType = AchievementBonusType.ProfileBadge, BonusValue = "{\"badge_key\": \"legendary_streak\"}",
+                BonusDescription = "Legendary Streak badge"
+            },
+        });
 
-        return streak;
+        // ═══════════════════════════════════════════════════════════════
+        // EARNINGS (Category 3) - Money milestones
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
+        {
+            new Achievement
+            {
+                Code = "EARNED_10", Name = "Tenner", Description = "Earn a total of $10",
+                Icon = EmojiConstants.MoneyBag, Category = AchievementCategory.Earnings,
+                Rarity = AchievementRarity.Common, Points = 25, SortOrder = 1,
+                UnlockConditionType = UnlockConditionType.TotalEarned, UnlockConditionValue = "{\"amount\": 10}",
+                ProgressTarget = 10
+            },
+            new Achievement
+            {
+                Code = "EARNED_25", Name = "Quarter Century", Description = "Earn a total of $25",
+                Icon = EmojiConstants.MoneyBagDouble, Category = AchievementCategory.Earnings,
+                Rarity = AchievementRarity.Uncommon, Points = 50, SortOrder = 2,
+                UnlockConditionType = UnlockConditionType.TotalEarned, UnlockConditionValue = "{\"amount\": 25}",
+                ProgressTarget = 25
+            },
+            new Achievement
+            {
+                Code = "EARNED_50", Name = "Half Century", Description = "Earn a total of $50",
+                Icon = EmojiConstants.MoneyBagTriple, Category = AchievementCategory.Earnings,
+                Rarity = AchievementRarity.Rare, Points = 75, SortOrder = 3,
+                UnlockConditionType = UnlockConditionType.TotalEarned, UnlockConditionValue = "{\"amount\": 50}",
+                ProgressTarget = 50
+            },
+            new Achievement
+            {
+                Code = "EARNED_100", Name = "Benjamin", Description = "Earn a total of $100",
+                Icon = EmojiConstants.MoneyFace, Category = AchievementCategory.Earnings,
+                Rarity = AchievementRarity.Epic, Points = 150, SortOrder = 4,
+                UnlockConditionType = UnlockConditionType.TotalEarned, UnlockConditionValue = "{\"amount\": 100}",
+                ProgressTarget = 100,
+                BonusType = AchievementBonusType.BonusPoints, BonusValue = "{\"amount\": 5.00}",
+                BonusDescription = "$5 bonus!"
+            },
+            new Achievement
+            {
+                Code = "EARNED_250", Name = "Quarter Grand", Description = "Earn a total of $250",
+                Icon = EmojiConstants.Trophy, Category = AchievementCategory.Earnings,
+                Rarity = AchievementRarity.Epic, Points = 250, SortOrder = 5,
+                UnlockConditionType = UnlockConditionType.TotalEarned, UnlockConditionValue = "{\"amount\": 250}",
+                ProgressTarget = 250
+            },
+            new Achievement
+            {
+                Code = "EARNED_500", Name = "Half Grand", Description = "Earn a total of $500",
+                Icon = EmojiConstants.Star, Category = AchievementCategory.Earnings,
+                Rarity = AchievementRarity.Legendary, Points = 500, SortOrder = 6,
+                IsLegendary = true,
+                UnlockConditionType = UnlockConditionType.TotalEarned, UnlockConditionValue = "{\"amount\": 500}",
+                ProgressTarget = 500
+            },
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // CONSISTENCY (Category 4) - Total completions and perfect days
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
+        {
+            new Achievement
+            {
+                Code = "CHORES_10", Name = "Helping Hand", Description = "Complete 10 chores",
+                Icon = EmojiConstants.RaisedHand, Category = AchievementCategory.Consistency,
+                Rarity = AchievementRarity.Common, Points = 15, SortOrder = 1,
+                UnlockConditionType = UnlockConditionType.ChoresCompleted, UnlockConditionValue = "{\"count\": 10}",
+                ProgressTarget = 10
+            },
+            new Achievement
+            {
+                Code = "CHORES_50", Name = "Chore Champion", Description = "Complete 50 chores",
+                Icon = EmojiConstants.GoldMedal, Category = AchievementCategory.Consistency,
+                Rarity = AchievementRarity.Uncommon, Points = 50, SortOrder = 2,
+                UnlockConditionType = UnlockConditionType.ChoresCompleted, UnlockConditionValue = "{\"count\": 50}",
+                ProgressTarget = 50
+            },
+            new Achievement
+            {
+                Code = "CHORES_100", Name = "Century Club", Description = "Complete 100 chores",
+                Icon = EmojiConstants.HundredPoints, Category = AchievementCategory.Consistency,
+                Rarity = AchievementRarity.Rare, Points = 100, SortOrder = 3,
+                UnlockConditionType = UnlockConditionType.ChoresCompleted, UnlockConditionValue = "{\"count\": 100}",
+                ProgressTarget = 100
+            },
+            new Achievement
+            {
+                Code = "CHORES_250", Name = "Dedicated Worker", Description = "Complete 250 chores",
+                Icon = EmojiConstants.Muscle, Category = AchievementCategory.Consistency,
+                Rarity = AchievementRarity.Epic, Points = 175, SortOrder = 4,
+                UnlockConditionType = UnlockConditionType.ChoresCompleted, UnlockConditionValue = "{\"count\": 250}",
+                ProgressTarget = 250
+            },
+            new Achievement
+            {
+                Code = "CHORES_500", Name = "Half Thousand", Description = "Complete 500 chores",
+                Icon = EmojiConstants.Trophy, Category = AchievementCategory.Consistency,
+                Rarity = AchievementRarity.Legendary, Points = 350, SortOrder = 5,
+                IsLegendary = true,
+                UnlockConditionType = UnlockConditionType.ChoresCompleted, UnlockConditionValue = "{\"count\": 500}",
+                ProgressTarget = 500
+            },
+            new Achievement
+            {
+                Code = "PERFECT_7", Name = "Perfect Week", Description = "Have 7 perfect days (all chores done)",
+                Icon = EmojiConstants.Star, Category = AchievementCategory.Consistency,
+                Rarity = AchievementRarity.Uncommon, Points = 50, SortOrder = 10,
+                UnlockConditionType = UnlockConditionType.PerfectDays, UnlockConditionValue = "{\"count\": 7}",
+                ProgressTarget = 7
+            },
+            new Achievement
+            {
+                Code = "PERFECT_30", Name = "Perfect Month", Description = "Have 30 perfect days",
+                Icon = EmojiConstants.GlowingStar, Category = AchievementCategory.Consistency,
+                Rarity = AchievementRarity.Rare, Points = 150, SortOrder = 11,
+                UnlockConditionType = UnlockConditionType.PerfectDays, UnlockConditionValue = "{\"count\": 30}",
+                ProgressTarget = 30
+            },
+            new Achievement
+            {
+                Code = "PERFECT_100", Name = "Perfect Hundred", Description = "Have 100 perfect days",
+                Icon = EmojiConstants.Trophy, Category = AchievementCategory.Consistency,
+                Rarity = AchievementRarity.Epic, Points = 300, SortOrder = 12,
+                UnlockConditionType = UnlockConditionType.PerfectDays, UnlockConditionValue = "{\"count\": 100}",
+                ProgressTarget = 100
+            },
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // TIME-BASED (Category 8) - Early bird, time of day
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
+        {
+            new Achievement
+            {
+                Code = "EARLY_BIRD", Name = "Early Bird", Description = "Complete all daily chores before noon",
+                Icon = EmojiConstants.Sunrise, Category = AchievementCategory.TimeBased,
+                Rarity = AchievementRarity.Uncommon, Points = 25, SortOrder = 1,
+                UnlockConditionType = UnlockConditionType.EarlyCompletion, UnlockConditionValue = "{\"before_hour\": 12, \"count\": 1}"
+            },
+            new Achievement
+            {
+                Code = "EARLY_BIRD_7", Name = "Morning Person", Description = "Complete all chores before noon for 7 days",
+                Icon = EmojiConstants.Sun, Category = AchievementCategory.TimeBased,
+                Rarity = AchievementRarity.Rare, Points = 75, SortOrder = 2,
+                UnlockConditionType = UnlockConditionType.EarlyCompletion, UnlockConditionValue = "{\"before_hour\": 12, \"count\": 7}",
+                ProgressTarget = 7
+            },
+            new Achievement
+            {
+                Code = "DAWN_PATROL", Name = "Dawn Patrol", Description = "Complete a chore before 7 AM",
+                Icon = EmojiConstants.Moon, Category = AchievementCategory.TimeBased,
+                Rarity = AchievementRarity.Rare, Points = 50, SortOrder = 3,
+                UnlockConditionType = UnlockConditionType.TimeOfDayCompletion, 
+                UnlockConditionValue = "{\"hour_start\": 0, \"hour_end\": 7, \"count\": 1}"
+            },
+            new Achievement
+            {
+                Code = "WEEKEND_WARRIOR", Name = "Weekend Warrior", Description = "Complete 20 chores on weekends",
+                Icon = EmojiConstants.Party, Category = AchievementCategory.TimeBased,
+                Rarity = AchievementRarity.Uncommon, Points = 50, SortOrder = 5,
+                UnlockConditionType = UnlockConditionType.DayTypeCompletion, 
+                UnlockConditionValue = "{\"day_type\": \"Weekend\", \"count\": 20}",
+                ProgressTarget = 20
+            },
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // SAVINGS (Category 10) - Goals and savings
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
+        {
+            new Achievement
+            {
+                Code = "GOAL_COMPLETE", Name = "Goal Getter", Description = "Complete a savings goal",
+                Icon = EmojiConstants.Party, Category = AchievementCategory.Savings,
+                Rarity = AchievementRarity.Rare, Points = 100, SortOrder = 1,
+                UnlockConditionType = UnlockConditionType.GoalCompleted, UnlockConditionValue = "{\"count\": 1}"
+            },
+            new Achievement
+            {
+                Code = "GOAL_COMPLETE_3", Name = "Triple Saver", Description = "Complete 3 savings goals",
+                Icon = EmojiConstants.Trophy, Category = AchievementCategory.Savings,
+                Rarity = AchievementRarity.Epic, Points = 200, SortOrder = 2,
+                UnlockConditionType = UnlockConditionType.GoalCompleted, UnlockConditionValue = "{\"count\": 3}",
+                ProgressTarget = 3
+            },
+            new Achievement
+            {
+                Code = "BALANCE_25", Name = "Quarter Saved", Description = "Have $25 in your balance",
+                Icon = EmojiConstants.MoneyBag, Category = AchievementCategory.Savings,
+                Rarity = AchievementRarity.Uncommon, Points = 35, SortOrder = 5,
+                UnlockConditionType = UnlockConditionType.BalanceReached, UnlockConditionValue = "{\"amount\": 25}",
+                ProgressTarget = 25
+            },
+            new Achievement
+            {
+                Code = "BALANCE_50", Name = "Halfway There", Description = "Have $50 in your balance",
+                Icon = EmojiConstants.MoneyBagDouble, Category = AchievementCategory.Savings,
+                Rarity = AchievementRarity.Rare, Points = 60, SortOrder = 6,
+                UnlockConditionType = UnlockConditionType.BalanceReached, UnlockConditionValue = "{\"amount\": 50}",
+                ProgressTarget = 50
+            },
+            new Achievement
+            {
+                Code = "FIRST_CASHOUT", Name = "Payday!", Description = "Cash out your earnings for the first time",
+                Icon = EmojiConstants.Dollar, Category = AchievementCategory.Savings,
+                Rarity = AchievementRarity.Common, Points = 25, SortOrder = 10,
+                UnlockConditionType = UnlockConditionType.CashOut, UnlockConditionValue = "{\"count\": 1}"
+            },
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // SPECIAL (Category 5) - Misc special achievements
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
+        {
+            new Achievement
+            {
+                Code = "BONUS_WORKER", Name = "Overachiever", Description = "Complete 5 bonus chores beyond weekly target",
+                Icon = EmojiConstants.Sparkles, Category = AchievementCategory.Special,
+                Rarity = AchievementRarity.Uncommon, Points = 40, SortOrder = 1,
+                UnlockConditionType = UnlockConditionType.BonusChoresCompleted, UnlockConditionValue = "{\"count\": 5}",
+                ProgressTarget = 5
+            },
+            new Achievement
+            {
+                Code = "BONUS_WORKER_20", Name = "Extra Miler", Description = "Complete 20 bonus chores beyond weekly target",
+                Icon = EmojiConstants.GoldMedal, Category = AchievementCategory.Special,
+                Rarity = AchievementRarity.Rare, Points = 100, SortOrder = 2,
+                UnlockConditionType = UnlockConditionType.BonusChoresCompleted, UnlockConditionValue = "{\"count\": 20}",
+                ProgressTarget = 20
+            },
+            new Achievement
+            {
+                Code = "WEEK_STREAK_4", Name = "Month of Excellence", Description = "Complete 4 consecutive full weeks",
+                Icon = EmojiConstants.Calendar, Category = AchievementCategory.Special,
+                Rarity = AchievementRarity.Rare, Points = 100, SortOrder = 5,
+                UnlockConditionType = UnlockConditionType.WeekStreak, UnlockConditionValue = "{\"weeks\": 4}",
+                ProgressTarget = 4
+            },
+            new Achievement
+            {
+                Code = "PENALTY_FREE_30", Name = "Clean Record", Description = "Go 30 days without any penalties",
+                Icon = EmojiConstants.CheckMark, Category = AchievementCategory.Special,
+                Rarity = AchievementRarity.Rare, Points = 75, SortOrder = 10,
+                UnlockConditionType = UnlockConditionType.PenaltyFree, UnlockConditionValue = "{\"days\": 30}",
+                ProgressTarget = 30,
+                BonusType = AchievementBonusType.PenaltyReduction, BonusValue = "{\"reduction_percent\": 0.25, \"duration_days\": 14}",
+                BonusDescription = "25% penalty reduction for 14 days"
+            },
+            new Achievement
+            {
+                Code = "HELP_ASKER", Name = "Team Player", Description = "Ask for help when you need it",
+                Icon = EmojiConstants.RaisingHands, Category = AchievementCategory.Special,
+                Rarity = AchievementRarity.Common, Points = 15, SortOrder = 15,
+                UnlockConditionType = UnlockConditionType.HelpRequested, UnlockConditionValue = "{\"count\": 1}"
+            },
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // SECRET/HIDDEN (Category 6) - Hidden until unlocked
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
+        {
+            new Achievement
+            {
+                Code = "SECRET_EARLY_ADOPTER", Name = "Pioneer", 
+                Description = "Be one of the first to use Daily Bread",
+                HiddenHint = "Something about being early...",
+                Icon = EmojiConstants.Rainbow, Category = AchievementCategory.Secret,
+                Rarity = AchievementRarity.Rare, Points = 100, SortOrder = 1,
+                IsHidden = true, IsVisibleBeforeUnlock = false,
+                UnlockConditionType = UnlockConditionType.AccountAge, UnlockConditionValue = "{\"days\": 7}",
+                BonusType = AchievementBonusType.ProfileBadge, BonusValue = "{\"badge_key\": \"pioneer\"}",
+                BonusDescription = "Pioneer badge"
+            },
+            new Achievement
+            {
+                Code = "SECRET_PERFECTIONIST", Name = "Perfectionist", 
+                Description = "Complete all chores perfectly for 2 weeks straight",
+                HiddenHint = "Perfection has its rewards...",
+                Icon = EmojiConstants.GlowingStar, Category = AchievementCategory.Secret,
+                Rarity = AchievementRarity.Epic, Points = 150, SortOrder = 2,
+                IsHidden = true, IsVisibleBeforeUnlock = false,
+                UnlockConditionType = UnlockConditionType.StreakDays, UnlockConditionValue = "{\"days\": 14}"
+            },
+            new Achievement
+            {
+                Code = "SECRET_COMEBACK", Name = "Comeback Kid", 
+                Description = "Return and complete chores after a break",
+                HiddenHint = "Everyone deserves a second chance...",
+                Icon = EmojiConstants.Muscle, Category = AchievementCategory.Secret,
+                Rarity = AchievementRarity.Uncommon, Points = 50, SortOrder = 3,
+                IsHidden = true, IsVisibleBeforeUnlock = false,
+                UnlockConditionType = UnlockConditionType.ChoreRecovery, UnlockConditionValue = "{\"count\": 1}"
+            },
+            new Achievement
+            {
+                Code = "SECRET_SAVER", Name = "Secret Saver", 
+                Description = "Save up $100 without cashing out",
+                HiddenHint = "Patience is a virtue...",
+                Icon = EmojiConstants.MoneyBag, Category = AchievementCategory.Secret,
+                Rarity = AchievementRarity.Epic, Points = 150, SortOrder = 4,
+                IsHidden = true, IsVisibleBeforeUnlock = false,
+                UnlockConditionType = UnlockConditionType.BalanceReached, UnlockConditionValue = "{\"amount\": 100}"
+            },
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // LEGENDARY (Category 7) - Ultimate achievements
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
+        {
+            new Achievement
+            {
+                Code = "LEGEND_YEAR", Name = "Year of Dedication", 
+                Description = "Be an active member for a full year",
+                Icon = EmojiConstants.Trophy, Category = AchievementCategory.Legendary,
+                Rarity = AchievementRarity.Legendary, Points = 500, SortOrder = 1,
+                IsLegendary = true,
+                UnlockConditionType = UnlockConditionType.AccountAge, UnlockConditionValue = "{\"days\": 365}",
+                BonusType = AchievementBonusType.ProfileBadge, BonusValue = "{\"badge_key\": \"year_dedication\"}",
+                BonusDescription = "Year of Dedication badge"
+            },
+            new Achievement
+            {
+                Code = "LEGEND_THOUSAND", Name = "The Thousand", 
+                Description = "Complete 1000 chores",
+                Icon = EmojiConstants.GlowingStar, Category = AchievementCategory.Legendary,
+                Rarity = AchievementRarity.Legendary, Points = 750, SortOrder = 2,
+                IsLegendary = true,
+                UnlockConditionType = UnlockConditionType.ChoresCompleted, UnlockConditionValue = "{\"count\": 1000}",
+                ProgressTarget = 1000
+            },
+            new Achievement
+            {
+                Code = "LEGEND_GRAND", Name = "Grand Earner", 
+                Description = "Earn a total of $1000",
+                Icon = EmojiConstants.Star, Category = AchievementCategory.Legendary,
+                Rarity = AchievementRarity.Legendary, Points = 1000, SortOrder = 3,
+                IsLegendary = true,
+                UnlockConditionType = UnlockConditionType.TotalEarned, UnlockConditionValue = "{\"amount\": 1000}",
+                ProgressTarget = 1000
+            },
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // MASTERY (Category 11) - Achievement achievements
+        // ═══════════════════════════════════════════════════════════════
+        achievements.AddRange(new[]
+        {
+            new Achievement
+            {
+                Code = "ACHIEVEMENT_10", Name = "Getting Started", 
+                Description = "Earn 10 achievements",
+                Icon = EmojiConstants.GoldMedal, Category = AchievementCategory.Mastery,
+                Rarity = AchievementRarity.Uncommon, Points = 50, SortOrder = 1,
+                UnlockConditionType = UnlockConditionType.TotalAchievements, UnlockConditionValue = "{\"count\": 10}",
+                ProgressTarget = 10
+            },
+            new Achievement
+            {
+                Code = "ACHIEVEMENT_25", Name = "Achievement Hunter", 
+                Description = "Earn 25 achievements",
+                Icon = EmojiConstants.Trophy, Category = AchievementCategory.Mastery,
+                Rarity = AchievementRarity.Rare, Points = 100, SortOrder = 2,
+                UnlockConditionType = UnlockConditionType.TotalAchievements, UnlockConditionValue = "{\"count\": 25}",
+                ProgressTarget = 25
+            },
+            new Achievement
+            {
+                Code = "ACHIEVEMENT_50", Name = "Achievement Master", 
+                Description = "Earn 50 achievements",
+                Icon = EmojiConstants.Star, Category = AchievementCategory.Mastery,
+                Rarity = AchievementRarity.Epic, Points = 250, SortOrder = 3,
+                UnlockConditionType = UnlockConditionType.TotalAchievements, UnlockConditionValue = "{\"count\": 50}",
+                ProgressTarget = 50,
+                BonusType = AchievementBonusType.ProfileBadge, BonusValue = "{\"badge_key\": \"achievement_master\"}",
+                BonusDescription = "Achievement Master badge"
+            },
+            new Achievement
+            {
+                Code = "STREAK_MASTER", Name = "Streak Master", 
+                Description = "Earn 3 streak achievements",
+                Icon = EmojiConstants.Fire, Category = AchievementCategory.Mastery,
+                Rarity = AchievementRarity.Rare, Points = 75, SortOrder = 10,
+                UnlockConditionType = UnlockConditionType.CategoryMastery, 
+                UnlockConditionValue = "{\"category\": \"Streaks\", \"count\": 3}",
+                ProgressTarget = 3
+            },
+            new Achievement
+            {
+                Code = "EARNING_MASTER", Name = "Earning Expert", 
+                Description = "Earn 3 earnings achievements",
+                Icon = EmojiConstants.MoneyBag, Category = AchievementCategory.Mastery,
+                Rarity = AchievementRarity.Rare, Points = 75, SortOrder = 11,
+                UnlockConditionType = UnlockConditionType.CategoryMastery, 
+                UnlockConditionValue = "{\"category\": \"Earnings\", \"count\": 3}",
+                ProgressTarget = 3
+            },
+        });
+
+        return achievements;
     }
 }

@@ -4,29 +4,29 @@
 }
 
 .my-balance-container h1 {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .balance-hero {
-    background: linear-gradient(135deg, var(--nord1) 0%, var(--nord2) 100%);
-    border-color: var(--nord3) !important;
-    border-radius: var(--radius-lg);
-    padding: var(--space-xl);
+    background: linear-gradient(135deg, var(--ds-bg-elevated) 0%, var(--ds-bg-hover) 100%);
+    border-color: var(--ds-bg-muted) !important;
+    border-radius: var(--ds-radius-lg);
+    padding: var(--ds-space-7);
 }
 
 .balance-label {
     display: block;
-    font-size: var(--font-size-sm);
+    font-size: var(--ds-text-sm);
     text-transform: uppercase;
-    color: var(--nord4);
+    color: var(--ds-text-muted);
     letter-spacing: 0.1em;
 }
 
 .balance-amount {
     font-size: 4rem;
-    font-weight: var(--font-weight-bold);
-    line-height: var(--line-height-tight);
-    margin: var(--space-sm) 0;
+    font-weight: var(--ds-font-bold);
+    line-height: var(--ds-leading-tight);
+    margin: var(--ds-space-2) 0;
 }
 
 @media (max-width: 768px) {
@@ -35,6 +35,6 @@
     }
     
     .balance-hero {
-        padding: var(--space-lg);
+        padding: var(--ds-space-6);
     }
 }

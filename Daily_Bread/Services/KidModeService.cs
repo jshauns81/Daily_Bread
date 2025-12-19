@@ -61,15 +61,15 @@ public class KidModeProfile
 /// </summary>
 public class KidModeService : IKidModeService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private const int PinLength = 4;
     private const int SaltSize = 16;
     private const int HashSize = 32;
     private const int Iterations = 10000;
 
-    public KidModeService(ApplicationDbContext context)
+    public KidModeService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<KidModeSession?> ValidatePinAsync(string pin)
@@ -79,8 +79,10 @@ public class KidModeService : IKidModeService
             return null;
         }
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Get all active profiles with PINs
-        var profiles = await _context.ChildProfiles
+        var profiles = await context.ChildProfiles
             .Where(p => p.IsActive && p.PinHash != null)
             .ToListAsync();
 
@@ -119,7 +121,9 @@ public class KidModeService : IKidModeService
             return ServiceResult.Fail("PIN must contain only numbers.");
         }
 
-        var profile = await _context.ChildProfiles.FindAsync(profileId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles.FindAsync(profileId);
         if (profile == null)
         {
             return ServiceResult.Fail("Profile not found.");
@@ -128,14 +132,16 @@ public class KidModeService : IKidModeService
         profile.PinHash = HashPin(pin);
         profile.ModifiedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> ClearPinAsync(int profileId)
     {
-        var profile = await _context.ChildProfiles.FindAsync(profileId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles.FindAsync(profileId);
         if (profile == null)
         {
             return ServiceResult.Fail("Profile not found.");
@@ -144,20 +150,24 @@ public class KidModeService : IKidModeService
         profile.PinHash = null;
         profile.ModifiedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
 
     public async Task<bool> HasPinAsync(int profileId)
     {
-        return await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.ChildProfiles
             .AnyAsync(p => p.Id == profileId && p.PinHash != null);
     }
 
     public async Task<List<KidModeProfile>> GetKidModeProfilesAsync()
     {
-        return await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.ChildProfiles
             .Where(p => p.IsActive && p.PinHash != null)
             .Select(p => new KidModeProfile
             {

@@ -1,0 +1,57 @@
+@inject IToastService ToastService
+@implements IDisposable
+
+<div class="toast-container" aria-live="polite" aria-atomic="true">
+    @foreach (var toast in _toasts)
+    {
+        <div class="toast @toast.CssClass @(toast.IsVisible ? "toast-show" : "toast-hide")" 
+             role="alert" 
+             aria-live="assertive" 
+             aria-atomic="true">
+            <div class="toast-icon"><span class="bi @toast.IconClass"></span></div>
+            <div class="toast-content">
+                <div class="toast-title">@toast.Title</div>
+                @if (!string.IsNullOrEmpty(toast.Message))
+                {
+                    <div class="toast-message">@toast.Message</div>
+                }
+            </div>
+            <button type="button" 
+                    class="toast-close" 
+                    aria-label="Close"
+                    @onclick="() => Dismiss(toast.Id)">
+                <span class="bi bi-x-lg"></span>
+            </button>
+            @if (toast.DurationMs > 0)
+            {
+                <div class="toast-progress" style="animation-duration: @(toast.DurationMs)ms"></div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<ToastMessage> _toasts = [];
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnChange += HandleToastChange;
+        _toasts = ToastService.Toasts;
+    }
+
+    private void HandleToastChange()
+    {
+        _toasts = ToastService.Toasts;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Dismiss(Guid toastId)
+    {
+        ToastService.Remove(toastId);
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnChange -= HandleToastChange;
+    }
+}

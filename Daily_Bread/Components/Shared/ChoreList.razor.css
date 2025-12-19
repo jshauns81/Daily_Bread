@@ -1,12 +1,123 @@
 .chore-list .chore-name {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .chore-list .table-secondary .chore-name {
-    color: var(--nord4);
+    color: var(--ds-text-muted);
 }
 
 .chore-list .table-responsive {
-    border-radius: var(--radius-md);
+    border-radius: var(--ds-radius-md);
     overflow: hidden;
+}
+
+/* ===========================================
+   MOBILE RESPONSIVE STYLES
+   =========================================== */
+
+@media (max-width: 991px) {
+    .chore-list .table th,
+    .chore-list .table td {
+        padding: var(--ds-space-2);
+        font-size: var(--ds-text-sm);
+    }
+    
+    /* Hide less important columns on tablet */
+    .chore-list .table th:nth-child(4),
+    .chore-list .table td:nth-child(4) {
+        display: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .chore-list .table-responsive {
+        margin: 0 calc(-1 * var(--ds-space-2));
+        border-radius: 0;
+    }
+    
+    .chore-list .table {
+        font-size: var(--ds-text-sm);
+    }
+    
+    .chore-list .table th,
+    .chore-list .table td {
+        padding: var(--ds-space-1) var(--ds-space-2);
+        vertical-align: middle;
+    }
+    
+    /* Hide schedule and status columns on mobile */
+    .chore-list .table th:nth-child(3),
+    .chore-list .table td:nth-child(3),
+    .chore-list .table th:nth-child(4),
+    .chore-list .table td:nth-child(4),
+    .chore-list .table th:nth-child(5),
+    .chore-list .table td:nth-child(5) {
+        display: none;
+    }
+    
+    /* Stack buttons vertically */
+    .chore-list .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .chore-list .btn-group .btn {
+        border-radius: var(--ds-radius-sm) !important;
+        padding: var(--ds-space-1);
+        font-size: var(--ds-text-xs);
+        min-height: 32px;
+    }
+    
+    /* Badges smaller on mobile */
+    .chore-list .badge {
+        font-size: 0.6rem;
+        padding: 2px 4px;
+    }
+    
+    /* Value badge compact */
+    .chore-list .value-badge {
+        font-size: var(--ds-text-xs);
+        padding: 2px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chore-list .table th:first-child,
+    .chore-list .table td:first-child {
+        max-width: 120px;
+    }
+    
+    .chore-list .chore-name {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100px;
+    }
+    
+    .chore-list .table td small {
+        display: none;
+    }
+    
+    /* Hide assigned user on very small screens */
+    .chore-list .table th:nth-child(2),
+    .chore-list .table td:nth-child(2) {
+        display: none;
+    }
+    
+    /* Action buttons even more compact */
+    .chore-list .btn-group .btn {
+        padding: 4px 6px;
+        font-size: 0.65rem;
+        min-height: 28px;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .chore-list .btn-group .btn {
+        min-height: 40px;
+        padding: var(--ds-space-2);
+    }
 }

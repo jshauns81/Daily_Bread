@@ -1,0 +1,110 @@
+﻿@* PageShell.razor - Reusable page wrapper with PWA-safe layout *@
+@* Provides header, scrollable content area, and optional sticky bottom navigation *@
+
+<div class="page-shell @CssClass @(HasBottomNav ? "page-shell--has-bottom-nav" : "")">
+    @if (ShowHeader)
+    {
+        <header class="page-shell__header @HeaderCssClass">
+            @if (HeaderContent != null)
+            {
+                @HeaderContent
+            }
+            else if (!string.IsNullOrEmpty(Title))
+            {
+                <h1 class="page-shell__title">@Title</h1>
+                @if (HeaderActions != null)
+                {
+                    <div class="page-shell__header-actions">
+                        @HeaderActions
+                    </div>
+                }
+            }
+        </header>
+    }
+
+    <main class="page-shell__content @ContentCssClass">
+        @ChildContent
+    </main>
+
+    @if (HasBottomNav && BottomNavContent != null)
+    {
+        <nav class="page-shell__bottom-nav">
+            @BottomNavContent
+        </nav>
+    }
+    
+    @if (FooterContent != null)
+    {
+        <footer class="page-shell__footer">
+            @FooterContent
+        </footer>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Page title displayed in the header
+    /// </summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Whether to show the header section
+    /// </summary>
+    [Parameter]
+    public bool ShowHeader { get; set; } = true;
+
+    /// <summary>
+    /// Whether the page has a fixed bottom navigation
+    /// </summary>
+    [Parameter]
+    public bool HasBottomNav { get; set; }
+
+    /// <summary>
+    /// Custom CSS class for the shell container
+    /// </summary>
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Custom CSS class for the header
+    /// </summary>
+    [Parameter]
+    public string? HeaderCssClass { get; set; }
+
+    /// <summary>
+    /// Custom CSS class for the content area
+    /// </summary>
+    [Parameter]
+    public string? ContentCssClass { get; set; }
+
+    /// <summary>
+    /// Custom header content (replaces default title)
+    /// </summary>
+    [Parameter]
+    public RenderFragment? HeaderContent { get; set; }
+
+    /// <summary>
+    /// Header action buttons (right side of header)
+    /// </summary>
+    [Parameter]
+    public RenderFragment? HeaderActions { get; set; }
+
+    /// <summary>
+    /// Main page content
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>
+    /// Bottom navigation content (sticky footer nav)
+    /// </summary>
+    [Parameter]
+    public RenderFragment? BottomNavContent { get; set; }
+
+    /// <summary>
+    /// Optional footer content (appears after bottom nav)
+    /// </summary>
+    [Parameter]
+    public RenderFragment? FooterContent { get; set; }
+}

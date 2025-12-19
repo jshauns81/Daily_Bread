@@ -1,15 +1,16 @@
 .manage-chores-container {
     max-width: 1200px;
     margin: 0 auto;
+    overflow-x: hidden;
 }
 
 .manage-chores-container h1 {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 /* Button group */
 .btn-group .btn {
-    padding: var(--space-xs) var(--space-sm);
+    padding: var(--ds-space-1) var(--ds-space-2);
 }
 
 /* Day selector buttons */
@@ -18,19 +19,19 @@
 }
 
 .btn-group[role="group"] .btn-check:checked + .btn-outline-primary {
-    background-color: var(--nord10);
-    border-color: var(--nord10);
-    color: var(--nord6);
+    background-color: var(--ds-accent-primary);
+    border-color: var(--ds-accent-primary);
+    color: var(--ds-text-primary);
 }
 
 .btn-group[role="group"] .btn-outline-primary {
-    color: var(--nord4);
-    border-color: var(--nord3);
+    color: var(--ds-text-muted);
+    border-color: var(--ds-bg-muted);
 }
 
 .btn-group[role="group"] .btn-outline-primary:hover {
-    background-color: var(--nord2);
-    color: var(--nord6);
+    background-color: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
 }
 
 /* Modal backdrop */
@@ -40,10 +41,94 @@
 
 /* Form switch styling */
 .form-check-input:checked {
-    background-color: var(--nord10);
-    border-color: var(--nord10);
+    background-color: var(--ds-accent-primary);
+    border-color: var(--ds-accent-primary);
 }
 
 .form-check-label {
-    color: var(--nord4);
+    color: var(--ds-text-muted);
+}
+
+/* ===========================================
+   MOBILE RESPONSIVE STYLES
+   =========================================== */
+
+@media (max-width: 767px) {
+    .manage-chores-container {
+        padding: 0;
+    }
+    
+    /* Header and button layout */
+    .manage-chores-container .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: var(--ds-space-4);
+    }
+    
+    .manage-chores-container .d-flex.gap-2 {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .manage-chores-container .d-flex.gap-2 .btn {
+        width: 100%;
+    }
+    
+    /* Nav tabs scrollable */
+    .manage-chores-container .nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+    }
+    
+    .manage-chores-container .nav-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .manage-chores-container .nav-tabs .nav-item {
+        flex-shrink: 0;
+    }
+    
+    .manage-chores-container .nav-tabs .nav-link {
+        white-space: nowrap;
+        padding: var(--ds-space-2);
+    }
+    
+    /* Card adjustments */
+    .manage-chores-container .card {
+        border-radius: var(--ds-radius-md);
+    }
+    
+    .manage-chores-container .card-header {
+        padding: var(--ds-space-2);
+    }
+    
+    .manage-chores-container .card-body {
+        padding: var(--ds-space-2);
+    }
+    
+    /* Week scheduler tip */
+    .manage-chores-container .alert.mt-3 {
+        font-size: var(--ds-text-sm);
+        padding: var(--ds-space-2);
+    }
+}
+
+@media (max-width: 480px) {
+    .manage-chores-container h1 {
+        font-size: 1.5rem;
+    }
+    
+    /* Form switch on mobile */
+    .manage-chores-container .form-check.form-switch {
+        padding-left: 3rem;
+    }
+    
+    .manage-chores-container .form-check-input {
+        width: 2.5rem;
+        height: 1.25rem;
+    }
 }

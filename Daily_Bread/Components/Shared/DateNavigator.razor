@@ -1,0 +1,69 @@
+﻿@namespace Daily_Bread.Components.Shared
+
+<div class="date-navigation">
+    <button class="nav-btn"
+            @onclick="GoToPreviousDay"
+            disabled="@(!CanNavigateBack)"
+            title="Previous day">
+        <span class="bi bi-chevron-left"></span>
+    </button>
+
+    <span class="date-display">
+        @SelectedDate.ToString("dddd, MMMM d, yyyy")
+    </span>
+    
+    @if (IsToday)
+    {
+        <span class="today-badge">Today</span>
+    }
+
+    <button class="nav-btn"
+            @onclick="GoToNextDay"
+            disabled="@(!CanNavigateForward)"
+            title="Next day">
+        <span class="bi bi-chevron-right"></span>
+    </button>
+
+    @if (!IsToday)
+    {
+        <button class="today-btn" @onclick="GoToToday">
+            Go to Today
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public DateOnly SelectedDate { get; set; }
+
+    [Parameter, EditorRequired]
+    public DateOnly Today { get; set; }
+
+    [Parameter]
+    public EventCallback<DateOnly> SelectedDateChanged { get; set; }
+
+    [Parameter]
+    public bool AllowPastNavigation { get; set; } = true;
+
+    [Parameter]
+    public bool AllowFutureNavigation { get; set; } = true;
+
+    private bool IsToday => SelectedDate == Today;
+    private bool CanNavigateBack => AllowPastNavigation || SelectedDate > Today;
+    private bool CanNavigateForward => AllowFutureNavigation || SelectedDate < Today;
+
+    private async Task GoToPreviousDay()
+    {
+        await SelectedDateChanged.InvokeAsync(SelectedDate.AddDays(-1));
+    }
+
+    private async Task GoToNextDay()
+    {
+        await SelectedDateChanged.InvokeAsync(SelectedDate.AddDays(1));
+    }
+
+    private async Task GoToToday()
+    {
+        await SelectedDateChanged.InvokeAsync(Today);
+    }
+}

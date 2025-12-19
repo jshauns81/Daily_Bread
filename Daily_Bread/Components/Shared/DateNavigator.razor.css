@@ -1,0 +1,82 @@
+/* ===========================================
+   DATE NAVIGATOR - Component Styles
+   =========================================== */
+
+.date-navigation {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.nav-btn {
+    background: transparent;
+    border: 1px solid var(--ds-bg-muted);
+    color: var(--ds-text-muted);
+    padding: 0.35rem 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.nav-btn:hover:not(:disabled) {
+    color: var(--ds-text-primary);
+    background: var(--ds-bg-hover);
+    border-color: var(--ds-text-muted);
+}
+
+.nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.date-display {
+    font-size: 0.95rem;
+    color: var(--ds-text-secondary);
+    font-weight: 500;
+}
+
+.today-badge {
+    background: var(--ds-accent-primary);
+    color: var(--ds-text-primary);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.today-btn {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--ds-accent-cyan);
+    background: transparent;
+    border: 1px solid var(--ds-bg-muted);
+    padding: 0.3rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.today-btn:hover {
+    background: var(--ds-bg-hover);
+    border-color: var(--ds-accent-cyan);
+}
+
+/* Mobile */
+@media (max-width: 575.98px) {
+    .date-navigation {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .today-btn {
+        margin-left: 0;
+        width: 100%;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+}

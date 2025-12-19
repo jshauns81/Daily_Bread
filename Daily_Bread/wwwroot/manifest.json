@@ -1,0 +1,54 @@
+{
+  "name": "Daily Bread",
+  "short_name": "Daily Bread",
+  "description": "A family chore tracker that helps kids earn their daily bread",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2E3440",
+  "theme_color": "#2E3440",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["productivity", "lifestyle", "family"],
+  "icons": [
+    {
+      "src": "/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "apple touch icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Chores",
+      "short_name": "Chores",
+      "description": "View and complete today's chores",
+      "url": "/tracker"
+    },
+    {
+      "name": "My Balance",
+      "short_name": "Balance",
+      "description": "Check your current balance",
+      "url": "/my-balance"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

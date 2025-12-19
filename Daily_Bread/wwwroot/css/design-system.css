@@ -1,0 +1,491 @@
+/* ===========================================
+   DAILY BREAD - DESIGN SYSTEM
+   Modular CSS Foundation for PWA
+   
+   This file contains design tokens and utility
+   classes that can be reused across components.
+   =========================================== */
+
+/* ===========================================
+   1. DESIGN TOKENS - CSS Custom Properties
+   =========================================== */
+
+:root {
+    /* ----- NORD COLOR PALETTE ----- */
+    /* Polar Night - Dark backgrounds */
+    --ds-bg-base: #2E3440;
+    --ds-bg-elevated: #3B4252;
+    --ds-bg-hover: #434C5E;
+    --ds-bg-muted: #4C566A;
+    
+    /* Snow Storm - Light text */
+    --ds-text-muted: #D8DEE9;
+    --ds-text-secondary: #E5E9F0;
+    --ds-text-primary: #ECEFF4;
+    
+    /* Frost - Blues (primary actions) */
+    --ds-accent-teal: #8FBCBB;
+    --ds-accent-cyan: #88C0D0;
+    --ds-accent-blue: #81A1C1;
+    --ds-accent-primary: #5E81AC;
+    
+    /* Aurora - Semantic colors */
+    --ds-semantic-error: #BF616A;
+    --ds-semantic-warning: #D08770;
+    --ds-semantic-highlight: #EBCB8B;
+    --ds-semantic-success: #A3BE8C;
+    --ds-semantic-special: #B48EAD;
+    
+    /* ----- SPACING SCALE ----- */
+    --ds-space-0: 0;
+    --ds-space-1: 4px;
+    --ds-space-2: 8px;
+    --ds-space-3: 12px;
+    --ds-space-4: 16px;
+    --ds-space-5: 20px;
+    --ds-space-6: 24px;
+    --ds-space-7: 32px;
+    --ds-space-8: 40px;
+    --ds-space-9: 48px;
+    --ds-space-10: 64px;
+    
+    /* ----- TYPOGRAPHY ----- */
+    --ds-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --ds-font-mono: 'SF Mono', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
+    
+    /* Responsive font sizes using clamp() */
+    --ds-text-xs: clamp(0.6875rem, 0.65rem + 0.1875vw, 0.75rem);   /* 11-12px */
+    --ds-text-sm: clamp(0.8125rem, 0.775rem + 0.1875vw, 0.875rem); /* 13-14px */
+    --ds-text-base: clamp(0.9375rem, 0.9rem + 0.1875vw, 1rem);     /* 15-16px */
+    --ds-text-lg: clamp(1.0625rem, 1rem + 0.3125vw, 1.25rem);      /* 17-20px */
+    --ds-text-xl: clamp(1.25rem, 1.125rem + 0.625vw, 1.5rem);      /* 20-24px */
+    --ds-text-2xl: clamp(1.5rem, 1.25rem + 1.25vw, 2rem);          /* 24-32px */
+    --ds-text-3xl: clamp(1.875rem, 1.5rem + 1.875vw, 2.5rem);      /* 30-40px */
+    
+    --ds-font-normal: 400;
+    --ds-font-medium: 500;
+    --ds-font-semibold: 600;
+    --ds-font-bold: 700;
+    
+    --ds-leading-tight: 1.2;
+    --ds-leading-normal: 1.5;
+    --ds-leading-relaxed: 1.75;
+    
+    /* ----- BORDER RADIUS ----- */
+    --ds-radius-sm: 6px;
+    --ds-radius-md: 10px;
+    --ds-radius-lg: 16px;
+    --ds-radius-xl: 24px;
+    --ds-radius-full: 9999px;
+    
+    /* ----- SHADOWS ----- */
+    --ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --ds-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+    --ds-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    --ds-shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.25), 0 4px 8px rgba(0, 0, 0, 0.15);
+    
+    /* Glow shadows for emphasis */
+    --ds-glow-success: 0 0 15px rgba(163, 190, 140, 0.25);
+    --ds-glow-primary: 0 0 15px rgba(136, 192, 208, 0.25);
+    --ds-glow-error: 0 0 15px rgba(191, 97, 106, 0.25);
+    --ds-glow-warning: 0 0 15px rgba(235, 203, 139, 0.25);
+    
+    /* ----- TRANSITIONS ----- */
+    --ds-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+    --ds-ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ds-ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ds-ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    --ds-duration-fast: 150ms;
+    --ds-duration-normal: 250ms;
+    --ds-duration-slow: 400ms;
+    
+    /* ----- Z-INDEX SCALE ----- */
+    --ds-z-base: 0;
+    --ds-z-dropdown: 100;
+    --ds-z-sticky: 200;
+    --ds-z-fixed: 300;
+    --ds-z-modal-backdrop: 400;
+    --ds-z-modal: 500;
+    --ds-z-popover: 600;
+    --ds-z-tooltip: 700;
+    --ds-z-toast: 800;
+    
+    /* ----- LAYOUT ----- */
+    --ds-max-width-sm: 540px;
+    --ds-max-width-md: 720px;
+    --ds-max-width-lg: 960px;
+    --ds-max-width-xl: 1140px;
+    
+    /* Touch target minimum (44px for accessibility) */
+    --ds-touch-target: 44px;
+    --ds-touch-target-lg: 48px;
+}
+
+/* ===========================================
+   2. VIEWPORT UTILITIES
+   =========================================== */
+
+/* Safe area padding utilities */
+.safe-top { padding-top: var(--safe-top, env(safe-area-inset-top, 0px)); }
+.safe-bottom { padding-bottom: var(--safe-bottom, env(safe-area-inset-bottom, 0px)); }
+.safe-left { padding-left: var(--safe-left, env(safe-area-inset-left, 0px)); }
+.safe-right { padding-right: var(--safe-right, env(safe-area-inset-right, 0px)); }
+.safe-x { 
+    padding-left: var(--safe-left, env(safe-area-inset-left, 0px)); 
+    padding-right: var(--safe-right, env(safe-area-inset-right, 0px)); 
+}
+.safe-y { 
+    padding-top: var(--safe-top, env(safe-area-inset-top, 0px)); 
+    padding-bottom: var(--safe-bottom, env(safe-area-inset-bottom, 0px)); 
+}
+.safe-all {
+    padding-top: var(--safe-top, env(safe-area-inset-top, 0px));
+    padding-bottom: var(--safe-bottom, env(safe-area-inset-bottom, 0px));
+    padding-left: var(--safe-left, env(safe-area-inset-left, 0px));
+    padding-right: var(--safe-right, env(safe-area-inset-right, 0px));
+}
+
+/* Dynamic viewport height */
+.h-screen {
+    height: 100vh; /* Fallback for older browsers */
+    height: 100dvh;
+}
+
+.min-h-screen {
+    min-height: 100vh; /* Fallback for older browsers */
+    min-height: 100dvh;
+}
+
+/* ===========================================
+   3. SHARED INPUT COMPONENT
+   =========================================== */
+
+.nord-input {
+    height: 50px;
+    background: var(--ds-bg-base);
+    border: 2px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    color: var(--ds-text-primary);
+    font-size: var(--ds-text-base);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    transition: all var(--ds-duration-fast);
+    width: 100%;
+}
+
+.nord-input:focus {
+    border-color: var(--ds-accent-cyan);
+    background: var(--ds-bg-base);
+    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
+    outline: none;
+}
+
+.nord-input::placeholder {
+    color: var(--ds-text-muted);
+}
+
+/* ===========================================
+   4. CARD COMPONENT
+   =========================================== */
+
+.ds-card {
+    background-color: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--ds-shadow-md);
+    overflow: hidden;
+    transition: box-shadow var(--ds-duration-normal) var(--ds-ease-default);
+}
+
+.ds-card:hover {
+    box-shadow: var(--ds-shadow-lg);
+}
+
+.ds-card-header {
+    padding: var(--ds-space-4);
+    background-color: var(--ds-bg-hover);
+    border-bottom: 1px solid var(--ds-bg-muted);
+}
+
+.ds-card-body {
+    padding: var(--ds-space-4);
+}
+
+.ds-card-footer {
+    padding: var(--ds-space-4);
+    background-color: var(--ds-bg-hover);
+    border-top: 1px solid var(--ds-bg-muted);
+}
+
+/* Card variants */
+.ds-card--flat {
+    box-shadow: none;
+    border: 1px solid var(--ds-bg-muted);
+}
+
+.ds-card--interactive {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ds-card--interactive:active {
+    transform: scale(0.98);
+    box-shadow: var(--ds-shadow-sm);
+}
+
+/* ===========================================
+   5. CHIP / BADGE COMPONENT
+   =========================================== */
+
+.ds-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-1);
+    padding: var(--ds-space-1) var(--ds-space-2);
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-font-medium);
+    border-radius: var(--ds-radius-full);
+    white-space: nowrap;
+    background-color: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+.ds-chip--sm {
+    padding: 2px var(--ds-space-2);
+    font-size: 10px;
+}
+
+.ds-chip--lg {
+    padding: var(--ds-space-2) var(--ds-space-3);
+    font-size: var(--ds-text-sm);
+}
+
+/* Chip colors */
+.ds-chip--primary { background-color: var(--ds-accent-primary); color: var(--ds-text-primary); }
+.ds-chip--success { background-color: var(--ds-semantic-success); color: var(--ds-bg-base); }
+.ds-chip--warning { background-color: var(--ds-semantic-warning); color: var(--ds-bg-base); }
+.ds-chip--error { background-color: var(--ds-semantic-error); color: var(--ds-text-primary); }
+.ds-chip--info { background-color: var(--ds-accent-cyan); color: var(--ds-bg-base); }
+
+/* Outline variants */
+.ds-chip--outline {
+    background-color: transparent;
+    border: 1px solid currentColor;
+}
+
+/* ===========================================
+   6. BUTTON UTILITIES
+   =========================================== */
+
+.ds-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    font-size: var(--ds-text-base);
+    font-weight: var(--ds-font-medium);
+    font-family: inherit;
+    border: none;
+    border-radius: var(--ds-radius-md);
+    cursor: pointer;
+    transition: all var(--ds-duration-fast) var(--ds-ease-default);
+    -webkit-tap-highlight-color: transparent;
+    min-height: var(--ds-touch-target);
+    text-decoration: none;
+}
+
+.ds-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ds-btn--primary {
+    background: linear-gradient(135deg, var(--ds-accent-primary), var(--ds-accent-blue));
+    color: var(--ds-text-primary);
+}
+
+.ds-btn--primary:hover:not(:disabled) {
+    box-shadow: var(--ds-shadow-md), var(--ds-glow-primary);
+    transform: translateY(-1px);
+}
+
+.ds-btn--success {
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
+}
+
+.ds-btn--success:hover:not(:disabled) {
+    box-shadow: var(--ds-shadow-md), var(--ds-glow-success);
+    transform: translateY(-1px);
+}
+
+.ds-btn--ghost {
+    background: transparent;
+    color: var(--ds-text-muted);
+}
+
+.ds-btn--ghost:hover:not(:disabled) {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+.ds-btn--sm {
+    padding: var(--ds-space-1) var(--ds-space-3);
+    font-size: var(--ds-text-sm);
+    min-height: 36px;
+}
+
+.ds-btn--lg {
+    padding: var(--ds-space-3) var(--ds-space-6);
+    font-size: var(--ds-text-lg);
+    min-height: 52px;
+}
+
+.ds-btn--block {
+    width: 100%;
+}
+
+.ds-btn--icon {
+    width: var(--ds-touch-target);
+    height: var(--ds-touch-target);
+    padding: 0;
+    border-radius: var(--ds-radius-full);
+}
+
+/* ===========================================
+   7. TYPOGRAPHY UTILITIES
+   =========================================== */
+
+.ds-heading {
+    font-weight: var(--ds-font-semibold);
+    line-height: var(--ds-leading-tight);
+    color: var(--ds-text-primary);
+}
+
+.ds-heading--1 { font-size: var(--ds-text-3xl); }
+.ds-heading--2 { font-size: var(--ds-text-2xl); }
+.ds-heading--3 { font-size: var(--ds-text-xl); }
+.ds-heading--4 { font-size: var(--ds-text-lg); }
+
+.ds-text { color: var(--ds-text-secondary); }
+.ds-text--muted { color: var(--ds-text-muted); }
+.ds-text--sm { font-size: var(--ds-text-sm); }
+.ds-text--xs { font-size: var(--ds-text-xs); }
+.ds-text--mono { font-family: var(--ds-font-mono); }
+
+/* ===========================================
+   8. LAYOUT UTILITIES
+   =========================================== */
+
+.ds-stack {
+    display: flex;
+    flex-direction: column;
+}
+
+.ds-stack--1 { gap: var(--ds-space-1); }
+.ds-stack--2 { gap: var(--ds-space-2); }
+.ds-stack--3 { gap: var(--ds-space-3); }
+.ds-stack--4 { gap: var(--ds-space-4); }
+.ds-stack--6 { gap: var(--ds-space-6); }
+
+.ds-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.ds-row--1 { gap: var(--ds-space-1); }
+.ds-row--2 { gap: var(--ds-space-2); }
+.ds-row--3 { gap: var(--ds-space-3); }
+.ds-row--4 { gap: var(--ds-space-4); }
+
+.ds-between { justify-content: space-between; }
+.ds-center { justify-content: center; }
+
+/* ===========================================
+   9. BOTTOM NAV / FIXED FOOTER UTILITIES
+   =========================================== */
+
+.ds-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--ds-z-fixed);
+    background: var(--ds-bg-elevated);
+    border-top: 1px solid var(--ds-bg-muted);
+    /* Safe area padding for iPhone home indicator */
+    padding-bottom: max(var(--ds-space-2), env(safe-area-inset-bottom, 0px));
+    /* Frosted glass effect */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(59, 66, 82, 0.85);
+}
+
+/* Content padding when bottom bar is present */
+.ds-has-bottom-bar {
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--ds-space-4));
+}
+
+/* ===========================================
+   10. GLASSMORPHISM UTILITIES
+   =========================================== */
+
+.ds-glass {
+    background: rgba(59, 66, 82, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(216, 222, 233, 0.1);
+}
+
+.ds-glass--strong {
+    background: rgba(59, 66, 82, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* ===========================================
+   11. TOUCH OPTIMIZATIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    /* Touch devices get larger tap targets */
+    .ds-btn {
+        min-height: var(--ds-touch-target-lg);
+    }
+    
+    .ds-card--interactive:active {
+        transform: scale(0.97);
+        transition-duration: var(--ds-duration-fast);
+    }
+}
+
+/* ===========================================
+   12. REDUCED MOTION
+   =========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===========================================
+   13. PRINT STYLES
+   =========================================== */
+
+@media print {
+    .ds-bottom-bar,
+    .ds-card--interactive {
+        display: none !important;
+    }
+    
+    .ds-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}

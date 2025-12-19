@@ -1,0 +1,221 @@
+﻿@namespace Daily_Bread.Components.Shared
+@using Daily_Bread.Services
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="swipeable-card-container @(IsSwipeDisabled ? "swipe-disabled" : "")" @ref="_containerRef">
+    @if (!IsSwipeDisabled)
+    {
+        <!-- Help action (revealed on swipe left) -->
+        <div class="swipe-action swipe-action-left">
+            <div class="action-content help-action">
+                <span class="bi bi-exclamation-triangle-fill"></span>
+                <span>Help</span>
+            </div>
+        </div>
+        
+        <!-- Done action (revealed on swipe right) -->
+        <div class="swipe-action swipe-action-right">
+            <div class="action-content done-action">
+                <span class="bi bi-check-lg"></span>
+                <span>Done</span>
+            </div>
+        </div>
+    }
+    
+    <!-- The card itself -->
+    <div class="swipeable-card @GetCardStateClass()" 
+         @ref="_cardRef"
+         data-chore-id="@Chore.ChoreDefinitionId">
+        <div class="card-content">
+            <div class="chore-info">
+                <span class="chore-name">@Chore.ChoreName</span>
+                @if (Chore.IsWeeklyFlexible && Chore.WeeklyTargetCount > 0)
+                {
+                    <span class="weekly-progress">
+                        @Chore.WeeklyCompletedCount/@Chore.WeeklyTargetCount this week
+                        @if (Chore.IsWeeklyQuotaMet && Chore.IsRepeatable)
+                        {
+                            <span class="bonus-indicator">• Bonus</span>
+                        }
+                    </span>
+                }
+                @if (GetStatusText() is var statusText && !string.IsNullOrEmpty(statusText))
+                {
+                    <span class="status-text">@statusText</span>
+                }
+            </div>
+            <div class="chore-value">
+                @if (Chore.EarnValue > 0)
+                {
+                    @if (Chore.IsWeeklyFlexible && Chore.IsWeeklyQuotaMet && Chore.NextCompletionValue.HasValue)
+                    {
+                        <span class="value-amount bonus">$@Chore.NextCompletionValue.Value.ToString("F2")</span>
+                    }
+                    else
+                    {
+                        <span class="value-amount">$@Chore.EarnValue.ToString("F2")</span>
+                    }
+                }
+            </div>
+        </div>
+        
+        @* Click action buttons for desktop/web - visible on hover *@
+        @if (!IsSwipeDisabled && !IsProcessing)
+        {
+            <div class="click-actions">
+                <button type="button" 
+                        class="click-action-btn help-btn" 
+                        @onclick="HandleHelpClick"
+                        @onclick:stopPropagation="true"
+                        title="Request Help">
+                    <span class="bi bi-question-circle"></span>
+                    <span class="btn-label">Help</span>
+                </button>
+                <button type="button" 
+                        class="click-action-btn done-btn" 
+                        @onclick="HandleDoneClick"
+                        @onclick:stopPropagation="true"
+                        title="Mark as Done">
+                    <span class="bi bi-check-circle"></span>
+                    <span class="btn-label">Done</span>
+                </button>
+            </div>
+        }
+        
+        @if (IsProcessing)
+        {
+            <div class="processing-overlay">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Processing...</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public required TrackerChoreItem Chore { get; set; }
+    
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnComplete { get; set; }
+    
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnRequestHelp { get; set; }
+    
+    [Parameter]
+    public bool IsProcessing { get; set; }
+    
+    private ElementReference _containerRef;
+    private ElementReference _cardRef;
+    private DotNetObjectReference<SwipeableChoreCard>? _dotNetRef;
+    private bool _disposed;
+    private bool _jsInitialized;
+    
+    /// <summary>
+    /// Swipe is disabled for non-pending chores (already completed, approved, missed, etc.)
+    /// </summary>
+    private bool IsSwipeDisabled => !Chore.IsPending && !Chore.IsHelp;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_disposed && !IsSwipeDisabled)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            try
+            {
+                await JS.InvokeVoidAsync("SwipeGestures.init", _containerRef, _dotNetRef);
+                _jsInitialized = true;
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit disconnected, component will be disposed
+            }
+            catch (TaskCanceledException)
+            {
+                // Operation cancelled
+            }
+            catch (ObjectDisposedException)
+            {
+                // Object disposed
+            }
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleSwipeComplete(string direction)
+    {
+        // Guard against callbacks after disposal or when disabled
+        if (_disposed || IsProcessing || IsSwipeDisabled) return;
+        
+        if (direction == "right")
+        {
+            await OnComplete.InvokeAsync(Chore);
+        }
+        else if (direction == "left")
+        {
+            await OnRequestHelp.InvokeAsync(Chore);
+        }
+    }
+    
+    /// <summary>
+    /// Handle click on Done button (for desktop/web users)
+    /// </summary>
+    private async Task HandleDoneClick()
+    {
+        if (_disposed || IsProcessing || IsSwipeDisabled) return;
+        await OnComplete.InvokeAsync(Chore);
+    }
+    
+    /// <summary>
+    /// Handle click on Help button (for desktop/web users)
+    /// </summary>
+    private async Task HandleHelpClick()
+    {
+        if (_disposed || IsProcessing || IsSwipeDisabled) return;
+        await OnRequestHelp.InvokeAsync(Chore);
+    }
+    
+    private string GetCardStateClass()
+    {
+        if (Chore.IsApproved) return "completed";
+        if (Chore.IsCompleted) return "pending-approval";
+        if (Chore.IsHelp) return "help-requested";
+        if (Chore.IsMissed) return "missed";
+        if (Chore.IsSkipped) return "skipped";
+        return "";
+    }
+    
+    private string? GetStatusText()
+    {
+        if (Chore.IsApproved) return "✓ Approved";
+        if (Chore.IsCompleted) return "⏳ Waiting for approval";
+        if (Chore.IsHelp) return "🆘 Help requested";
+        if (Chore.IsMissed) return "✗ Missed";
+        if (Chore.IsSkipped) return "— Skipped";
+        return null;
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        
+        // Only attempt JS cleanup if we successfully initialized
+        if (_jsInitialized)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("SwipeGestures.destroy", _containerRef);
+            }
+            catch
+            {
+                // Swallow all exceptions during disposal - circuit may already be disconnected
+            }
+        }
+        
+        _dotNetRef?.Dispose();
+        _dotNetRef = null;
+    }
+}

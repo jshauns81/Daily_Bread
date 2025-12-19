@@ -1,0 +1,161 @@
+﻿@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<span class="animated-counter @CssClass" @ref="_element">
+    @if (Prefix != null)
+    {
+        <span class="counter-prefix">@Prefix</span>
+    }
+    <span class="counter-value">@DisplayValue</span>
+    @if (Suffix != null)
+    {
+        <span class="counter-suffix">@Suffix</span>
+    }
+</span>
+
+@code {
+    private ElementReference _element;
+    private decimal _previousValue;
+    private decimal _displayValue;
+    private IJSObjectReference? _module;
+    private bool _isFirstRender = true;
+    private bool _disposed;
+
+    [Parameter, EditorRequired]
+    public decimal Value { get; set; }
+
+    [Parameter]
+    public string? Prefix { get; set; }
+
+    [Parameter]
+    public string? Suffix { get; set; }
+
+    [Parameter]
+    public string Format { get; set; } = "F2";
+
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Duration of animation in milliseconds
+    /// </summary>
+    [Parameter]
+    public int Duration { get; set; } = 600;
+
+    private string DisplayValue => _displayValue.ToString(Format);
+
+    protected override void OnInitialized()
+    {
+        _displayValue = Value;
+        _previousValue = Value;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_disposed)
+        {
+            try
+            {
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/animated-counter.js");
+                _isFirstRender = false;
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit disconnected, ignore
+            }
+            catch (TaskCanceledException)
+            {
+                // Operation cancelled, ignore
+            }
+            catch (ObjectDisposedException)
+            {
+                // Object disposed, ignore
+            }
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!_isFirstRender && Value != _previousValue && _module != null && !_disposed)
+        {
+            // Animate from previous to new value
+            await AnimateValue(_previousValue, Value);
+            _previousValue = Value;
+        }
+        else
+        {
+            _displayValue = Value;
+            _previousValue = Value;
+        }
+    }
+
+    private async Task AnimateValue(decimal from, decimal to)
+    {
+        if (_disposed) return;
+        
+        try
+        {
+            // Use JS for smooth animation
+            var dotNetRef = DotNetObjectReference.Create(this);
+            await _module!.InvokeVoidAsync("animate", _element, (double)from, (double)to, Duration, Format, dotNetRef);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit disconnected, just set the value
+            _displayValue = to;
+        }
+        catch (TaskCanceledException)
+        {
+            // Operation cancelled, just set the value
+            _displayValue = to;
+        }
+        catch (ObjectDisposedException)
+        {
+            // Object disposed, just set the value
+            _displayValue = to;
+        }
+        catch
+        {
+            // Fallback: just set the value
+            _displayValue = to;
+        }
+    }
+
+    [JSInvokable]
+    public void UpdateDisplayValue(string value)
+    {
+        if (_disposed) return;
+        
+        if (decimal.TryParse(value, out var parsed))
+        {
+            _displayValue = parsed;
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+
+    [JSInvokable]
+    public void AnimationComplete()
+    {
+        if (_disposed) return;
+        
+        _displayValue = Value;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        
+        if (_module != null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch
+            {
+                // Swallow all exceptions during disposal - circuit may already be disconnected
+            }
+        }
+    }
+}

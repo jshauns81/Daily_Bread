@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +16,43 @@ public class ChildBalanceSummary
 }
 
 /// <summary>
+/// A help request from a child requiring parent attention.
+/// </summary>
+public class HelpRequestItem
+{
+    public int ChoreLogId { get; init; }
+    public int ChoreDefinitionId { get; init; }
+    public required string ChoreName { get; init; }
+    public required string ChildName { get; init; }
+    public string? ChildUserId { get; init; }
+    public string? Reason { get; init; }
+    public DateOnly Date { get; init; }
+    public DateTime? RequestedAt { get; init; }
+}
+
+/// <summary>
+/// Summary of a child's today progress for parent overview.
+/// </summary>
+public class ChildTodayProgress
+{
+    public int ProfileId { get; init; }
+    public required string DisplayName { get; init; }
+    public string? UserId { get; init; }
+    public int TotalChores { get; init; }
+    public int CompletedChores { get; init; }
+    public int ApprovedChores { get; init; }
+    public int PendingChores { get; init; }
+    public int HelpRequests { get; init; }
+    
+    public int ProgressPercent => TotalChores > 0 
+        ? (int)Math.Round((CompletedChores + ApprovedChores) * 100.0 / TotalChores) 
+        : 0;
+    
+    public bool IsComplete => TotalChores > 0 && (CompletedChores + ApprovedChores) >= TotalChores;
+    public bool HasHelpRequests => HelpRequests > 0;
+}
+
+/// <summary>
 /// A pending chore awaiting approval.
 /// </summary>
 public class PendingApprovalItem
@@ -25,7 +62,8 @@ public class PendingApprovalItem
     public required string ChoreName { get; init; }
     public required string ChildName { get; init; }
     public string? ChildUserId { get; init; }
-    public decimal Value { get; init; }
+    public decimal EarnValue { get; init; }
+    public decimal Value => EarnValue; // Backward compatibility
     public DateOnly Date { get; init; }
     public DateTime? CompletedAt { get; init; }
 }
@@ -69,9 +107,13 @@ public class ParentDashboardData
     public List<PendingApprovalItem> PendingApprovals { get; init; } = [];
     public List<ChildBalanceSummary> ChildrenBalances { get; init; } = [];
     public List<RecentActivityItem> RecentActivity { get; init; } = [];
+    public List<HelpRequestItem> HelpRequests { get; init; } = [];
+    public List<ChildTodayProgress> ChildrenProgress { get; init; } = [];
     public int TodayCompletedCount { get; init; }
     public int TodayPendingCount { get; init; }
     public int TodayApprovedCount { get; init; }
+    public int TodayHelpCount { get; init; }
+    public int TodayTotalChores { get; init; }
 }
 
 /// <summary>
@@ -91,6 +133,25 @@ public class ChildDashboardData
     public int CurrentStreak { get; init; }
     public int BestStreak { get; init; }
     public List<TrackerChoreItem> TodayChores { get; init; } = [];
+    
+    /// <summary>
+    /// Chores that are pending (not yet completed) - for swipeable action view.
+    /// </summary>
+    public List<TrackerChoreItem> PendingChores => TodayChores
+        .Where(c => c.IsPending || c.IsHelp)
+        .ToList();
+    
+    /// <summary>
+    /// Chores that are done (completed or approved) - collapsed section.
+    /// </summary>
+    public List<TrackerChoreItem> CompletedChores => TodayChores
+        .Where(c => c.IsCompleted || c.IsApproved)
+        .ToList();
+    
+    /// <summary>
+    /// Weekly flexible chores with progress data.
+    /// </summary>
+    public WeeklyProgressSummary? WeeklyProgress { get; init; }
     
     // New features
     public SavingsGoalProgress? PrimaryGoal { get; init; }
@@ -127,6 +188,15 @@ public interface IDashboardService
     /// Quick approve a chore from the dashboard.
     /// </summary>
     Task<ServiceResult> QuickApproveAsync(int choreLogId, string parentUserId);
+    
+    /// <summary>
+    /// Toggle a chore's completion status from the dashboard.
+    /// Returns the new status and updated chore item.
+    /// </summary>
+    Task<ServiceResult<TrackerChoreItem>> ToggleChoreFromDashboardAsync(
+        int choreDefinitionId, 
+        DateOnly date, 
+        string userId);
 }
 
 /// <summary>
@@ -134,7 +204,7 @@ public interface IDashboardService
 /// </summary>
 public class DashboardService : IDashboardService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
     private readonly IChildProfileService _profileService;
     private readonly ITrackerService _trackerService;
@@ -142,21 +212,23 @@ public class DashboardService : IDashboardService
     private readonly ILedgerService _ledgerService;
     private readonly ISavingsGoalService _savingsGoalService;
     private readonly IAchievementService _achievementService;
+    private readonly IWeeklyProgressService _weeklyProgressService;
 
     // Default cash out threshold - should match AppSettings
     private const decimal DefaultCashOutThreshold = 10.00m;
 
     public DashboardService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IDateProvider dateProvider,
         IChildProfileService profileService,
         ITrackerService trackerService,
         IPayoutService payoutService,
         ILedgerService ledgerService,
         ISavingsGoalService savingsGoalService,
-        IAchievementService achievementService)
+        IAchievementService achievementService,
+        IWeeklyProgressService weeklyProgressService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _dateProvider = dateProvider;
         _profileService = profileService;
         _trackerService = trackerService;
@@ -164,14 +236,17 @@ public class DashboardService : IDashboardService
         _ledgerService = ledgerService;
         _savingsGoalService = savingsGoalService;
         _achievementService = achievementService;
+        _weeklyProgressService = weeklyProgressService;
     }
 
     public async Task<ParentDashboardData> GetParentDashboardAsync()
     {
         var today = _dateProvider.Today;
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
         // Get pending approvals (completed but not approved chores)
-        var pendingApprovals = await _context.ChoreLogs
+        var pendingApprovals = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Where(cl => cl.Status == ChoreStatus.Completed)
@@ -186,9 +261,30 @@ public class DashboardService : IDashboardService
                     ? cl.ChoreDefinition.AssignedUser.UserName ?? "Unknown"
                     : "Unassigned",
                 ChildUserId = cl.ChoreDefinition.AssignedUserId,
-                Value = cl.ChoreDefinition.Value,
+                EarnValue = cl.ChoreDefinition.EarnValue,
                 Date = cl.Date,
                 CompletedAt = cl.CompletedAt
+            })
+            .ToListAsync();
+
+        // Get help requests (chores with Help status)
+        var helpRequests = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
+                .ThenInclude(cd => cd.AssignedUser)
+            .Where(cl => cl.Status == ChoreStatus.Help)
+            .OrderByDescending(cl => cl.HelpRequestedAt)
+            .Select(cl => new HelpRequestItem
+            {
+                ChoreLogId = cl.Id,
+                ChoreDefinitionId = cl.ChoreDefinitionId,
+                ChoreName = cl.ChoreDefinition.Name,
+                ChildName = cl.ChoreDefinition.AssignedUser != null 
+                    ? cl.ChoreDefinition.AssignedUser.UserName ?? "Unknown"
+                    : "Unassigned",
+                ChildUserId = cl.ChoreDefinition.AssignedUserId,
+                Reason = cl.HelpReason,
+                Date = cl.Date,
+                RequestedAt = cl.HelpRequestedAt
             })
             .ToListAsync();
 
@@ -205,19 +301,44 @@ public class DashboardService : IDashboardService
         // Get recent activity (last 10 items)
         var recentActivity = await GetRecentActivityAsync(10);
 
-        // Get today's stats
-        var todayLogs = await _context.ChoreLogs
+        // Get today's stats from chore logs
+        var todayLogs = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.Date == today)
             .ToListAsync();
+
+        // Build per-child progress for today
+        var childrenProgress = new List<ChildTodayProgress>();
+        foreach (var profile in childProfiles)
+        {
+            var childTodayLogs = todayLogs.Where(l => l.ChoreDefinition.AssignedUserId == profile.UserId).ToList();
+            var childHelpCount = helpRequests.Count(hr => hr.ChildUserId == profile.UserId);
+            
+            childrenProgress.Add(new ChildTodayProgress
+            {
+                ProfileId = profile.ProfileId,
+                DisplayName = profile.DisplayName,
+                UserId = profile.UserId,
+                TotalChores = childTodayLogs.Count,
+                CompletedChores = childTodayLogs.Count(l => l.Status == ChoreStatus.Completed),
+                ApprovedChores = childTodayLogs.Count(l => l.Status == ChoreStatus.Approved),
+                PendingChores = childTodayLogs.Count(l => l.Status == ChoreStatus.Pending),
+                HelpRequests = childHelpCount
+            });
+        }
 
         return new ParentDashboardData
         {
             PendingApprovals = pendingApprovals,
             ChildrenBalances = childrenBalances,
             RecentActivity = recentActivity,
+            HelpRequests = helpRequests,
+            ChildrenProgress = childrenProgress,
             TodayCompletedCount = todayLogs.Count(l => l.Status == ChoreStatus.Completed),
             TodayPendingCount = todayLogs.Count(l => l.Status == ChoreStatus.Pending),
-            TodayApprovedCount = todayLogs.Count(l => l.Status == ChoreStatus.Approved)
+            TodayApprovedCount = todayLogs.Count(l => l.Status == ChoreStatus.Approved),
+            TodayHelpCount = todayLogs.Count(l => l.Status == ChoreStatus.Help),
+            TodayTotalChores = todayLogs.Count
         };
     }
 
@@ -235,6 +356,9 @@ public class DashboardService : IDashboardService
 
         // Get today's chores
         var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, today);
+
+        // Get weekly progress for weekly flexible chores
+        var weeklyProgress = await _weeklyProgressService.GetWeeklyProgressForUserAsync(userId, today);
 
         // Calculate streaks
         var (currentStreak, bestStreak) = await CalculateStreaksAsync(userId);
@@ -282,6 +406,7 @@ public class DashboardService : IDashboardService
             CurrentStreak = currentStreak,
             BestStreak = bestStreak,
             TodayChores = todayChores,
+            WeeklyProgress = weeklyProgress,
             PrimaryGoal = primaryGoal,
             RecentAchievements = recentAchievements,
             NewAchievements = newAchievements,
@@ -295,13 +420,16 @@ public class DashboardService : IDashboardService
 
     public async Task<int> GetPendingApprovalsCountAsync()
     {
-        return await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ChoreLogs
             .CountAsync(cl => cl.Status == ChoreStatus.Completed);
     }
 
     public async Task<ServiceResult> QuickApproveAsync(int choreLogId, string parentUserId)
     {
-        var choreLog = await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var choreLog = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .FirstOrDefaultAsync(cl => cl.Id == choreLogId);
 
@@ -316,18 +444,49 @@ public class DashboardService : IDashboardService
         choreLog.ApprovedAt = DateTime.UtcNow;
         choreLog.ModifiedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         await _ledgerService.ReconcileChoreLogTransactionAsync(choreLogId);
 
         return ServiceResult.Ok();
     }
 
+    public async Task<ServiceResult<TrackerChoreItem>> ToggleChoreFromDashboardAsync(
+        int choreDefinitionId, 
+        DateOnly date, 
+        string userId)
+    {
+        // Toggle the chore using the tracker service
+        var result = await _trackerService.ToggleChoreCompletionAsync(
+            choreDefinitionId,
+            date,
+            userId,
+            isParent: false);
+
+        if (!result.Success)
+        {
+            return ServiceResult<TrackerChoreItem>.Fail(result.ErrorMessage!);
+        }
+
+        // Get the updated chore item to return
+        var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, date);
+        var updatedChore = todayChores.FirstOrDefault(c => c.ChoreDefinitionId == choreDefinitionId);
+
+        if (updatedChore == null)
+        {
+            return ServiceResult<TrackerChoreItem>.Fail("Could not find updated chore.");
+        }
+
+        return ServiceResult<TrackerChoreItem>.Ok(updatedChore);
+    }
+
     private async Task<List<RecentActivityItem>> GetRecentActivityAsync(int count)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var activities = new List<RecentActivityItem>();
 
         // Get recent chore completions/approvals
-        var recentLogs = await _context.ChoreLogs
+        var recentLogs = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Include(cl => cl.ApprovedByUser)
@@ -348,7 +507,7 @@ public class DashboardService : IDashboardService
                     Category = "approval",
                     Timestamp = log.ApprovedAt.Value,
                     ChildName = childName,
-                    Amount = log.ChoreDefinition.Value
+                    Amount = log.ChoreDefinition.EarnValue
                 });
             }
             else if (log.Status == ChoreStatus.Completed && log.CompletedAt.HasValue)
@@ -365,7 +524,7 @@ public class DashboardService : IDashboardService
         }
 
         // Get recent transactions (payouts, bonuses, penalties)
-        var recentTransactions = await _context.LedgerTransactions
+        var recentTransactions = await context.LedgerTransactions
             .Include(t => t.User)
             .Where(t => t.Type == TransactionType.Payout || 
                         t.Type == TransactionType.Bonus || 
@@ -386,7 +545,7 @@ public class DashboardService : IDashboardService
 
             activities.Add(new RecentActivityItem
             {
-                Description = txn.Description,
+                Description = txn.Description ?? $"{category} transaction",
                 Category = category,
                 Timestamp = txn.CreatedAt,
                 ChildName = txn.User?.UserName,
@@ -403,7 +562,24 @@ public class DashboardService : IDashboardService
 
     private async Task<(int current, int best)> CalculateStreaksAsync(string userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var today = _dateProvider.Today;
+        var startDate = today.AddDays(-365);
+        
+        // OPTIMIZED: Single query to get all chore logs for the user in the last 365 days
+        // This eliminates the N+1 pattern (was 365 queries, now 1)
+        var allChoresInRange = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
+            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
+            .Where(cl => cl.Date >= startDate && cl.Date <= today)
+            .ToListAsync();
+
+        // Group by date for efficient lookup
+        var choresByDate = allChoresInRange
+            .GroupBy(cl => cl.Date)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        
         var currentStreak = 0;
         var bestStreak = 0;
         var runningStreak = 0;
@@ -413,22 +589,10 @@ public class DashboardService : IDashboardService
         // Look back up to 365 days
         for (int i = 0; i < 365; i++)
         {
-            // Get chores for this date
-            var choresForDate = await _context.ChoreLogs
-                .Include(cl => cl.ChoreDefinition)
-                .Where(cl => cl.Date == currentDate && cl.ChoreDefinition.AssignedUserId == userId)
-                .ToListAsync();
-
-            // If no chores scheduled for this date, continue checking previous days
-            if (choresForDate.Count == 0)
+            // Get chores for this date from the pre-loaded dictionary
+            if (!choresByDate.TryGetValue(currentDate, out var choresForDate) || choresForDate.Count == 0)
             {
-                // For today, no chores means we continue
-                // For past days, no scheduled chores doesn't break streak
-                if (currentDate == today)
-                {
-                    currentDate = currentDate.AddDays(-1);
-                    continue;
-                }
+                // No chores scheduled for this date, continue checking
                 currentDate = currentDate.AddDays(-1);
                 continue;
             }
@@ -461,17 +625,19 @@ public class DashboardService : IDashboardService
 
     private async Task<WeeklyComparison> GetWeeklyComparisonAsync(string userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var today = _dateProvider.Today;
         var startOfThisWeek = today.AddDays(-(int)today.DayOfWeek);
         var startOfLastWeek = startOfThisWeek.AddDays(-7);
 
         // This week's stats
-        var thisWeekEarnings = await _context.LedgerTransactions
+        var thisWeekEarnings = await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0 && t.Type == TransactionType.ChoreEarning)
             .Where(t => t.TransactionDate >= startOfThisWeek && t.TransactionDate <= today)
             .SumAsync(t => t.Amount);
 
-        var thisWeekChores = await _context.ChoreLogs
+        var thisWeekChores = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
             .Where(cl => cl.Date >= startOfThisWeek && cl.Date <= today)
@@ -480,12 +646,12 @@ public class DashboardService : IDashboardService
 
         // Last week's stats
         var endOfLastWeek = startOfThisWeek.AddDays(-1);
-        var lastWeekEarnings = await _context.LedgerTransactions
+        var lastWeekEarnings = await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0 && t.Type == TransactionType.ChoreEarning)
             .Where(t => t.TransactionDate >= startOfLastWeek && t.TransactionDate <= endOfLastWeek)
             .SumAsync(t => t.Amount);
 
-        var lastWeekChores = await _context.ChoreLogs
+        var lastWeekChores = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
             .Where(cl => cl.Date >= startOfLastWeek && cl.Date <= endOfLastWeek)
@@ -503,7 +669,8 @@ public class DashboardService : IDashboardService
 
     private async Task<decimal> GetLifetimeEarningsAsync(string userId)
     {
-        return await _context.LedgerTransactions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0)
             .SumAsync(t => t.Amount);
     }

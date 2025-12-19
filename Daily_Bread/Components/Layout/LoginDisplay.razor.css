@@ -1,0 +1,233 @@
+/* ============================================
+   LOGIN DISPLAY - USER MENU
+   ============================================ */
+
+.login-display-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: transparent;
+    position: relative;
+}
+
+.user-dropdown {
+    position: relative;
+}
+
+/* Dropdown Menu - Absolute overlay anchored to button */
+.user-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + var(--ds-space-2));
+    z-index: var(--ds-z-dropdown);
+    min-width: 180px;
+    background-color: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-md);
+    box-shadow: var(--ds-shadow-lg);
+    padding: var(--ds-space-2) 0;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity var(--ds-duration-fast) ease, transform var(--ds-duration-fast) ease;
+}
+
+.user-dropdown-menu.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Dropdown Items */
+.user-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    color: var(--ds-text-primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--ds-duration-fast) ease;
+}
+
+.user-dropdown-menu .dropdown-item:hover {
+    background-color: var(--ds-bg-hover);
+}
+
+.user-dropdown-menu .dropdown-item .bi {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* Danger variant for logout */
+.user-dropdown-menu .dropdown-item-danger {
+    color: var(--ds-semantic-error);
+}
+
+.user-dropdown-menu .dropdown-item-danger:hover {
+    background-color: rgba(191, 97, 106, 0.15);
+}
+
+/* Dropdown Divider */
+.user-dropdown-menu .dropdown-divider {
+    margin: var(--ds-space-2) 0;
+    border: none;
+    border-top: 1px solid var(--ds-bg-muted);
+    opacity: 0.5;
+}
+
+.btn-user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    color: var(--ds-text-muted);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-user-menu:hover {
+    background-color: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+    border-color: var(--ds-text-muted);
+}
+
+.btn-user-menu .bi-person-circle {
+    font-size: 1.1rem;
+}
+
+.user-name {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-chevron {
+    font-size: 0.65rem;
+    opacity: 0.7;
+    transition: transform 0.2s ease;
+}
+
+/* Rotate chevron when open */
+.btn-user-menu[aria-expanded="true"] .dropdown-chevron {
+    transform: rotate(180deg);
+}
+
+/* Login Button (not authorized) */
+.btn-auth {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    color: var(--ds-text-muted);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-auth:hover {
+    background-color: var(--ds-accent-primary);
+    border-color: var(--ds-accent-primary);
+    color: var(--ds-text-primary);
+}
+
+.btn-auth .bi {
+    font-size: 1rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .user-name {
+        display: none;
+    }
+    
+    .dropdown-chevron {
+        display: none;
+    }
+    
+    .btn-user-menu {
+        padding: 0.5rem;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        justify-content: center;
+        /* Remove the double-circle effect - icon is already circular */
+        border: none;
+        background: transparent;
+    }
+    
+    .btn-user-menu:hover,
+    .btn-user-menu:focus {
+        background-color: var(--ds-bg-hover);
+    }
+    
+    .btn-user-menu .bi-person-circle {
+        font-size: 1.5rem;
+    }
+    
+    .btn-auth-text {
+        display: none;
+    }
+    
+    .btn-auth {
+        padding: 0.5rem;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        justify-content: center;
+        border: none;
+        background: transparent;
+    }
+    
+    .btn-auth:hover,
+    .btn-auth:focus {
+        background-color: var(--ds-bg-hover);
+    }
+    
+    .btn-auth .bi {
+        font-size: 1.5rem;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .btn-user-menu,
+    .btn-auth {
+        min-height: 44px;
+    }
+    
+    .btn-user-menu:hover,
+    .btn-auth:hover {
+        background-color: transparent;
+    }
+    
+    .btn-user-menu:active,
+    .btn-auth:active {
+        background-color: var(--ds-bg-hover);
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .dropdown-chevron {
+        transition: none;
+    }
+}

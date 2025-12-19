@@ -1,23 +1,197 @@
 ﻿@inherits LayoutComponentBase
+@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared.Navigation
+@using Daily_Bread.Components.Shared
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject INavigationService NavService
+@implements IDisposable
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="auth-row">
+<div class="page @(_sidebarOpen ? "sidebar-open" : "") @(_showBottomNav ? "has-bottom-nav" : "")" id="page-container">
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <button class="hamburger-btn" onclick="window.toggleSidebar()" aria-label="Toggle navigation">
+            <span class="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+            </span>
+        </button>
+        <a href="/" class="mobile-brand">
+            <img src="images/bread-icon.png" alt="" class="mobile-brand-icon" />
+            <span>Daily Bread</span>
+        </a>
+        <div class="mobile-header-actions">
             <LoginDisplay />
         </div>
+    </header>
 
-        <article class="content px-4">
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay @(_sidebarOpen ? "" : "d-none")" onclick="window.closeSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar @(_sidebarOpen ? "open" : "")" id="sidebar">
+        <NavMenu OnNavigate="CloseSidebar" />
+    </aside>
+
+    <!-- Main Content -->
+    <main class="@(_showBottomNav ? "has-bottom-nav" : "")">
+        <!-- Desktop Header - LoginDisplay moved here via CSS on desktop -->
+        <div class="desktop-header">
+            <!-- Empty - LoginDisplay is positioned here via CSS on desktop -->
+        </div>
+
+        <article class="content">
             @Body
         </article>
     </main>
+    
+    <!-- Mobile Bottom Navigation (driven by NavigationService) -->
+    @if (_showBottomNav && _mobileNavItems.Count > 0)
+    {
+        <nav class="mobile-bottom-nav" aria-label="Main navigation">
+            @foreach (var item in _mobileNavItems)
+            {
+                <a href="@item.Route" class="bottom-nav-item @(IsCurrentPage(item.Route) ? "active" : "")">
+                    <span class="bi @item.Icon"></span>
+                    <span>@GetMobileLabel(item.Label)</span>
+                </a>
+            }
+        </nav>
+    }
 </div>
+
+<ToastContainer />
+<PwaInstallPrompt />
+<ModalHost />
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">×</span>
 </div>
+
+<script suppress-error="BL9992">
+    // Global sidebar functions that work without Blazor interactivity
+    window.toggleSidebar = function() {
+        var page = document.getElementById('page-container');
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.querySelector('.sidebar-overlay');
+        
+        if (page.classList.contains('sidebar-open')) {
+            page.classList.remove('sidebar-open');
+            sidebar.classList.remove('open');
+            overlay.classList.add('d-none');
+        } else {
+            page.classList.add('sidebar-open');
+            sidebar.classList.add('open');
+            overlay.classList.remove('d-none');
+        }
+    };
+    
+    window.closeSidebar = function() {
+        var page = document.getElementById('page-container');
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.querySelector('.sidebar-overlay');
+        
+        page.classList.remove('sidebar-open');
+        sidebar.classList.remove('open');
+        overlay.classList.add('d-none');
+    };
+</script>
+
+@code {
+    private bool _sidebarOpen = false;
+    private bool _showBottomNav = false;
+    private IReadOnlyList<NavItem> _mobileNavItems = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        NavigationManager.LocationChanged += OnLocationChanged;
+        await CheckUserRoleAsync();
+    }
+
+    private async Task CheckUserRoleAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var isParent = user.IsInRole("Parent");
+                var isAdmin = user.IsInRole("Admin");
+                var isChild = user.IsInRole("Child");
+                
+                // Show bottom nav for Parents and Children on mobile
+                // Admin-only users (no Parent or Child role) don't get bottom nav
+                var isAdminOnly = isAdmin && !isParent && !isChild;
+                _showBottomNav = !isAdminOnly && (isParent || isChild);
+                
+                // Get mobile nav items from centralized service
+                if (_showBottomNav)
+                {
+                    _mobileNavItems = NavService.GetMobileNavItems(isParent, isChild, isAdmin);
+                }
+            }
+        }
+        catch
+        {
+            // Ignore auth errors during initialization
+        }
+    }
+
+    private bool IsCurrentPage(string href)
+    {
+        var currentPath = new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/');
+        var targetPath = href.TrimStart('/').TrimEnd('/');
+        
+        if (string.IsNullOrEmpty(targetPath))
+        {
+            return currentPath == "/" || currentPath == "";
+        }
+        
+        return currentPath.Equals("/" + targetPath, StringComparison.OrdinalIgnoreCase);
+    }
+    
+    /// <summary>
+    /// Gets a shortened label for mobile bottom nav (max ~8 chars).
+    /// </summary>
+    private static string GetMobileLabel(string label)
+    {
+        // Use shorter labels for mobile to prevent overflow
+        return label switch
+        {
+            "Achievements" => "Badges",
+            "My Balance" => "Balance",
+            "Book of Deeds" => "Tracker",
+            "Labor Planner" => "Planner",
+            _ => label
+        };
+    }
+
+    private void CloseSidebar()
+    {
+        _sidebarOpen = false;
+        // Also call JS to sync state
+        _ = JS.InvokeVoidAsync("closeSidebar");
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        // Close sidebar on navigation (mobile)
+        if (_sidebarOpen)
+        {
+            _sidebarOpen = false;
+            _ = JS.InvokeVoidAsync("closeSidebar");
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}
