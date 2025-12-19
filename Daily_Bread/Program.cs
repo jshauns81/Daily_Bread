@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Daily_Bread.Components;
 using Daily_Bread.Data;
 using Daily_Bread.Services;
@@ -42,6 +43,9 @@ if (!string.IsNullOrEmpty(connectionString))
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
+    // Suppress the PendingModelChangesWarning - we handle migrations at startup
+    options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+    
     if (!string.IsNullOrEmpty(connectionString) && 
         (connectionString.Contains("Host=") || connectionString.Contains("Server=") || connectionString.Contains("postgres")))
     {
