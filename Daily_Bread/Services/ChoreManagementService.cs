@@ -15,7 +15,9 @@ public class ChoreDefinitionDto
     public string? Description { get; set; }
     public string? AssignedUserId { get; set; }
     public decimal Value { get; set; }
+    public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
     public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
+    public int WeeklyTargetCount { get; set; } = 1;
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public bool IsActive { get; set; } = true;
@@ -96,6 +98,17 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult<ChoreDefinition>.Fail("Value cannot be negative.");
         }
 
+        // Validate weekly target count for frequency-based chores
+        if (dto.ScheduleType == ChoreScheduleType.WeeklyFrequency && dto.WeeklyTargetCount < 1)
+        {
+            return ServiceResult<ChoreDefinition>.Fail("Weekly target count must be at least 1.");
+        }
+
+        if (dto.ScheduleType == ChoreScheduleType.WeeklyFrequency && dto.WeeklyTargetCount > 7)
+        {
+            return ServiceResult<ChoreDefinition>.Fail("Weekly target count cannot exceed 7.");
+        }
+
         // Check for duplicate name
         var exists = await _context.ChoreDefinitions
             .AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower());
@@ -111,7 +124,9 @@ public class ChoreManagementService : IChoreManagementService
             Description = dto.Description?.Trim(),
             AssignedUserId = dto.AssignedUserId,
             Value = dto.Value,
+            ScheduleType = dto.ScheduleType,
             ActiveDays = dto.ActiveDays,
+            WeeklyTargetCount = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.WeeklyTargetCount : 1,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             IsActive = dto.IsActive,
@@ -146,6 +161,17 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult.Fail("Value cannot be negative.");
         }
 
+        // Validate weekly target count for frequency-based chores
+        if (dto.ScheduleType == ChoreScheduleType.WeeklyFrequency && dto.WeeklyTargetCount < 1)
+        {
+            return ServiceResult.Fail("Weekly target count must be at least 1.");
+        }
+
+        if (dto.ScheduleType == ChoreScheduleType.WeeklyFrequency && dto.WeeklyTargetCount > 7)
+        {
+            return ServiceResult.Fail("Weekly target count cannot exceed 7.");
+        }
+
         var chore = await _context.ChoreDefinitions.FindAsync(dto.Id);
         if (chore == null)
         {
@@ -165,7 +191,9 @@ public class ChoreManagementService : IChoreManagementService
         chore.Description = dto.Description?.Trim();
         chore.AssignedUserId = dto.AssignedUserId;
         chore.Value = dto.Value;
+        chore.ScheduleType = dto.ScheduleType;
         chore.ActiveDays = dto.ActiveDays;
+        chore.WeeklyTargetCount = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.WeeklyTargetCount : 1;
         chore.StartDate = dto.StartDate;
         chore.EndDate = dto.EndDate;
         chore.IsActive = dto.IsActive;

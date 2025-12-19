@@ -2,6 +2,7 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    background-color: var(--nord0);
 }
 
 main {
@@ -13,40 +14,23 @@ main {
     background-color: var(--nord1);
 }
 
-.top-row {
-    background-color: var(--nord1);
-    border-bottom: 1px solid var(--nord3);
-    justify-content: flex-end;
-    height: 3.5rem;
+/* Auth row - minimal, just for login button */
+.auth-row {
     display: flex;
+    justify-content: flex-end;
     align-items: center;
+    padding: 0.5rem 1.5rem;
+    background-color: var(--nord0);
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-        color: var(--nord4);
-        transition: color 150ms ease;
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: none;
-        color: var(--nord8);
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+article.content {
+    background-color: var(--nord0);
+    min-height: calc(100vh - 3rem);
+}
 
 @media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
+    .auth-row {
+        padding: 0.5rem 1rem;
     }
 }
 
@@ -63,20 +47,15 @@ main {
         border-right: 1px solid var(--nord3);
     }
 
-    .top-row {
+    .auth-row {
         position: sticky;
         top: 0;
         z-index: 1;
-        background-color: var(--nord1);
+        background-color: var(--nord0);
+        padding: 0.75rem 2rem;
     }
 
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
+    article {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
     }
@@ -97,10 +76,10 @@ main {
     color: var(--nord6);
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-        color: var(--nord4);
-    }
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+    color: var(--nord4);
+}

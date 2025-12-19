@@ -103,3 +103,45 @@
         margin-bottom: var(--space-sm);
     }
 }
+
+/* Action buttons - Separate buttons with gap */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.action-buttons .btn-outline-danger {
+    color: var(--nord11) !important;
+    border-color: var(--nord11) !important;
+    background-color: transparent !important;
+}
+
+.action-buttons .btn-outline-danger:hover {
+    color: var(--nord6) !important;
+    background-color: var(--nord11) !important;
+    border-color: var(--nord11) !important;
+}
+
+.action-buttons .btn-outline-info {
+    color: var(--nord8) !important;
+    border-color: var(--nord8) !important;
+    background-color: transparent !important;
+}
+
+.action-buttons .btn-outline-info:hover {
+    color: var(--nord0) !important;
+    background-color: var(--nord8) !important;
+    border-color: var(--nord8) !important;
+}
+
+.action-buttons .btn-success {
+    background-color: var(--nord14) !important;
+    border-color: var(--nord14) !important;
+    color: var(--nord0) !important;
+}
+
+.action-buttons .btn-success:hover {
+    background-color: #8fbf7f !important;
+    border-color: #8fbf7f !important;
+}

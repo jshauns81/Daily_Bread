@@ -101,11 +101,11 @@
                         {
                             <th>Assigned To</th>
                         }
-                        <th style="width: 100px;">Value</th>
-                        <th style="width: 180px;">Status</th>
+                        <th style="width: 100px;" class="text-center">Value</th>
+                        <th style="width: 180px;" class="text-center">Status</th>
                         @if (IsParent)
                         {
-                            <th style="width: 200px;">Actions</th>
+                            <th style="width: 200px;" class="text-center">Actions</th>
                         }
                     </tr>
                 </thead>
@@ -136,12 +136,12 @@
                                     @(item.AssignedUserName ?? "Unassigned")
                                 </td>
                             }
-                            <td class="text-end">
+                            <td class="text-center">
                                 <span class="value-badge @(item.IsMissed ? "text-danger" : "")">
                                     @(item.IsMissed ? "-" : "")$@item.Value.ToString("F2")
                                 </span>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <span class="badge @GetStatusBadgeClass(item.Status)">
                                     @GetStatusDisplay(item.Status)
                                 </span>
@@ -159,8 +159,8 @@
                             </td>
                             @if (IsParent)
                             {
-                                <td>
-                                    <div class="btn-group btn-group-sm">
+                                <td class="text-center">
+                                    <div class="action-buttons">
                                         @if (item.Status == ChoreStatus.Completed)
                                         {
                                             <button class="btn btn-success btn-sm" 
@@ -176,7 +176,7 @@
                                                     title="Mark as Missed">
                                                 Miss
                                             </button>
-                                            <button class="btn btn-outline-secondary btn-sm"
+                                            <button class="btn btn-outline-info btn-sm"
                                                     @onclick="() => MarkSkipped(item)"
                                                     title="Mark as Skipped">
                                                 Skip
@@ -192,7 +192,7 @@
                                         }
                                         @if (item.Status == ChoreStatus.Missed || item.Status == ChoreStatus.Skipped)
                                         {
-                                            <button class="btn btn-outline-secondary btn-sm"
+                                            <button class="btn btn-outline-info btn-sm"
                                                     @onclick="() => ResetToPending(item)"
                                                     title="Reset to Pending">
                                                 Reset

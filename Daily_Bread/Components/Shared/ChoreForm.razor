@@ -50,24 +50,81 @@
             </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Active Days</label>
-            <div class="btn-group d-flex flex-wrap" role="group">
-                @foreach (var day in DayOptions)
-                {
-                    <input type="checkbox" 
-                           class="btn-check" 
-                           id="day-@day.Value" 
-                           checked="@IsDaySelected(day.Value)"
-                           @onchange="() => ToggleDay(day.Value)" />
-                    <label class="btn btn-outline-primary" for="day-@day.Value">@day.Label</label>
-                }
+        <!-- Schedule Type Selection -->
+        <div class="card mb-3 @(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "border-info" : "")">
+            <div class="card-header">
+                <strong>Scheduling</strong>
             </div>
-            <div class="mt-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectAllDays">All</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectWeekdays">Weekdays</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectWeekends">Weekends</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearDays">Clear</button>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="form-check form-check-inline">
+                        <input type="radio" class="form-check-input" id="scheduleSpecificDays" name="scheduleType"
+                               checked="@(FormModel.ScheduleType == ChoreScheduleType.SpecificDays)"
+                               @onchange="() => SetScheduleType(ChoreScheduleType.SpecificDays)" />
+                        <label class="form-check-label" for="scheduleSpecificDays">
+                            <strong>Specific Days</strong>
+                            <small class="d-block text-muted">Chore appears on selected days each week</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check form-check-inline">
+                        <input type="radio" class="form-check-input" id="scheduleWeeklyFrequency" name="scheduleType"
+                               checked="@(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency)"
+                               @onchange="() => SetScheduleType(ChoreScheduleType.WeeklyFrequency)" />
+                        <label class="form-check-label" for="scheduleWeeklyFrequency">
+                            <strong>Weekly Frequency</strong>
+                            <small class="d-block text-muted">Complete X times per week, any days (e.g., "Walk the Dog 3x per week")</small>
+                        </label>
+                    </div>
+                </div>
+
+                @if (FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                {
+                    <div class="alert alert-info mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <label for="weeklyTarget" class="form-label mb-0"><strong>Times per week:</strong></label>
+                            </div>
+                            <div class="col-auto">
+                                <InputNumber id="weeklyTarget" @bind-Value="FormModel.WeeklyTargetCount" class="form-control" style="width: 80px;" min="1" max="7" />
+                            </div>
+                            <div class="col">
+                                <small class="text-muted">Chore must be completed @FormModel.WeeklyTargetCount time(s) each week</small>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        @if (FormModel.ScheduleType == ChoreScheduleType.SpecificDays)
+                        {
+                            <span>Active Days <small class="text-muted">(chore appears on these days)</small></span>
+                        }
+                        else
+                        {
+                            <span>Available Days <small class="text-muted">(chore can be done on these days)</small></span>
+                        }
+                    </label>
+                    <div class="btn-group d-flex flex-wrap" role="group">
+                        @foreach (var day in DayOptions)
+                        {
+                            <input type="checkbox" 
+                                   class="btn-check" 
+                                   id="day-@day.Value" 
+                                   checked="@IsDaySelected(day.Value)"
+                                   @onchange="() => ToggleDay(day.Value)" />
+                            <label class="btn btn-outline-primary" for="day-@day.Value">@day.Label</label>
+                        }
+                    </div>
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectAllDays">All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectWeekdays">Weekdays</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectWeekends">Weekends</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearDays">Clear</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -185,7 +242,9 @@
                 Description = Chore.Description,
                 AssignedUserId = Chore.AssignedUserId,
                 Value = Chore.Value,
+                ScheduleType = Chore.ScheduleType,
                 ActiveDays = Chore.ActiveDays,
+                WeeklyTargetCount = Chore.WeeklyTargetCount,
                 StartDate = Chore.StartDate,
                 EndDate = Chore.EndDate,
                 IsActive = Chore.IsActive,
@@ -197,11 +256,24 @@
         {
             FormModel = new ChoreFormModel
             {
+                ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
+                WeeklyTargetCount = 1,
                 IsActive = true,
                 AutoApprove = false,
                 Value = 1.00m
             };
+        }
+    }
+
+    private void SetScheduleType(ChoreScheduleType scheduleType)
+    {
+        FormModel.ScheduleType = scheduleType;
+        
+        // When switching to WeeklyFrequency, default to All days if none selected
+        if (scheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ActiveDays == DaysOfWeek.None)
+        {
+            FormModel.ActiveDays = DaysOfWeek.All;
         }
     }
 
@@ -236,7 +308,9 @@
                 Description = FormModel.Description,
                 AssignedUserId = string.IsNullOrEmpty(FormModel.AssignedUserId) ? null : FormModel.AssignedUserId,
                 Value = FormModel.Value,
+                ScheduleType = FormModel.ScheduleType,
                 ActiveDays = FormModel.ActiveDays,
+                WeeklyTargetCount = FormModel.WeeklyTargetCount,
                 StartDate = FormModel.StartDate,
                 EndDate = FormModel.EndDate,
                 IsActive = FormModel.IsActive,
@@ -273,7 +347,12 @@
         [Range(0, 1000, ErrorMessage = "Value must be between $0 and $1000")]
         public decimal Value { get; set; }
 
+        public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
+
         public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
+
+        [Range(1, 7, ErrorMessage = "Weekly target must be between 1 and 7")]
+        public int WeeklyTargetCount { get; set; } = 1;
 
         public DateOnly? StartDate { get; set; }
 

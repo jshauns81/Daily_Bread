@@ -119,13 +119,14 @@ h3 { font-size: var(--font-size-lg); }
 
 p { color: var(--nord4); }
 
+/* UNIFIED: Links use --nord10 (blue) */
 a {
-    color: var(--nord8);
+    color: var(--nord10);
     text-decoration: none;
     transition: color var(--transition-fast);
 }
 
-a:hover { color: var(--nord7); }
+a:hover { color: var(--nord9); }
 
 small, .small { 
     font-size: var(--font-size-sm);
@@ -146,8 +147,8 @@ code {
 }
 
 ::selection {
-    background-color: var(--nord8);
-    color: var(--nord0);
+    background-color: var(--nord10);
+    color: var(--nord6);
 }
 
 /* ===========================================
@@ -174,8 +175,9 @@ code {
     border: none;
 }
 
+/* UNIFIED: Focus ring uses --nord10 (blue) */
 .btn:focus, .btn:active:focus {
-    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.4);
+    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.4);
 }
 
 /* Primary */
@@ -208,7 +210,7 @@ code {
     color: var(--nord6);
 }
 .btn-danger:hover {
-    background: linear-gradient(135deg, #a54e56 0%, var(--nord11) 100%);
+    background: linear-gradient(135deg, #a54e56 0%, var('--nord11') 100%);
     transform: translateY(-1px);
     color: var(--nord6);
 }
@@ -327,28 +329,58 @@ code {
     transition: all var(--transition-fast);
 }
 
+/* UNIFIED: Form focus uses --nord10 (blue) */
 .form-control:focus, .form-select:focus {
     background-color: var(--nord2);
-    border-color: var(--nord8);
+    border-color: var(--nord10);
     color: var(--nord6);
-    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
+    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.25);
     outline: none;
 }
 
 .form-control::placeholder { color: var(--nord3); }
 .form-label { color: var(--nord4); font-weight: var(--font-weight-medium); }
 
+/* Date input styling for dark theme */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+.form-control[type="date"],
+.form-control[type="datetime-local"],
+.form-control[type="time"] {
+    min-width: 170px;
+    color-scheme: dark;
+    padding-right: 35px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+.form-control::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(100%);
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+.form-control::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
 .form-check-input {
     background-color: var(--nord1);
     border-color: var(--nord3);
 }
+/* UNIFIED: Checkbox uses --nord10 (blue) */
 .form-check-input:checked {
     background-color: var(--nord10);
     border-color: var(--nord10);
 }
 .form-check-input:focus {
-    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
-    border-color: var(--nord8);
+    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.25);
+    border-color: var(--nord10);
 }
 .form-check-label { color: var(--nord4); }
 
@@ -360,7 +392,8 @@ code {
 
 /* Floating labels */
 .form-floating > label { color: var(--nord4); }
-.form-floating > .form-control:focus ~ label { color: var(--nord8); }
+/* UNIFIED: Floating label focus uses --nord10 */
+.form-floating > .form-control:focus ~ label { color: var(--nord10); }
 
 /* ===========================================
    6. CARDS
@@ -394,7 +427,7 @@ code {
 .card-footer {
     background-color: var(--nord2);
     border-top: 1px solid var(--nord3);
-    padding: var(--space-md);
+    padding: var,--space-md);
 }
 
 /* ===========================================
@@ -697,7 +730,7 @@ code {
 .spinner-border.text-primary { color: var(--nord10) !important; }
 
 /* ===========================================
-   17. NAV TABS
+   17. NAV TABS - UNIFIED BLUE
    =========================================== */
 
 .nav-tabs {
@@ -713,15 +746,17 @@ code {
     transition: all var(--transition-fast);
 }
 
+/* UNIFIED: Tab hover uses --nord10 (blue) */
 .nav-tabs .nav-link:hover {
     color: var(--nord6);
-    background: rgba(136, 192, 208, 0.1);
+    background: rgba(94, 129, 172, 0.1);
 }
 
+/* UNIFIED: Active tab uses --nord10 (blue) */
 .nav-tabs .nav-link.active {
-    color: var(--nord8);
+    color: var(--nord10);
     background: transparent;
-    border-bottom: 2px solid var(--nord8);
+    border-bottom: 2px solid var(--nord10);
 }
 
 /* ===========================================
@@ -950,3 +985,67 @@ code {
 .content { padding-top: var(--space-md); }
 .glow-green { box-shadow: var(--shadow-glow-green); }
 .glow-blue { box-shadow: var(--shadow-glow-blue); }
+
+/* ===========================================
+   25. GLOBAL PRINT STYLES
+   Hide layout elements when printing
+   =========================================== */
+
+@media print {
+    /* Force colors to print */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    /* Hide ALL layout elements */
+    .sidebar,
+    .page > .sidebar,
+    nav,
+    .nav-scrollable,
+    .navbar,
+    header,
+    footer,
+    .top-row,
+    .auth-row,
+    .no-print,
+    .screen-controls,
+    #blazor-error-ui {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Make main content full width */
+    .page {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .page > main {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    main,
+    article,
+    .content {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body {
+        background: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}

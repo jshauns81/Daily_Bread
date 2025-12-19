@@ -29,9 +29,22 @@ public class ChoreDefinition
     public decimal Value { get; set; }
 
     /// <summary>
+    /// The scheduling type for this chore.
+    /// </summary>
+    public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
+
+    /// <summary>
     /// Days of the week this chore is active (flags enum).
+    /// For SpecificDays: The exact days the chore must be done.
+    /// For WeeklyFrequency: The days the chore CAN be done (defaults to All).
     /// </summary>
     public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
+
+    /// <summary>
+    /// For WeeklyFrequency schedule type: how many times per week the chore should be completed.
+    /// Ignored for SpecificDays schedule type.
+    /// </summary>
+    public int WeeklyTargetCount { get; set; } = 1;
 
     /// <summary>
     /// Optional start date for the chore schedule. Null means no start restriction.
@@ -72,6 +85,23 @@ public class ChoreDefinition
 
     // Navigation property
     public ICollection<ChoreLog> ChoreLogs { get; set; } = [];
+}
+
+/// <summary>
+/// Defines how a chore is scheduled.
+/// </summary>
+public enum ChoreScheduleType
+{
+    /// <summary>
+    /// Chore is assigned to specific days of the week (e.g., Mon, Wed, Fri).
+    /// </summary>
+    SpecificDays = 0,
+
+    /// <summary>
+    /// Chore must be completed X times per week, any days.
+    /// The ActiveDays property can optionally restrict which days it can be done.
+    /// </summary>
+    WeeklyFrequency = 1
 }
 
 /// <summary>

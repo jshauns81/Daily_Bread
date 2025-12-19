@@ -11,15 +11,15 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Add EF Core with automatic provider selection (PostgreSQL or SQLite)
+// In Azure, set ConnectionStrings__DefaultConnection in App Configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     if (!string.IsNullOrEmpty(connectionString) && 
-        (connectionString.Contains("Host=") || connectionString.Contains("Server=")))
+        (connectionString.Contains("Host=") || connectionString.Contains("Server=") || connectionString.Contains("postgres")))
     {
-        // PostgreSQL connection string detected (for production/Render)
-        // Test
+        // PostgreSQL connection string detected (for production/Azure/Render)
         options.UseNpgsql(connectionString);
     }
     else
@@ -32,7 +32,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add Identity services
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // Development-friendly password requirements
+    // Password requirements
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
@@ -52,6 +52,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 // Add authorization
@@ -73,6 +75,11 @@ builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<ISavingsGoalService, SavingsGoalService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<IKidModeService, KidModeService>();
+builder.Services.AddScoped<IChoreChartService, ChoreChartService>();
+
+// Add health checks for Azure
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>();
 
 var app = builder.Build();
 
@@ -80,11 +87,22 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     
-    // Seed achievements
-    var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
-    await achievementService.SeedAchievementsAsync();
+    try
+    {
+        await db.Database.MigrateAsync();
+        logger.LogInformation("Database migration completed successfully.");
+        
+        // Seed achievements
+        var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
+        await achievementService.SeedAchievementsAsync();
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while migrating the database.");
+        throw;
+    }
 }
 
 // Seed roles and admin user on startup
@@ -94,9 +112,9 @@ await SeedData.InitializeAsync(app.Services, app.Configuration);
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found");
 app.UseHttpsRedirection();
 
@@ -104,6 +122,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseAntiforgery();
+
+// Health check endpoint for Azure
+app.MapHealthChecks("/health");
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
