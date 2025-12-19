@@ -21,9 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 # Copy published app
 COPY --from=build /app/publish .
 
-# Create non-root user for security
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
-USER appuser
+# Note: Skipping non-root user creation as Railway handles container security
+# and the base image may not have adduser/useradd available
 
 # Railway uses PORT env var, default to 8080
 ENV ASPNETCORE_ENVIRONMENT=Production
