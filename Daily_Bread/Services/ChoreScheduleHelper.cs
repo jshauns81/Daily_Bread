@@ -8,7 +8,7 @@ namespace Daily_Bread.Services;
 public static class ChoreScheduleHelper
 {
     /// <summary>
-    /// Checks if a chore is scheduled to be active on a specific date.
+    /// Checks if a chore is scheduled to be active on a specific date. 
     /// </summary>
     /// <param name="chore">The chore definition to check.</param>
     /// <param name="date">The date to check against.</param>
