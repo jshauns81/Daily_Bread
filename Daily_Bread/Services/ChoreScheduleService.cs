@@ -25,6 +25,31 @@ public interface IChoreScheduleService
     Task<bool> IsChoreActiveOnDateAsync(int choreDefinitionId, DateOnly date);
 
     /// <summary>
+    /// Gets the week start date (Sunday) for a given date.
+    /// </summary>
+    DateOnly GetWeekStartDate(DateOnly date);
+
+    /// <summary>
+    /// Gets the week end date (Saturday) for a given date.
+    /// </summary>
+    DateOnly GetWeekEndDate(DateOnly date);
+
+    /// <summary>
+    /// Gets the completion count for a weekly frequency chore in the specified week.
+    /// </summary>
+    Task<int> GetWeeklyCompletionCountAsync(int choreDefinitionId, DateOnly anyDateInWeek);
+
+    /// <summary>
+    /// Gets weekly progress for all weekly frequency chores for a user in the specified week.
+    /// </summary>
+    Task<Dictionary<int, WeeklyChoreProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek);
+
+    /// <summary>
+    /// Checks if a weekly frequency chore has met its target for the week.
+    /// </summary>
+    Task<bool> IsWeeklyTargetMetAsync(int choreDefinitionId, DateOnly anyDateInWeek);
+
+    /// <summary>
     /// Adds a schedule override to add a chore on a specific date.
     /// </summary>
     Task<ServiceResult> AddChoreToDateAsync(int choreDefinitionId, DateOnly date, string createdByUserId, string? assignedUserId = null);
@@ -50,6 +75,20 @@ public interface IChoreScheduleService
     Task<ServiceResult> RemoveOverrideAsync(int overrideId);
 }
 
+/// <summary>
+/// Represents the weekly progress for a frequency-based chore.
+/// </summary>
+public class WeeklyChoreProgress
+{
+    public int ChoreDefinitionId { get; set; }
+    public string ChoreName { get; set; } = string.Empty;
+    public int TargetCount { get; set; }
+    public int CompletedCount { get; set; }
+    public int ApprovedCount { get; set; }
+    public bool IsTargetMet => ApprovedCount >= TargetCount;
+    public int RemainingCount => Math.Max(0, TargetCount - ApprovedCount);
+}
+
 public class ChoreScheduleService : IChoreScheduleService
 {
     private readonly ApplicationDbContext _context;
@@ -59,11 +98,25 @@ public class ChoreScheduleService : IChoreScheduleService
         _context = context;
     }
 
+    public DateOnly GetWeekStartDate(DateOnly date)
+    {
+        // Week starts on Sunday
+        int daysFromSunday = (int)date.DayOfWeek;
+        return date.AddDays(-daysFromSunday);
+    }
+
+    public DateOnly GetWeekEndDate(DateOnly date)
+    {
+        // Week ends on Saturday
+        int daysToSaturday = 6 - (int)date.DayOfWeek;
+        return date.AddDays(daysToSaturday);
+    }
+
     public async Task<List<ChoreDefinition>> GetChoresForDateAsync(DateOnly date)
     {
         var dayOfWeek = GetDayOfWeekFlag(date.DayOfWeek);
 
-        // Get base scheduled chores
+        // Get base scheduled chores (both SpecificDays and WeeklyFrequency)
         var baseChores = await _context.ChoreDefinitions
             .Where(c => c.IsActive)
             .Where(c => (c.ActiveDays & dayOfWeek) == dayOfWeek)
@@ -114,6 +167,87 @@ public class ChoreScheduleService : IChoreScheduleService
     {
         var chores = await GetChoresForDateAsync(date);
         return chores.Any(c => c.Id == choreDefinitionId);
+    }
+
+    public async Task<int> GetWeeklyCompletionCountAsync(int choreDefinitionId, DateOnly anyDateInWeek)
+    {
+        var weekStart = GetWeekStartDate(anyDateInWeek);
+        var weekEnd = GetWeekEndDate(anyDateInWeek);
+
+        return await _context.ChoreLogs
+            .Where(cl => cl.ChoreDefinitionId == choreDefinitionId)
+            .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
+            .Where(cl => cl.Status == ChoreStatus.Approved)
+            .CountAsync();
+    }
+
+    public async Task<Dictionary<int, WeeklyChoreProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek)
+    {
+        var weekStart = GetWeekStartDate(anyDateInWeek);
+        var weekEnd = GetWeekEndDate(anyDateInWeek);
+
+        // Get all weekly frequency chores for this user
+        var weeklyChores = await _context.ChoreDefinitions
+            .Where(c => c.IsActive)
+            .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            .Where(c => c.AssignedUserId == userId)
+            .Where(c => c.StartDate == null || c.StartDate <= weekEnd)
+            .Where(c => c.EndDate == null || c.EndDate >= weekStart)
+            .ToListAsync();
+
+        if (weeklyChores.Count == 0)
+        {
+            return new Dictionary<int, WeeklyChoreProgress>();
+        }
+
+        var choreIds = weeklyChores.Select(c => c.Id).ToList();
+
+        // Get completion counts for the week
+        var completionCounts = await _context.ChoreLogs
+            .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
+            .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
+            .GroupBy(cl => cl.ChoreDefinitionId)
+            .Select(g => new
+            {
+                ChoreDefinitionId = g.Key,
+                CompletedCount = g.Count(cl => cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved),
+                ApprovedCount = g.Count(cl => cl.Status == ChoreStatus.Approved)
+            })
+            .ToDictionaryAsync(x => x.ChoreDefinitionId);
+
+        var result = new Dictionary<int, WeeklyChoreProgress>();
+
+        foreach (var chore in weeklyChores)
+        {
+            var progress = new WeeklyChoreProgress
+            {
+                ChoreDefinitionId = chore.Id,
+                ChoreName = chore.Name,
+                TargetCount = chore.WeeklyTargetCount
+            };
+
+            if (completionCounts.TryGetValue(chore.Id, out var counts))
+            {
+                progress.CompletedCount = counts.CompletedCount;
+                progress.ApprovedCount = counts.ApprovedCount;
+            }
+
+            result[chore.Id] = progress;
+        }
+
+        return result;
+    }
+
+    public async Task<bool> IsWeeklyTargetMetAsync(int choreDefinitionId, DateOnly anyDateInWeek)
+    {
+        var chore = await _context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        if (chore == null || chore.ScheduleType != ChoreScheduleType.WeeklyFrequency)
+        {
+            return false;
+        }
+
+        var completedCount = await GetWeeklyCompletionCountAsync(choreDefinitionId, anyDateInWeek);
+        return completedCount >= chore.WeeklyTargetCount;
     }
 
     public async Task<ServiceResult> AddChoreToDateAsync(int choreDefinitionId, DateOnly date, string createdByUserId, string? assignedUserId = null)

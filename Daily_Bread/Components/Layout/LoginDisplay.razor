@@ -38,8 +38,8 @@
         background-color: transparent;
         color: var(--nord4);
         border: 1px solid var(--nord3);
-        border-radius: 8px;
-        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        padding: 0.35rem 0.9rem;
         font-size: 0.85rem;
         font-weight: 500;
         transition: all 150ms ease;
@@ -51,22 +51,23 @@
         color: var(--nord6);
     }
     
+    /* Small, subtle login button - same style as logout */
     .btn-login {
-        background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%);
-        color: var(--nord6);
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1.25rem;
-        font-size: 0.9rem;
+        background-color: transparent;
+        color: var(--nord4);
+        border: 1px solid var(--nord3);
+        border-radius: 6px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.85rem;
         font-weight: 500;
         transition: all 150ms ease;
         text-decoration: none;
+        display: inline-block;
     }
     
     .btn-login:hover {
-        background: linear-gradient(135deg, var(--nord9) 0%, var(--nord10) 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(94, 129, 172, 0.4);
+        background-color: var(--nord10);
+        border-color: var(--nord10);
         color: var(--nord6);
     }
 </style>

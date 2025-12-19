@@ -31,6 +31,10 @@
                                 {
                                     <span class="badge bg-info ms-2" title="Auto-approved when completed">Auto</span>
                                 }
+                                @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                                {
+                                    <span class="badge bg-primary ms-1" title="Complete @chore.WeeklyTargetCount times per week">@(chore.WeeklyTargetCount)x/wk</span>
+                                }
                                 @if (!string.IsNullOrEmpty(chore.Description))
                                 {
                                     <br />
@@ -105,14 +109,28 @@
 
     private string FormatSchedule(ChoreDefinition chore)
     {
-        var days = FormatDays(chore.ActiveDays);
-        var dateRange = FormatDateRange(chore.StartDate, chore.EndDate);
+        string scheduleText;
         
+        if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+        {
+            // For weekly frequency, show "3x/week" format
+            var daysText = chore.ActiveDays == DaysOfWeek.All 
+                ? "any day" 
+                : $"on {FormatDays(chore.ActiveDays)}";
+            scheduleText = $"{chore.WeeklyTargetCount}x/week, {daysText}";
+        }
+        else
+        {
+            // For specific days, show the days
+            scheduleText = FormatDays(chore.ActiveDays);
+        }
+        
+        var dateRange = FormatDateRange(chore.StartDate, chore.EndDate);
         if (!string.IsNullOrEmpty(dateRange))
         {
-            return $"{days} ({dateRange})";
+            return $"{scheduleText} ({dateRange})";
         }
-        return days;
+        return scheduleText;
     }
 
     private string FormatDays(DaysOfWeek days)

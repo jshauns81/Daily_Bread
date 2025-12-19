@@ -1,0 +1,158 @@
+@page "/chore-chart"
+@page "/chore-chart/{WeekOffset:int}"
+@attribute [Authorize(Roles = "Parent")]
+@rendermode InteractiveServer
+
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+
+@inject IChoreChartService ChoreChartService
+@inject IDateProvider DateProvider
+
+<PageTitle>Print Chore Chart</PageTitle>
+
+<!-- Screen-only controls -->
+<div class="screen-controls no-print">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1><span class="bi bi-calendar-week me-2"></span>Print Chore Chart</h1>
+        <button type="button" class="btn btn-primary btn-lg" onclick="window.print()">
+            <span class="bi bi-printer me-1"></span> Print
+        </button>
+    </div>
+
+    <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+        <button class="btn btn-outline-secondary" @onclick="PreviousWeek">
+            <span class="bi bi-chevron-left"></span>
+        </button>
+        <h4 class="mb-0 px-3">@(_chartData?.WeekLabel ?? "Loading...")</h4>
+        <button class="btn btn-outline-secondary" @onclick="NextWeek">
+            <span class="bi bi-chevron-right"></span>
+        </button>
+        @if (WeekOffset != 0)
+        {
+            <button class="btn btn-link btn-sm" @onclick="GoToCurrentWeek">Today</button>
+        }
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <div class="text-center py-5 no-print">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (_chartData == null || _chartData.Children.Count == 0)
+{
+    <div class="alert alert-warning no-print">
+        No children with chores found. <a href="/manage-chores">Add some chores</a> first!
+    </div>
+}
+else
+{
+    @foreach (var child in _chartData.Children)
+    {
+        var isFirst = child == _chartData.Children.First();
+        
+        <div class="weekly-calendar @(isFirst ? "" : "page-break")">
+            
+            <!-- Header -->
+            <div class="calendar-header">
+                <h1>@child.ChildName's Chores</h1>
+                <div class="week-range">@_chartData.WeekLabel</div>
+            </div>
+
+            <!-- Weekly Calendar Grid -->
+            <div class="calendar-grid">
+                @foreach (var day in child.Days)
+                {
+                    var dayChores = day.Chores.Where(c => c.IsScheduled).ToList();
+                    
+                    <div class="day-cell @(day.IsToday ? "today" : "")">
+                        <div class="day-header">
+                            <span class="day-name">@day.DayName</span>
+                            <span class="day-date">@day.Date.ToString("MMM d")</span>
+                        </div>
+                        <div class="day-chores">
+                            @if (dayChores.Count == 0)
+                            {
+                                <div class="no-chores">No chores</div>
+                            }
+                            else
+                            {
+                                @foreach (var chore in dayChores)
+                                {
+                                    <div class="chore-item @(chore.IsWeeklyFrequency ? "weekly" : "")">
+                                        <span class="chore-checkbox"></span>
+                                        <span class="chore-text">@chore.ChoreName</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="calendar-footer">
+                <span class="potential">Earn up to: <strong>$@child.TotalPotentialEarnings.ToString("F2")</strong></span>
+                @if (child.WeeklyChores.Count > 0)
+                {
+                    <span class="weekly-note">
+                        Weekly goals: @string.Join(", ", child.WeeklyChores.Select(w => $"{w.ChoreName} ({w.TargetCount}x)"))
+                    </span>
+                }
+            </div>
+            
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public int WeekOffset { get; set; } = 0;
+
+    private PrintableChoreChart? _chartData;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadChartAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadChartAsync();
+    }
+
+    private async Task LoadChartAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+        
+        var weekStart = ChoreChartService.GetWeekStart(DateProvider.Today).AddDays(WeekOffset * 7);
+        _chartData = await ChoreChartService.GenerateWeeklyChartAsync(weekStart);
+        
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private void PreviousWeek()
+    {
+        WeekOffset--;
+        _ = LoadChartAsync();
+    }
+
+    private void NextWeek()
+    {
+        WeekOffset++;
+        _ = LoadChartAsync();
+    }
+
+    private void GoToCurrentWeek()
+    {
+        WeekOffset = 0;
+        _ = LoadChartAsync();
+    }
+}

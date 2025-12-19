@@ -68,6 +68,30 @@ public interface IChoreLogService
     /// Marks a chore as missed. Parent role only.
     /// </summary>
     Task<ServiceResult> MarkChoreMissedAsync(int choreLogId, string parentUserId);
+
+    /// <summary>
+    /// Gets all chore logs for a user in a given week (for weekly frequency chores).
+    /// </summary>
+    Task<List<ChoreLog>> GetChoreLogsForUserInWeekAsync(string userId, DateOnly anyDateInWeek);
+
+    /// <summary>
+    /// Gets weekly frequency chore progress with logs for a user.
+    /// </summary>
+    Task<List<WeeklyChoreWithLogs>> GetWeeklyChoresWithLogsAsync(string userId, DateOnly anyDateInWeek);
+}
+
+/// <summary>
+/// Represents a weekly frequency chore with its logs for the week.
+/// </summary>
+public class WeeklyChoreWithLogs
+{
+    public ChoreDefinition ChoreDefinition { get; set; } = null!;
+    public int TargetCount { get; set; }
+    public int CompletedCount { get; set; }
+    public int ApprovedCount { get; set; }
+    public List<ChoreLog> LogsThisWeek { get; set; } = [];
+    public bool IsTargetMet => ApprovedCount >= TargetCount;
+    public int RemainingCount => Math.Max(0, TargetCount - ApprovedCount);
 }
 
 public class ChoreLogService : IChoreLogService
@@ -267,5 +291,76 @@ public class ChoreLogService : IChoreLogService
     public async Task<ServiceResult> MarkChoreMissedAsync(int choreLogId, string parentUserId)
     {
         return await UpdateChoreLogStatusAsync(choreLogId, ChoreStatus.Missed, parentUserId, isParent: true);
+    }
+
+    public async Task<List<ChoreLog>> GetChoreLogsForUserInWeekAsync(string userId, DateOnly anyDateInWeek)
+    {
+        var weekStart = _scheduleService.GetWeekStartDate(anyDateInWeek);
+        var weekEnd = _scheduleService.GetWeekEndDate(anyDateInWeek);
+
+        return await _context.ChoreLogs
+            .Include(c => c.ChoreDefinition)
+            .Include(c => c.LedgerTransaction)
+            .Where(c => c.Date >= weekStart && c.Date <= weekEnd)
+            .Where(c => c.ChoreDefinition.AssignedUserId == userId)
+            .Where(c => c.ChoreDefinition.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            .OrderBy(c => c.Date)
+            .ThenBy(c => c.ChoreDefinition.SortOrder)
+            .ThenBy(c => c.ChoreDefinition.Name)
+            .ToListAsync();
+    }
+
+    public async Task<List<WeeklyChoreWithLogs>> GetWeeklyChoresWithLogsAsync(string userId, DateOnly anyDateInWeek)
+    {
+        var weekStart = _scheduleService.GetWeekStartDate(anyDateInWeek);
+        var weekEnd = _scheduleService.GetWeekEndDate(anyDateInWeek);
+
+        // Get all weekly frequency chores for this user
+        var weeklyChores = await _context.ChoreDefinitions
+            .Where(c => c.IsActive)
+            .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            .Where(c => c.AssignedUserId == userId)
+            .Where(c => c.StartDate == null || c.StartDate <= weekEnd)
+            .Where(c => c.EndDate == null || c.EndDate >= weekStart)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync();
+
+        if (weeklyChores.Count == 0)
+        {
+            return [];
+        }
+
+        var choreIds = weeklyChores.Select(c => c.Id).ToList();
+
+        // Get all logs for these chores in this week
+        var logs = await _context.ChoreLogs
+            .Include(c => c.ChoreDefinition)
+            .Include(c => c.LedgerTransaction)
+            .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
+            .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
+            .OrderBy(cl => cl.Date)
+            .ToListAsync();
+
+        var logsByChore = logs.GroupBy(l => l.ChoreDefinitionId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var result = new List<WeeklyChoreWithLogs>();
+
+        foreach (var chore in weeklyChores)
+        {
+            var choreLogs = logsByChore.GetValueOrDefault(chore.Id, []);
+
+            result.Add(new WeeklyChoreWithLogs
+            {
+                ChoreDefinition = chore,
+                TargetCount = chore.WeeklyTargetCount,
+                CompletedCount = choreLogs.Count(l => l.Status == ChoreStatus.Completed || l.Status == ChoreStatus.Approved),
+                ApprovedCount = choreLogs.Count(l => l.Status == ChoreStatus.Approved),
+                LogsThisWeek = choreLogs
+            });
+        }
+
+        return result;
     }
 }

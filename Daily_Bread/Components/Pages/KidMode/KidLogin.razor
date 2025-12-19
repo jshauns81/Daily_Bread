@@ -9,14 +9,15 @@
 
 <PageTitle>Kid Mode - Daily Bread</PageTitle>
 
-<div class="kid-login">
+<div class="kid-login" tabindex="0" @onkeydown="HandleKeyDown" @ref="_containerRef">
     <div class="text-center mb-4">
         <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon mb-2" />
         <h2 class="text-white">Daily Bread</h2>
         <p class="text-white-50">Enter your PIN</p>
+        <p class="keyboard-hint">Use keyboard or tap numbers</p>
     </div>
 
-    <div class="card" style="width: 100%; max-width: 320px;">
+    <div class="card mx-auto" style="max-width: 320px;">
         <div class="card-body p-4">
             <!-- PIN Display -->
             <div class="pin-display mb-4">
@@ -93,6 +94,7 @@
         justify-content: center;
         align-items: center;
         min-height: calc(100vh - 40px);
+        outline: none;
     }
 
     .kid-brand-icon {
@@ -207,6 +209,16 @@
         cursor: not-allowed;
     }
 
+    .keyboard-hint {
+        color: var(--nord3);
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+    }
+
+    .kid-login:focus {
+        outline: none;
+    }
+
     .back-link {
         color: var(--nord4);
         text-decoration: none;
@@ -234,13 +246,14 @@
     private string _pin = "";
     private string? _errorMessage;
     private bool _isValidating;
+    private ElementReference _containerRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Focus the page to enable keyboard input
-            await Task.CompletedTask;
+            // Auto-focus the container to enable keyboard input immediately
+            await _containerRef.FocusAsync();
         }
     }
 
@@ -248,8 +261,8 @@
     {
         if (_isValidating) return;
 
-        // Number keys 0-9
-        if (e.Key is >= "0" and <= "9")
+        // Number keys 0-9 (main keyboard and numpad)
+        if (e.Key.Length == 1 && char.IsDigit(e.Key[0]))
         {
             await AddDigit(e.Key);
         }
@@ -259,7 +272,7 @@
             Backspace();
         }
         // Escape or Delete to clear
-        else if (e.Key is "Escape" or "Delete")
+        else if (e.Key == "Escape" || e.Key == "Delete")
         {
             Clear();
         }

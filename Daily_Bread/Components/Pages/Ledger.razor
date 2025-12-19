@@ -35,28 +35,28 @@
         </div>
     }
 
-    <!-- Child/Account Selection - Only visible to Parents -->
+    <!-- Filters Card -->
     @if (IsParent)
     {
         <div class="card mb-4">
             <div class="card-body">
-                <div class="row g-3 align-items-end">
+                <div class="filters-row">
                     @if (ChildProfiles.Count > 1)
                     {
-                        <div class="col-lg-3 col-md-6">
+                        <div class="filter-item">
                             <label class="form-label">Select Child</label>
                             <select class="form-select" @bind="SelectedProfileId" @bind:after="OnProfileChanged">
                                 <option value="0">-- Select a Child --</option>
                                 @foreach (var profile in ChildProfiles)
                                 {
-                                    <option value="@profile.ProfileId">@profile.DisplayName (Balance: $@profile.TotalBalance.ToString("F2"))</option>
+                                    <option value="@profile.ProfileId">@profile.DisplayName ($@profile.TotalBalance.ToString("F2"))</option>
                                 }
                             </select>
                         </div>
                     }
                     @if (SelectedProfileId > 0 && Accounts.Count > 1)
                     {
-                        <div class="col-lg-2 col-md-6">
+                        <div class="filter-item filter-item-sm">
                             <label class="form-label">Account</label>
                             <select class="form-select" @bind="SelectedAccountId" @bind:after="OnAccountChanged">
                                 @foreach (var account in Accounts)
@@ -66,16 +66,17 @@
                             </select>
                         </div>
                     }
-                    <div class="col-lg-2 col-md-3 col-6">
-                        <label class="form-label">From Date</label>
-                        <InputDate @bind-Value="FromDate" class="form-control" @bind-Value:after="LoadTransactionsAsync" />
+                    <div class="filter-item filter-item-sm">
+                        <label class="form-label">From</label>
+                        <input type="date" class="form-control" @bind="FromDate" @bind:after="LoadTransactionsAsync" />
                     </div>
-                    <div class="col-lg-2 col-md-3 col-6">
-                        <label class="form-label">To Date</label>
-                        <InputDate @bind-Value="ToDate" class="form-control" @bind-Value:after="LoadTransactionsAsync" />
+                    <div class="filter-item filter-item-sm">
+                        <label class="form-label">To</label>
+                        <input type="date" class="form-control" @bind="ToDate" @bind:after="LoadTransactionsAsync" />
                     </div>
-                    <div class="col-lg-auto col-md-auto col-12">
-                        <button class="btn btn-outline-secondary text-nowrap" @onclick="ClearFilters">
+                    <div class="filter-item filter-item-btn">
+                        <label class="form-label d-none d-md-block">&nbsp;</label>
+                        <button class="btn btn-outline-secondary" @onclick="ClearFilters">
                             <i class="bi bi-x-circle"></i> Clear
                         </button>
                     </div>
@@ -95,42 +96,30 @@
         <!-- Quick Stats -->
         @if (Stats != null)
         {
-            <div class="row mb-4">
-                <div class="col-md-2">
-                    <div class="stat-card bg-success-subtle">
-                        <span class="stat-value text-success">$@Stats.TotalEarnings.ToString("F2")</span>
-                        <span class="stat-label">Earned</span>
-                    </div>
+            <div class="stats-grid">
+                <div class="stat-card bg-success-subtle">
+                    <span class="stat-value text-success">$@Stats.TotalEarnings.ToString("F2")</span>
+                    <span class="stat-label">Earned</span>
                 </div>
-                <div class="col-md-2">
-                    <div class="stat-card bg-danger-subtle">
-                        <span class="stat-value text-danger">$@Stats.TotalDeductions.ToString("F2")</span>
-                        <span class="stat-label">Deductions</span>
-                    </div>
+                <div class="stat-card bg-danger-subtle">
+                    <span class="stat-value text-danger">$@Stats.TotalDeductions.ToString("F2")</span>
+                    <span class="stat-label">Deductions</span>
                 </div>
-                <div class="col-md-2">
-                    <div class="stat-card bg-info-subtle">
-                        <span class="stat-value text-info">$@Stats.TotalBonuses.ToString("F2")</span>
-                        <span class="stat-label">Bonuses</span>
-                    </div>
+                <div class="stat-card bg-info-subtle">
+                    <span class="stat-value text-info">$@Stats.TotalBonuses.ToString("F2")</span>
+                    <span class="stat-label">Bonuses</span>
                 </div>
-                <div class="col-md-2">
-                    <div class="stat-card bg-warning-subtle">
-                        <span class="stat-value text-warning">$@Stats.TotalPenalties.ToString("F2")</span>
-                        <span class="stat-label">Penalties</span>
-                    </div>
+                <div class="stat-card bg-warning-subtle">
+                    <span class="stat-value text-warning">$@Stats.TotalPenalties.ToString("F2")</span>
+                    <span class="stat-label">Penalties</span>
                 </div>
-                <div class="col-md-2">
-                    <div class="stat-card bg-secondary-subtle">
-                        <span class="stat-value">$@Stats.TotalPayouts.ToString("F2")</span>
-                        <span class="stat-label">Paid Out</span>
-                    </div>
+                <div class="stat-card bg-secondary-subtle">
+                    <span class="stat-value">$@Stats.TotalPayouts.ToString("F2")</span>
+                    <span class="stat-label">Paid Out</span>
                 </div>
-                <div class="col-md-2">
-                    <div class="stat-card">
-                        <span class="stat-value">@Stats.TransactionCount</span>
-                        <span class="stat-label">Transactions</span>
-                    </div>
+                <div class="stat-card">
+                    <span class="stat-value">@Stats.TransactionCount</span>
+                    <span class="stat-label">Transactions</span>
                 </div>
             </div>
         }
@@ -157,7 +146,7 @@
                 @if (IsParent)
                 {
                     <button class="btn btn-outline-primary btn-sm" @onclick="ShowAdjustmentModal">
-                        + Add Adjustment
+                        <i class="bi bi-plus-circle"></i> Add Adjustment
                     </button>
                 }
             </div>
@@ -180,7 +169,7 @@
                 {
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th>Date</th>
                                     <th>Type</th>
@@ -201,7 +190,7 @@
                                         <td>@txn.Description</td>
                                         <td class="text-end">
                                             <span class="@(txn.Amount >= 0 ? "text-success" : "text-danger") fw-bold">
-                                                @(txn.Amount >= 0 ? "+" : "")$@txn.Amount.ToString("F2")
+                                                @(txn.Amount >= 0 ? "+" : "")$@Math.Abs(txn.Amount).ToString("F2")
                                             </span>
                                         </td>
                                     </tr>
