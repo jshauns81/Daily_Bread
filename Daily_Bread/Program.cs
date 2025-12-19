@@ -103,8 +103,9 @@ builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<IKidModeService, KidModeService>();
 builder.Services.AddScoped<IChoreChartService, ChoreChartService>();
 
-// Add health checks - simple check without database dependency for faster startup
-builder.Services.AddHealthChecks();
+// Add health checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>();
 
 var app = builder.Build();
 
@@ -154,7 +155,7 @@ app.UseAuthorization();
 
 app.UseAntiforgery();
 
-// Health check endpoint for Azure
+// Health check endpoint
 app.MapHealthChecks("/health");
 
 app.MapStaticAssets();
