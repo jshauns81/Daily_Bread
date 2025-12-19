@@ -14,11 +14,30 @@ builder.Services.AddRazorComponents()
 // Supports Railway DATABASE_URL format and standard connection strings
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Check for Railway's DATABASE_URL environment variable
-var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+// Check for Railway's DATABASE_URL or DATABASE_PRIVATE_URL environment variable
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+    ?? Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL")
+    ?? Environment.GetEnvironmentVariable("POSTGRES_URL");
+
 if (!string.IsNullOrEmpty(databaseUrl))
 {
     connectionString = ConvertDatabaseUrlToConnectionString(databaseUrl);
+    Console.WriteLine($"Using PostgreSQL database connection from environment variable");
+}
+else if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgresql://"))
+{
+    // ConnectionStrings__DefaultConnection might already be a URL format
+    connectionString = ConvertDatabaseUrlToConnectionString(connectionString);
+    Console.WriteLine($"Converted connection string from URL format");
+}
+
+// Log connection info (without sensitive data) for debugging
+if (!string.IsNullOrEmpty(connectionString))
+{
+    var safeLog = connectionString.Contains("Host=") 
+        ? $"Host={connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Host="))?.Split('=').LastOrDefault()}"
+        : "SQLite";
+    Console.WriteLine($"Database connection type: {safeLog}");
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -84,9 +103,8 @@ builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<IKidModeService, KidModeService>();
 builder.Services.AddScoped<IChoreChartService, ChoreChartService>();
 
-// Add health checks for Azure
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<ApplicationDbContext>();
+// Add health checks - simple check without database dependency for faster startup
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -98,22 +116,28 @@ using (var scope = app.Services.CreateScope())
     
     try
     {
+        Console.WriteLine("Starting database migration...");
         await db.Database.MigrateAsync();
+        Console.WriteLine("Database migration completed successfully.");
         logger.LogInformation("Database migration completed successfully.");
         
         // Seed achievements
         var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
         await achievementService.SeedAchievementsAsync();
+        Console.WriteLine("Achievement seeding completed.");
     }
     catch (Exception ex)
     {
+        Console.WriteLine($"Database migration error: {ex.Message}");
         logger.LogError(ex, "An error occurred while migrating the database.");
         throw;
     }
 }
 
 // Seed roles and admin user on startup
+Console.WriteLine("Starting data seeding...");
 await SeedData.InitializeAsync(app.Services, app.Configuration);
+Console.WriteLine("Data seeding completed.");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
