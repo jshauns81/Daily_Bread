@@ -79,9 +79,9 @@ public class ChildProfileService : IChildProfileService
 
     public async Task<List<ChildProfileSummary>> GetAllChildProfilesAsync(bool includeInactive = false)
     {
+        // Use a more efficient query that doesn't load all transactions into memory
         var query = _context.ChildProfiles
             .Include(p => p.LedgerAccounts)
-            .ThenInclude(a => a.LedgerTransactions)
             .AsQueryable();
 
         if (!includeInactive)
@@ -91,18 +91,34 @@ public class ChildProfileService : IChildProfileService
 
         var profiles = await query.ToListAsync();
 
-        return profiles.Select(p => new ChildProfileSummary
+        // Get account IDs for balance calculation
+        var accountIds = profiles
+            .SelectMany(p => p.LedgerAccounts.Where(a => a.IsActive))
+            .Select(a => a.Id)
+            .ToList();
+
+        // Calculate balances in a single query instead of loading all transactions
+        var balancesByAccount = await _context.LedgerTransactions
+            .Where(t => accountIds.Contains(t.LedgerAccountId))
+            .GroupBy(t => t.LedgerAccountId)
+            .Select(g => new { AccountId = g.Key, Balance = g.Sum(t => t.Amount) })
+            .ToDictionaryAsync(x => x.AccountId, x => x.Balance);
+
+        return profiles.Select(p =>
         {
-            ProfileId = p.Id,
-            UserId = p.UserId,
-            DisplayName = p.DisplayName,
-            IsActive = p.IsActive,
-            DefaultAccountId = p.LedgerAccounts.FirstOrDefault(a => a.IsDefault)?.Id 
-                ?? p.LedgerAccounts.FirstOrDefault()?.Id ?? 0,
-            TotalBalance = p.LedgerAccounts
-                .Where(a => a.IsActive)
-                .SelectMany(a => a.LedgerTransactions)
-                .Sum(t => t.Amount)
+            var activeAccounts = p.LedgerAccounts.Where(a => a.IsActive).ToList();
+            var totalBalance = activeAccounts.Sum(a => balancesByAccount.GetValueOrDefault(a.Id, 0));
+            
+            return new ChildProfileSummary
+            {
+                ProfileId = p.Id,
+                UserId = p.UserId,
+                DisplayName = p.DisplayName,
+                IsActive = p.IsActive,
+                DefaultAccountId = activeAccounts.FirstOrDefault(a => a.IsDefault)?.Id 
+                    ?? activeAccounts.FirstOrDefault()?.Id ?? 0,
+                TotalBalance = totalBalance
+            };
         }).OrderBy(p => p.DisplayName).ToList();
     }
 
