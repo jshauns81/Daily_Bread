@@ -230,13 +230,23 @@ Console.WriteLine("Data seeding completed.");
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // Allow enabling developer exception page in production for debugging (set SHOW_ERRORS=true)
+    var showErrors = Environment.GetEnvironmentVariable("SHOW_ERRORS") == "true";
+    if (showErrors)
+    {
+        app.UseDeveloperExceptionPage();
+    }
+    else
+    {
+        app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    }
     app.UseHsts();
     // Only use HTTPS redirection in production when not behind a reverse proxy
     // Railway terminates SSL at the edge, so we skip this
 }
 else
 {
+    app.UseDeveloperExceptionPage();
     app.UseHttpsRedirection();
 }
 

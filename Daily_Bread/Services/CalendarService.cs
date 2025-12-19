@@ -92,16 +92,13 @@ public class CalendarService : ICalendarService
 {
     private readonly ApplicationDbContext _context;
     private readonly IDateProvider _dateProvider;
-    private readonly IChoreScheduleService _scheduleService;
 
     public CalendarService(
         ApplicationDbContext context,
-        IDateProvider dateProvider,
-        IChoreScheduleService scheduleService)
+        IDateProvider dateProvider)
     {
         _context = context;
         _dateProvider = dateProvider;
-        _scheduleService = scheduleService;
     }
 
     public async Task<MonthSummary> GetMonthSummaryAsync(int year, int month, string? userId = null)
@@ -151,7 +148,7 @@ public class CalendarService : ICalendarService
         // Process each day
         for (var date = startDate; date <= endDate; date = date.AddDays(1))
         {
-            var summary = await GetDaySummaryInternalAsync(date, today, userId, logsByDate, choreDefinitions);
+            var summary = GetDaySummaryInternal(date, today, logsByDate, choreDefinitions);
             summaries.Add(summary);
         }
 
@@ -180,40 +177,35 @@ public class CalendarService : ICalendarService
             .Where(cd => string.IsNullOrEmpty(userId) || cd.AssignedUserId == userId)
             .ToListAsync();
 
-        return await GetDaySummaryInternalAsync(date, today, userId, logsByDate, choreDefinitions);
+        return GetDaySummaryInternal(date, today, logsByDate, choreDefinitions);
     }
 
-    private async Task<DaySummary> GetDaySummaryInternalAsync(
+    private static DaySummary GetDaySummaryInternal(
         DateOnly date,
         DateOnly today,
-        string? userId,
         Dictionary<DateOnly, List<ChoreLog>> logsByDate,
         List<ChoreDefinition> choreDefinitions)
     {
+        // Count scheduled chores for this date
+        var scheduledChores = choreDefinitions
+            .Where(cd => IsChoreScheduledForDate(cd, date))
+            .ToList();
+
         // Future dates
         if (date > today)
         {
-            // Count scheduled chores for future date
-            var scheduledCount = await CountScheduledChoresAsync(date, userId, choreDefinitions);
             return new DaySummary
             {
                 Date = date,
                 Status = DayCompletionStatus.Future,
-                TotalChores = scheduledCount,
-                PotentialAmount = choreDefinitions
-                    .Where(cd => IsChoreScheduledForDate(cd, date))
-                    .Sum(cd => cd.Value)
+                TotalChores = scheduledChores.Count,
+                PotentialAmount = scheduledChores.Sum(cd => cd.Value)
             };
         }
 
         // Get logs for this date
         logsByDate.TryGetValue(date, out var dayLogs);
         dayLogs ??= [];
-
-        // Count scheduled chores for this date
-        var scheduledChores = choreDefinitions
-            .Where(cd => IsChoreScheduledForDate(cd, date))
-            .ToList();
 
         // If we have logs for chores that aren't in our current definitions (deleted/deactivated),
         // include them in the count
@@ -240,16 +232,16 @@ public class CalendarService : ICalendarService
         var skippedCount = dayLogs.Count(l => l.Status == ChoreStatus.Skipped);
         var pendingCount = totalChores - completedCount - approvedCount - missedCount - skippedCount;
 
-        // Calculate earnings
+        // Calculate earnings - handle potential null ChoreDefinition
         var earnedAmount = dayLogs
-            .Where(l => l.Status == ChoreStatus.Approved)
+            .Where(l => l.Status == ChoreStatus.Approved && l.ChoreDefinition != null)
             .Sum(l => l.ChoreDefinition.Value);
 
         var potentialAmount = scheduledChores.Sum(c => c.Value);
 
         // Determine status
         DayCompletionStatus status;
-        var doneCount = completedCount + approvedCount + skippedCount; // Skipped counts as "done" for completion purposes
+        var doneCount = completedCount + approvedCount + skippedCount;
 
         if (doneCount == totalChores)
         {
@@ -276,11 +268,6 @@ public class CalendarService : ICalendarService
             EarnedAmount = earnedAmount,
             PotentialAmount = potentialAmount
         };
-    }
-
-    private async Task<int> CountScheduledChoresAsync(DateOnly date, string? userId, List<ChoreDefinition> choreDefinitions)
-    {
-        return choreDefinitions.Count(cd => IsChoreScheduledForDate(cd, date));
     }
 
     private static bool IsChoreScheduledForDate(ChoreDefinition chore, DateOnly date)
