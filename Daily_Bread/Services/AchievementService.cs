@@ -68,29 +68,31 @@ public interface IAchievementService
 /// </summary>
 public class AchievementService : IAchievementService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly ILedgerService _ledgerService;
     private readonly IDateProvider _dateProvider;
 
     public AchievementService(
-        ApplicationDbContext context, 
+        IDbContextFactory<ApplicationDbContext> contextFactory, 
         ILedgerService ledgerService,
         IDateProvider dateProvider)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _ledgerService = ledgerService;
         _dateProvider = dateProvider;
     }
 
     public async Task<List<AchievementDisplay>> GetAllAchievementsAsync(string userId)
     {
-        var achievements = await _context.Achievements
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var achievements = await context.Achievements
             .Where(a => a.IsActive)
             .OrderBy(a => a.Category)
             .ThenBy(a => a.SortOrder)
             .ToListAsync();
 
-        var earnedIds = await _context.UserAchievements
+        var earnedIds = await context.UserAchievements
             .Where(ua => ua.UserId == userId)
             .ToDictionaryAsync(ua => ua.AchievementId, ua => ua);
 
@@ -127,7 +129,9 @@ public class AchievementService : IAchievementService
 
     public async Task MarkAchievementsAsSeenAsync(string userId)
     {
-        var unseen = await _context.UserAchievements
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var unseen = await context.UserAchievements
             .Where(ua => ua.UserId == userId && !ua.HasSeen)
             .ToListAsync();
 
@@ -136,7 +140,7 @@ public class AchievementService : IAchievementService
             ua.HasSeen = true;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task<List<AchievementDisplay>> CheckAndAwardAchievementsAsync(string userId)
@@ -150,13 +154,15 @@ public class AchievementService : IAchievementService
         var totalChoresCompleted = await GetTotalChoresCompletedAsync(userId);
         var perfectDays = await GetPerfectDaysCountAsync(userId);
 
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Get all achievements not yet earned
-        var earnedAchievementIds = await _context.UserAchievements
+        var earnedAchievementIds = await context.UserAchievements
             .Where(ua => ua.UserId == userId)
             .Select(ua => ua.AchievementId)
             .ToListAsync();
 
-        var unearnedAchievements = await _context.Achievements
+        var unearnedAchievements = await context.Achievements
             .Where(a => a.IsActive && !earnedAchievementIds.Contains(a.Id))
             .ToListAsync();
 
@@ -180,7 +186,7 @@ public class AchievementService : IAchievementService
                     HasSeen = false
                 };
 
-                _context.UserAchievements.Add(userAchievement);
+                context.UserAchievements.Add(userAchievement);
 
                 newlyAwarded.Add(new AchievementDisplay
                 {
@@ -200,7 +206,7 @@ public class AchievementService : IAchievementService
 
         if (newlyAwarded.Count > 0)
         {
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         return newlyAwarded;
@@ -208,7 +214,9 @@ public class AchievementService : IAchievementService
 
     public async Task<int> GetTotalPointsAsync(string userId)
     {
-        return await _context.UserAchievements
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.UserAchievements
             .Include(ua => ua.Achievement)
             .Where(ua => ua.UserId == userId)
             .SumAsync(ua => ua.Achievement.Points);
@@ -216,8 +224,10 @@ public class AchievementService : IAchievementService
 
     public async Task SeedAchievementsAsync()
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Check if already seeded first (before trying to fix icons)
-        if (await _context.Achievements.AnyAsync())
+        if (await context.Achievements.AnyAsync())
         {
             // Fix any corrupted icons from previous seeding
             await FixCorruptedIconsAsync();
@@ -255,8 +265,8 @@ public class AchievementService : IAchievementService
             new() { Code = "EARLY_BIRD", Name = "Early Bird", Description = "Complete all chores before noon", Icon = "\U0001F305", Category = AchievementCategory.Special, Points = 25, SortOrder = 2 },
         };
 
-        _context.Achievements.AddRange(achievements);
-        await _context.SaveChangesAsync();
+        context.Achievements.AddRange(achievements);
+        await context.SaveChangesAsync();
     }
 
     /// <summary>
@@ -265,6 +275,8 @@ public class AchievementService : IAchievementService
     /// </summary>
     private async Task FixCorruptedIconsAsync()
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Using Unicode codepoints that work reliably across all systems
         var iconMappings = new Dictionary<string, string>
         {
@@ -288,7 +300,7 @@ public class AchievementService : IAchievementService
             { "EARLY_BIRD", "\U0001F305" }      // ?? sunrise
         };
 
-        var achievements = await _context.Achievements.ToListAsync();
+        var achievements = await context.Achievements.ToListAsync();
         var updated = false;
 
         foreach (var achievement in achievements)
@@ -305,7 +317,7 @@ public class AchievementService : IAchievementService
 
         if (updated)
         {
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 
@@ -353,14 +365,18 @@ public class AchievementService : IAchievementService
 
     private async Task<decimal> GetTotalEarnedAsync(string userId)
     {
-        return await _context.LedgerTransactions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0)
             .SumAsync(t => t.Amount);
     }
 
     private async Task<int> GetTotalChoresCompletedAsync(string userId)
     {
-        return await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
             .Where(cl => cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved)
@@ -369,10 +385,12 @@ public class AchievementService : IAchievementService
 
     private async Task<int> GetPerfectDaysCountAsync(string userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var today = _dateProvider.Today;
         
         // Get all dates with chores assigned to this user
-        var datesWithChores = await _context.ChoreLogs
+        var datesWithChores = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.ChoreDefinition.AssignedUserId == userId && cl.Date <= today)
             .GroupBy(cl => cl.Date)
@@ -389,18 +407,28 @@ public class AchievementService : IAchievementService
 
     private async Task<int> CalculateCurrentStreakAsync(string userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         var today = _dateProvider.Today;
+        
+        // Optimized: Load all relevant data in one query instead of 365 separate queries
+        var startDate = today.AddDays(-365);
+        var allChoresInRange = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
+            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
+            .Where(cl => cl.Date >= startDate && cl.Date <= today)
+            .ToListAsync();
+
+        var choresByDate = allChoresInRange
+            .GroupBy(cl => cl.Date)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         var streak = 0;
         var currentDate = today;
 
         for (int i = 0; i < 365; i++)
         {
-            var choresForDate = await _context.ChoreLogs
-                .Include(cl => cl.ChoreDefinition)
-                .Where(cl => cl.Date == currentDate && cl.ChoreDefinition.AssignedUserId == userId)
-                .ToListAsync();
-
-            if (choresForDate.Count == 0)
+            if (!choresByDate.TryGetValue(currentDate, out var choresForDate) || choresForDate.Count == 0)
             {
                 currentDate = currentDate.AddDays(-1);
                 continue;

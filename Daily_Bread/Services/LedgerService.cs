@@ -75,18 +75,20 @@ public class TransactionStats
 
 public class LedgerService : ILedgerService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
 
-    public LedgerService(ApplicationDbContext context, IDateProvider dateProvider)
+    public LedgerService(IDbContextFactory<ApplicationDbContext> contextFactory, IDateProvider dateProvider)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _dateProvider = dateProvider;
     }
 
     public async Task<ServiceResult> ReconcileChoreLogTransactionAsync(int choreLogId)
     {
-        var choreLog = await _context.ChoreLogs
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var choreLog = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
             .Include(c => c.LedgerTransaction)
             .FirstOrDefaultAsync(c => c.Id == choreLogId);
@@ -106,7 +108,7 @@ public class LedgerService : ILedgerService
         }
 
         // Find the child's default ledger account
-        var childProfile = await _context.ChildProfiles
+        var childProfile = await context.ChildProfiles
             .Include(p => p.LedgerAccounts)
             .FirstOrDefaultAsync(p => p.UserId == assignedUserId);
 
@@ -131,8 +133,8 @@ public class LedgerService : ILedgerService
         {
             if (existingTransaction != null)
             {
-                _context.LedgerTransactions.Remove(existingTransaction);
-                await _context.SaveChangesAsync();
+                context.LedgerTransactions.Remove(existingTransaction);
+                await context.SaveChangesAsync();
             }
             return ServiceResult.Ok();
         }
@@ -146,7 +148,7 @@ public class LedgerService : ILedgerService
                 existingTransaction.Description = description;
                 existingTransaction.LedgerAccountId = defaultAccount.Id;
                 existingTransaction.ModifiedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
         }
         else
@@ -163,8 +165,8 @@ public class LedgerService : ILedgerService
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.LedgerTransactions.Add(transaction);
-            await _context.SaveChangesAsync();
+            context.LedgerTransactions.Add(transaction);
+            await context.SaveChangesAsync();
         }
 
         return ServiceResult.Ok();
@@ -172,15 +174,18 @@ public class LedgerService : ILedgerService
 
     public async Task<decimal> GetAccountBalanceAsync(int ledgerAccountId)
     {
-        return await _context.LedgerTransactions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.LedgerTransactions
             .Where(t => t.LedgerAccountId == ledgerAccountId)
             .SumAsync(t => t.Amount);
     }
 
     public async Task<decimal> GetUserBalanceAsync(string userId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
         // Sum balance across all user's accounts
-        var accountIds = await _context.ChildProfiles
+        var accountIds = await context.ChildProfiles
             .Where(p => p.UserId == userId)
             .SelectMany(p => p.LedgerAccounts)
             .Where(a => a.IsActive)
@@ -190,12 +195,12 @@ public class LedgerService : ILedgerService
         if (!accountIds.Any())
         {
             // Fall back to legacy query if no profile exists
-            return await _context.LedgerTransactions
+            return await context.LedgerTransactions
                 .Where(t => t.UserId == userId)
                 .SumAsync(t => t.Amount);
         }
 
-        return await _context.LedgerTransactions
+        return await context.LedgerTransactions
             .Where(t => accountIds.Contains(t.LedgerAccountId))
             .SumAsync(t => t.Amount);
     }
@@ -205,7 +210,9 @@ public class LedgerService : ILedgerService
         DateOnly? fromDate = null,
         DateOnly? toDate = null)
     {
-        var query = _context.LedgerTransactions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var query = context.LedgerTransactions
             .Include(t => t.ChoreLog)
             .ThenInclude(c => c!.ChoreDefinition)
             .Include(t => t.LedgerAccount)
@@ -232,7 +239,9 @@ public class LedgerService : ILedgerService
         DateOnly? fromDate = null,
         DateOnly? toDate = null)
     {
-        var query = _context.LedgerTransactions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var query = context.LedgerTransactions
             .Include(t => t.ChoreLog)
             .ThenInclude(c => c!.ChoreDefinition)
             .Include(t => t.LedgerAccount)
@@ -256,7 +265,9 @@ public class LedgerService : ILedgerService
 
     public async Task<LedgerTransaction?> GetTransactionForChoreLogAsync(int choreLogId)
     {
-        return await _context.LedgerTransactions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        return await context.LedgerTransactions
             .Include(t => t.ChoreLog)
             .ThenInclude(c => c!.ChoreDefinition)
             .Include(t => t.LedgerAccount)
@@ -268,7 +279,9 @@ public class LedgerService : ILedgerService
         DateOnly? fromDate = null,
         DateOnly? toDate = null)
     {
-        var query = _context.LedgerTransactions
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var query = context.LedgerTransactions
             .Where(t => t.LedgerAccountId == ledgerAccountId);
 
         if (fromDate.HasValue)
@@ -290,7 +303,9 @@ public class LedgerService : ILedgerService
         DateOnly? fromDate = null,
         DateOnly? toDate = null)
     {
-        var query = _context.LedgerTransactions.Where(t => t.UserId == userId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var query = context.LedgerTransactions.Where(t => t.UserId == userId);
 
         if (fromDate.HasValue)
         {
@@ -322,11 +337,13 @@ public class LedgerService : ILedgerService
             return ServiceResult.Fail("Cannot transfer to the same account.");
         }
 
-        var fromAccount = await _context.LedgerAccounts
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var fromAccount = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
             .FirstOrDefaultAsync(a => a.Id == fromAccountId);
 
-        var toAccount = await _context.LedgerAccounts
+        var toAccount = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
             .FirstOrDefaultAsync(a => a.Id == toAccountId);
 
@@ -336,7 +353,10 @@ public class LedgerService : ILedgerService
         }
 
         // Check balance
-        var fromBalance = await GetAccountBalanceAsync(fromAccountId);
+        var fromBalance = await context.LedgerTransactions
+            .Where(t => t.LedgerAccountId == fromAccountId)
+            .SumAsync(t => t.Amount);
+            
         if (fromBalance < amount)
         {
             return ServiceResult.Fail($"Insufficient balance. Available: ${fromBalance:F2}");
@@ -375,8 +395,8 @@ public class LedgerService : ILedgerService
             CreatedAt = now
         };
 
-        _context.LedgerTransactions.AddRange(debitTransaction, creditTransaction);
-        await _context.SaveChangesAsync();
+        context.LedgerTransactions.AddRange(debitTransaction, creditTransaction);
+        await context.SaveChangesAsync();
 
         return ServiceResult.Ok();
     }
