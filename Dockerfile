@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
 WORKDIR /src
 
 # Copy project file and restore dependencies first (for better caching)
@@ -12,7 +12,7 @@ WORKDIR /src/Daily_Bread
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
 WORKDIR /app
 
 # Install curl for health checks
