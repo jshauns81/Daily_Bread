@@ -25,8 +25,7 @@ COPY --from=build /app/publish .
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
 USER appuser
 
-# Railway uses PORT env var, Azure uses 8080, Render uses 10000
-# Default to 8080, but allow override via PORT environment variable
+# Railway uses PORT env var, default to 8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV PORT=8080
 EXPOSE 8080
