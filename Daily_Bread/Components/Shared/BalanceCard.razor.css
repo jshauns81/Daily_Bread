@@ -1,5 +1,6 @@
 .balance-card {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, rgba(136, 192, 208, 0.15) 0%, rgba(94, 129, 172, 0.2) 100%);
+    border: 1px solid var(--ds-bg-muted);
 }
 
 .balance-main {
@@ -8,35 +9,37 @@
 
 .balance-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: var(--ds-text-xs);
     text-transform: uppercase;
-    color: var(--bs-secondary);
-    margin-bottom: 0.25rem;
+    color: var(--ds-text-muted);
+    margin-bottom: var(--ds-space-1);
+    letter-spacing: 0.5px;
 }
 
 .balance-amount {
     display: block;
     font-size: 2.5rem;
-    font-weight: bold;
+    font-weight: var(--ds-font-bold);
     line-height: 1;
+    color: var(--ds-semantic-success);
 }
 
 .balance-user {
     display: block;
-    font-size: 1rem;
-    color: var(--bs-secondary);
-    margin-top: 0.25rem;
+    font-size: var(--ds-text-base);
+    color: var(--ds-text-muted);
+    margin-top: var(--ds-space-1);
 }
 
 .balance-info {
-    padding: 0 1rem;
+    padding: 0 var(--ds-space-4);
 }
 
 .info-row {
     display: flex;
     justify-content: space-between;
-    padding: 0.25rem 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: var(--ds-space-1) 0;
+    border-bottom: 1px solid rgba(76, 86, 106, 0.2);
 }
 
     .info-row:last-child {
@@ -44,24 +47,26 @@
     }
 
 .info-label {
-    color: var(--bs-secondary);
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-sm);
 }
 
 .info-value {
-    font-weight: 500;
+    font-weight: var(--ds-font-medium);
+    color: var(--ds-text-primary);
 }
 
 .balance-actions {
-    padding: 0 1rem;
+    padding: 0 var(--ds-space-4);
 }
 
 @media (max-width: 768px) {
     .balance-main {
-        margin-bottom: 1rem;
+        margin-bottom: var(--ds-space-4);
     }
 
     .balance-info {
-        margin-bottom: 1rem;
+        margin-bottom: var(--ds-space-4);
         padding: 0;
     }
 

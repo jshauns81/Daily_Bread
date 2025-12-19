@@ -1,0 +1,231 @@
+.emoji-picker-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* Circle button - clean, minimal */
+.emoji-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px dashed var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.emoji-circle:hover {
+    border-color: var(--ds-accent-primary);
+    background: var(--ds-bg-elevated);
+}
+
+.emoji-circle:not(.empty) {
+    border-style: solid;
+    border-color: var(--ds-bg-muted);
+}
+
+.emoji-circle .placeholder-icon {
+    font-size: 1.25rem;
+    color: var(--ds-text-muted);
+    font-weight: 300;
+    line-height: 1;
+}
+
+.emoji-circle .emoji-placeholder {
+    font-size: 1.5rem;
+    color: var(--ds-text-muted);
+    opacity: 0.7;
+    line-height: 1;
+    /* Use system emoji fonts - these are ALWAYS available on every OS */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
+}
+
+.emoji-circle:hover .emoji-placeholder {
+    opacity: 1;
+}
+
+.emoji-circle .selected-emoji {
+    font-size: 1.5rem;
+    line-height: 1;
+    /* Use system emoji fonts - these are ALWAYS available on every OS */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
+}
+
+/* CRITICAL: Backdrop must be FIXED and above modal (z-index 10000) */
+.emoji-picker-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10001;
+    background: transparent;
+}
+
+/* CRITICAL: Dropdown must be FIXED to escape modal's overflow:hidden 
+   Position will be set via inline styles or JS */
+.emoji-picker-dropdown {
+    position: fixed;
+    z-index: 10002;
+    min-width: 320px;
+    max-width: 360px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--ds-shadow-lg);
+    color: var(--ds-text-primary);
+    -webkit-overflow-scrolling: touch;
+}
+
+.emoji-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--ds-space-2) var(--ds-space-4);
+    background: var(--ds-bg-hover);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    font-weight: var(--ds-font-medium);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: var(--ds-text-primary);
+}
+
+.emoji-picker-close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--ds-text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.emoji-picker-close:hover {
+    background: var(--ds-bg-muted);
+    color: var(--ds-text-primary);
+}
+
+.emoji-quick-picks {
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
+}
+
+.quick-picks-label,
+.category-label {
+    display: block;
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+    margin-bottom: var(--ds-space-1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.quick-picks-grid,
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: var(--ds-space-1);
+}
+
+.emoji-category {
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-bottom: 1px solid var(--ds-bg-muted);
+}
+
+.emoji-category:last-of-type {
+    border-bottom: none;
+}
+
+.emoji-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: var(--ds-radius-sm);
+    cursor: pointer;
+    transition: all var(--ds-duration-fast) ease;
+    padding: 0;
+    /* CRITICAL: Use system emoji fonts - these are ALWAYS available on every OS */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
+    color: inherit;
+    /* Ensure emoji renders as color, not as text glyph */
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.emoji-btn:hover {
+    background: var(--ds-bg-muted);
+    transform: scale(1.1);
+}
+
+.emoji-btn.selected {
+    background: var(--ds-accent-primary);
+    border-color: var(--ds-accent-cyan);
+}
+
+.emoji-picker-footer {
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-top: 1px solid var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
+    position: sticky;
+    bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+    .emoji-picker-dropdown {
+        min-width: 280px;
+        max-width: calc(100vw - 2rem);
+        left: 1rem !important;
+        right: 1rem !important;
+        width: auto !important;
+    }
+    
+    .quick-picks-grid,
+    .emoji-grid {
+        grid-template-columns: repeat(7, 1fr);
+    }
+    
+    .emoji-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+}
+
+/* Scrollbar styling */
+.emoji-picker-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.emoji-picker-dropdown::-webkit-scrollbar-track {
+    background: var(--ds-bg-elevated);
+}
+
+.emoji-picker-dropdown::-webkit-scrollbar-thumb {
+    background: var(--ds-bg-muted);
+    border-radius: 3px;
+}
+
+.emoji-picker-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--ds-text-muted);
+}

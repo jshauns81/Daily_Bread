@@ -1,11 +1,12 @@
-@page "/admin/users"
+﻿@page "/admin/users"
 @using Microsoft.AspNetCore.Authorization
 @using Daily_Bread.Services
+@using Daily_Bread.Components.Shared
 @attribute [Authorize(Roles = "Admin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @inject IUserManagementService UserService
 @inject IKidModeService KidModeService
 @inject IChildProfileService ProfileService
-@rendermode InteractiveServer
 
 <PageTitle>User Management</PageTitle>
 
@@ -79,7 +80,7 @@ else
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
-                                <h5 class="card-title mb-1">@user.UserName</h5>
+                                <h5 class="card-title mb-1 user-name">@user.UserName</h5>
                                 <small class="text-muted">@(user.Email ?? "No email")</small>
                             </div>
                             @foreach (var role in user.Roles)
@@ -200,9 +201,24 @@ else
                         
                         <div class="mb-3">
                             <label class="form-label">Password <span class="text-danger">*</span></label>
-                            <InputText class="form-control" @bind-Value="_createRequest.Password" type="password" />
+                            <PasswordInput @bind-Value="_createRequest.Password" 
+                                           Placeholder="Enter password"
+                                           Autocomplete="new-password"
+                                           HelpText="At least 8 characters with upper, lower, digit, and special character." />
                             <ValidationMessage For="() => _createRequest.Password" />
-                            <small class="text-muted">At least 8 characters with upper, lower, digit, and special character.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                            <PasswordInput @bind-Value="_createRequest.ConfirmPassword" 
+                                           Placeholder="Confirm password"
+                                           Autocomplete="new-password" />
+                            @if (!string.IsNullOrEmpty(_createRequest.ConfirmPassword) && _createRequest.Password != _createRequest.ConfirmPassword)
+                            {
+                                <div class="text-danger mt-1">
+                                    <small><span class="bi bi-exclamation-triangle"></span> Passwords do not match.</small>
+                                </div>
+                            }
                         </div>
                         
                         <div class="mb-3">
@@ -239,7 +255,8 @@ else
                         
                         <div class="d-flex justify-content-end gap-2">
                             <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                            <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                            <button type="submit" class="btn btn-primary" 
+                                    disabled="@(_isSaving || _createRequest.Password != _createRequest.ConfirmPassword)">
                                 @if (_isSaving)
                                 {
                                     <span class="spinner-border spinner-border-sm me-1"></span>
@@ -373,13 +390,17 @@ else
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">New Password</label>
-                        <input type="password" class="form-control" @bind="_newPassword" />
-                        <small class="text-muted">At least 8 characters with upper, lower, digit, and special character.</small>
+                        <PasswordInput @bind-Value="_newPassword" 
+                                       Placeholder="Enter new password"
+                                       Autocomplete="new-password"
+                                       HelpText="At least 8 characters with upper, lower, digit, and special character." />
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" @bind="_confirmPassword" />
+                        <PasswordInput @bind-Value="_confirmPassword" 
+                                       Placeholder="Confirm new password"
+                                       Autocomplete="new-password" />
                     </div>
                     
                     @if (_newPassword != _confirmPassword && !string.IsNullOrEmpty(_confirmPassword))
@@ -874,6 +895,7 @@ else
         public string UserName { get; set; } = "";
         public string? Email { get; set; }
         public string Password { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
         public string Role { get; set; } = "";
         public string? DisplayName { get; set; }
         public string? Pin { get; set; }

@@ -1,0 +1,517 @@
+﻿@page "/chore-planner"
+@page "/chore-planner/{WeekOffsetParam:int}"
+@attribute [Authorize(Roles = "Parent")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using System.Security.Claims
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared
+
+@inject IChorePlannerService PlannerService
+@inject IChildProfileService ProfileService
+@inject IChoreManagementService ChoreManagementService
+@inject IDateProvider DateProvider
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ModalService ModalService
+
+<PageTitle>Wage Board</PageTitle>
+
+<div class="wage-board">
+    <!-- Header -->
+    <header class="board-header no-print">
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="board-title">
+                    <span class="title-icon">💰</span>
+                    <span>Wage Board</span>
+                </h1>
+                @if (_childProfiles.Count > 1)
+                {
+                    <div class="child-selector">
+                        <select class="child-select" @bind="_selectedUserId" @bind:after="LoadDataAsync">
+                            <option value="">All Kids</option>
+                            @foreach (var child in _childProfiles)
+                            {
+                                <option value="@child.UserId">@child.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+                }
+            </div>
+            <div class="header-actions">
+                <button type="button" class="action-btn print-btn" onclick="window.print()" title="Print wage board">
+                    <span class="bi bi-printer"></span>
+                </button>
+                <button class="action-btn add-btn" @onclick="ShowCreateChoreForm" title="Add new labor">
+                    <span class="bi bi-plus-lg"></span>
+                    <span class="btn-text">Add</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Week Navigation -->
+        <div class="week-nav">
+            <button class="nav-btn" @onclick="PreviousWeek" disabled="@_isNavigating">
+                <span class="bi bi-chevron-left"></span>
+            </button>
+            <div class="week-display">
+                <span class="week-label">@(_plannerData?.WeekLabel ?? "Loading...")</span>
+                @if (_weekOffset != 0)
+                {
+                    <button class="today-link" @onclick="GoToCurrentWeek" disabled="@_isNavigating">
+                        Back to this week
+                    </button>
+                }
+            </div>
+            <button class="nav-btn" @onclick="NextWeek" disabled="@_isNavigating">
+                <span class="bi bi-chevron-right"></span>
+            </button>
+        </div>
+
+        <!-- Tab Selector -->
+        <div class="tab-bar">
+            <button class="tab-btn @(_activeTab == TabView.Wages ? "active" : "")"
+                    @onclick="() => SetActiveTab(TabView.Wages)">
+                <span class="tab-icon">💵</span>
+                <span class="tab-label">Wages</span>
+                <span class="tab-count">@_earningChores.Count</span>
+            </button>
+            <button class="tab-btn @(_activeTab == TabView.Routines ? "active" : "")"
+                    @onclick="() => SetActiveTab(TabView.Routines)">
+                <span class="tab-icon">📋</span>
+                <span class="tab-label">Routines</span>
+                <span class="tab-count">@_routineChores.Count</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Content -->
+    @if (_isLoading)
+    {
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading wage board...</p>
+        </div>
+    }
+    else if (_plannerData == null)
+    {
+        <div class="empty-state">
+            <span class="empty-icon">📝</span>
+            <h3>No chores yet</h3>
+            <p>Add your first labor to get started!</p>
+            <button class="primary-btn" @onclick="ShowCreateChoreForm">
+                <span class="bi bi-plus-lg"></span> Add Labor
+            </button>
+        </div>
+    }
+    else
+    {
+        <!-- Wages Tab Content -->
+        @if (_activeTab == TabView.Wages)
+        {
+            @if (_earningChores.Count == 0)
+            {
+                <div class="empty-state">
+                    <span class="empty-icon">💵</span>
+                    <h3>No earning chores</h3>
+                    <p>Add chores with a dollar value to see them here.</p>
+                    <button class="primary-btn" @onclick="ShowCreateChoreForm">
+                        <span class="bi bi-plus-lg"></span> Add Earning Chore
+                    </button>
+                </div>
+            }
+            else
+            {
+                <WageGrid 
+                    PlannerData="_plannerData"
+                    EarningChores="_earningChores"
+                    SelectedUserId="_selectedUserId"
+                    UpdatingCellKey="_updatingCellKey"
+                    OnEditChore="ShowEditChoreForm"
+                    OnCellClick="HandleCellClickFromGrid" />
+
+                <!-- Weekly Summary -->
+                <div class="weekly-summary">
+                    <div class="summary-card potential">
+                        <span class="summary-label">Weekly Potential</span>
+                        <span class="summary-value">$@_plannerData.TotalWeeklyPotential.ToString("F2")</span>
+                    </div>
+                    @if (_plannerData.Overrides.Any())
+                    {
+                        <button class="overrides-toggle @(_showOverrides ? "expanded" : "")"
+                                @onclick="() => _showOverrides = !_showOverrides">
+                            <span class="bi bi-lightning-fill"></span>
+                            <span>@_plannerData.Overrides.Count override@(_plannerData.Overrides.Count != 1 ? "s" : "") this week</span>
+                            <span class="bi @(_showOverrides ? "bi-chevron-up" : "bi-chevron-down")"></span>
+                        </button>
+                    }
+                </div>
+
+                @if (_showOverrides && _plannerData.Overrides.Any())
+                {
+                    <div class="overrides-list">
+                        @foreach (var ovr in _plannerData.Overrides)
+                        {
+                            <div class="override-item">
+                                <span class="override-icon">⚡</span>
+                                <span class="override-chore">@ovr.ChoreName</span>
+                                <span class="override-action @ovr.Type.ToString().ToLower()">
+                                    @(ovr.Type == ScheduleOverrideType.Add ? "added to" : ovr.Type == ScheduleOverrideType.Remove ? "removed from" : "moved to")
+                                </span>
+                                <span class="override-date">@ovr.Date.ToString("ddd, MMM d")</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- Legend -->
+                <div class="legend no-print">
+                    <span class="legend-item"><span class="indicator scheduled">●</span> Scheduled</span>
+                    <span class="legend-item"><span class="indicator available">○</span> Available</span>
+                    <span class="legend-item"><span class="indicator override">⚡</span> Override</span>
+                    <span class="legend-item"><span class="indicator removed">✕</span> Removed</span>
+                    <span class="legend-tip">💡 Click a cell to toggle schedule</span>
+                </div>
+            }
+        }
+
+        <!-- Routines Tab Content -->
+        @if (_activeTab == TabView.Routines)
+        {
+            @if (_routineChores.Count == 0)
+            {
+                <div class="empty-state">
+                    <span class="empty-icon">✓</span>
+                    <h3>No daily routines</h3>
+                    <p>Add chores with $0 value to create routines.</p>
+                    <button class="primary-btn" @onclick="ShowCreateRoutineForm">
+                        <span class="bi bi-plus-lg"></span> Add Routine
+                    </button>
+                </div>
+            }
+            else
+            {
+                <RoutinesList 
+                    RoutineChores="_routineChores"
+                    SelectedUserId="_selectedUserId"
+                    OnEditChore="ShowEditChoreForm"
+                    OnAddRoutine="ShowCreateRoutineForm" />
+            }
+        }
+    }
+
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-header print-only">
+        <h1>@(_plannerData?.ChildName ?? "Family") Wage Board</h1>
+        <div class="print-week">@_plannerData?.WeekLabel</div>
+    </div>
+
+    <!-- Print Footer -->
+    <div class="print-footer print-only">
+        <div class="print-potential">
+            Earn up to: <strong>$@(_plannerData?.TotalWeeklyPotential.ToString("F2") ?? "0.00")</strong> this week!
+        </div>
+        <div class="print-date">Printed: @DateTime.Now.ToString("MMM d, yyyy")</div>
+    </div>
+</div>
+
+<!-- Toast Messages -->
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="toast-message error no-print">
+        <span class="bi bi-exclamation-circle"></span>
+        @_errorMessage
+        <button class="toast-close" @onclick="() => _errorMessage = null">×</button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_successMessage))
+{
+    <div class="toast-message success no-print">
+        <span class="bi bi-check-circle"></span>
+        @_successMessage
+        <button class="toast-close" @onclick="() => _successMessage = null">×</button>
+    </div>
+}
+
+@code {
+    private enum TabView { Wages, Routines }
+
+    [Parameter]
+    public int? WeekOffsetParam { get; set; }
+
+    private int _weekOffset;
+    private TabView _activeTab = TabView.Wages;
+    private bool _isLoading = true;
+    private bool _isNavigating = false;
+    private bool _isRoutineMode = false;
+    private string? _errorMessage;
+    private string? _successMessage;
+    private string? _currentUserId;
+    private string? _selectedUserId;
+    private bool _showOverrides = false;
+    private bool _showChoreForm = false;
+
+    private ChorePlannerData? _plannerData;
+    private List<ChildProfileSummary> _childProfiles = [];
+    private List<UserSelectItem> _assignableUsers = [];
+    private ChoreDefinitionDto? _editingChore;
+    private string? _updatingCellKey;
+
+    // Filtered chore lists - visual only, all chores still loaded
+    private List<ChorePlannerRow> _earningChores = [];
+    private List<ChorePlannerRow> _routineChores = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        _weekOffset = WeekOffsetParam ?? 0;
+
+        _childProfiles = await ProfileService.GetAllChildProfilesAsync();
+        _assignableUsers = await ChoreManagementService.GetAssignableUsersAsync();
+
+        if (_childProfiles.Count == 1)
+        {
+            _selectedUserId = _childProfiles[0].UserId;
+        }
+
+        await LoadDataAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (WeekOffsetParam.HasValue && WeekOffsetParam.Value != _weekOffset)
+        {
+            _weekOffset = WeekOffsetParam.Value;
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var today = DateProvider.Today;
+            var weekStart = PlannerService.GetWeekStart(today).AddDays(_weekOffset * 7);
+
+            // Load ALL chores - no filtering at data level
+            _plannerData = await PlannerService.GetPlannerDataAsync(weekStart, _selectedUserId);
+
+            // Visual separation only - all chores participate in scheduling
+            var allChores = _plannerData.Groups.SelectMany(g => g.Chores).ToList();
+            _earningChores = allChores.Where(c => c.IsEarningChore).ToList();
+            _routineChores = allChores.Where(c => !c.IsEarningChore).ToList();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void SetActiveTab(TabView tab)
+    {
+        _activeTab = tab;
+    }
+
+    private async Task PreviousWeek()
+    {
+        if (_isNavigating) return;
+        _isNavigating = true;
+        try { _weekOffset--; await LoadDataAsync(); }
+        finally { _isNavigating = false; }
+    }
+
+    private async Task NextWeek()
+    {
+        if (_isNavigating) return;
+        _isNavigating = true;
+        try { _weekOffset++; await LoadDataAsync(); }
+        finally { _isNavigating = false; }
+    }
+
+    private async Task GoToCurrentWeek()
+    {
+        if (_isNavigating) return;
+        _isNavigating = true;
+        try { _weekOffset = 0; await LoadDataAsync(); }
+        finally { _isNavigating = false; }
+    }
+
+    private async Task HandleCellClickFromGrid((ChorePlannerRow Chore, ChorePlannerCell Cell) args)
+    {
+        await HandleCellClick(args.Chore, args.Cell);
+    }
+
+    private async Task HandleCellClick(ChorePlannerRow chore, ChorePlannerCell cell)
+    {
+        if (string.IsNullOrEmpty(_currentUserId)) return;
+
+        if (cell.IsPast)
+        {
+            _errorMessage = "Cannot modify past dates.";
+            ClearMessageAfterDelay();
+            return;
+        }
+
+        var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
+        if (_updatingCellKey == cellKey) return;
+
+        _updatingCellKey = cellKey;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var result = await PlannerService.ToggleOverrideAsync(chore.ChoreDefinitionId, cell.Date, _currentUserId);
+
+            if (result.Success)
+            {
+                await LoadDataAsync();
+                _successMessage = "Schedule updated!";
+                ClearMessageAfterDelay();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _updatingCellKey = null;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearMessageAfterDelay()
+    {
+        _ = Task.Delay(2500).ContinueWith(_ => InvokeAsync(() =>
+        {
+            _successMessage = null;
+            _errorMessage = null;
+            StateHasChanged();
+        }));
+    }
+
+    private void ShowCreateChoreForm()
+    {
+        _isRoutineMode = false;
+        _editingChore = new ChoreDefinitionDto
+        {
+            ActiveDays = DaysOfWeek.All,
+            IsActive = true,
+            EarnValue = 1.00m
+        };
+        _showChoreForm = true;
+        OpenChoreModal();
+    }
+
+    private void ShowCreateRoutineForm()
+    {
+        _isRoutineMode = true;
+        _editingChore = new ChoreDefinitionDto
+        {
+            ActiveDays = DaysOfWeek.All,
+            IsActive = true,
+            EarnValue = 0m
+        };
+        _showChoreForm = true;
+        OpenChoreModal();
+    }
+
+    private async Task ShowEditChoreForm(ChorePlannerRow chore)
+    {
+        try
+        {
+            var choreDetails = await ChoreManagementService.GetChoreByIdAsync(chore.ChoreDefinitionId);
+            if (choreDetails != null)
+            {
+                _isRoutineMode = choreDetails.EarnValue == 0;
+                _editingChore = new ChoreDefinitionDto
+                {
+                    Id = choreDetails.Id,
+                    Name = choreDetails.Name,
+                    Description = choreDetails.Description,
+                    Icon = choreDetails.Icon,
+                    AssignedUserId = choreDetails.AssignedUserId,
+                    EarnValue = choreDetails.EarnValue,
+                    PenaltyValue = choreDetails.PenaltyValue,
+                    ScheduleType = choreDetails.ScheduleType,
+                    ActiveDays = choreDetails.ActiveDays,
+                    WeeklyTargetCount = choreDetails.WeeklyTargetCount,
+                    StartDate = choreDetails.StartDate,
+                    EndDate = choreDetails.EndDate,
+                    IsActive = choreDetails.IsActive,
+                    AutoApprove = choreDetails.AutoApprove,
+                    SortOrder = choreDetails.SortOrder
+                };
+                _showChoreForm = true;
+                OpenChoreModal();
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading chore: {ex.Message}";
+        }
+    }
+
+    private void OpenChoreModal()
+    {
+        var title = _editingChore?.Id > 0 
+            ? $"Edit {(_isRoutineMode ? "Routine" : "Labor")}" 
+            : $"Add {(_isRoutineMode ? "Routine" : "Labor")}";
+        
+        var editingChore = _editingChore;
+        var assignableUsers = _assignableUsers;
+        
+        ModalService.Open(@<ChoreFormModal 
+            Title="@title"
+            Chore="editingChore"
+            Users="assignableUsers"
+            OnSubmit="HandleChoreFormSubmit"
+            OnCancel="HideChoreForm" />, closeOnBackdropClick: true);
+    }
+
+    private void HideChoreForm()
+    {
+        _showChoreForm = false;
+        _editingChore = null;
+        ModalService.Close();
+    }
+
+    private async Task HandleChoreFormSubmit(ChoreDefinitionDto dto)
+    {
+        _errorMessage = null;
+        bool isEdit = dto.Id > 0;
+
+        var result = isEdit
+            ? await ChoreManagementService.UpdateChoreAsync(dto)
+            : await ChoreManagementService.CreateChoreAsync(dto);
+
+        if (result.Success)
+        {
+            _successMessage = isEdit ? "Updated!" : "Created!";
+            HideChoreForm();
+            await LoadDataAsync();
+            ClearMessageAfterDelay();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+}

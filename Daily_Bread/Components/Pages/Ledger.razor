@@ -1,39 +1,22 @@
-@page "/ledger"
+﻿@page "/ledger"
 @page "/ledger/{ProfileIdParam:int?}"
 @attribute [Authorize]
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using System.Security.Claims
-@using Daily_Bread.Data.Models
-@using Daily_Bread.Services
 @using Daily_Bread.Components.Shared
 
 @inject ILedgerService LedgerService
 @inject IPayoutService PayoutService
 @inject IChildProfileService ProfileService
 @inject IDateProvider DateProvider
+@inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Ledger</PageTitle>
+<PageTitle>Treasury</PageTitle>
 
 <div class="ledger-container">
-    <h1>Ledger</h1>
-
-    @if (!string.IsNullOrEmpty(ErrorMessage))
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @ErrorMessage
-            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(SuccessMessage))
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @SuccessMessage
-            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
-        </div>
-    }
+    <h1>Treasury</h1>
 
     <!-- Filters Card -->
     @if (IsParent)
@@ -49,7 +32,7 @@
                                 <option value="0">-- Select a Child --</option>
                                 @foreach (var profile in ChildProfiles)
                                 {
-                                    <option value="@profile.ProfileId">@profile.DisplayName ($@profile.TotalBalance.ToString("F2"))</option>
+                                    <option value="@profile.ProfileId" class="user-name">@profile.DisplayName ($@profile.TotalBalance.ToString("F2"))</option>
                                 }
                             </select>
                         </div>
@@ -77,7 +60,7 @@
                     <div class="filter-item filter-item-btn">
                         <label class="form-label d-none d-md-block">&nbsp;</label>
                         <button class="btn btn-outline-secondary" @onclick="ClearFilters">
-                            <i class="bi bi-x-circle"></i> Clear
+                            <span class="bi bi-x-lg"></span> Clear
                         </button>
                     </div>
                 </div>
@@ -85,7 +68,19 @@
         </div>
     }
 
-    @if (SelectedAccountId > 0 && SelectedBalance != null)
+    @if (IsLoading && SelectedAccountId == 0)
+    {
+        @* Initial loading state *@
+        <div class="skeleton-dashboard">
+            <div class="skeleton-dashboard-stats mb-4">
+                <Skeleton Type="SkeletonType.StatCard" />
+                <Skeleton Type="SkeletonType.StatCard" />
+                <Skeleton Type="SkeletonType.StatCard" />
+            </div>
+            <Skeleton Type="SkeletonType.Card" />
+        </div>
+    }
+    else if (SelectedAccountId > 0 && SelectedBalance != null)
     {
         <!-- Balance Card -->
         <BalanceCard Balance="@CreateLegacyBalance()" 
@@ -97,44 +92,42 @@
         @if (Stats != null)
         {
             <div class="stats-grid">
-                <div class="stat-card bg-success-subtle">
-                    <span class="stat-value text-success">$@Stats.TotalEarnings.ToString("F2")</span>
-                    <span class="stat-label">Earned</span>
-                </div>
-                <div class="stat-card bg-danger-subtle">
-                    <span class="stat-value text-danger">$@Stats.TotalDeductions.ToString("F2")</span>
-                    <span class="stat-label">Deductions</span>
-                </div>
-                <div class="stat-card bg-info-subtle">
-                    <span class="stat-value text-info">$@Stats.TotalBonuses.ToString("F2")</span>
-                    <span class="stat-label">Bonuses</span>
-                </div>
-                <div class="stat-card bg-warning-subtle">
-                    <span class="stat-value text-warning">$@Stats.TotalPenalties.ToString("F2")</span>
-                    <span class="stat-label">Penalties</span>
-                </div>
-                <div class="stat-card bg-secondary-subtle">
-                    <span class="stat-value">$@Stats.TotalPayouts.ToString("F2")</span>
-                    <span class="stat-label">Paid Out</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-value">@Stats.TransactionCount</span>
-                    <span class="stat-label">Transactions</span>
-                </div>
+                <StatCard Value="@Stats.TotalEarnings.ToString("F2")" Label="Wages" Prefix="$" Color="StatColor.Success" Background="StatBackground.SuccessSubtle" />
+                <StatCard Value="@Stats.TotalDeductions.ToString("F2")" Label="Deductions" Prefix="$" Color="StatColor.Danger" Background="StatBackground.DangerSubtle" />
+                <StatCard Value="@Stats.TotalBonuses.ToString("F2")" Label="Bonuses" Prefix="$" Color="StatColor.Info" Background="StatBackground.InfoSubtle" />
+                <StatCard Value="@Stats.TotalPenalties.ToString("F2")" Label="Penance" Prefix="$" Color="StatColor.Warning" Background="StatBackground.WarningSubtle" />
+                <StatCard Value="@Stats.TotalPayouts.ToString("F2")" Label="Paid Out" Prefix="$" Background="StatBackground.SecondarySubtle" />
+                <StatCard Value="@Stats.TransactionCount" Label="Transactions" />
             </div>
         }
     }
     else if (!IsParent && SelectedAccountId == 0)
     {
-        <div class="alert alert-warning">
-            No account found. Please contact a parent to set up your account.
-        </div>
+        <EmptyState Type="EmptyStateType.Error" 
+                    Icon="🏛️"
+                    Title="No Treasury Found"
+                    Message="Please contact a parent to set up your treasury account." />
     }
     else if (IsParent && SelectedProfileId == 0)
     {
-        <div class="alert alert-info">
-            Select a child above to view their ledger.
-        </div>
+        @if (ChildProfiles.Count == 0)
+        {
+            <EmptyState Type="EmptyStateType.NoChildren" 
+                        Icon="👨‍👩‍👧‍👦"
+                        Title="No Children Added"
+                        Message="Add children to view their treasury.">
+                <ActionButton>
+                    <a href="/admin/users" class="btn btn-primary">Add Children</a>
+                </ActionButton>
+            </EmptyState>
+        }
+        else
+        {
+            <EmptyState Type="EmptyStateType.NoChildren" 
+                        Icon="🏛️"
+                        Title="Select a Child"
+                        Message="Choose a child from the dropdown above to view their treasury." />
+        }
     }
 
     @if (SelectedAccountId > 0)
@@ -146,24 +139,34 @@
                 @if (IsParent)
                 {
                     <button class="btn btn-outline-primary btn-sm" @onclick="ShowAdjustmentModal">
-                        <i class="bi bi-plus-circle"></i> Add Adjustment
+                        + Add Adjustment
                     </button>
                 }
             </div>
             <div class="card-body">
                 @if (IsLoading)
                 {
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th><Skeleton Type="SkeletonType.Text" Width="80px" /></th>
+                                <th><Skeleton Type="SkeletonType.Text" Width="60px" /></th>
+                                <th><Skeleton Type="SkeletonType.Text" Width="150px" /></th>
+                                <th><Skeleton Type="SkeletonType.Text" Width="70px" /></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < 5; i++)
+                            {
+                                <Skeleton Type="SkeletonType.TableRow" Columns="4" />
+                            }
+                        </tbody>
+                    </table>
                 }
                 else if (Transactions.Count == 0)
                 {
-                    <div class="alert alert-info mb-0">
-                        No transactions found for the selected criteria.
-                    </div>
+                    <EmptyState Type="EmptyStateType.NoTransactions" 
+                                CssClass="empty-state-compact" />
                 }
                 else
                 {
@@ -213,31 +216,34 @@
 }
 
 <!-- Bonus Modal -->
-@if (ShowBonus)
+@if (ShowBonus && SelectedBalance != null)
 {
     <TransactionModal Title="Add Bonus"
                       AmountLabel="Bonus Amount"
                       IsPositive="true"
+                      CurrentBalance="@SelectedBalance.CurrentBalance"
                       OnConfirm="ProcessBonus"
                       OnCancel="() => ShowBonus = false" />
 }
 
-<!-- Penalty Modal -->
-@if (ShowPenalty)
+<!-- Penance Modal -->
+@if (ShowPenalty && SelectedBalance != null)
 {
-    <TransactionModal Title="Add Penalty"
-                      AmountLabel="Penalty Amount"
+    <TransactionModal Title="Add Penance"
+                      AmountLabel="Penance Amount"
                       IsPositive="false"
+                      CurrentBalance="@SelectedBalance.CurrentBalance"
                       OnConfirm="ProcessPenalty"
                       OnCancel="() => ShowPenalty = false" />
 }
 
 <!-- Adjustment Modal -->
-@if (ShowAdjustment)
+@if (ShowAdjustment && SelectedBalance != null)
 {
     <TransactionModal Title="Add Adjustment"
                       AmountLabel="Adjustment Amount"
                       AllowNegative="true"
+                      CurrentBalance="@SelectedBalance.CurrentBalance"
                       OnConfirm="ProcessAdjustment"
                       OnCancel="() => ShowAdjustment = false" />
 }
@@ -259,8 +265,6 @@
     
     private bool IsLoading { get; set; } = true;
     private bool IsParent { get; set; }
-    private string? ErrorMessage { get; set; }
-    private string? SuccessMessage { get; set; }
     private string? CurrentUserId { get; set; }
 
     private bool ShowCashOut { get; set; }
@@ -274,42 +278,49 @@
         CurrentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
         IsParent = authState.User.IsInRole("Parent");
 
-        if (IsParent)
+        try
         {
-            // Load all child profiles for selection
-            ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
-            
-            // Use route parameter if provided
-            if (ProfileIdParam.HasValue && ProfileIdParam.Value > 0)
+            if (IsParent)
             {
-                SelectedProfileId = ProfileIdParam.Value;
-                await OnProfileChanged();
-            }
-            // Auto-select if there's only one child
-            else if (ChildProfiles.Count == 1)
-            {
-                SelectedProfileId = ChildProfiles[0].ProfileId;
-                await OnProfileChanged();
-            }
-        }
-        else
-        {
-            // Child user - load their own profile and account
-            if (!string.IsNullOrEmpty(CurrentUserId))
-            {
-                var profile = await ProfileService.GetProfileByUserIdAsync(CurrentUserId);
-                if (profile != null)
+                // Load all child profiles for selection
+                ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
+                
+                // Use route parameter if provided
+                if (ProfileIdParam.HasValue && ProfileIdParam.Value > 0)
                 {
-                    SelectedProfileId = profile.Id;
-                    Accounts = await ProfileService.GetAccountsAsync(profile.Id);
-                    var defaultAccount = Accounts.FirstOrDefault(a => a.IsDefault) ?? Accounts.FirstOrDefault();
-                    if (defaultAccount != null)
+                    SelectedProfileId = ProfileIdParam.Value;
+                    await OnProfileChanged();
+                }
+                // Auto-select if there's only one child
+                else if (ChildProfiles.Count == 1)
+                {
+                    SelectedProfileId = ChildProfiles[0].ProfileId;
+                    await OnProfileChanged();
+                }
+            }
+            else
+            {
+                // Child user - load their own profile and account
+                if (!string.IsNullOrEmpty(CurrentUserId))
+                {
+                    var profile = await ProfileService.GetProfileByUserIdAsync(CurrentUserId);
+                    if (profile != null)
                     {
-                        SelectedAccountId = defaultAccount.Id;
-                        await LoadTransactionsAsync();
+                        SelectedProfileId = profile.Id;
+                        Accounts = await ProfileService.GetAccountsAsync(profile.Id);
+                        var defaultAccount = Accounts.FirstOrDefault(a => a.IsDefault) ?? Accounts.FirstOrDefault();
+                        if (defaultAccount != null)
+                        {
+                            SelectedAccountId = defaultAccount.Id;
+                            await LoadTransactionsAsync();
+                        }
                     }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", $"Failed to load ledger: {ex.Message}");
         }
 
         IsLoading = false;
@@ -327,7 +338,7 @@
             // Authorization check
             if (!IsParent && !await ProfileService.CanAccessProfileAsync(CurrentUserId!, IsParent, SelectedProfileId))
             {
-                ErrorMessage = "Access denied.";
+                ToastService.ShowError("Access Denied", "You don't have permission to view this profile.");
                 return;
             }
 
@@ -348,7 +359,7 @@
             // Authorization check
             if (!IsParent && !await ProfileService.CanAccessAccountAsync(CurrentUserId!, IsParent, SelectedAccountId))
             {
-                ErrorMessage = "Access denied.";
+                ToastService.ShowError("Access Denied", "You don't have permission to view this account.");
                 return;
             }
 
@@ -361,7 +372,6 @@
         if (SelectedAccountId == 0) return;
 
         IsLoading = true;
-        ErrorMessage = null;
 
         try
         {
@@ -371,7 +381,7 @@
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Error loading transactions: {ex.Message}";
+            ToastService.ShowError("Error", $"Failed to load transactions: {ex.Message}");
         }
         finally
         {
@@ -427,14 +437,14 @@
         
         if (result.Success)
         {
-            SuccessMessage = $"Cash out of ${amount:F2} processed successfully!";
+            ToastService.ShowSuccess("Cash Out Complete!", $"${amount:F2} has been paid out.");
             ShowCashOut = false;
             ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
             await LoadTransactionsAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to process cash out.");
         }
     }
 
@@ -446,14 +456,14 @@
         
         if (result.Success)
         {
-            SuccessMessage = $"Bonus of ${bonus.Amount:F2} added!";
+            ToastService.ShowSuccess("Bonus Added!", $"${bonus.Amount:F2} bonus applied.");
             ShowBonus = false;
             ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
             await LoadTransactionsAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to add bonus.");
         }
     }
 
@@ -465,14 +475,14 @@
         
         if (result.Success)
         {
-            SuccessMessage = $"Penalty of ${penalty.Amount:F2} applied.";
+            ToastService.ShowWarning("Penance Applied", $"${penalty.Amount:F2} penance deducted.");
             ShowPenalty = false;
             ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
             await LoadTransactionsAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to apply penance.");
         }
     }
 
@@ -485,14 +495,14 @@
         if (result.Success)
         {
             var sign = adjustment.Amount >= 0 ? "+" : "";
-            SuccessMessage = $"Adjustment of {sign}${adjustment.Amount:F2} applied.";
+            ToastService.ShowInfo("Adjustment Applied", $"{sign}${adjustment.Amount:F2} adjustment recorded.");
             ShowAdjustment = false;
             ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
             await LoadTransactionsAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to apply adjustment.");
         }
     }
 
@@ -510,10 +520,10 @@
 
     private string GetTypeDisplay(TransactionType type) => type switch
     {
-        TransactionType.ChoreEarning => "Chore",
+        TransactionType.ChoreEarning => "Labor",
         TransactionType.ChoreDeduction => "Missed",
         TransactionType.Bonus => "Bonus",
-        TransactionType.Penalty => "Penalty",
+        TransactionType.Penalty => "Penance",
         TransactionType.Adjustment => "Adjustment",
         TransactionType.Payout => "Payout",
         TransactionType.Transfer => "Transfer",

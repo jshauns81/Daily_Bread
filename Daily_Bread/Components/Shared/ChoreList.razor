@@ -44,7 +44,7 @@
                             <td>
                                 @if (chore.AssignedUser != null)
                                 {
-                                    <span>@chore.AssignedUser.UserName</span>
+                                    <span class="user-name">@chore.AssignedUser.UserName</span>
                                 }
                                 else
                                 {
@@ -52,7 +52,7 @@
                                 }
                             </td>
                             <td>
-                                <span class="value-badge">$@chore.Value.ToString("F2")</span>
+                                <span class="value-badge">$@chore.EarnValue.ToString("F2")</span>
                             </td>
                             <td>
                                 <small>@FormatSchedule(chore)</small>

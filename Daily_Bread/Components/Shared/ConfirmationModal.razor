@@ -1,0 +1,149 @@
+﻿@namespace Daily_Bread.Components.Shared
+
+<div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header @GetHeaderClass()">
+                <h5 class="modal-title">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <span class="me-2">@Icon</span>
+                    }
+                    @Title
+                </h5>
+                <button type="button" class="btn-close @GetCloseClass()" @onclick="HandleCancel"></button>
+            </div>
+            <div class="modal-body">
+                <p>@Message</p>
+                
+                @if (Consequences?.Count > 0)
+                {
+                    <div class="alert @GetAlertClass() py-2">
+                        <strong>This will:</strong>
+                        <ul class="mb-0 mt-1">
+                            @foreach (var consequence in Consequences)
+                            {
+                                <li>@consequence</li>
+                            }
+                        </ul>
+                    </div>
+                }
+                
+                @ChildContent
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="HandleCancel" disabled="@IsProcessing">
+                    @CancelText
+                </button>
+                <button type="button" class="btn @GetConfirmButtonClass()" @onclick="HandleConfirm" disabled="@IsProcessing">
+                    @if (IsProcessing)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    @ConfirmText
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Modal title text.
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = "Confirm Action";
+    
+    /// <summary>
+    /// Optional icon to display in header.
+    /// </summary>
+    [Parameter]
+    public string? Icon { get; set; }
+
+    /// <summary>
+    /// Main message/question for the user.
+    /// </summary>
+    [Parameter]
+    public string Message { get; set; } = "Are you sure you want to proceed?";
+
+    /// <summary>
+    /// List of consequences to display as bullet points.
+    /// </summary>
+    [Parameter]
+    public List<string>? Consequences { get; set; }
+
+    /// <summary>
+    /// Text for the confirm button.
+    /// </summary>
+    [Parameter]
+    public string ConfirmText { get; set; } = "Confirm";
+
+    /// <summary>
+    /// Text for the cancel button.
+    /// </summary>
+    [Parameter]
+    public string CancelText { get; set; } = "Cancel";
+
+    /// <summary>
+    /// Visual style: "default", "warning", "danger", "success"
+    /// </summary>
+    [Parameter]
+    public string Variant { get; set; } = "default";
+
+    /// <summary>
+    /// Whether the confirm action is processing.
+    /// </summary>
+    [Parameter]
+    public bool IsProcessing { get; set; }
+
+    /// <summary>
+    /// Optional additional content in the modal body.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>
+    /// Callback when user confirms.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    /// <summary>
+    /// Callback when user cancels.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private string GetHeaderClass() => Variant switch
+    {
+        "danger" => "bg-danger text-white",
+        "warning" => "bg-warning",
+        "success" => "bg-success text-white",
+        _ => ""
+    };
+
+    private string GetCloseClass() => Variant switch
+    {
+        "danger" or "success" => "btn-close-white",
+        _ => ""
+    };
+
+    private string GetAlertClass() => Variant switch
+    {
+        "danger" => "alert-danger",
+        "warning" => "alert-warning",
+        "success" => "alert-success",
+        _ => "alert-secondary"
+    };
+
+    private string GetConfirmButtonClass() => Variant switch
+    {
+        "danger" => "btn-danger",
+        "warning" => "btn-warning",
+        "success" => "btn-success",
+        _ => "btn-primary"
+    };
+
+    private async Task HandleConfirm() => await OnConfirm.InvokeAsync();
+    private async Task HandleCancel() => await OnCancel.InvokeAsync();
+}

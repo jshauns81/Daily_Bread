@@ -1,0 +1,157 @@
+/* ============================================
+   ROUTINES LIST COMPONENT STYLES
+   Extracted from ChorePlanner for CSS isolation
+   ============================================ */
+
+/* ===========================================
+   ROUTINES LIST
+   =========================================== */
+
+.routines-list {
+    margin-top: var(--ds-space-6);
+    background: var(--ds-bg-hover);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.routines-header {
+    display: grid;
+    grid-template-columns: 1fr minmax(100px, auto) 70px;
+    gap: var(--ds-space-6);
+    padding: var(--ds-space-4) var(--ds-space-6);
+    background: var(--ds-bg-elevated);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ds-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.routines-header span:nth-child(2) {
+    text-align: right;
+}
+
+.routines-header span:nth-child(3) {
+    text-align: center;
+}
+
+.routine-row {
+    display: grid;
+    grid-template-columns: 1fr minmax(100px, auto) 70px;
+    gap: var(--ds-space-6);
+    align-items: center;
+    padding: var(--ds-space-4) var(--ds-space-6);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.routine-row:last-child {
+    border-bottom: none;
+}
+
+.routine-row:hover {
+    background: rgba(136, 192, 208, 0.05);
+}
+
+.routine-info {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+}
+
+.routine-emoji {
+    font-size: 1.5rem;
+}
+
+.routine-name {
+    font-weight: 500;
+    color: var(--ds-text-primary);
+}
+
+.routine-assignee {
+    font-size: 0.75rem;
+    color: var(--ds-accent-cyan);
+    margin-left: var(--ds-space-2);
+    text-transform: capitalize;
+}
+
+.routine-schedule {
+    text-align: right;
+}
+
+.schedule-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-sm);
+    font-size: 0.8rem;
+    color: var(--ds-text-muted);
+}
+
+.routine-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--ds-space-1);
+}
+
+.icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--ds-radius-sm);
+    background: var(--ds-bg-elevated);
+    color: var(--ds-text-muted);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icon-btn:hover {
+    background: var(--ds-accent-primary);
+    color: white;
+}
+
+.add-routine-footer {
+    padding: var(--ds-space-6);
+    text-align: center;
+}
+
+.add-routine-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-2) var(--ds-space-6);
+    border: 2px dashed var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md);
+    background: transparent;
+    color: var(--ds-text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.add-routine-btn:hover {
+    border-color: var(--ds-accent-primary);
+    color: var(--ds-accent-primary);
+    background: rgba(94, 129, 172, 0.05);
+}
+
+/* ===========================================
+   RESPONSIVE - MOBILE
+   =========================================== */
+
+@media (max-width: 768px) {
+    .routines-header {
+        display: none;
+    }
+    
+    .routine-row {
+        grid-template-columns: 1fr auto;
+    }
+    
+    .routine-schedule {
+        display: none;
+    }
+}

@@ -1,0 +1,32 @@
+﻿@namespace Daily_Bread.Components.Shared
+@inject ModalService ModalService
+@implements IDisposable
+
+@if (ModalService.IsOpen)
+{
+    <div class="modal-host-backdrop" @onclick="HandleBackdropClick">
+        <div class="modal-host-container" @onclick:stopPropagation="true">
+            @ModalService.Content
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        ModalService.OnChange += StateHasChanged;
+    }
+
+    private void HandleBackdropClick()
+    {
+        if (ModalService.CloseOnBackdropClick)
+        {
+            ModalService.Close();
+        }
+    }
+
+    public void Dispose()
+    {
+        ModalService.OnChange -= StateHasChanged;
+    }
+}

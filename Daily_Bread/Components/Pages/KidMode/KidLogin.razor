@@ -1,244 +1,171 @@
-@page "/kid"
-@layout KidModeLayout
-@rendermode InteractiveServer
-
+﻿@page "/kid"
+@attribute [AllowAnonymous]
+@layout Daily_Bread.Components.Layout.MinimalLayout
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Daily_Bread.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Daily_Bread.Services
 
-@inject IKidModeService KidModeService
+@inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject ILogger<KidLogin> Logger
 
-<PageTitle>Kid Mode - Daily Bread</PageTitle>
+<PageTitle>Quick Login - Daily Bread</PageTitle>
 
-<div class="kid-login" tabindex="0" @onkeydown="HandleKeyDown" @ref="_containerRef">
-    <div class="text-center mb-4">
-        <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon mb-2" />
-        <h2 class="text-white">Daily Bread</h2>
-        <p class="text-white-50">Enter your PIN</p>
-        <p class="keyboard-hint">Use keyboard or tap numbers</p>
-    </div>
-
-    <div class="card mx-auto" style="max-width: 320px;">
-        <div class="card-body p-4">
-            <!-- PIN Display -->
-            <div class="pin-display mb-4">
-                @for (int i = 0; i < 4; i++)
-                {
-                    <div class="pin-dot @(i < _pin.Length ? "filled" : "")">
-                        @if (i < _pin.Length)
-                        {
-                            <span>&#x25CF;</span>
-                        }
-                    </div>
-                }
+@if (!_checkedStandalone)
+{
+    <!-- Show loading state while checking PWA mode -->
+    <div class="kid-login-container">
+        <div class="kid-login-card">
+            <div class="kid-login-header">
+                <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon" />
+                <h2>Daily Bread</h2>
+                <p class="kid-tagline">Loading...</p>
             </div>
-
-            @if (!string.IsNullOrEmpty(_errorMessage))
-            {
-                <div class="alert alert-danger py-2 text-center mb-3">
-                    @_errorMessage
-                </div>
-            }
-
-            <!-- Number Pad -->
-            <div class="numpad">
-                @for (int row = 0; row < 4; row++)
-                {
-                    <div class="numpad-row">
-                        @if (row < 3)
-                        {
-                            @for (int col = 0; col < 3; col++)
-                            {
-                                var num = (row * 3 + col + 1).ToString();
-                                <button class="numpad-btn" @onclick="() => AddDigit(num)" disabled="@_isValidating">
-                                    @num
-                                </button>
-                            }
-                        }
-                        else
-                        {
-                            <!-- Bottom row: Clear, 0, Backspace -->
-                            <button class="numpad-btn action-btn" @onclick="Clear" disabled="@_isValidating">
-                                <span class="bi bi-x-lg"></span>
-                            </button>
-                            <button class="numpad-btn" @onclick='() => AddDigit("0")' disabled="@_isValidating">
-                                0
-                            </button>
-                            <button class="numpad-btn action-btn" @onclick="Backspace" disabled="@_isValidating">
-                                <span class="bi bi-backspace"></span>
-                            </button>
-                        }
-                    </div>
-                }
-            </div>
-
-            @if (_isValidating)
-            {
-                <div class="text-center mt-3">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Checking...</span>
-                    </div>
-                </div>
-            }
         </div>
     </div>
-
-    <div class="text-center mt-4">
-        <a href="/" class="back-link"><span class="bi bi-arrow-left"></span> Back to main site</a>
+}
+else if (!_isStandalone)
+{
+    <!-- Not in PWA mode - show message -->
+    <div class="kid-login-container">
+        <div class="kid-login-card">
+            <div class="kid-login-header">
+                <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon" />
+                <h2>Daily Bread</h2>
+                <p class="kid-tagline">Kid Mode</p>
+            </div>
+            
+            <div class="pwa-required-message">
+                <span class="bi bi-phone-fill pwa-icon"></span>
+                <h3>Install the App</h3>
+                <p>Kid Mode is available in the installed app.</p>
+                <p class="pwa-hint">Install Daily Bread on your device to use Quick PIN Login.</p>
+            </div>
+            
+            <div class="kid-login-footer">
+                <a href="/Account/Login" class="back-link">
+                    <span class="bi bi-arrow-left"></span> Sign in with password
+                </a>
+            </div>
+        </div>
     </div>
-</div>
+}
+else
+{
+    <!-- PWA mode - show PIN entry -->
+    <div class="kid-login-container">
+        <div class="kid-login-card">
+            <div class="kid-login-header">
+                <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon" />
+                <h2>Daily Bread</h2>
+                <p class="kid-tagline">Enter your PIN</p>
+            </div>
+
+            <div class="pin-entry">
+                <!-- PIN Display -->
+                <div class="pin-display">
+                    @for (int i = 0; i < 4; i++)
+                    {
+                        var index = i;
+                        <div class="pin-dot @(index < _pin.Length ? "filled" : "")">
+                            @if (index < _pin.Length)
+                            {
+                                <span>@EmojiConstants.FilledCircle</span>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="pin-error">
+                        @_errorMessage
+                    </div>
+                }
+
+                <!-- Number Pad -->
+                <div class="numpad">
+                    @for (int row = 0; row < 4; row++)
+                    {
+                        var currentRow = row;
+                        <div class="numpad-row">
+                            @if (currentRow < 3)
+                            {
+                                @for (int col = 0; col < 3; col++)
+                                {
+                                    var num = (currentRow * 3 + col + 1).ToString();
+                                    <button type="button" class="numpad-btn" @onclick="() => AddDigit(num)" disabled="@_isValidating">
+                                        @num
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <!-- Bottom row: Clear, 0, Backspace -->
+                                <button type="button" class="numpad-btn numpad-action" @onclick="Clear" disabled="@_isValidating">
+                                    <span class="bi bi-x-lg"></span>
+                                </button>
+                                <button type="button" class="numpad-btn" @onclick='() => AddDigit("0")' disabled="@_isValidating">
+                                    0
+                                </button>
+                                <button type="button" class="numpad-btn numpad-action" @onclick="Backspace" disabled="@_isValidating">
+                                    <span class="bi bi-backspace"></span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @if (_isValidating)
+                {
+                    <div class="pin-loading">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Checking...</span>
+                        </div>
+                        <span>Signing in...</span>
+                    </div>
+                }
+            </div>
+
+            <div class="kid-login-footer">
+                <a href="/Account/Login" class="back-link">
+                    <span class="bi bi-arrow-left"></span> Sign in with password
+                </a>
+            </div>
+        </div>
+    </div>
+}
 
 <style>
-    .kid-login {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        min-height: calc(100vh - 40px);
-        outline: none;
-    }
-
-    .kid-brand-icon {
-        width: 80px;
-        height: 80px;
-        object-fit: contain;
-    }
-
-    .text-white {
-        color: var(--nord6) !important;
-    }
-
-    .text-white-50 {
-        color: var(--nord4) !important;
-    }
-
-    .text-center {
+    .pwa-required-message {
         text-align: center;
+        padding: 2rem 1rem;
+        color: var(--nord4);
     }
-
-    .mb-2 { margin-bottom: 0.5rem; }
-    .mb-3 { margin-bottom: 1rem; }
-    .mb-4 { margin-bottom: 1.5rem; }
-    .mt-3 { margin-top: 1rem; }
-    .mt-4 { margin-top: 1.5rem; }
-    .p-4 { padding: 1.5rem; }
-    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-
-    .pin-display {
-        display: flex;
-        justify-content: center;
-        gap: 16px;
-    }
-
-    .pin-dot {
-        width: 50px;
-        height: 50px;
-        border: 3px solid var(--nord3);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        color: var(--nord3);
-        transition: all 0.2s;
-        background: var(--nord2);
-    }
-
-    .pin-dot.filled {
-        border-color: var(--nord8);
+    
+    .pwa-icon {
+        font-size: 3rem;
         color: var(--nord8);
-        animation: pop 0.15s ease-out;
+        margin-bottom: 1rem;
+        display: block;
     }
-
-    @@keyframes pop {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.2); }
-        100% { transform: scale(1); }
-    }
-
-    .numpad {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .numpad-row {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-    }
-
-    .numpad-btn {
-        width: 70px;
-        height: 70px;
-        border: 1px solid var(--nord3);
-        border-radius: 50%;
-        background: var(--nord2);
-        font-size: 1.8rem;
-        font-weight: 500;
+    
+    .pwa-required-message h3 {
         color: var(--nord6);
-        cursor: pointer;
-        transition: all 0.15s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        margin-bottom: 0.5rem;
+        font-size: 1.25rem;
     }
-
-    .numpad-btn:hover {
-        background: var(--nord3);
-        border-color: var(--nord4);
+    
+    .pwa-required-message p {
+        margin-bottom: 0.5rem;
     }
-
-    .numpad-btn:active {
-        background: var(--nord8);
-        color: var(--nord0);
-        transform: scale(0.95);
-    }
-
-    .numpad-btn.action-btn {
-        font-size: 1.4rem;
+    
+    .pwa-hint {
+        font-size: 0.875rem;
         color: var(--nord4);
-    }
-
-    .numpad-btn.action-btn:active {
-        background: var(--nord11);
-        color: var(--nord6);
-    }
-
-    .numpad-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .keyboard-hint {
-        color: var(--nord3);
-        font-size: 0.8rem;
-        margin-top: 0.5rem;
-    }
-
-    .kid-login:focus {
-        outline: none;
-    }
-
-    .back-link {
-        color: var(--nord4);
-        text-decoration: none;
-        font-size: 0.9rem;
-        transition: color 0.2s;
-    }
-
-    .back-link:hover {
-        color: var(--nord6);
-    }
-
-    /* Shake animation for wrong PIN */
-    .shake {
-        animation: shake 0.4s ease-in-out;
-    }
-
-    @@keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        20%, 60% { transform: translateX(-10px); }
-        40%, 80% { transform: translateX(10px); }
+        opacity: 0.8;
     }
 </style>
 
@@ -246,35 +173,25 @@
     private string _pin = "";
     private string? _errorMessage;
     private bool _isValidating;
-    private ElementReference _containerRef;
+    private bool _isStandalone;
+    private bool _checkedStandalone;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Auto-focus the container to enable keyboard input immediately
-            await _containerRef.FocusAsync();
-        }
-    }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (_isValidating) return;
-
-        // Number keys 0-9 (main keyboard and numpad)
-        if (e.Key.Length == 1 && char.IsDigit(e.Key[0]))
-        {
-            await AddDigit(e.Key);
-        }
-        // Backspace
-        else if (e.Key == "Backspace")
-        {
-            Backspace();
-        }
-        // Escape or Delete to clear
-        else if (e.Key == "Escape" || e.Key == "Delete")
-        {
-            Clear();
+            try
+            {
+                _isStandalone = await JS.InvokeAsync<bool>("dailyBread.isStandalone");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to check standalone mode, defaulting to false");
+                _isStandalone = false;
+            }
+            
+            _checkedStandalone = true;
+            StateHasChanged();
         }
     }
 
@@ -285,7 +202,6 @@
         _errorMessage = null;
         _pin += digit;
 
-        // Auto-submit when 4 digits entered
         if (_pin.Length == 4)
         {
             await ValidatePin();
@@ -314,30 +230,42 @@
     {
         _isValidating = true;
         _errorMessage = null;
+        StateHasChanged();
 
         try
         {
-            var session = await KidModeService.ValidatePinAsync(_pin);
+            // Use JavaScript to make HTTP POST request for PIN sign-in
+            // This ensures the auth cookie is set properly via HTTP response
+            var result = await JS.InvokeAsync<PinSignInResult>("dailyBread.pinSignIn", _pin);
 
-            if (session != null)
+            if (result.Success)
             {
-                // Store session in browser and navigate to dashboard
-                Navigation.NavigateTo($"/kid/home?pid={session.ProfileId}&uid={session.UserId}", forceLoad: true);
+                Logger.LogInformation("PIN login successful, browser will redirect");
+                // The JS function will redirect to "/" on success
+                // No need to do anything here as the page will reload
             }
             else
             {
-                _errorMessage = "Wrong PIN. Try again!";
+                _errorMessage = result.Error ?? "Invalid PIN. Try again!";
+                Logger.LogWarning("PIN login failed: {Error}", result.Error);
                 _pin = "";
+                _isValidating = false;
+                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Error: {ex.Message}";
+            Logger.LogError(ex, "Exception during PIN login");
+            _errorMessage = "An error occurred. Please try again.";
             _pin = "";
-        }
-        finally
-        {
             _isValidating = false;
+            StateHasChanged();
         }
+    }
+
+    private class PinSignInResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
     }
 }

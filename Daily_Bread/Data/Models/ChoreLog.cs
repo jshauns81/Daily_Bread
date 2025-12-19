@@ -1,4 +1,4 @@
-namespace Daily_Bread.Data.Models;
+﻿namespace Daily_Bread.Data.Models;
 
 /// <summary>
 /// Records the status of a chore for a specific date.
@@ -20,18 +20,18 @@ public class ChoreLog
     public DateOnly Date { get; set; }
 
     /// <summary>
-    /// Current status of the chore for this date.
+    /// Current status of the chore for this date.  
     /// </summary>
     public ChoreStatus Status { get; set; } = ChoreStatus.Pending;
 
     /// <summary>
-    /// The user who completed/updated this chore log.
+    /// The user  who completed/updated this chore log. 
     /// </summary>
     public string? CompletedByUserId { get; set; }
     public ApplicationUser? CompletedByUser { get; set; }
 
     /// <summary>
-    /// Timestamp when the chore was marked as completed.
+    /// Timestamp when the chore test was marked as completed.
     /// </summary>
     public DateTime? CompletedAt { get; set; }
 
@@ -50,6 +50,16 @@ public class ChoreLog
     /// Timestamp when the chore was approved.
     /// </summary>
     public DateTime? ApprovedAt { get; set; }
+    
+    /// <summary>
+    /// Reason provided when child requests help.
+    /// </summary>
+    public string? HelpReason { get; set; }
+    
+    /// <summary>
+    /// Timestamp when help was requested.
+    /// </summary>
+    public DateTime? HelpRequestedAt { get; set; }
 
     /// <summary>
     /// Timestamp when the record was created.
@@ -60,6 +70,12 @@ public class ChoreLog
     /// Timestamp when the record was last modified.
     /// </summary>
     public DateTime? ModifiedAt { get; set; }
+    
+    /// <summary>
+    /// Concurrency token for optimistic locking.
+    /// Incremented on each update. Cross-database compatible.
+    /// </summary>
+    public int Version { get; set; }
 
     // Navigation property
     public LedgerTransaction? LedgerTransaction { get; set; }
@@ -86,12 +102,20 @@ public enum ChoreStatus
     Approved = 2,
 
     /// <summary>
-    /// Chore was missed/not completed.
+    /// Chore was missed/not completed (penalty applies).
+    /// This happens when a chore is still Pending at end of day.
     /// </summary>
     Missed = 3,
 
     /// <summary>
-    /// Chore was skipped (excused) by a parent.
+    /// Chore was skipped/excused by a parent.
+    /// No penalty, no earning.
     /// </summary>
-    Skipped = 4
+    Skipped = 4,
+    
+    /// <summary>
+    /// Child requested help - waiting for parent response.
+    /// Protected from auto-penalty until parent responds.
+    /// </summary>
+    Help = 5
 }

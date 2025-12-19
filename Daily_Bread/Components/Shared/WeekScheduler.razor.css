@@ -1,44 +1,46 @@
 .week-scheduler {
-    background: var(--nord1);
-    padding: var(--space-lg);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--nord3);
+    background: var(--ds-bg-elevated);
+    padding: var(--ds-space-6);
+    border-radius: var(--ds-radius-lg);
+    border: 1px solid var(--ds-bg-muted);
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 .week-scheduler h5 {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .week-scheduler h6 {
-    color: var(--nord4);
-    margin-bottom: var(--space-sm);
+    color: var(--ds-text-muted);
+    margin-bottom: var(--ds-space-2);
 }
 
 .week-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: var(--space-sm);
+    gap: var(--ds-space-2);
     min-height: 300px;
 }
 
 .day-column {
-    background: var(--nord2);
-    border: 1px solid var(--nord3);
-    border-radius: var(--radius-md);
+    background: var(--ds-bg-hover);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md);
     min-height: 250px;
     display: flex;
     flex-direction: column;
-    transition: all var(--transition-fast);
+    transition: all var(--ds-duration-fast) ease;
 }
 
 .day-column:hover {
-    border-color: var(--nord4);
+    border-color: var(--ds-text-muted);
 }
 
 .day-column.today {
-    border-color: var(--nord8);
+    border-color: var(--ds-accent-cyan);
     border-width: 2px;
-    box-shadow: var(--shadow-glow-blue);
+    box-shadow: var(--ds-glow-primary);
 }
 
 .day-column.past {
@@ -46,73 +48,73 @@
 }
 
 .day-header {
-    padding: var(--space-sm);
+    padding: var(--ds-space-2);
     text-align: center;
-    border-bottom: 1px solid var(--nord3);
-    background: var(--nord3);
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-bottom: 1px solid var(--ds-bg-muted);
+    background: var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md) var(--ds-radius-md) 0 0;
 }
 
 .day-header.bg-primary {
-    background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%) !important;
-    color: var(--nord6) !important;
+    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%) !important;
+    color: var(--ds-text-primary) !important;
 }
 
 .day-name {
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-xs);
-    color: var(--nord4);
+    font-weight: var(--ds-font-semibold);
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .day-header.bg-primary .day-name {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .day-date {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--nord6);
+    font-size: var(--ds-text-lg);
+    font-weight: var(--ds-font-bold);
+    color: var(--ds-text-primary);
 }
 
 .day-chores {
     flex: 1;
-    padding: var(--space-sm);
+    padding: var(--ds-space-2);
     overflow-y: auto;
 }
 
 .chore-card {
-    background: var(--nord1);
-    border: 1px solid var(--nord3);
-    border-radius: var(--radius-sm);
-    padding: var(--space-sm);
-    margin-bottom: var(--space-sm);
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-sm);
+    padding: var(--ds-space-2);
+    margin-bottom: var(--ds-space-2);
     cursor: grab;
     position: relative;
-    font-size: var(--font-size-sm);
-    transition: all var(--transition-fast);
+    font-size: var(--ds-text-sm);
+    transition: all var(--ds-duration-fast) ease;
 }
 
 .chore-card:hover {
-    background: var(--nord3);
+    background: var(--ds-bg-muted);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--ds-shadow-sm);
 }
 
 .chore-card.has-override {
-    border-left: 3px solid var(--nord8);
+    border-left: 3px solid var(--ds-accent-cyan);
 }
 
 .chore-card.available {
     display: inline-block;
-    margin-right: var(--space-sm);
-    margin-bottom: var(--space-sm);
-    background: var(--nord2);
+    margin-right: var(--ds-space-2);
+    margin-bottom: var(--ds-space-2);
+    background: var(--ds-bg-hover);
 }
 
 .chore-card.available:hover {
-    background: var(--nord3);
+    background: var(--ds-bg-muted);
 }
 
 .chore-card:active {
@@ -120,26 +122,26 @@
 }
 
 .chore-card .chore-name {
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--ds-font-medium);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .chore-card .chore-value {
-    color: var(--nord14) !important;
-    font-weight: var(--font-weight-semibold);
+    color: var(--ds-semantic-success) !important;
+    font-weight: var(--ds-font-semibold);
 }
 
 .remove-btn {
     position: absolute;
-    top: var(--space-xs);
-    right: var(--space-xs);
+    top: var(--ds-space-1);
+    right: var(--ds-space-1);
     opacity: 0;
-    transition: opacity var(--transition-fast);
-    color: var(--nord11) !important;
-    font-size: var(--font-size-md);
+    transition: opacity var(--ds-duration-fast) ease;
+    color: var(--ds-semantic-error) !important;
+    font-size: var(--ds-text-base);
 }
 
 .chore-card:hover .remove-btn {
@@ -147,32 +149,214 @@
 }
 
 .drop-zone {
-    border: 2px dashed var(--nord8);
-    border-radius: var(--radius-sm);
-    padding: var(--space-lg);
+    border: 2px dashed var(--ds-accent-cyan);
+    border-radius: var(--ds-radius-sm);
+    padding: var(--ds-space-6);
     text-align: center;
-    color: var(--nord8);
+    color: var(--ds-accent-cyan);
     background: rgba(136, 192, 208, 0.1);
-    margin: var(--space-sm);
-    font-weight: var(--font-weight-medium);
+    margin: var(--ds-space-2);
+    font-weight: var(--ds-font-medium);
 }
 
 .empty-day {
-    color: var(--nord3);
+    color: var(--ds-bg-muted);
     font-style: italic;
 }
 
 .chore-card .badge.bg-info {
-    background: var(--nord8) !important;
-    color: var(--nord0);
+    background: var(--ds-accent-cyan) !important;
+    color: var(--ds-bg-base);
 }
 
-@media (max-width: 768px) {
+/* ===========================================
+   TABLET LAYOUT (768px and below)
+   =========================================== */
+
+@media (max-width: 991px) {
     .week-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--ds-space-1);
     }
 
     .day-column {
         min-height: 180px;
+    }
+    
+    .day-header {
+        padding: var(--ds-space-1);
+    }
+    
+    .day-name {
+        font-size: 0.65rem;
+    }
+    
+    .day-date {
+        font-size: var(--ds-text-base);
+    }
+    
+    .chore-card .chore-name {
+        font-size: var(--ds-text-xs);
+    }
+    
+    .chore-card .chore-value {
+        font-size: var(--ds-text-xs);
+    }
+}
+
+/* ===========================================
+   MOBILE LAYOUT (768px and below)
+   =========================================== */
+
+@media (max-width: 767px) {
+    .week-scheduler {
+        padding: var(--ds-space-4);
+    }
+    
+    .week-scheduler .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: var(--ds-space-2);
+        align-items: stretch !important;
+    }
+    
+    .week-scheduler .d-flex.justify-content-between h5 {
+        text-align: center;
+        order: -1;
+        margin-bottom: var(--ds-space-2);
+    }
+    
+    .week-scheduler .d-flex.justify-content-between button {
+        flex: 1;
+    }
+    
+    .week-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--ds-space-2);
+    }
+
+    .day-column {
+        min-height: 160px;
+    }
+    
+    .day-chores {
+        padding: var(--ds-space-1);
+    }
+    
+    .chore-card {
+        padding: var(--ds-space-1);
+        margin-bottom: var(--ds-space-1);
+    }
+    
+    /* Always show remove button on touch devices */
+    .remove-btn {
+        opacity: 0.7;
+    }
+    
+    .drop-zone {
+        padding: var(--ds-space-4);
+        font-size: var(--ds-text-sm);
+    }
+}
+
+/* ===========================================
+   SMALL MOBILE (480px and below)  
+   =========================================== */
+
+@media (max-width: 480px) {
+    .week-scheduler {
+        padding: var(--ds-space-2);
+        border-radius: var(--ds-radius-md);
+    }
+    
+    .week-grid {
+        grid-template-columns: 1fr;
+        gap: var(--ds-space-2);
+    }
+    
+    .day-column {
+        min-height: 100px;
+    }
+    
+    .day-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--ds-space-2);
+        border-radius: var(--ds-radius-md) var(--ds-radius-md) 0 0;
+    }
+    
+    .day-name {
+        font-size: var(--ds-text-xs);
+        margin-right: var(--ds-space-2);
+    }
+    
+    .day-date {
+        font-size: var(--ds-text-base);
+    }
+    
+    .day-chores {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ds-space-1);
+        padding: var(--ds-space-2);
+    }
+    
+    .chore-card {
+        flex: 1 1 calc(50% - var(--ds-space-1));
+        min-width: 100px;
+        margin-bottom: 0;
+    }
+    
+    .empty-day {
+        width: 100%;
+        text-align: center;
+        padding: var(--ds-space-2);
+    }
+    
+    /* Available chores section */
+    .week-scheduler .mt-4 {
+        margin-top: var(--ds-space-4) !important;
+    }
+    
+    .week-scheduler .d-flex.flex-wrap.gap-2 {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--ds-space-2);
+    }
+    
+    .chore-card.available {
+        display: block;
+        margin: 0;
+    }
+}
+
+/* ===========================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .chore-card {
+        /* Larger touch target */
+        min-height: 44px;
+        padding: var(--ds-space-2);
+    }
+    
+    .remove-btn {
+        /* Always visible on touch */
+        opacity: 0.6;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .chore-card:active {
+        transform: scale(0.98);
+    }
+    
+    /* Disable drag hints on touch */
+    .drop-zone {
+        display: none;
     }
 }

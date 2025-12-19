@@ -1,0 +1,137 @@
+/* ===========================================
+   SETTINGS PAGE - Compact Layout
+   =========================================== */
+
+.settings-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.settings-container h1 {
+    font-size: 1.75rem;
+}
+
+/* Settings Row - Each setting in a horizontal row */
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-4);
+    padding: var(--ds-space-4) var(--ds-space-6);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    min-height: 72px;
+}
+
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-row-header {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-4);
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.settings-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.settings-label {
+    font-weight: var(--ds-font-semibold);
+    font-size: var(--ds-text-base);
+    color: var(--ds-text-primary);
+}
+
+.settings-hint {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.settings-control {
+    flex-shrink: 0;
+}
+
+/* Make form controls match the compact style */
+.settings-row .form-select,
+.settings-row .form-control {
+    font-size: var(--ds-text-sm);
+}
+
+.settings-row .form-check-input {
+    cursor: pointer;
+}
+
+/* Card footer styling */
+.card-footer {
+    padding: var(--ds-space-4) var(--ds-space-6);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 575.98px) {
+    .settings-container {
+        padding: 0;
+    }
+    
+    .settings-container h1 {
+        padding: 0 var(--ds-space-2);
+    }
+    
+    .settings-row {
+        flex-wrap: wrap;
+        padding: var(--ds-space-4);
+        gap: var(--ds-space-2);
+    }
+    
+    .settings-row-header {
+        flex: 1 1 100%;
+    }
+    
+    .settings-control {
+        flex: 1 1 100%;
+        padding-left: calc(40px + var(--ds-space-4)); /* Align with text */
+    }
+    
+    .settings-control .form-select {
+        max-width: 100% !important;
+    }
+    
+    .settings-control .input-group {
+        max-width: 100% !important;
+    }
+    
+    .settings-icon {
+        width: 32px;
+        font-size: 1.25rem;
+    }
+    
+    .settings-hint {
+        white-space: normal;
+    }
+}
+
+/* Larger touch targets for mobile */
+@media (hover: none) and (pointer: coarse) {
+    .settings-row {
+        min-height: 80px;
+    }
+    
+    .settings-row .form-check-input {
+        width: 3.5rem !important;
+        height: 1.75rem !important;
+    }
+}

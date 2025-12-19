@@ -1,147 +1,546 @@
+/* ============================================
+   BOOK OF DEEDS - Calm Ledger Redesign
+   Design: Quiet default, loud exceptions
+   ============================================ */
+
 .tracker-container {
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
+    padding: 0 var(--ds-space-4);
 }
 
+/* ===========================================
+   HEADER - Clean, integrated
+   =========================================== */
+
 .tracker-header {
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--ds-space-6);
 }
 
 .tracker-header h1 {
-    margin-bottom: var(--space-md);
-    color: var(--nord6);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--ds-text-primary);
+    margin-bottom: var(--ds-space-2);
 }
 
+/* Date Navigation - Inline horizontal */
 .date-navigation {
     display: flex;
     align-items: center;
-    gap: var(--space-md);
-    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-2);
 }
 
-.current-date {
+.date-navigation .nav-btn {
+    background: transparent;
+    border: 1px solid var(--ds-bg-muted);
+    color: var(--ds-text-muted);
+    padding: 0.35rem 0.5rem;
+    cursor: pointer;
+    border-radius: var(--ds-radius-sm);
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
     display: flex;
     align-items: center;
-    min-width: 280px;
-    justify-content: center;
 }
 
-.date-display {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
-    color: var(--nord6);
+.date-navigation .nav-btn:hover:not(:disabled) {
+    color: var(--ds-text-primary);
+    background: var(--ds-bg-hover);
+    border-color: var(--ds-text-muted);
 }
 
+.date-navigation .nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.date-navigation .date-display {
+    font-size: 0.95rem;
+    color: var(--ds-text-secondary);
+    font-weight: 500;
+}
+
+.date-navigation .today-badge {
+    background: var(--ds-accent-primary);
+    color: var(--ds-text-primary);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--ds-radius-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.date-navigation .today-btn {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--ds-accent-cyan);
+    background: transparent;
+    border: 1px solid var(--ds-bg-muted);
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--ds-radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.date-navigation .today-btn:hover {
+    background: var(--ds-bg-hover);
+    border-color: var(--ds-accent-cyan);
+}
+
+/* Balance - Subtle integration */
 .balance-display {
-    padding: var(--space-sm) var(--space-md);
-    background-color: var(--nord2);
-    border-radius: var(--radius-md);
-    display: inline-block;
-    color: var(--nord6);
-    border: 1px solid var(--nord3);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-1);
+    font-size: 0.85rem;
+    color: var(--ds-text-muted);
 }
 
-/* Table styling */
+.balance-display .balance-label {
+    font-weight: 500;
+}
+
+.balance-display .balance-amount {
+    font-weight: 600;
+    font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.balance-display .balance-amount.positive {
+    color: var(--ds-semantic-success);
+}
+
+/* ===========================================
+   TABLE - The Ledger
+   =========================================== */
+
 .chore-table {
-    margin-top: var(--space-md);
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 2px;
+    margin-top: var(--ds-space-4);
 }
 
 .chore-table thead th {
-    color: var(--nord6) !important;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ds-text-muted);
+    padding: var(--ds-space-2) var(--ds-space-2);
+    text-align: left;
+    border-bottom: 1px solid var(--ds-bg-hover);
 }
 
-.chore-table tbody td {
-    color: var(--nord4) !important;
+.chore-table thead th:first-child {
+    width: 48px;
+    text-align: center;
 }
 
-/* Make small text under chore names readable */
-.chore-table td small,
-.chore-table td .text-muted {
-    color: var(--nord4) !important;
+.chore-table thead th:last-child {
+    text-align: right;
 }
 
-.chore-checkbox {
-    width: 1.5rem;
-    height: 1.5rem;
-    cursor: pointer;
-    accent-color: var(--nord14);
+/* ===========================================
+   ROW STATES - The Heart of the Redesign
+   =========================================== */
+
+.chore-row {
+    transition: background 0.15s, transform 0.1s;
 }
 
-.chore-checkbox:disabled {
-    cursor: not-allowed;
+.chore-row td {
+    padding: var(--ds-space-2) var(--ds-space-2);
+    vertical-align: middle;
+    border-bottom: 1px solid transparent;
+}
+
+/* Default Row - Calm, quiet */
+.chore-row.row-default {
+    background: transparent;
+}
+
+.chore-row.row-default:hover {
+    background: rgba(136, 192, 208, 0.05);
+}
+
+/* Done Row - Subtle success, faded */
+.chore-row.row-done {
+    background: rgba(163, 190, 140, 0.08);
+}
+
+.chore-row.row-done .chore-name {
+    color: var(--ds-text-muted);
+}
+
+/* Muted Rows - Missed/Skipped, nearly invisible */
+.chore-row.row-muted {
     opacity: 0.5;
 }
 
+.chore-row.row-muted:hover {
+    opacity: 0.8;
+}
+
+/* ===========================================
+   EXCEPTION ROWS - These demand attention
+   =========================================== */
+
+.chore-row.row-exception {
+    background: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-md);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.chore-row.row-exception td:first-child {
+    border-radius: var(--ds-radius-md) 0 0 var(--ds-radius-md);
+}
+
+.chore-row.row-exception td:last-child {
+    border-radius: 0 var(--ds-radius-md) var(--ds-radius-md) 0;
+}
+
+/* Help Request - LOUD amber/yellow */
+.chore-row.row-help {
+    background: linear-gradient(90deg, rgba(235, 203, 139, 0.15) 0%, rgba(235, 203, 139, 0.08) 100%);
+    border-left: 3px solid var(--ds-semantic-highlight);
+}
+
+.chore-row.row-help td:first-child {
+    border-radius: 0;
+}
+
+/* Awaiting Blessing - Soft blue highlight */
+.chore-row.row-awaiting {
+    background: linear-gradient(90deg, rgba(136, 192, 208, 0.12) 0%, rgba(136, 192, 208, 0.06) 100%);
+    border-left: 3px solid var(--ds-accent-cyan);
+}
+
+.chore-row.row-awaiting td:first-child {
+    border-radius: 0;
+}
+
+/* ===========================================
+   STATUS INDICATOR - The Checkbox Reimagined
+   =========================================== */
+
+.status-cell {
+    width: 48px;
+    text-align: center;
+}
+
+.status-indicator {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--ds-bg-muted);
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: var(--ds-text-muted);
+    transition: all 0.15s ease;
+}
+
+.status-indicator:hover:not(:disabled) {
+    border-color: var(--ds-accent-cyan);
+    color: var(--ds-accent-cyan);
+    background: rgba(136, 192, 208, 0.1);
+}
+
+.status-indicator:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Indicator States */
+.status-indicator.indicator-pending {
+    border-color: var(--ds-bg-muted);
+    color: var(--ds-text-muted);
+}
+
+.status-indicator.indicator-awaiting {
+    border-color: var(--ds-accent-cyan);
+    background: rgba(136, 192, 208, 0.15);
+    color: var(--ds-accent-cyan);
+}
+
+.status-indicator.indicator-done {
+    border-color: var(--ds-semantic-success);
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
+}
+
+.status-indicator.indicator-help {
+    border-color: var(--ds-semantic-highlight);
+    background: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
+    animation: pulse-help 2s ease-in-out infinite;
+}
+
+.status-indicator.indicator-missed {
+    border-color: var(--ds-semantic-error);
+    background: rgba(191, 97, 106, 0.15);
+    color: var(--ds-semantic-error);
+}
+
+.status-indicator.indicator-skipped {
+    border-color: var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-muted);
+}
+
+@keyframes pulse-help {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(235, 203, 139, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(235, 203, 139, 0); }
+}
+
+/* ===========================================
+   CHORE CELL - Name and Details
+   =========================================== */
+
+.chore-cell {
+    min-width: 200px;
+}
+
+.chore-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
 .chore-name {
-    font-weight: var(--font-weight-medium);
-    color: var(--nord6) !important;
+    font-weight: 500;
+    color: var(--ds-text-primary);
+    font-size: 0.9rem;
+    display: block;
 }
 
-.chore-name.completed {
+.chore-name.done {
+    color: var(--ds-text-muted);
     text-decoration: line-through;
-    color: var(--nord4) !important;
+    text-decoration-color: var(--ds-bg-muted);
 }
 
-/* Summary section */
+.chore-description {
+    font-size: 0.75rem;
+    color: var(--ds-text-muted);
+    display: block;
+}
+
+.help-reason {
+    font-size: 0.75rem;
+    color: var(--ds-semantic-highlight);
+    font-style: italic;
+    display: block;
+}
+
+/* ===========================================
+   ASSIGNEE CELL
+   =========================================== */
+
+.assignee-cell {
+    width: 120px;
+}
+
+.assignee {
+    font-size: 0.8rem;
+    color: var(--ds-text-muted);
+}
+
+/* ===========================================
+   VALUE CELL
+   =========================================== */
+
+.value-cell {
+    width: 80px;
+    text-align: right;
+}
+
+.value {
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 0.85rem;
+    color: var(--ds-text-secondary);
+    font-weight: 500;
+}
+
+.value.earned {
+    color: var(--ds-semantic-success);
+}
+
+.value.muted {
+    color: var(--ds-bg-muted);
+}
+
+/* ===========================================
+   ACTION CELL - Single Primary, Subtle Secondary
+   =========================================== */
+
+.action-cell {
+    width: 160px;
+    text-align: right;
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.375rem;
+}
+
+.action-group.subtle {
+    opacity: 0.4;
+    transition: opacity 0.15s;
+}
+
+.chore-row:hover .action-group.subtle {
+    opacity: 1;
+}
+
+.action-btn {
+    border: none;
+    border-radius: var(--ds-radius-sm);
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.action-btn.primary {
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
+}
+
+.action-btn.primary:hover {
+    background: #8fbc8f;
+}
+
+.action-btn.secondary {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-secondary);
+    border: 1px solid var(--ds-bg-muted);
+}
+
+.action-btn.secondary:hover {
+    background: var(--ds-bg-muted);
+    color: var(--ds-text-primary);
+}
+
+.action-btn.muted {
+    background: transparent;
+    color: var(--ds-text-muted);
+    border: 1px solid var(--ds-bg-muted);
+}
+
+.action-btn.muted:hover {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+.action-btn.small {
+    padding: 0.25rem 0.4rem;
+}
+
+/* ===========================================
+   SUMMARY SECTION
+   =========================================== */
+
 .tracker-summary {
-    padding: var(--space-md);
-    background-color: var(--nord1);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--nord3);
-    margin-top: var(--space-lg);
+    margin-top: var(--ds-space-6);
+    padding: var(--ds-space-4);
+    background: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-md);
+    border: 1px solid var(--ds-bg-hover);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* ===========================================
+   MOBILE CARD VIEW (< 768px)
+   =========================================== */
+
+.chore-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-2);
+}
+
+/* ===========================================
+   RESPONSIVE
+   =========================================== */
+
+@media (max-width: 767.98px) {
+    .tracker-container {
+        padding: 0 var(--ds-space-2);
+    }
+    
+    .tracker-header h1 {
+        font-size: 1.25rem;
+        text-align: center;
+    }
+    
     .date-navigation {
         justify-content: center;
+        flex-wrap: wrap;
     }
-
-    .current-date {
-        order: -1;
+    
+    .date-navigation .today-btn {
+        margin-left: 0;
+        margin-top: var(--ds-space-1);
         width: 100%;
-        margin-bottom: var(--space-sm);
+        text-align: center;
+    }
+    
+    .balance-display {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        padding: var(--ds-space-2);
+        background: var(--ds-bg-elevated);
+        border-radius: var(--ds-radius-sm);
+        margin-top: var(--ds-space-2);
     }
 }
 
-/* Action buttons - Separate buttons with gap */
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
+/* Touch optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .status-indicator {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .action-btn {
+        min-height: 36px;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .action-group.subtle {
+        opacity: 1;
+    }
 }
 
-.action-buttons .btn-outline-danger {
-    color: var(--nord11) !important;
-    border-color: var(--nord11) !important;
-    background-color: transparent !important;
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .status-indicator,
+    .chore-row,
+    .action-btn {
+        animation: none;
+        transition: none;
+    }
 }
 
-.action-buttons .btn-outline-danger:hover {
-    color: var(--nord6) !important;
-    background-color: var(--nord11) !important;
-    border-color: var(--nord11) !important;
-}
+/* ===========================================
+   EMPTY STATE
+   =========================================== */
 
-.action-buttons .btn-outline-info {
-    color: var(--nord8) !important;
-    border-color: var(--nord8) !important;
-    background-color: transparent !important;
-}
-
-.action-buttons .btn-outline-info:hover {
-    color: var(--nord0) !important;
-    background-color: var(--nord8) !important;
-    border-color: var(--nord8) !important;
-}
-
-.action-buttons .btn-success {
-    background-color: var(--nord14) !important;
-    border-color: var(--nord14) !important;
-    color: var(--nord0) !important;
-}
-
-.action-buttons .btn-success:hover {
-    background-color: #8fbf7f !important;
-    border-color: #8fbf7f !important;
+.empty-state-container {
+    text-align: center;
+    padding: var(--ds-space-7) var(--ds-space-4);
 }

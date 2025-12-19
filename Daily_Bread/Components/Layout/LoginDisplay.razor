@@ -1,73 +1,39 @@
-@inject NavigationManager Navigation
+﻿@inject NavigationManager Navigation
 
 <AuthorizeView>
     <Authorized>
-        <div class="d-flex align-items-center gap-3">
-            <span class="user-greeting">
-                <span class="greeting-text">Hello, <strong>@context.User.Identity?.Name</strong>!</span>
-            </span>
-            <form method="post" action="/Account/Logout" @formname="logout-form" class="d-inline">
-                <AntiforgeryToken />
-                <button type="submit" class="btn btn-logout">
-                    Logout
+        <div class="login-display-container">
+            <div class="user-dropdown">
+                <button class="btn-user-menu" 
+                        aria-expanded="false" 
+                        aria-haspopup="true"
+                        id="user-menu-btn">
+                    <span class="bi bi-person-circle" aria-hidden="true"></span>
+                    <span class="user-name">@context.User.Identity?.Name</span>
+                    <span class="bi bi-chevron-down dropdown-chevron" aria-hidden="true"></span>
                 </button>
-            </form>
+                
+                <div class="user-dropdown-menu" role="menu" id="user-dropdown-menu">
+                    <a href="/account/change-password" class="dropdown-item" role="menuitem">
+                        <span class="bi bi-key" aria-hidden="true"></span> 
+                        <span>Change Password</span>
+                    </a>
+                    <hr class="dropdown-divider" />
+                    <form method="post" action="/Account/Logout">
+                        <AntiforgeryToken />
+                        <button type="submit" class="dropdown-item dropdown-item-danger" role="menuitem">
+                            <span class="bi bi-box-arrow-right" aria-hidden="true"></span>
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </Authorized>
     <NotAuthorized>
-        <a href="/Account/Login" class="btn btn-login">
-            Login
+        <a href="/Account/Login" class="btn-auth">
+            <span class="bi bi-box-arrow-in-right" aria-hidden="true"></span>
+            <span class="btn-auth-text">Login</span>
         </a>
     </NotAuthorized>
 </AuthorizeView>
-
-<style>
-    .user-greeting {
-        color: var(--nord4);
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .user-greeting strong {
-        color: var(--nord6);
-    }
-    
-    .btn-logout {
-        background-color: transparent;
-        color: var(--nord4);
-        border: 1px solid var(--nord3);
-        border-radius: 6px;
-        padding: 0.35rem 0.9rem;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: all 150ms ease;
-    }
-    
-    .btn-logout:hover {
-        background-color: var(--nord11);
-        border-color: var(--nord11);
-        color: var(--nord6);
-    }
-    
-    /* Small, subtle login button - same style as logout */
-    .btn-login {
-        background-color: transparent;
-        color: var(--nord4);
-        border: 1px solid var(--nord3);
-        border-radius: 6px;
-        padding: 0.35rem 0.9rem;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: all 150ms ease;
-        text-decoration: none;
-        display: inline-block;
-    }
-    
-    .btn-login:hover {
-        background-color: var(--nord10);
-        border-color: var(--nord10);
-        color: var(--nord6);
-    }
-</style>

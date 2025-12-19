@@ -1,36 +1,447 @@
-﻿<!DOCTYPE html>
+﻿@using Daily_Bread.Components.Shared
+@using Microsoft.AspNetCore.Components.Web
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#2E3440" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Daily Bread" />
+    <meta name="application-name" content="Daily Bread" />
+    <meta name="description" content="A family chore tracker that helps kids earn their daily bread" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#2E3440" />
+    <meta name="msapplication-tap-highlight" content="no" />
     <base href="/" />
     
-    <!-- Google Fonts - Inter for modern typography + Noto Color Emoji for emoji support -->
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Critical CSS to prevent flash - must be inline and comprehensive -->
+    <style>
+        /* ===========================================
+           CRITICAL CSS - Prevents FOUC
+           Loaded inline for immediate application
+           =========================================== */
+        
+        /* CSS Custom Properties for viewport and layout - set by JS below */
+        :root {
+            --vh: 1vh;
+            --app-height: 100vh;
+            --safe-top: 0px;
+            --safe-bottom: 0px;
+            --safe-left: 0px;
+            --safe-right: 0px;
+            /* Bottom nav height for content padding */
+            --bottom-nav-height: 60px;
+            /* Header height - must match MainLayout.razor.css */
+            --header-height: 52px;
+        }
+        
+        /* Smaller header on very small screens */
+        @@media (max-width: 480px) {
+            :root {
+                --header-height: 48px;
+            }
+        }
+        
+        /* Compact header in landscape */
+        @@media (max-width: 767px) and (orientation: landscape) {
+            :root {
+                --header-height: 44px;
+            }
+        }
+        
+        html, body {
+            background-color: #2E3440;
+            color: #ECEFF4;
+            margin: 0;
+            padding: 0;
+            /* Use dynamic viewport height that responds to browser chrome */
+            min-height: 100vh; /* Fallback for older browsers */
+            min-height: 100dvh;
+            /* Allow content scrolling but prevent overscroll bounce */
+            overflow-x: hidden;
+            overscroll-behavior-y: contain;
+        }
+        
+        /* Prevent layout shift during hydration */
+        .page {
+            display: flex;
+            flex-direction: column;
+            /* Use dynamic viewport height that responds to browser chrome */
+            height: 100vh; /* Fallback for older browsers */
+            height: 100dvh;
+            background-color: #2E3440;
+            /* Safe area insets applied via padding on left/right only */
+            /* Top is handled by mobile-header, bottom by content area */
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+        }
+        
+        .sidebar {
+            background-color: #3B4252;
+        }
+        
+        main {
+            background-color: #2E3440;
+            flex: 1;
+            /* Main content is the scroll container */
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            /* Prevent overscroll on main element */
+            overscroll-behavior-y: contain;
+            /* 
+             * CRITICAL: Push content below fixed header + safe area
+             * Header sits at top: env(safe-area-inset-top)
+             * So content needs: header-height + safe-area-inset-top
+             */
+            padding-top: calc(var(--header-height, 52px) + env(safe-area-inset-top, 0px));
+        }
+        
+        /* Main scroll container needs bottom padding when bottom nav exists */
+        main.has-bottom-nav {
+            padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px));
+        }
+        
+        /* Mobile header critical styles - prevents flash of mispositioned header */
+        .mobile-header {
+            position: fixed;
+            /* Position BELOW the safe area (notch/Dynamic Island) */
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            height: var(--header-height, 52px);
+            background-color: #3B4252;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Extend header background INTO safe area (behind notch/Dynamic Island) */
+        .mobile-header::before {
+            content: '';
+            position: absolute;
+            top: calc(-1 * env(safe-area-inset-top, 0px));
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background-color: inherit;
+            z-index: -1;
+        }
+        
+        /* PWA standalone mode adjustments */
+        body.pwa-standalone .page {
+            /* In PWA mode, safe areas are critical */
+            padding-top: 0;
+        }
+        
+        /* iOS device adjustments */
+        body.ios-device {
+            /* iOS-specific touch handling */
+            -webkit-touch-callout: none;
+        }
+        
+        /* Desktop: no safe area padding needed */
+        @@media (min-width: 768px) {
+            main {
+                padding-top: 0;
+            }
+            
+            .mobile-header::before {
+                display: none;
+            }
+        }
+    </style>
+    
+    <!-- Viewport Height Calculation Script - Must run early -->
+    <script>
+        (function() {
+            // Set viewport height variables (doesn't need document.body)
+            function setViewportVars() {
+                var vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', vh + 'px');
+                document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+            }
+            
+            // Set safe area insets (needs document.body for test element)
+            function setSafeAreaInsets() {
+                // Use env() values directly - more reliable and doesn't require DOM measurement
+                document.documentElement.style.setProperty('--safe-top', 'env(safe-area-inset-top, 0px)');
+                document.documentElement.style.setProperty('--safe-bottom', 'env(safe-area-inset-bottom, 0px)');
+                document.documentElement.style.setProperty('--safe-left', 'env(safe-area-inset-left, 0px)');
+                document.documentElement.style.setProperty('--safe-right', 'env(safe-area-inset-right, 0px)');
+            }
+            
+            // Combined function for resize/orientation handlers
+            function setViewportHeight() {
+                setViewportVars();
+                setSafeAreaInsets();
+            }
+            
+            // Set viewport vars immediately (safe - only uses documentElement)
+            setViewportVars();
+            
+            // Set safe area insets - wait for body if needed
+            if (document.body) {
+                setSafeAreaInsets();
+            } else {
+                // Wait for body to be available using requestAnimationFrame
+                function waitForBody() {
+                    if (document.body) {
+                        setSafeAreaInsets();
+                    } else {
+                        requestAnimationFrame(waitForBody);
+                    }
+                }
+                requestAnimationFrame(waitForBody);
+            }
+            
+            // Update on resize (handles orientation change, keyboard open, etc.)
+            var resizeTimeout;
+            window.addEventListener('resize', function() {
+                // Debounce to avoid performance issues
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(setViewportHeight, 100);
+            });
+            
+            // Update on orientation change
+            window.addEventListener('orientationchange', function() {
+                // Delay slightly for iOS to complete orientation animation
+                setTimeout(setViewportHeight, 200);
+            });
+            
+            // Update when page becomes visible (handles iOS tab switching)
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    setViewportHeight();
+                }
+            });
+            
+            // Store for later access
+            window.updateViewportHeight = setViewportHeight;
+        })();
+    </script>
+    
+    <!-- Google Fonts - Inter for modern typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <!-- Bootstrap Icons - must use root-relative path for Safari compatibility -->
+    <link rel="stylesheet" href="/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
     
-    <ResourcePreloader />
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="/css/design-system.css" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["Daily_Bread.styles.css"]" />
     <ImportMap />
-    <link rel="icon" type="image/png" href="images/bread-icon.png" />
-    <link rel="apple-touch-icon" href="images/bread-icon.png" />
-    <HeadOutlet />
+    
+    <!-- Favicons and Apple Touch Icons -->
+    <!-- SVG favicon is preferred for modern browsers (scalable, crisp at any size) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Fallback for browsers that don't support SVG favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/web-app-manifest-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/web-app-manifest-512x512.png" />
+    
+    <!-- Splash screens for iOS -->
+    <meta name="apple-mobile-web-app-title" content="Daily Bread">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png">
+    
+    <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
 <body>
     <CascadingAuthenticationState>
-        <Routes />
+        <Routes @rendermode="InteractiveServer" />
     </CascadingAuthenticationState>
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    
+    <!-- Emoji Picker Element - lightweight web component -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+    
+    <!-- Push Notifications JavaScript Interop -->
+    <script src="/js/push-notifications.js"></script>
+    
+    <!-- Biometric Authentication JavaScript Interop -->
+    <script src="/js/biometric-auth.js"></script>
+    
+    <!-- Password Toggle for Static Pages -->
+    <script src="/js/password-toggle.js"></script>
+    
+    <!-- Swipe Gestures for Mobile -->
+    <script src="/js/swipe-gestures.js?v=2"></script>
+    
+    <!-- PWA Utilities (standalone detection, PIN sign-in) -->
+    <script src="/js/pwa.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        // User dropdown toggle - pure JS implementation
+        // Uses event delegation for Blazor dynamic content compatibility
+        (function() {
+            var clickHandlerAttached = false;
+            
+            function setupClickHandler() {
+                if (clickHandlerAttached) return;
+                clickHandlerAttached = true;
+                
+                console.log('User dropdown click handler attached');
+                
+                // Use event delegation on document for dynamic Blazor content
+                document.addEventListener('click', function(e) {
+                    var btn = e.target.closest('#user-menu-btn');
+                    var menu = document.getElementById('user-dropdown-menu');
+                    
+                    if (btn && menu) {
+                        console.log('User menu button clicked');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Check computed style (handles both CSS and inline styles)
+                        var computedDisplay = window.getComputedStyle(menu).display;
+                        var isCurrentlyShown = computedDisplay !== 'none';
+                        
+                        if (isCurrentlyShown) {
+                            // Hide
+                            menu.style.display = 'none';
+                            menu.classList.remove('show');
+                            btn.setAttribute('aria-expanded', 'false');
+                        } else {
+                            // Show
+                            menu.style.display = 'block';
+                            menu.style.opacity = '1';
+                            menu.style.transform = 'translateY(0)';
+                            menu.classList.add('show');
+                            btn.setAttribute('aria-expanded', 'true');
+                        }
+                        return;
+                    }
+                    
+                    // Close dropdown when clicking outside
+                    if (menu) {
+                        var computedDisplay = window.getComputedStyle(menu).display;
+                        if (computedDisplay !== 'none') {
+                            var container = e.target.closest('.user-dropdown');
+                            if (!container) {
+                                menu.style.display = 'none';
+                                menu.classList.remove('show');
+                                var menuBtn = document.getElementById('user-menu-btn');
+                                if (menuBtn) {
+                                    menuBtn.setAttribute('aria-expanded', 'false');
+                                }
+                            }
+                        }
+                    }
+                }, true); // Use capture phase to ensure we get the event first
+            }
+            
+            function initUserDropdown() {
+                console.log('User dropdown JS initialized');
+                setupClickHandler();
+            }
+            
+            // Initialize immediately if DOM is ready, otherwise wait
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initUserDropdown);
+            } else {
+                initUserDropdown();
+            }
+            
+            // Re-initialize after Blazor enhanced navigation
+            document.addEventListener('DOMContentLoaded', function() {
+                // Wait for Blazor to be available
+                var checkBlazor = setInterval(function() {
+                    if (window.Blazor) {
+                        clearInterval(checkBlazor);
+                        window.Blazor.addEventListener('enhancedload', function() {
+                            // Close any open dropdown after navigation
+                            var menu = document.getElementById('user-dropdown-menu');
+                            if (menu) {
+                                menu.style.display = 'none';
+                                menu.classList.remove('show');
+                            }
+                            var btn = document.getElementById('user-menu-btn');
+                            if (btn) {
+                                btn.setAttribute('aria-expanded', 'false');
+                            }
+                        });
+                    }
+                }, 100);
+                
+                // Stop checking after 10 seconds
+                setTimeout(function() { clearInterval(checkBlazor); }, 10000);
+            });
+        })();
+        
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registered with scope:', registration.scope);
+                        
+                        // Check for updates periodically
+                        setInterval(function() {
+                            registration.update();
+                        }, 60 * 60 * 1000); // Every hour
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+            
+            // Handle service worker updates
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+                // New service worker activated, reload for fresh content
+                window.location.reload();
+            });
+        }
+        
+        // Detect standalone mode (installed PWA)
+        window.isRunningStandalone = function() {
+            return (window.matchMedia('(display-mode: standalone)').matches) ||
+                   (window.navigator.standalone) ||
+                   document.referrer.includes('android-app://');
+        };
+        
+        // Add class to body if running as PWA
+        if (window.isRunningStandalone()) {
+            document.body.classList.add('pwa-standalone');
+        }
+        
+        // Handle iOS status bar
+        if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
+            document.body.classList.add('ios-device');
+        }
+        
+        // Handle Android Chrome
+        if (/Android/.test(navigator.userAgent)) {
+            document.body.classList.add('android-device');
+        }
+        
+        // Re-calculate viewport on Blazor page changes
+        if (window.Blazor) {
+            window.Blazor.addEventListener('enhancedload', function() {
+                if (window.updateViewportHeight) {
+                    window.updateViewportHeight();
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>

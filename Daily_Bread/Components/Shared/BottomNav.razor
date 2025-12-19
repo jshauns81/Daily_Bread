@@ -1,0 +1,89 @@
+﻿@* BottomNav.razor - Reusable bottom navigation component *@
+@* Provides PWA-safe sticky bottom navigation with frosted glass effect *@
+
+<nav class="bottom-nav @CssClass" role="navigation" aria-label="@AriaLabel">
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else if (Items != null)
+    {
+        @foreach (var item in Items)
+        {
+            <a href="@item.Href" 
+               class="bottom-nav__item @(IsActive(item.Href) ? "bottom-nav__item--active" : "")"
+               aria-current="@(IsActive(item.Href) ? "page" : null)">
+                @if (!string.IsNullOrEmpty(item.Icon))
+                {
+                    <span class="bottom-nav__icon @item.Icon" aria-hidden="true"></span>
+                }
+                @if (!string.IsNullOrEmpty(item.Label))
+                {
+                    <span class="bottom-nav__label">@item.Label</span>
+                }
+                @if (item.Badge > 0)
+                {
+                    <span class="bottom-nav__badge">@item.Badge</span>
+                }
+            </a>
+        }
+    }
+</nav>
+
+@code {
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = null!;
+
+    /// <summary>
+    /// Custom CSS class for the nav container
+    /// </summary>
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Accessibility label for the navigation
+    /// </summary>
+    [Parameter]
+    public string AriaLabel { get; set; } = "Bottom navigation";
+
+    /// <summary>
+    /// Navigation items (alternative to using ChildContent)
+    /// </summary>
+    [Parameter]
+    public List<BottomNavItem>? Items { get; set; }
+
+    /// <summary>
+    /// Custom navigation content
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private bool IsActive(string href)
+    {
+        var currentUri = NavigationManager.Uri;
+        var baseUri = NavigationManager.BaseUri;
+        
+        // Normalize paths
+        var currentPath = new Uri(currentUri).AbsolutePath.TrimEnd('/');
+        var targetPath = href.TrimStart('/').TrimEnd('/');
+        
+        if (string.IsNullOrEmpty(targetPath))
+        {
+            // Home page - exact match
+            return currentPath == "/" || currentPath == "";
+        }
+        
+        return currentPath.Equals("/" + targetPath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Represents a bottom navigation item
+    /// </summary>
+    public class BottomNavItem
+    {
+        public string Href { get; set; } = "";
+        public string? Icon { get; set; }
+        public string? Label { get; set; }
+        public int Badge { get; set; }
+    }
+}

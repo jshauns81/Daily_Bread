@@ -1,130 +1,86 @@
 ﻿@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared.Navigation
+@inject INavigationService NavigationService
 @inject IDashboardService DashboardService
 @inject AuthenticationStateProvider AuthStateProvider
-@rendermode InteractiveServer
+@inject IJSRuntime JS
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">
-            <img src="images/bread-icon.png" alt="" class="brand-icon" />
-            Daily Bread
+<div class="nav-header">
+    <a class="nav-brand" href="">
+        <img src="images/bread-icon.png" alt="" class="nav-brand-icon" />
+        <span class="nav-brand-text">Daily Bread</span>
+    </a>
+</div>
+
+<nav class="nav-menu" role="navigation">
+    <AuthorizeView>
+        <Authorized>
+            @{
+                string? currentSection = null;
+            }
+            @foreach (var item in _navItems)
+            {
+                @* Render section label if it changes *@
+                @if (item.Section != currentSection && !string.IsNullOrEmpty(item.Section))
+                {
+                    currentSection = item.Section;
+                    <div class="nav-section-label">@item.Section</div>
+                }
+                
+                <NavLink class="nav-link" href="@item.Route.TrimStart('/')" Match="@GetNavLinkMatch(item.Route)" @onclick="HandleNavigation">
+                    <span class="bi @item.Icon" aria-hidden="true"></span>
+                    <span class="nav-link-text">@item.Label</span>
+                </NavLink>
+            }
+            
+            @* Pending approvals alert - shown for parents when there are pending items *@
+            @if (_isParent && _pendingCount > 0)
+            {
+                <NavLink class="nav-link nav-link-alert" href="" Match="NavLinkMatch.All" @onclick="HandleNavigation">
+                    <span class="bi bi-exclamation-circle-fill" aria-hidden="true"></span>
+                    <span class="nav-link-text">Blessings</span>
+                    <span class="nav-badge">@_pendingCount</span>
+                </NavLink>
+            }
+        </Authorized>
+    </AuthorizeView>
+</nav>
+
+@if (_isStandalone)
+{
+    <div class="nav-footer">
+        <a href="/kid" class="kid-mode-link" @onclick="HandleNavigation">
+            <span class="bi bi-phone" aria-hidden="true"></span>
+            <span>Quick PIN Login</span>
         </a>
     </div>
-</div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        @if (!_isAdminOnly)
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-                </NavLink>
-            </div>
-        }
-
-        <AuthorizeView>
-            <Authorized>
-                @if (!_isAdminOnly)
-                {
-                    <!-- Tracker and Calendar visible to both Parents and Children -->
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="tracker">
-                            <span class="bi bi-check2-square-nav-menu" aria-hidden="true"></span> Tracker
-                        </NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="calendar">
-                            <span class="bi bi-calendar3-nav-menu" aria-hidden="true"></span> Calendar
-                        </NavLink>
-                    </div>
-                    
-                    <!-- My Balance and Goals only for Children -->
-                    @if (!_isParentOnly)
-                    {
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="my-balance">
-                                <span class="bi bi-wallet-nav-menu" aria-hidden="true"></span> My Balance
-                            </NavLink>
-                        </div>
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="goals">
-                                <span class="bi bi-bullseye-nav-menu" aria-hidden="true"></span> Goals
-                            </NavLink>
-                        </div>
-                    }
-                }
-            </Authorized>
-        </AuthorizeView>
-
-        <AuthorizeView Roles="Parent">
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="manage-chores">
-                        <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span> Manage Chores
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="chore-chart">
-                        <span class="bi bi-printer-nav-menu" aria-hidden="true"></span> Print Chart
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="ledger">
-                        <span class="bi bi-journal-text-nav-menu" aria-hidden="true"></span> Ledger
-                    </NavLink>
-                </div>
-                @if (_pendingCount > 0)
-                {
-                    <div class="nav-item px-3">
-                        <a class="nav-link d-flex justify-content-between align-items-center text-warning" href="/">
-                            <span>
-                                <span class="bi bi-exclamation-circle-fill" aria-hidden="true"></span> Approvals
-                            </span>
-                            <span class="badge bg-warning text-dark">@_pendingCount</span>
-                        </a>
-                    </div>
-                }
-            </Authorized>
-        </AuthorizeView>
-
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-                @if (_isAdminOnly)
-                {
-                    <div class="nav-item px-3 mt-2">
-                        <small class="text-muted px-2">ADMIN</small>
-                    </div>
-                }
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="admin/users">
-                        <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Users
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-    </nav>
-</div>
+}
 
 @code {
+    [Parameter]
+    public EventCallback OnNavigate { get; set; }
+
+    private IReadOnlyList<NavItem> _navItems = [];
     private int _pendingCount;
-    private bool _isAdminOnly;
-    private bool _isParentOnly;
+    private bool _isParent;
+    private bool _isChild;
+    private bool _isAdmin;
+    private bool _isStandalone;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        // Check if user is Admin-only (not also a Parent or Child)
-        _isAdminOnly = user.IsInRole("Admin") && !user.IsInRole("Parent") && !user.IsInRole("Child");
+        _isParent = user.IsInRole("Parent");
+        _isChild = user.IsInRole("Child");
+        _isAdmin = user.IsInRole("Admin");
         
-        // Check if user is Parent-only (not also a Child) - Parents don't need My Balance or Goals
-        _isParentOnly = user.IsInRole("Parent") && !user.IsInRole("Child");
+        // Get navigation items from centralized service
+        _navItems = NavigationService.GetDesktopNavItems(_isParent, _isChild, _isAdmin);
 
-        if (user.IsInRole("Parent"))
+        // Load pending count for parents
+        if (_isParent)
         {
             try
             {
@@ -135,6 +91,40 @@
                 _pendingCount = 0;
             }
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _isStandalone = await JS.InvokeAsync<bool>("dailyBread.isStandalone");
+                StateHasChanged();
+            }
+            catch
+            {
+                // JS interop not available (e.g., prerendering), default to false
+                _isStandalone = false;
+            }
+        }
+    }
+
+    private async Task HandleNavigation()
+    {
+        if (OnNavigate.HasDelegate)
+        {
+            await OnNavigate.InvokeAsync();
+        }
+    }
+    
+    /// <summary>
+    /// Determines the NavLinkMatch for a given route.
+    /// Home ("/") uses All to match exactly, others use Prefix.
+    /// </summary>
+    private static NavLinkMatch GetNavLinkMatch(string route)
+    {
+        return route == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix;
     }
 }
 

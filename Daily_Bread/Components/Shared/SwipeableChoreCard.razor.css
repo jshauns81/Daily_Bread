@@ -1,0 +1,558 @@
+/* ===========================================
+   SWIPEABLE CHORE CARD - Nord Theme
+   Enhanced for teen UX with larger touch targets
+   =========================================== */
+
+.swipeable-card-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--ds-radius-lg);
+    margin-bottom: var(--ds-space-1);
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    /* Ensure the container has a background to prevent bleed-through */
+    background: var(--ds-bg-base);
+}
+
+/* Disable swipe visual cues when swipe is disabled */
+.swipeable-card-container.swipe-disabled {
+    touch-action: auto;
+}
+
+/* ===========================================
+   SWIPE ACTION BACKGROUNDS
+   These should be hidden by default (opacity: 0)
+   and only shown when actively swiping
+   =========================================== */
+
+.swipe-action {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    /* CRITICAL: opacity 0 hides these by default */
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    /* Ensure they're behind the card */
+    z-index: 0;
+}
+
+.swipe-action-left {
+    right: 0;
+    justify-content: flex-end;
+    background: linear-gradient(90deg, transparent 0%, var(--ds-semantic-warning) 30%, var(--ds-semantic-error) 100%);
+}
+
+.swipe-action-right {
+    left: 0;
+    justify-content: flex-start;
+    background: linear-gradient(90deg, var(--ds-semantic-success) 0%, #8fbc8f 70%, transparent 100%);
+}
+
+/* Only show swipe backgrounds when actively swiping */
+.swipeable-card-container.swiping-left .swipe-action-left,
+.swipeable-card-container.swiping-right .swipe-action-right {
+    opacity: 1;
+}
+
+.action-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ds-space-1);
+    padding: var(--ds-space-7);
+    color: var(--ds-text-primary);
+    font-weight: var(--ds-font-bold);
+    font-size: var(--ds-text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: transform 0.2s ease;
+}
+
+.action-content .bi {
+    font-size: 1.75rem;
+    transition: transform 0.2s ease;
+}
+
+/* Scale up icons when threshold is reached */
+.swipeable-card-container.threshold-reached-right .swipe-action-right .action-content .bi,
+.swipeable-card-container.threshold-reached-left .swipe-action-left .action-content .bi {
+    transform: scale(1.3);
+}
+
+.help-action {
+    color: var(--ds-text-primary);
+}
+
+.done-action {
+    color: var(--ds-bg-base);
+}
+
+/* ===========================================
+   THE CARD ITSELF
+   =========================================== */
+
+.swipeable-card {
+    position: relative;
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    /* INCREASED padding for better touch targets */
+    padding: var(--ds-space-6) var(--ds-space-6);
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                box-shadow 0.2s ease,
+                border-color 0.2s ease,
+                background-color 0.2s ease;
+    will-change: transform;
+    z-index: 1;
+    /* Ensure proper touch target - 64px minimum */
+    min-height: 72px;
+}
+
+.swipeable-card-container.dragging .swipeable-card {
+    transition: none;
+}
+
+.swipeable-card:active {
+    background: var(--ds-bg-hover);
+}
+
+/* ===========================================
+   CLICK ACTION BUTTONS (Desktop/Web)
+   Visible on hover, positioned on right side
+   =========================================== */
+
+.click-actions {
+    position: absolute;
+    right: var(--ds-space-4);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: var(--ds-space-2);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 3;
+}
+
+/* Show on hover (desktop only) */
+@media (hover: hover) and (pointer: fine) {
+    .swipeable-card:hover .click-actions {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* Fade the value when buttons are shown */
+    .swipeable-card:hover .chore-value {
+        opacity: 0.3;
+    }
+}
+
+/* Always show buttons on non-touch devices without hover support */
+@media (hover: none) and (pointer: fine) {
+    .click-actions {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+.click-action-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-1);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border: none;
+    border-radius: var(--ds-radius-md);
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-semibold);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.click-action-btn .bi {
+    font-size: 1.1rem;
+}
+
+.click-action-btn .btn-label {
+    display: none;
+}
+
+/* Show labels on larger screens */
+@media (min-width: 480px) {
+    .click-action-btn .btn-label {
+        display: inline;
+    }
+}
+
+/* Done button - Green */
+.click-action-btn.done-btn {
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
+}
+
+.click-action-btn.done-btn:hover {
+    background: #9fc896;
+    transform: scale(1.05);
+}
+
+.click-action-btn.done-btn:active {
+    transform: scale(0.98);
+}
+
+/* Help button - Yellow/Orange */
+.click-action-btn.help-btn {
+    background: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
+}
+
+.click-action-btn.help-btn:hover {
+    background: #e6c173;
+    transform: scale(1.05);
+}
+
+.click-action-btn.help-btn:active {
+    transform: scale(0.98);
+}
+
+/* Hide click buttons on touch devices (they use swipe) */
+@media (hover: none) and (pointer: coarse) {
+    .click-actions {
+        display: none;
+    }
+}
+
+/* ===========================================
+   CARD STATES - Clear Visual Differentiation
+   =========================================== */
+
+/* PENDING (default) - ready for action */
+.swipeable-card:not(.completed):not(.pending-approval):not(.help-requested):not(.missed):not(.skipped) {
+    background: var(--ds-bg-elevated);
+    border-color: var(--ds-bg-muted);
+}
+
+/* COMPLETED / APPROVED - green success state */
+.swipeable-card.completed {
+    background: rgba(163, 190, 140, 0.12);
+    border-color: var(--ds-semantic-success);
+    border-width: 2px;
+}
+
+/* PENDING APPROVAL - blue waiting state */
+.swipeable-card.pending-approval {
+    background: rgba(136, 192, 208, 0.12);
+    border-color: var(--ds-accent-cyan);
+    border-width: 2px;
+}
+
+/* HELP REQUESTED - yellow attention state */
+.swipeable-card.help-requested {
+    background: rgba(235, 203, 139, 0.12);
+    border-color: var(--ds-semantic-highlight);
+    border-width: 2px;
+}
+
+/* MISSED - red error state */
+.swipeable-card.missed {
+    background: rgba(191, 97, 106, 0.12);
+    border-color: var(--ds-semantic-error);
+    border-width: 2px;
+    opacity: 0.75;
+}
+
+/* SKIPPED - muted state */
+.swipeable-card.skipped {
+    background: rgba(76, 86, 106, 0.15);
+    border-color: var(--ds-bg-muted);
+    opacity: 0.65;
+}
+
+/* ===========================================
+   CARD CONTENT
+   =========================================== */
+
+.card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--ds-space-4);
+}
+
+.chore-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.chore-name {
+    font-weight: var(--ds-font-semibold);
+    font-size: var(--ds-text-lg);
+    color: var(--ds-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+/* Strikethrough for completed/approved chores */
+.swipeable-card.completed .chore-name,
+.swipeable-card.pending-approval .chore-name {
+    text-decoration: line-through;
+    text-decoration-color: var(--ds-text-muted);
+    opacity: 0.85;
+}
+
+.weekly-progress {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
+}
+
+.bonus-indicator {
+    color: var(--ds-semantic-highlight);
+    font-weight: var(--ds-font-bold);
+}
+
+.status-text {
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-medium);
+    margin-top: 2px;
+}
+
+/* Status text colors based on state */
+.swipeable-card.completed .status-text {
+    color: var(--ds-semantic-success);
+}
+
+.swipeable-card.pending-approval .status-text {
+    color: var(--ds-accent-cyan);
+}
+
+.swipeable-card.help-requested .status-text {
+    color: var(--ds-semantic-highlight);
+}
+
+.swipeable-card.missed .status-text {
+    color: var(--ds-semantic-error);
+}
+
+.swipeable-card.skipped .status-text {
+    color: var(--ds-text-muted);
+}
+
+.chore-value {
+    flex-shrink: 0;
+    transition: opacity 0.2s ease;
+}
+
+.value-amount {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-weight: var(--ds-font-bold);
+    font-size: var(--ds-text-xl);
+    color: var(--ds-semantic-success);
+}
+
+.value-amount.bonus {
+    color: var(--ds-semantic-highlight);
+}
+
+/* Dim value for completed/non-pending chores */
+.swipeable-card.completed .value-amount,
+.swipeable-card.pending-approval .value-amount,
+.swipeable-card.missed .value-amount,
+.swipeable-card.skipped .value-amount {
+    opacity: 0.6;
+}
+
+/* ===========================================
+   PROCESSING STATE
+   =========================================== */
+
+.processing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(46, 52, 64, 0.85);
+    border-radius: var(--ds-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.processing-overlay .spinner-border {
+    color: var(--ds-accent-cyan);
+    width: 28px;
+    height: 28px;
+}
+
+/* ===========================================
+   SWIPE THRESHOLD INDICATORS
+   Enhanced visual feedback
+   =========================================== */
+
+.swipeable-card-container.threshold-reached-right .swipeable-card {
+    border-color: var(--ds-semantic-success);
+    box-shadow: 0 0 0 3px rgba(163, 190, 140, 0.35),
+                0 6px 20px rgba(163, 190, 140, 0.25);
+}
+
+.swipeable-card-container.threshold-reached-left .swipeable-card {
+    border-color: var(--ds-semantic-error);
+    box-shadow: 0 0 0 3px rgba(191, 97, 106, 0.35),
+                0 6px 20px rgba(191, 97, 106, 0.25);
+}
+
+/* ===========================================
+   COMPLETION ANIMATION - Enhanced
+   =========================================== */
+
+.swipeable-card-container.completing {
+    animation: complete-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.swipeable-card-container.completing .swipeable-card {
+    background: var(--ds-semantic-success);
+    border-color: var(--ds-semantic-success);
+}
+
+.swipeable-card-container.completing .chore-name,
+.swipeable-card-container.completing .value-amount,
+.swipeable-card-container.completing .status-text,
+.swipeable-card-container.completing .weekly-progress {
+    color: var(--ds-bg-base);
+    text-decoration: none;
+    opacity: 1;
+}
+
+@keyframes complete-slide {
+    0% { 
+        opacity: 1;
+        transform: translateX(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(20%);
+    }
+    100% { 
+        opacity: 0;
+        transform: translateX(100%);
+        height: 0;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+.swipeable-card-container.help-requesting {
+    animation: help-pulse 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.swipeable-card-container.help-requesting .swipeable-card {
+    background: rgba(235, 203, 139, 0.2);
+    border-color: var(--ds-semantic-highlight);
+}
+
+@keyframes help-pulse {
+    0% { 
+        transform: translateX(0);
+    }
+    20% {
+        transform: translateX(-30%);
+    }
+    40% {
+        transform: translateX(-10%);
+    }
+    60% {
+        transform: translateX(-20%);
+    }
+    80% {
+        transform: translateX(-5%);
+    }
+    100% { 
+        transform: translateX(0);
+    }
+}
+
+/* ===========================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .swipeable-card {
+        /* Ensure 48px+ minimum touch target on mobile */
+        padding: var(--ds-space-6) var(--ds-space-6);
+        min-height: 72px;
+    }
+    
+    .chore-name {
+        font-size: var(--ds-text-lg);
+    }
+    
+    .value-amount {
+        font-size: var(--ds-text-xl);
+    }
+    
+    .action-content {
+        padding: var(--ds-space-7);
+    }
+    
+    .action-content .bi {
+        font-size: 2rem;
+    }
+    
+    /* Larger touch feedback area */
+    .swipeable-card:active {
+        transform: scale(0.99);
+    }
+}
+
+/* ===========================================
+   SMALL SCREENS - Stack if needed
+   =========================================== */
+
+@media (max-width: 360px) {
+    .swipeable-card {
+        padding: var(--ds-space-4);
+    }
+    
+    .chore-name {
+        font-size: var(--ds-text-base);
+    }
+    
+    .value-amount {
+        font-size: var(--ds-text-lg);
+    }
+}
+
+/* ===========================================
+   REDUCED MOTION
+   =========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .swipeable-card {
+        transition: none;
+    }
+    
+    .swipeable-card-container.completing,
+    .swipeable-card-container.help-requesting {
+        animation: none;
+    }
+    
+    .swipeable-card-container.completing {
+        opacity: 0;
+    }
+    
+    .action-content,
+    .action-content .bi {
+        transition: none;
+    }
+    
+    .click-action-btn {
+        transition: none;
+    }
+}

@@ -1,0 +1,142 @@
+﻿@namespace Daily_Bread.Components.Shared
+
+@* 
+    UNIFIED STAT CARD COMPONENT
+    
+    A drop-in replacement for .summary-card patterns throughout the app.
+    Uses existing CSS classes to ensure zero visual breakage.
+    
+    Usage Examples:
+    
+    Simple:        <StatCard Value="5" Label="Pending" />
+    With Color:    <StatCard Value="$12.50" Label="Earned" Color="StatColor.Success" />
+    With Icon:     <StatCard Value="7" Label="Streak" Icon="bi-fire" Color="StatColor.Warning" />
+    With Background: <StatCard Value="$10" Label="Wages" Color="StatColor.Success" Background="StatBackground.SuccessSubtle" />
+    Animated:      <StatCard Value="@balance" Label="Balance" Prefix="$" IsAnimated="true" />
+    Full Height:   <StatCard Value="3" Label="Done" FullHeight="true" />
+*@
+
+<div class="summary-card @(FullHeight ? "h-100" : "") @GetBackgroundClass() @CssClass">
+    <span class="summary-value @GetColorClass()">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <span class="bi @Icon me-1"></span>
+        }
+        @if (!string.IsNullOrEmpty(EmojiIcon))
+        {
+            <span class="emoji me-1">@EmojiIcon</span>
+        }
+        @if (IsAnimated && DecimalValue.HasValue)
+        {
+            <AnimatedCounter Value="@DecimalValue.Value" Prefix="@Prefix" Suffix="@Suffix" />
+        }
+        else
+        {
+            @Prefix@Value@Suffix
+        }
+    </span>
+    <span class="summary-label">@Label</span>
+</div>
+
+@code {
+    /// <summary>
+    /// The main value to display (string, number, or formatted value).
+    /// </summary>
+    [Parameter]
+    public object? Value { get; set; }
+    
+    /// <summary>
+    /// Label shown below the value.
+    /// </summary>
+    [Parameter]
+    public string Label { get; set; } = "";
+    
+    /// <summary>
+    /// Optional Bootstrap icon class (e.g., "bi-fire", "bi-trophy").
+    /// </summary>
+    [Parameter]
+    public string? Icon { get; set; }
+    
+    /// <summary>
+    /// Optional emoji icon (e.g., "🔥", "💰").
+    /// </summary>
+    [Parameter]
+    public string? EmojiIcon { get; set; }
+    
+    /// <summary>
+    /// Text shown before the value (e.g., "$" for money).
+    /// </summary>
+    [Parameter]
+    public string? Prefix { get; set; }
+    
+    /// <summary>
+    /// Text shown after the value (e.g., "%" for percentages).
+    /// </summary>
+    [Parameter]
+    public string? Suffix { get; set; }
+    
+    /// <summary>
+    /// Color theme for the value text.
+    /// </summary>
+    [Parameter]
+    public StatColor Color { get; set; } = StatColor.Default;
+    
+    /// <summary>
+    /// Background color theme for the card.
+    /// </summary>
+    [Parameter]
+    public StatBackground Background { get; set; } = StatBackground.Default;
+    
+    /// <summary>
+    /// Whether to animate numeric value changes (requires decimal Value).
+    /// </summary>
+    [Parameter]
+    public bool IsAnimated { get; set; }
+    
+    /// <summary>
+    /// Whether to add h-100 class for equal-height cards in grids.
+    /// </summary>
+    [Parameter]
+    public bool FullHeight { get; set; }
+    
+    /// <summary>
+    /// Additional CSS classes to apply.
+    /// </summary>
+    [Parameter]
+    public string? CssClass { get; set; }
+    
+    /// <summary>
+    /// For animated counters, extracts decimal value from the Value parameter.
+    /// </summary>
+    private decimal? DecimalValue => Value switch
+    {
+        decimal d => d,
+        double dbl => (decimal)dbl,
+        float f => (decimal)f,
+        int i => i,
+        long l => l,
+        _ => null
+    };
+    
+    private string GetColorClass() => Color switch
+    {
+        StatColor.Success => "text-success",
+        StatColor.Danger => "text-danger",
+        StatColor.Warning => "text-warning",
+        StatColor.Info => "text-info",
+        StatColor.Primary => "text-primary",
+        StatColor.Muted => "text-muted",
+        _ => ""
+    };
+    
+    private string GetBackgroundClass() => Background switch
+    {
+        StatBackground.SuccessSubtle => "bg-success-subtle",
+        StatBackground.DangerSubtle => "bg-danger-subtle",
+        StatBackground.WarningSubtle => "bg-warning-subtle",
+        StatBackground.InfoSubtle => "bg-info-subtle",
+        StatBackground.PrimarySubtle => "bg-primary-subtle",
+        StatBackground.SecondarySubtle => "bg-secondary-subtle",
+        _ => ""
+    };
+}

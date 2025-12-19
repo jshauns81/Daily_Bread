@@ -1,0 +1,321 @@
+/* ============================================
+   KID LOGIN PAGE - PIN ENTRY
+   Mobile-first responsive design
+   ============================================ */
+
+.kid-login-container {
+    min-height: 100vh; /* Fallback for older browsers */
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ds-space-4);
+    background: linear-gradient(135deg, var(--ds-bg-base) 0%, var(--ds-bg-elevated) 50%, var(--ds-bg-hover) 100%);
+    /* Safe area for notched devices */
+    padding-top: calc(var(--ds-space-4) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--ds-space-4) + env(safe-area-inset-bottom, 0px));
+}
+
+.kid-login-card {
+    background-color: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-xl);
+    padding: var(--ds-space-7);
+    width: 100%;
+    max-width: 360px;
+    box-shadow: var(--ds-shadow-lg);
+}
+
+/* Header */
+.kid-login-header {
+    text-align: center;
+    margin-bottom: var(--ds-space-7);
+}
+
+.kid-brand-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: var(--ds-space-4);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.kid-login-header h2 {
+    color: var(--ds-text-primary);
+    font-size: var(--ds-text-xl);
+    margin-bottom: var(--ds-space-1);
+}
+
+.kid-tagline {
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-sm);
+    margin: 0;
+}
+
+/* PIN Display */
+.pin-display {
+    display: flex;
+    justify-content: center;
+    gap: var(--ds-space-4);
+    margin-bottom: var(--ds-space-6);
+}
+
+.pin-dot {
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--ds-bg-muted);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--ds-bg-muted);
+    transition: all 0.2s ease;
+    background: var(--ds-bg-hover);
+}
+
+.pin-dot.filled {
+    border-color: var(--ds-accent-primary);
+    color: var(--ds-accent-primary);
+    background-color: rgba(94, 129, 172, 0.15);
+    animation: pin-pop 0.15s ease-out;
+}
+
+@keyframes pin-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+/* Error Message */
+.pin-error {
+    background-color: rgba(191, 97, 106, 0.15);
+    border: 1px solid var(--ds-semantic-error);
+    color: var(--ds-semantic-error);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-radius: var(--ds-radius-md);
+    text-align: center;
+    margin-bottom: var(--ds-space-4);
+    font-size: var(--ds-text-sm);
+    animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+
+/* Number Pad */
+.numpad {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-2);
+}
+
+.numpad-row {
+    display: flex;
+    justify-content: center;
+    gap: var(--ds-space-2);
+}
+
+.numpad-btn {
+    width: 72px;
+    height: 72px;
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: 50%;
+    background: var(--ds-bg-hover);
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--ds-text-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.numpad-btn:hover {
+    background: var(--ds-bg-muted);
+    border-color: var(--ds-text-muted);
+}
+
+.numpad-btn:active {
+    background: var(--ds-accent-primary);
+    color: var(--ds-text-primary);
+    transform: scale(0.95);
+    border-color: var(--ds-accent-primary);
+}
+
+.numpad-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.numpad-action {
+    font-size: 1.25rem;
+    color: var(--ds-text-muted);
+}
+
+.numpad-action:active {
+    background: var(--ds-semantic-error);
+    color: var(--ds-text-primary);
+    border-color: var(--ds-semantic-error);
+}
+
+/* Loading State */
+.pin-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ds-space-2);
+    color: var(--ds-text-muted);
+    margin-top: var(--ds-space-4);
+    font-size: var(--ds-text-sm);
+}
+
+/* Footer */
+.kid-login-footer {
+    margin-top: var(--ds-space-7);
+    text-align: center;
+    padding-top: var(--ds-space-4);
+    border-top: 1px solid var(--ds-bg-muted);
+}
+
+.back-link {
+    color: var(--ds-text-muted);
+    text-decoration: none;
+    font-size: var(--ds-text-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-1);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-radius: var(--ds-radius-md);
+    transition: all 0.2s ease;
+}
+
+.back-link:hover {
+    color: var(--ds-text-primary);
+    background-color: var(--ds-bg-hover);
+}
+
+/* Mobile Full Screen */
+@media (max-width: 400px) {
+    .kid-login-container {
+        padding: 0;
+    }
+    
+    .kid-login-card {
+        max-width: none;
+        min-height: 100vh; /* Fallback for older browsers */
+        min-height: 100dvh;
+        border-radius: 0;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: var(--ds-space-6);
+        padding-top: calc(var(--ds-space-6) + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(var(--ds-space-6) + env(safe-area-inset-bottom, 0px));
+    }
+    
+    .kid-brand-icon {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .kid-login-header h2 {
+        font-size: 2rem;
+    }
+    
+    .pin-dot {
+        width: 56px;
+        height: 56px;
+    }
+    
+    .numpad-btn {
+        width: 80px;
+        height: 80px;
+        font-size: 2rem;
+    }
+}
+
+/* Landscape orientation */
+@media (max-height: 600px) and (orientation: landscape) {
+    .kid-login-container {
+        padding: var(--ds-space-2);
+    }
+    
+    .kid-login-card {
+        padding: var(--ds-space-4);
+        flex-direction: row;
+        flex-wrap: wrap;
+        max-width: 600px;
+    }
+    
+    .kid-login-header {
+        flex: 1;
+        min-width: 200px;
+        margin-bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .kid-brand-icon {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .pin-entry {
+        flex: 1;
+        min-width: 280px;
+    }
+    
+    .pin-dot {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+    
+    .numpad-btn {
+        width: 56px;
+        height: 56px;
+        font-size: 1.25rem;
+    }
+    
+    .kid-login-footer {
+        flex-basis: 100%;
+        margin-top: var(--ds-space-4);
+        padding-top: var(--ds-space-2);
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .numpad-btn {
+        /* Ensure large enough touch target */
+        min-width: 64px;
+        min-height: 64px;
+    }
+    
+    .numpad-btn:hover {
+        background: var(--ds-bg-hover);
+        border-color: var(--ds-bg-muted);
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .pin-dot.filled {
+        animation: none;
+    }
+    
+    .pin-error {
+        animation: none;
+    }
+    
+    .numpad-btn:active {
+        transform: none;
+    }
+}

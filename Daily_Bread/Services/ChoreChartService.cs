@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +11,9 @@ public class ChoreChartEntry
 {
     public int ChoreDefinitionId { get; init; }
     public required string ChoreName { get; init; }
-    public decimal Value { get; init; }
+    public decimal EarnValue { get; init; }
+    public decimal PenaltyValue { get; init; }
+    public decimal Value => EarnValue > 0 ? EarnValue : PenaltyValue; // Backward compatibility
     public ChoreStatus? Status { get; init; }
     public bool IsScheduled { get; init; }
     public bool IsWeeklyFrequency { get; init; }
@@ -61,7 +63,9 @@ public class WeeklyFrequencyChoreProgress
 {
     public int ChoreDefinitionId { get; init; }
     public required string ChoreName { get; init; }
-    public decimal Value { get; init; }
+    public decimal EarnValue { get; init; }
+    public decimal PenaltyValue { get; init; }
+    public decimal Value => EarnValue > 0 ? EarnValue : PenaltyValue; // Backward compatibility
     public int TargetCount { get; init; }
     public int CompletedCount { get; init; }
     public int ApprovedCount { get; init; }
@@ -104,27 +108,23 @@ public interface IChoreChartService
 
 public class ChoreChartService : IChoreChartService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
-    private readonly IChoreScheduleService _scheduleService;
     private readonly IChildProfileService _profileService;
 
     public ChoreChartService(
-        ApplicationDbContext context,
+        IDbContextFactory<ApplicationDbContext> contextFactory,
         IDateProvider dateProvider,
-        IChoreScheduleService scheduleService,
         IChildProfileService profileService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _dateProvider = dateProvider;
-        _scheduleService = scheduleService;
         _profileService = profileService;
     }
 
     public DateOnly GetWeekStart(DateOnly date)
     {
-        var daysFromSunday = (int)date.DayOfWeek;
-        return date.AddDays(-daysFromSunday);
+        return ChoreScheduleHelper.GetWeekStartDate(date);
     }
 
     public async Task<PrintableChoreChart> GenerateWeeklyChartAsync(DateOnly? weekStartDate = null)
@@ -132,9 +132,7 @@ public class ChoreChartService : IChoreChartService
         var weekStart = weekStartDate ?? GetWeekStart(_dateProvider.Today);
         var weekEnd = weekStart.AddDays(6);
 
-        // Get all child profiles
         var profiles = await _profileService.GetAllChildProfilesAsync();
-
         var children = new List<ChildChoreChart>();
 
         foreach (var profile in profiles)
@@ -159,8 +157,9 @@ public class ChoreChartService : IChoreChartService
         var weekStart = weekStartDate ?? GetWeekStart(_dateProvider.Today);
         var weekEnd = weekStart.AddDays(6);
 
-        var profile = await _context.ChildProfiles
-            .Include(p => p.User)
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles
             .FirstOrDefaultAsync(p => p.Id == profileId);
 
         if (profile == null) return null;
@@ -174,8 +173,9 @@ public class ChoreChartService : IChoreChartService
         DateOnly weekStart,
         DateOnly weekEnd)
     {
-        // Get the user ID for this profile
-        var profile = await _context.ChildProfiles
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var profile = await context.ChildProfiles
             .FirstOrDefaultAsync(p => p.Id == profileId);
 
         if (profile == null) return null;
@@ -184,18 +184,17 @@ public class ChoreChartService : IChoreChartService
         var today = _dateProvider.Today;
 
         // Get all chore definitions for this user
-        var userChores = await _context.ChoreDefinitions
+        var userChores = await context.ChoreDefinitions
             .Where(c => c.AssignedUserId == userId && c.IsActive)
             .Where(c => c.StartDate == null || c.StartDate <= weekEnd)
             .Where(c => c.EndDate == null || c.EndDate >= weekStart)
             .ToListAsync();
 
-        // Separate daily chores from weekly frequency chores
         var dailyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.SpecificDays).ToList();
         var weeklyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency).ToList();
 
         // Get all chore logs for the week
-        var choreLogs = await _context.ChoreLogs
+        var choreLogs = await context.ChoreLogs
             .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
             .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
             .ToListAsync();
@@ -210,10 +209,10 @@ public class ChoreChartService : IChoreChartService
         {
             var dayChores = new List<ChoreChartEntry>();
 
-            // Add daily scheduled chores
+            // Add daily scheduled chores using shared helper
             foreach (var chore in dailyChores)
             {
-                var isScheduled = IsChoreScheduledForDate(chore, date);
+                var isScheduled = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
                 logsByDateAndChore.TryGetValue((date, chore.Id), out var log);
 
                 if (isScheduled || log != null)
@@ -222,7 +221,8 @@ public class ChoreChartService : IChoreChartService
                     {
                         ChoreDefinitionId = chore.Id,
                         ChoreName = chore.Name,
-                        Value = chore.Value,
+                        EarnValue = chore.EarnValue,
+                        PenaltyValue = chore.PenaltyValue,
                         Status = log?.Status,
                         IsScheduled = isScheduled,
                         IsWeeklyFrequency = false
@@ -230,10 +230,10 @@ public class ChoreChartService : IChoreChartService
                 }
             }
 
-            // Add weekly frequency chores (they appear every available day)
+            // Add weekly frequency chores (they appear every available day) using shared helper
             foreach (var chore in weeklyChores)
             {
-                var isAvailableDay = IsChoreScheduledForDate(chore, date);
+                var isAvailableDay = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
                 logsByDateAndChore.TryGetValue((date, chore.Id), out var log);
 
                 if (isAvailableDay)
@@ -246,7 +246,8 @@ public class ChoreChartService : IChoreChartService
                     {
                         ChoreDefinitionId = chore.Id,
                         ChoreName = chore.Name,
-                        Value = chore.Value,
+                        EarnValue = chore.EarnValue,
+                        PenaltyValue = chore.PenaltyValue,
                         Status = log?.Status,
                         IsScheduled = true,
                         IsWeeklyFrequency = true,
@@ -266,16 +267,15 @@ public class ChoreChartService : IChoreChartService
         }
 
         // Build weekly frequency progress
-        var weeklyProgress = new List<WeeklyFrequencyChoreProgress>();
-        foreach (var chore in weeklyChores)
+        var weeklyProgress = weeklyChores.Select(chore =>
         {
             var weeklyLogs = choreLogs.Where(cl => cl.ChoreDefinitionId == chore.Id).ToList();
-            
-            weeklyProgress.Add(new WeeklyFrequencyChoreProgress
+            return new WeeklyFrequencyChoreProgress
             {
                 ChoreDefinitionId = chore.Id,
                 ChoreName = chore.Name,
-                Value = chore.Value,
+                EarnValue = chore.EarnValue,
+                PenaltyValue = chore.PenaltyValue,
                 TargetCount = chore.WeeklyTargetCount,
                 CompletedCount = weeklyLogs.Count(l => l.Status == ChoreStatus.Completed || l.Status == ChoreStatus.Approved),
                 ApprovedCount = weeklyLogs.Count(l => l.Status == ChoreStatus.Approved),
@@ -284,8 +284,8 @@ public class ChoreChartService : IChoreChartService
                     .Select(l => l.Date)
                     .OrderBy(d => d)
                     .ToList()
-            });
-        }
+            };
+        }).ToList();
 
         return new ChildChoreChart
         {
@@ -299,42 +299,9 @@ public class ChoreChartService : IChoreChartService
         };
     }
 
-    private static bool IsChoreScheduledForDate(ChoreDefinition chore, DateOnly date)
-    {
-        // Check date range
-        if (chore.StartDate.HasValue && date < chore.StartDate.Value)
-            return false;
-        if (chore.EndDate.HasValue && date > chore.EndDate.Value)
-            return false;
-
-        // Check day of week
-        var dayFlag = date.DayOfWeek switch
-        {
-            DayOfWeek.Sunday => DaysOfWeek.Sunday,
-            DayOfWeek.Monday => DaysOfWeek.Monday,
-            DayOfWeek.Tuesday => DaysOfWeek.Tuesday,
-            DayOfWeek.Wednesday => DaysOfWeek.Wednesday,
-            DayOfWeek.Thursday => DaysOfWeek.Thursday,
-            DayOfWeek.Friday => DaysOfWeek.Friday,
-            DayOfWeek.Saturday => DaysOfWeek.Saturday,
-            _ => DaysOfWeek.None
-        };
-
-        return (chore.ActiveDays & dayFlag) != 0;
-    }
-
     private static string GetAvatarEmoji(string name)
     {
-        // Simple emoji selection based on first letter
-        var firstChar = char.ToUpperInvariant(name.FirstOrDefault());
-        return firstChar switch
-        {
-            >= 'A' and <= 'E' => "??",
-            >= 'F' and <= 'J' => "?",
-            >= 'K' and <= 'O' => "??",
-            >= 'P' and <= 'T' => "??",
-            >= 'U' and <= 'Z' => "??",
-            _ => "??"
-        };
+        // Use centralized EmojiConstants for reliable rendering
+        return EmojiConstants.GetAvatarForName(name);
     }
 }

@@ -1,69 +1,671 @@
+/* ============================================
+   MAINLAYOUT - RESPONSIVE DESIGN
+   Mobile-first approach with PWA safe area support
+   APP SHELL PATTERN: Fixed header, scrollable content, fixed footer
+   ============================================ */
+
+/* ===========================================
+   CSS CUSTOM PROPERTIES FOR HEADER
+   These ensure consistent calculations across breakpoints
+   =========================================== */
+
+:root {
+    --header-height: 52px;
+}
+
+@media (max-width: 480px) {
+    :root {
+        --header-height: 48px;
+    }
+}
+
+@media (max-width: 767px) and (orientation: landscape) {
+    :root {
+        --header-height: 44px;
+    }
+}
+
+/* ===========================================
+   BASE LAYOUT
+   =========================================== */
+
 .page {
     position: relative;
     display: flex;
     flex-direction: column;
-    background-color: var(--nord0);
+    /* Use dynamic viewport height that responds to browser chrome */
+    height: 100vh; /* Fallback for older browsers */
+    height: 100dvh;
+    background-color: var(--ds-bg-base);
+    overflow: hidden; /* Prevent page-level scrolling */
+    /* Safe area insets for notched devices - LEFT and RIGHT only */
+    /* Top is handled by mobile-header, bottom by content/footer */
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
 }
 
 main {
     flex: 1;
-    background-color: var(--nord0);
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow flex shrinking */
+    background-color: var(--ds-bg-base);
+    /* Ensure main content doesn't overlap mobile header */
+    position: relative;
+    z-index: 1;
+    /* Main area is the scroll container */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent overscroll bounce */
+    overscroll-behavior-y: contain;
+    /* 
+     * CRITICAL: Total offset = header height + safe area inset
+     * The header sits BELOW the safe area, so we need both values
+     * to push content below the header
+     */
+    padding-top: calc(var(--header-height, 52px) + env(safe-area-inset-top, 0px));
 }
+
+/* When main has bottom nav, add padding so content scrolls above it */
+main.has-bottom-nav {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+}
+
+.content {
+    flex: 1;
+    padding: 0.75rem; /* Reduced from 1rem */
+    /* Bottom padding accounts for safe area */
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    /* Content itself doesn't scroll - main scrolls */
+    overflow: visible;
+    background-color: var(--ds-bg-base);
+    /* Prevent content from extending beyond viewport */
+    max-width: 100vw;
+    box-sizing: border-box;
+}
+
+/* ===========================================
+   MOBILE HEADER (fixed at top)
+   
+   iOS Safe Area Strategy:
+   - The header is positioned BELOW the safe area (top: env(safe-area-inset-top))
+   - A ::before pseudo-element extends the background color INTO the safe area
+   - This creates a seamless visual where the status bar/Dynamic Island
+     has the same background color as the header
+   - The header CONTENT (hamburger, brand, actions) remains below the safe area
+     and is never obscured by the notch or Dynamic Island
+   =========================================== */
+
+.mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--header-height, 52px);
+    padding: 0 1rem;
+    background-color: var(--ds-bg-elevated);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    position: fixed;
+    /* 
+     * KEY: Position header BELOW the safe area inset
+     * On devices with notch/Dynamic Island, this pushes the header down
+     * On devices without, env() returns 0px and header is at top
+     */
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    right: 0;
+    z-index: 100;
+    /* Ensure side padding respects safe areas (for landscape or iPad) */
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    /* CRITICAL: Allow dropdown to overflow */
+    overflow: visible;
+}
+
+/* 
+ * Extend background color INTO the safe area (behind Dynamic Island/notch)
+ * This creates a seamless colored area from the top of the screen
+ * through the status bar area and into the header
+ */
+.mobile-header::before {
+    content: '';
+    position: absolute;
+    /* Extend upward INTO the safe area */
+    top: calc(-1 * env(safe-area-inset-top, 0px));
+    left: 0;
+    right: 0;
+    /* Height matches the safe area inset */
+    height: env(safe-area-inset-top, 0px);
+    /* Inherit the header's background color */
+    background-color: inherit;
+    /* Place behind header content */
+    z-index: -1;
+}
+
+.hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    /* Ensure touch target is properly sized */
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: var(--ds-radius-md);
+    transition: background-color var(--ds-duration-fast) ease;
+}
+
+.hamburger-btn:hover,
+.hamburger-btn:focus {
+    background-color: var(--ds-bg-hover);
+    outline: none;
+}
+
+.hamburger-icon {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+}
+
+.hamburger-icon span {
+    display: block;
+    height: 2px;
+    width: 100%;
+    background-color: var(--ds-text-primary);
+    border-radius: 2px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform-origin: center;
+}
+
+/* Hamburger animation when sidebar is open */
+.sidebar-open .hamburger-icon span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+
+.sidebar-open .hamburger-icon span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+.sidebar-open .hamburger-icon span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+.mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--ds-text-primary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    /* Prevent text from being cut off */
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.mobile-brand-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.mobile-header-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    /* CRITICAL: Allow dropdown to overflow */
+    overflow: visible;
+    position: relative;
+}
+
+/* ===========================================
+   MOBILE BOTTOM NAVIGATION
+   =========================================== */
+
+.mobile-bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    background: rgba(59, 66, 82, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(216, 222, 233, 0.1);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    color: var(--ds-text-muted);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    min-height: 60px;
+}
+
+.bottom-nav-item .bi {
+    font-size: 1.35rem;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.bottom-nav-item span:last-child {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.bottom-nav-item:hover,
+.bottom-nav-item:focus {
+    color: var(--ds-text-primary);
+    outline: none;
+}
+
+.bottom-nav-item.active {
+    color: var(--ds-accent-cyan);
+}
+
+.bottom-nav-item.active .bi {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(136, 192, 208, 0.5));
+}
+
+/* Active indicator dot */
+.bottom-nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: var(--ds-accent-cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(136, 192, 208, 0.6);
+}
+
+/* Touch feedback */
+@media (hover: none) and (pointer: coarse) {
+    .bottom-nav-item:active {
+        background: rgba(136, 192, 208, 0.1);
+        transform: scale(0.95);
+    }
+    
+    .bottom-nav-item:active .bi {
+        transform: scale(0.9);
+    }
+}
+
+/* ===========================================
+   DESKTOP HEADER (visible on desktop)
+   =========================================== */
+
+.desktop-header {
+    display: none;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--ds-bg-elevated);
+    border-bottom: none;
+    justify-content: flex-end;
+}
+
+/* ===========================================
+   SIDEBAR OVERLAY (mobile)
+   =========================================== */
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1050; /* Above everything except sidebar */
+    opacity: 1;
+    animation: fadeIn 0.25s ease-out;
+    /* Use dynamic viewport dimensions for full coverage */
+    width: 100vw;
+    height: 100vh; /* Fallback for older browsers */
+    height: 100dvh;
+}
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+    }
+    to { 
+        opacity: 1; 
+    }
+}
+
+/* ===========================================
+   SIDEBAR
+   =========================================== */
 
 .sidebar {
-    background-color: var(--nord1);
-}
-
-/* Auth row - minimal, just for login button */
-.auth-row {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 220px;
+    max-width: 85vw; /* Don't exceed viewport on very small screens */
+    background-color: var(--ds-bg-elevated);
+    border-right: none;
+    z-index: 1100; /* Above overlay */
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 0.5rem 1.5rem;
-    background-color: var(--nord0);
+    flex-direction: column;
+    /* Safe area padding for sidebar - full height */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Ensure proper rendering */
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    /* Use dynamic viewport height */
+    height: 100vh; /* Fallback for older browsers */
+    height: 100dvh;
+    overflow: hidden;
 }
 
-article.content {
-    background-color: var(--nord0);
-    min-height: calc(100vh - 3rem);
+.sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
 }
 
-@media (max-width: 640.98px) {
-    .auth-row {
-        padding: 0.5rem 1rem;
-    }
+/* Prevent body scroll when sidebar is open */
+.sidebar-open {
+    overflow: hidden;
 }
 
-@media (min-width: 641px) {
+/* ===========================================
+   DESKTOP LAYOUT (768px and up)
+   =========================================== */
+
+@media (min-width: 768px) {
     .page {
         flex-direction: row;
+        /* Desktop layout: sidebar + main side by side, no page-level overflow restrictions */
+        overflow: visible;
+        /* Desktop doesn't need safe area padding */
+        padding-top: 0;
+        padding-left: 0;
+        padding-right: 0;
     }
-
+    
+    /* On desktop, hide the mobile header entirely and show user menu differently */
+    .mobile-header {
+        /* Keep it fixed in top-right corner for the user dropdown */
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: auto;
+        height: auto;
+        width: auto;
+        background: transparent;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        z-index: 150; /* Above sidebar and content */
+        justify-content: flex-end;
+    }
+    
+    /* Hide the ::before pseudo-element on desktop */
+    .mobile-header::before {
+        display: none;
+    }
+    
+    /* Hide hamburger and brand on desktop - LoginDisplay stays visible */
+    .mobile-header .hamburger-btn,
+    .mobile-header .mobile-brand {
+        display: none;
+    }
+    
+    /* LoginDisplay container adapts for desktop */
+    .mobile-header .mobile-header-actions {
+        position: relative;
+    }
+    
+    .desktop-header {
+        /* Desktop header is sticky within the scrolling main content */
+        display: flex;
+        position: sticky;
+        top: 0;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--ds-bg-elevated);
+        border-bottom: 1px solid var(--ds-bg-muted);
+        justify-content: flex-end;
+        min-height: 56px;
+        z-index: 50; /* Above content but below mobile-header */
+    }
+    
     .sidebar {
-        width: 250px;
+        /* Fixed sidebar on desktop - doesn't scroll with content */
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh; /* Fallback for older browsers */
+        height: 100dvh;
+        transform: translateX(0);
+        flex-shrink: 0;
+        max-width: none;
+        will-change: auto;
+        /* No safe area needed on desktop */
+        padding-top: 0;
+        padding-bottom: 0;
+        z-index: 100; /* Below the user menu */
+        width: 220px;
+    }
+    
+    .sidebar-overlay {
+        display: none !important;
+    }
+    
+    main {
+        flex: 1;
+        min-width: 0;
+        /* Main area scrolls independently */
+        overflow-y: auto;
+        overflow-x: hidden;
         height: 100vh;
-        position: sticky;
-        top: 0;
-        border-right: 1px solid var(--nord3);
+        height: 100dvh;
+        padding-top: 0;
+        /* Offset for the fixed sidebar */
+        margin-left: 220px;
     }
-
-    .auth-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        background-color: var(--nord0);
-        padding: 0.75rem 2rem;
+    
+    /* Desktop: no bottom nav, so no extra padding needed */
+    main.has-bottom-nav {
+        padding-bottom: 0;
     }
-
-    article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+    
+    .mobile-bottom-nav {
+        display: none;
+    }
+    
+    .content {
+        padding: 1.5rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+        overflow-x: visible;
+        /* No safe area padding needed on desktop */
+        padding-bottom: 1.5rem;
     }
 }
 
+/* ===========================================
+   LARGE DESKTOP (1200px and up)
+   =========================================== */
+
+@media (min-width: 1200px) {
+    .sidebar {
+        width: 240px;
+    }
+    
+    main {
+        margin-left: 240px;
+    }
+    
+    .content {
+        padding: 2rem;
+    }
+}
+
+/* ===========================================
+   SMALL MOBILE (480px and below)
+   =========================================== */
+
+@media (max-width: 480px) {
+    .mobile-header {
+        padding: 0 0.75rem;
+        /* Height controlled by CSS custom property at top of file */
+    }
+    
+    .mobile-brand {
+        font-size: 1rem;
+    }
+    
+    .mobile-brand-icon {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .content {
+        padding: 0.5rem; /* Reduced padding on small screens */
+    }
+    
+    .sidebar {
+        width: 220px;
+        max-width: 90vw;
+    }
+    
+    .bottom-nav-item .bi {
+        font-size: 1.25rem;
+    }
+    
+    .bottom-nav-item span:last-child {
+        font-size: 0.65rem;
+    }
+    
+    /* main padding-top is calculated from CSS custom property automatically */
+}
+
+/* ===========================================
+   PWA STANDALONE MODE ADJUSTMENTS
+   
+   When running as installed PWA (standalone mode):
+   - iOS hides the browser chrome
+   - The safe area insets become critical
+   - black-translucent status bar style means content
+     renders behind the status bar
+   =========================================== */
+
+:global(body.pwa-standalone) main {
+    /* Ensure scrolling works properly in standalone mode */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ===========================================
+   TOUCH INTERACTIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .hamburger-btn:active {
+        background-color: var(--ds-bg-hover);
+    }
+    
+    .mobile-brand:active {
+        opacity: 0.8;
+    }
+    
+    .hamburger-btn {
+        width: 48px;
+        height: 48px;
+    }
+}
+
+/* ===========================================
+   REDUCED MOTION
+   =========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar {
+        transition: none;
+    }
+    
+    .hamburger-icon span {
+        transition: none;
+    }
+    
+    .sidebar-overlay {
+        animation: none;
+    }
+    
+    .bottom-nav-item,
+    .bottom-nav-item .bi {
+        transition: none;
+    }
+}
+
+/* ===========================================
+   LANDSCAPE MOBILE
+   =========================================== */
+
+@media (max-width: 767px) and (orientation: landscape) {
+    .sidebar {
+        width: 260px;
+    }
+    
+    .content {
+        padding: 0.5rem;
+    }
+    
+    .mobile-bottom-nav {
+        height: calc(50px + env(safe-area-inset-bottom, 0px));
+    }
+    
+    .bottom-nav-item {
+        min-height: 50px;
+    }
+    
+    /* Landscape: smaller bottom nav */
+    main.has-bottom-nav {
+        padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* ===========================================
+   BLAZOR ERROR UI
+   =========================================== */
+
 #blazor-error-ui {
-    background: var(--nord1);
-    border-top: 3px solid var(--nord12);
+    background: var(--ds-bg-elevated);
+    border-top: 3px solid var(--ds-semantic-warning);
     bottom: 0;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
@@ -72,8 +674,8 @@ article.content {
     padding: 0.6rem 1.25rem 0.7rem 1.25rem;
     position: fixed;
     width: 100%;
-    z-index: 1000;
-    color: var(--nord6);
+    z-index: 2000;
+    color: var(--ds-text-primary);
 }
 
 #blazor-error-ui .dismiss {
@@ -81,5 +683,34 @@ article.content {
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
-    color: var(--nord4);
+    color: var(--ds-text-muted);
+}
+
+/* ===========================================
+   PRINT STYLES
+   =========================================== */
+
+@media print {
+    .mobile-header,
+    .desktop-header,
+    .sidebar,
+    .sidebar-overlay,
+    .mobile-bottom-nav,
+    #blazor-error-ui {
+        display: none !important;
+    }
+    
+    .page {
+        display: block;
+    }
+    
+    main {
+        display: block;
+        padding-top: 0;
+    }
+    
+    .content {
+        padding: 0;
+        max-width: none;
+    }
 }

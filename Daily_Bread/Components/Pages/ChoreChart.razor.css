@@ -3,6 +3,20 @@
    Beautiful fridge-ready weekly chore chart
    ============================================ */
 
+:root {
+    --chart-bg: var(--ds-bg-base);
+    --chart-surface: var(--ds-bg-elevated);
+    --chart-surface-2: var(--ds-bg-hover);
+    --chart-surface-3: var(--ds-bg-muted);
+    --chart-text: var(--ds-text-primary);
+    --chart-text-muted: var(--ds-text-muted);
+    --chart-accent-blue: var(--ds-accent-primary);
+    --chart-accent-green: var(--ds-semantic-success);
+    --chart-accent-yellow: var(--ds-semantic-highlight);
+    --chart-accent-orange: var(--ds-semantic-warning);
+    --chart-accent-purple: var(--ds-accent-purple);
+}
+
 /* ===========================================
    SCREEN STYLES (Normal Viewing) - NORD THEME
    =========================================== */
@@ -10,17 +24,17 @@
 .chore-chart-page {
     max-width: 900px;
     margin: 0 auto;
-    padding: var(--space-md);
+    padding: var(--ds-space-4);
 }
 
 .screen-controls {
     max-width: 900px;
-    margin: 0 auto var(--space-lg) auto;
-    padding: var(--space-md);
+    margin: 0 auto var(--ds-space-6) auto;
+    padding: var(--ds-space-4);
 }
 
 .screen-controls h1 {
-    color: var(--nord6);
+    color: var(--chart-text);
 }
 
 /* ===========================================
@@ -28,12 +42,12 @@
    =========================================== */
 
 .print-page {
-    background: white;
-    color: #333;
+    background: var(--chart-surface);
+    color: var(--chart-text);
     padding: 24px;
-    border-radius: var(--radius-lg);
+    border-radius: var(--ds-radius-lg);
     margin-bottom: 24px;
-    border: 1px solid var(--nord3);
+    border: 1px solid var(--chart-surface-3);
 }
 
 /* ===========================================
@@ -46,16 +60,16 @@
     justify-content: center;
     gap: 16px;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--chart-accent-blue) 0%, var(--chart-accent-purple) 100%);
     border-radius: 16px;
     margin-bottom: 24px;
-    color: white;
+    color: var(--chart-text);
     text-align: center;
 }
 
 .header-star {
     font-size: 2.5rem;
-    color: #ffd700;
+    color: var(--chart-accent-yellow);
     text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
@@ -88,14 +102,14 @@
 
 .chore-table th,
 .chore-table td {
-    border: 2px solid #ddd;
+    border: 2px solid var(--chart-surface-3);
     padding: 12px 8px;
     text-align: center;
     vertical-align: middle;
 }
 
 .chore-table thead th {
-    background: #f8f9fa;
+    background: var(--chart-surface-2);
     font-weight: 600;
 }
 
@@ -103,7 +117,7 @@
     width: 30%;
     text-align: left !important;
     padding-left: 16px !important;
-    background: #f0f0f0 !important;
+    background: var(--chart-surface-2) !important;
 }
 
 .day-column {
@@ -113,22 +127,22 @@
 .day-name {
     font-weight: 700;
     font-size: 0.9rem;
-    color: #555;
+    color: var(--chart-text-muted);
 }
 
 .day-number {
     font-size: 1.2rem;
     font-weight: 600;
-    color: #333;
+    color: var(--chart-text);
 }
 
 .today-column {
-    background: #e3f2fd !important;
+    background: rgba(136, 192, 208, 0.08) !important;
 }
 
 .today-column .day-name,
 .today-column .day-number {
-    color: #1565c0;
+    color: var(--chart-accent-blue);
 }
 
 /* Chore name cell */
@@ -141,8 +155,8 @@
 
 .weekly-badge {
     display: inline-block;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: rgba(163, 190, 140, 0.15);
+    color: var(--chart-accent-green);
     font-size: 0.7rem;
     padding: 2px 6px;
     border-radius: 10px;
@@ -151,7 +165,7 @@
 }
 
 .weekly-row {
-    background: #fafff9;
+    background: rgba(163, 190, 140, 0.05);
 }
 
 /* ===========================================
@@ -165,16 +179,16 @@
 .big-checkbox {
     width: 36px;
     height: 36px;
-    border: 3px solid #333;
+    border: 3px solid var(--chart-text);
     border-radius: 6px;
     margin: 0 auto;
-    background: white;
+    background: var(--chart-surface);
 }
 
 .weekly-checkbox {
     border-radius: 50%;
     border-style: dashed;
-    border-color: #2e7d32;
+    border-color: var(--chart-accent-green);
 }
 
 /* ===========================================
@@ -186,8 +200,8 @@
     align-items: flex-start;
     gap: 12px;
     padding: 12px 16px;
-    background: #fff8e1;
-    border: 2px solid #ffc107;
+    background: rgba(235, 203, 139, 0.15);
+    border: 2px solid var(--chart-accent-yellow);
     border-radius: 12px;
     margin-bottom: 20px;
     font-size: 0.9rem;
@@ -198,12 +212,12 @@
 }
 
 .note-text {
-    color: #5d4037;
+    color: var(--chart-text-muted);
 }
 
 .goal-item {
     display: inline-block;
-    background: white;
+    background: var(--chart-surface);
     padding: 2px 8px;
     border-radius: 12px;
     margin: 0 4px;
@@ -219,9 +233,9 @@
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    background: linear-gradient(135deg, rgba(163, 190, 140, 0.2) 0%, rgba(163, 190, 140, 0.1) 100%);
     border-radius: 12px;
-    border: 2px solid #81c784;
+    border: 2px solid var(--chart-accent-green);
 }
 
 .reward-section {
@@ -232,19 +246,19 @@
 
 .reward-label {
     font-weight: 500;
-    color: #2e7d32;
+    color: var(--chart-accent-green);
 }
 
 .reward-amount {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1b5e20;
+    color: var(--chart-accent-green);
 }
 
 .motivation-section {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #2e7d32;
+    color: var(--chart-accent-green);
 }
 
 /* ===========================================
@@ -256,28 +270,20 @@
    SCREEN CONTROLS (hidden when printing)
    =========================================== */
 
-.screen-controls {
-    max-width: 900px;
-    margin: 0 auto var(--space-lg) auto;
-    padding: var(--space-md);
-}
-
-.screen-controls h1 {
-    color: var(--nord6);
-}
+/* Already defined above - keeping style reference */
 
 /* ===========================================
    WEEKLY CALENDAR CONTAINER
    =========================================== */
 
 .weekly-calendar {
-    background: white;
-    color: #333;
+    background: var(--chart-surface);
+    color: var(--chart-text);
     padding: 20px;
     border-radius: 12px;
     margin: 0 auto 24px auto;
     max-width: 1000px;
-    border: 1px solid var(--nord3);
+    border: 1px solid var(--chart-surface-3);
 }
 
 /* ===========================================
@@ -287,17 +293,17 @@
 .calendar-header {
     text-align: center;
     padding: 16px 20px;
-    background: linear-gradient(135deg, #5E81AC 0%, #81A1C1 100%);
+    background: linear-gradient(135deg, var(--chart-accent-blue) 0%, var(--chart-accent-purple) 100%);
     border-radius: 10px;
     margin-bottom: 16px;
-    color: white;
+    color: var(--chart-text);
 }
 
 .calendar-header h1 {
     margin: 0 0 4px 0;
     font-size: 1.75rem;
     font-weight: 700;
-    color: white;
+    color: var(--chart-text);
 }
 
 .week-range {
@@ -321,32 +327,32 @@
    =========================================== */
 
 .day-cell {
-    border: 2px solid #ddd;
+    border: 2px solid var(--chart-surface-3);
     border-radius: 8px;
     min-height: 180px;
     display: flex;
     flex-direction: column;
-    background: #fafafa;
+    background: var(--chart-surface);
 }
 
 .day-cell.today {
-    border-color: #5E81AC;
+    border-color: var(--chart-accent-blue);
     border-width: 3px;
-    background: #f0f7ff;
+    background: rgba(136, 192, 208, 0.1);
 }
 
 /* Day header (name + date) */
 .day-header {
-    background: #e9ecef;
+    background: var(--chart-surface-2);
     padding: 8px;
     text-align: center;
     border-radius: 6px 6px 0 0;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--chart-surface-3);
 }
 
 .day-cell.today .day-header {
-    background: #5E81AC;
-    color: white;
+    background: var(--chart-accent-blue);
+    color: var(--chart-text);
 }
 
 .day-name {
@@ -373,7 +379,7 @@
 }
 
 .no-chores {
-    color: #999;
+    color: var(--chart-text-muted);
     font-style: italic;
     font-size: 0.8rem;
     text-align: center;
@@ -393,7 +399,7 @@
 }
 
 .chore-item.weekly {
-    color: #2e7d32;
+    color: var(--chart-accent-green);
 }
 
 /* Checkbox square */
@@ -401,15 +407,15 @@
     width: 16px;
     height: 16px;
     min-width: 16px;
-    border: 2px solid #666;
+    border: 2px solid var(--chart-text);
     border-radius: 3px;
     margin-top: 2px;
-    background: white;
+    background: var(--chart-surface);
 }
 
 .chore-item.weekly .chore-checkbox {
     border-radius: 50%;
-    border-color: #2e7d32;
+    border-color: var(--chart-accent-green);
     border-style: dashed;
 }
 
@@ -427,16 +433,16 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: #e8f5e9;
+    background: rgba(163, 190, 140, 0.15);
     border-radius: 8px;
-    border: 1px solid #a5d6a7;
+    border: 1px solid var(--chart-accent-green);
     font-size: 0.9rem;
     gap: 16px;
     flex-wrap: wrap;
 }
 
 .potential {
-    color: #2e7d32;
+    color: var(--chart-accent-green);
 }
 
 .potential strong {
@@ -444,7 +450,7 @@
 }
 
 .weekly-note {
-    color: #666;
+    color: var(--chart-text-muted);
     font-style: italic;
 }
 
@@ -467,9 +473,10 @@
 
     /* Hide everything except the calendar */
     body {
-        background: white !important;
+        background: var(--chart-bg) !important;
         margin: 0;
         padding: 0;
+        color: var(--chart-text) !important;
     }
 
     /* Hide screen-only stuff */
@@ -502,6 +509,8 @@
         border-radius: 0;
         box-shadow: none;
         page-break-inside: avoid;
+        background: var(--chart-surface) !important;
+        color: var(--chart-text) !important;
     }
 
     /* Page break for multiple kids */
@@ -511,8 +520,9 @@
 
     /* Ensure header colors print */
     .calendar-header {
-        background: #5E81AC !important;
+        background: var(--chart-accent-blue) !important;
         -webkit-print-color-adjust: exact !important;
+        color: var(--chart-text) !important;
     }
 
     /* Grid adjustments for print */
@@ -522,11 +532,11 @@
 
     .day-cell {
         min-height: 140px;
-        border: 2px solid #999;
+        border: 2px solid var(--chart-surface-3);
     }
 
     .day-cell.today {
-        border-color: #333;
+        border-color: var(--chart-accent-blue);
         border-width: 3px;
     }
 
@@ -535,21 +545,21 @@
     }
 
     .day-cell.today .day-header {
-        background: #5E81AC !important;
+        background: var(--chart-accent-blue) !important;
     }
 
     /* Checkbox visible for marking */
     .chore-checkbox {
-        border: 2px solid #333 !important;
+        border: 2px solid var(--chart-text) !important;
     }
 
     .chore-item.weekly .chore-checkbox {
-        border-color: #2e7d32 !important;
+        border-color: var(--chart-accent-green) !important;
     }
 
     /* Footer */
     .calendar-footer {
-        background: #e8f5e9 !important;
+        background: rgba(163, 190, 140, 0.15) !important;
         padding: 8px 12px;
     }
 }
