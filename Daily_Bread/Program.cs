@@ -60,7 +60,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         (connectionString.Contains("Host=") || connectionString.Contains("Server=") || connectionString.Contains("postgres")))
     {
         // PostgreSQL connection string detected (for production/Azure/Render/Railway)
-        options.UseNpgsql(connectionString);
+        options.UseNpgsql(connectionString, npgsqlOptions =>
+        {
+            npgsqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorCodesToAdd: null);
+        });
     }
     else
     {
