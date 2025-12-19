@@ -128,16 +128,20 @@ using (var scope = app.Services.CreateScope())
         
         if (isPostgres)
         {
-            Console.WriteLine("PostgreSQL detected - creating database schema...");
+            Console.WriteLine("PostgreSQL detected - ensuring database exists...");
             
-            // Delete and recreate to ensure clean schema (no SQLite artifacts)
-            Console.WriteLine("Dropping existing database...");
-            await db.Database.EnsureDeletedAsync();
+            // Use EnsureCreated for initial setup - it's idempotent and won't modify existing tables
+            // For production with schema changes, you'd typically use migrations instead
+            var created = await db.Database.EnsureCreatedAsync();
             
-            Console.WriteLine("Creating fresh database schema...");
-            await db.Database.EnsureCreatedAsync();
-            
-            Console.WriteLine("PostgreSQL database schema created successfully.");
+            if (created)
+            {
+                Console.WriteLine("PostgreSQL database schema created successfully.");
+            }
+            else
+            {
+                Console.WriteLine("PostgreSQL database already exists.");
+            }
         }
         else
         {

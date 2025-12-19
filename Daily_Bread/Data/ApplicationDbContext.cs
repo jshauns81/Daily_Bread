@@ -140,9 +140,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Amount).HasPrecision(10, 2);
             entity.Property(e => e.Description).HasMaxLength(200);
 
-            // Note: Removed HasFilter for cross-database compatibility (SQLite uses [col], PostgreSQL uses "col")
-            // The unique constraint on ChoreLogId will still work - nulls are treated as distinct in most DBs
-            entity.HasIndex(e => e.ChoreLogId).IsUnique();
+            // Note: ChoreLogId is not unique-indexed because:
+            // 1. Filtering partial unique indexes have DB-specific syntax (SQLite: [col], PostgreSQL: "col")
+            // 2. Most transactions don't have a ChoreLogId (manual adjustments, payouts, etc.)
+            // The one-to-one relationship is enforced by the FK configuration below
+            entity.HasIndex(e => e.ChoreLogId);
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.LedgerAccountId);
             entity.HasIndex(e => e.TransactionDate);
