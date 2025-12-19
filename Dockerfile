@@ -15,7 +15,7 @@ RUN dotnet publish -c Release -o /app/publish --no-restore
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
-# Copy published app
+# Copy published app   
 COPY --from=build /app/publish .
 
 # Railway uses PORT env var, default to 8080
