@@ -30,8 +30,6 @@
 !README.md
 
 # Docker
-Dockerfile*
-docker-compose*
 .dockerignore
 
 # CI/CD
