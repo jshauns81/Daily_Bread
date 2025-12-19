@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Daily_Bread.Components;
 using Daily_Bread.Data;
 using Daily_Bread.Services;
@@ -10,6 +11,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Configure forwarded headers for reverse proxy (Railway, Azure, etc.)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Trust all proxies in production (Railway doesn't have a fixed IP)
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Add EF Core with automatic provider selection (PostgreSQL or SQLite)
 // Supports Railway DATABASE_URL format and standard connection strings
@@ -83,7 +93,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    // Use SameAsRequest so it works behind reverse proxies that terminate SSL
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 // Add authorization
@@ -112,6 +123,9 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>();
 
 var app = builder.Build();
+
+// Enable forwarded headers FIRST (before other middleware)
+app.UseForwardedHeaders();
 
 // Ensure database schema is up to date
 using (var scope = app.Services.CreateScope())
@@ -212,10 +226,15 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
+    // Only use HTTPS redirection in production when not behind a reverse proxy
+    // Railway terminates SSL at the edge, so we skip this
+}
+else
+{
+    app.UseHttpsRedirection();
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found");
-app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
