@@ -131,7 +131,8 @@ using (var scope = app.Services.CreateScope())
             // For PostgreSQL: Use EnsureCreated to create schema directly from model
             // This avoids SQLite-specific migration issues
             Console.WriteLine("PostgreSQL detected - using EnsureCreated...");
-            await db.Database.EnsureCreatedAsync();
+            var created = await db.Database.EnsureCreatedAsync();
+            Console.WriteLine($"Database EnsureCreated result: {(created ? "Created new database" : "Database already exists")}");
         }
         else
         {
@@ -143,10 +144,22 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("Database setup completed successfully.");
         logger.LogInformation("Database setup completed successfully.");
         
-        // Seed achievements
-        var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
-        await achievementService.SeedAchievementsAsync();
-        Console.WriteLine("Achievement seeding completed.");
+        // Verify the Achievements table exists before seeding
+        try
+        {
+            var achievementCount = await db.Achievements.CountAsync();
+            Console.WriteLine($"Achievements table exists with {achievementCount} records.");
+            
+            // Seed achievements
+            var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
+            await achievementService.SeedAchievementsAsync();
+            Console.WriteLine("Achievement seeding completed.");
+        }
+        catch (Exception seedEx)
+        {
+            Console.WriteLine($"Achievement seeding skipped - table may not exist yet: {seedEx.Message}");
+            // Don't throw - the app can still run without achievements initially
+        }
     }
     catch (Exception ex)
     {

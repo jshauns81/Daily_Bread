@@ -216,11 +216,13 @@ public class AchievementService : IAchievementService
 
     public async Task SeedAchievementsAsync()
     {
-        // Fix any corrupted icons from previous seeding
-        await FixCorruptedIconsAsync();
-        
+        // Check if already seeded first (before trying to fix icons)
         if (await _context.Achievements.AnyAsync())
+        {
+            // Fix any corrupted icons from previous seeding
+            await FixCorruptedIconsAsync();
             return; // Already seeded
+        }
 
         var achievements = new List<Achievement>
         {
