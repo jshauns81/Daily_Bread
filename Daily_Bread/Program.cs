@@ -128,19 +128,47 @@ using (var scope = app.Services.CreateScope())
         
         if (isPostgres)
         {
-            Console.WriteLine("PostgreSQL detected - ensuring database exists...");
+            Console.WriteLine("PostgreSQL detected...");
             
-            // Use EnsureCreated for initial setup - it's idempotent and won't modify existing tables
-            // For production with schema changes, you'd typically use migrations instead
-            var created = await db.Database.EnsureCreatedAsync();
+            // Check for RECREATE_DATABASE env var to force fresh start (set this once after fixing schema issues)
+            var forceRecreate = Environment.GetEnvironmentVariable("RECREATE_DATABASE") == "true";
             
-            if (created)
+            if (forceRecreate)
             {
-                Console.WriteLine("PostgreSQL database schema created successfully.");
+                Console.WriteLine("RECREATE_DATABASE=true - Dropping and recreating database...");
+                await db.Database.EnsureDeletedAsync();
+                await db.Database.EnsureCreatedAsync();
+                Console.WriteLine("PostgreSQL database recreated successfully.");
             }
             else
             {
-                Console.WriteLine("PostgreSQL database already exists.");
+                // Try to connect and check if database exists
+                var canConnect = await db.Database.CanConnectAsync();
+                
+                if (canConnect)
+                {
+                    Console.WriteLine("PostgreSQL database connection successful.");
+                    
+                    // Check if tables exist by trying to query one
+                    try
+                    {
+                        var hasAspNetUsersTable = await db.Database.ExecuteSqlRawAsync(
+                            "SELECT 1 FROM information_schema.tables WHERE table_name = 'AspNetUsers' LIMIT 1");
+                        Console.WriteLine("Database schema appears to exist.");
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Database schema missing - creating...");
+                        await db.Database.EnsureCreatedAsync();
+                        Console.WriteLine("PostgreSQL database schema created.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Creating new PostgreSQL database...");
+                    await db.Database.EnsureCreatedAsync();
+                    Console.WriteLine("PostgreSQL database created successfully.");
+                }
             }
         }
         else
