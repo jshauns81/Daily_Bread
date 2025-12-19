@@ -11,15 +11,22 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Add EF Core with automatic provider selection (PostgreSQL or SQLite)
-// In Azure, set ConnectionStrings__DefaultConnection in App Configuration
+// Supports Railway DATABASE_URL format and standard connection strings
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Check for Railway's DATABASE_URL environment variable
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    connectionString = ConvertDatabaseUrlToConnectionString(databaseUrl);
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     if (!string.IsNullOrEmpty(connectionString) && 
         (connectionString.Contains("Host=") || connectionString.Contains("Server=") || connectionString.Contains("postgres")))
     {
-        // PostgreSQL connection string detected (for production/Azure/Render)
+        // PostgreSQL connection string detected (for production/Azure/Render/Railway)
         options.UseNpgsql(connectionString);
     }
     else
@@ -138,3 +145,28 @@ app.MapPost("/Account/Logout", async (SignInManager<ApplicationUser> signInManag
 });
 
 app.Run();
+
+// Helper method to convert Railway DATABASE_URL to Npgsql connection string
+static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
+{
+    // Railway format: postgresql://user:password@host:port/database
+    // Npgsql format: Host=host;Port=port;Database=database;Username=user;Password=password;SSL Mode=Require;Trust Server Certificate=true
+    
+    try
+    {
+        var uri = new Uri(databaseUrl);
+        var userInfo = uri.UserInfo.Split(':');
+        var username = userInfo[0];
+        var password = userInfo.Length > 1 ? userInfo[1] : "";
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        var database = uri.AbsolutePath.TrimStart('/');
+
+        return $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+    }
+    catch
+    {
+        // If parsing fails, return as-is (might already be in correct format)
+        return databaseUrl;
+    }
+}
