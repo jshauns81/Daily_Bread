@@ -16,69 +16,43 @@ builder.Services.AddRazorComponents()
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // Trust all proxies in production (Railway doesn't have a fixed IP)
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
-// Add EF Core with automatic provider selection (PostgreSQL or SQLite)
-// Supports Railway DATABASE_URL format and standard connection strings
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Build PostgreSQL connection string from Railway environment variables
+var connectionString = GetPostgresConnectionString(builder.Configuration);
+Console.WriteLine($"Database configured: PostgreSQL");
 
-// Check for Railway's DATABASE_URL or DATABASE_PRIVATE_URL environment variable
-var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
-    ?? Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL")
-    ?? Environment.GetEnvironmentVariable("POSTGRES_URL");
-
-if (!string.IsNullOrEmpty(databaseUrl))
-{
-    connectionString = ConvertDatabaseUrlToConnectionString(databaseUrl);
-    Console.WriteLine($"Using PostgreSQL database connection from environment variable");
-}
-else if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgresql://"))
-{
-    // ConnectionStrings__DefaultConnection might already be a URL format
-    connectionString = ConvertDatabaseUrlToConnectionString(connectionString);
-    Console.WriteLine($"Converted connection string from URL format");
-}
-
-// Log connection info (without sensitive data) for debugging
-if (!string.IsNullOrEmpty(connectionString))
-{
-    var safeLog = connectionString.Contains("Host=") 
-        ? $"Host={connectionString.Split(';').FirstOrDefault(s => s.StartsWith("Host="))?.Split('=').LastOrDefault()}"
-        : "SQLite";
-    Console.WriteLine($"Database connection type: {safeLog}");
-}
-
+// Configure DbContext for PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    // Suppress the PendingModelChangesWarning - we handle migrations at startup
     options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
-    
-    if (!string.IsNullOrEmpty(connectionString) && 
-        (connectionString.Contains("Host=") || connectionString.Contains("Server=") || connectionString.Contains("postgres")))
+    options.UseNpgsql(connectionString, npgsqlOptions =>
     {
-        // PostgreSQL connection string detected (for production/Azure/Render/Railway)
-        options.UseNpgsql(connectionString, npgsqlOptions =>
-        {
-            npgsqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 3,
-                maxRetryDelay: TimeSpan.FromSeconds(10),
-                errorCodesToAdd: null);
-        });
-    }
-    else
-    {
-        // SQLite for local development
-        options.UseSqlite(connectionString ?? "Data Source=DailyBread.db");
-    }
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorCodesToAdd: null);
+    });
 });
+
+// Add DbContext factory for Blazor Server (avoids concurrent access issues)
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+{
+    options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorCodesToAdd: null);
+    });
+}, ServiceLifetime.Scoped);
 
 // Add Identity services
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // Password requirements
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
@@ -99,7 +73,6 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
-    // Use SameAsRequest so it works behind reverse proxies that terminate SSL
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
@@ -130,10 +103,10 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-// Enable forwarded headers FIRST (before other middleware)
+// Enable forwarded headers FIRST
 app.UseForwardedHeaders();
 
-// Ensure database schema is up to date
+// Database setup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -141,65 +114,46 @@ using (var scope = app.Services.CreateScope())
     
     try
     {
-        Console.WriteLine("Starting database setup...");
+        Console.WriteLine("Starting PostgreSQL database setup...");
         
-        // Check if we're using PostgreSQL (production) or SQLite (development)
-        var isPostgres = db.Database.ProviderName?.Contains("Npgsql") == true;
+        var forceRecreate = Environment.GetEnvironmentVariable("RECREATE_DATABASE") == "true";
         
-        if (isPostgres)
+        if (forceRecreate)
         {
-            Console.WriteLine("PostgreSQL detected...");
-            
-            // Check for RECREATE_DATABASE env var to force fresh start (set this once after fixing schema issues)
-            var forceRecreate = Environment.GetEnvironmentVariable("RECREATE_DATABASE") == "true";
-            
-            if (forceRecreate)
-            {
-                Console.WriteLine("RECREATE_DATABASE=true - Dropping and recreating database...");
-                await db.Database.EnsureDeletedAsync();
-                await db.Database.EnsureCreatedAsync();
-                Console.WriteLine("PostgreSQL database recreated successfully.");
-            }
-            else
-            {
-                // Try to connect and check if database exists
-                var canConnect = await db.Database.CanConnectAsync();
-                
-                if (canConnect)
-                {
-                    Console.WriteLine("PostgreSQL database connection successful.");
-                    
-                    // Check if tables exist by trying to query one
-                    try
-                    {
-                        var hasAspNetUsersTable = await db.Database.ExecuteSqlRawAsync(
-                            "SELECT 1 FROM information_schema.tables WHERE table_name = 'AspNetUsers' LIMIT 1");
-                        Console.WriteLine("Database schema appears to exist.");
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Database schema missing - creating...");
-                        await db.Database.EnsureCreatedAsync();
-                        Console.WriteLine("PostgreSQL database schema created.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Creating new PostgreSQL database...");
-                    await db.Database.EnsureCreatedAsync();
-                    Console.WriteLine("PostgreSQL database created successfully.");
-                }
-            }
+            Console.WriteLine("RECREATE_DATABASE=true - Dropping and recreating database...");
+            await db.Database.EnsureDeletedAsync();
+            await db.Database.EnsureCreatedAsync();
+            Console.WriteLine("Database recreated successfully.");
         }
         else
         {
-            // For SQLite: Use EnsureCreated (migrations were deleted)
-            Console.WriteLine("SQLite detected - using EnsureCreated...");
-            await db.Database.EnsureCreatedAsync();
+            var canConnect = await db.Database.CanConnectAsync();
+            
+            if (canConnect)
+            {
+                Console.WriteLine("Database connection successful.");
+                
+                // Check if schema exists
+                try
+                {
+                    await db.Database.ExecuteSqlRawAsync(
+                        "SELECT 1 FROM information_schema.tables WHERE table_name = 'AspNetUsers' LIMIT 1");
+                    Console.WriteLine("Database schema exists.");
+                }
+                catch
+                {
+                    Console.WriteLine("Creating database schema...");
+                    await db.Database.EnsureCreatedAsync();
+                    Console.WriteLine("Database schema created.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Creating new database...");
+                await db.Database.EnsureCreatedAsync();
+                Console.WriteLine("Database created successfully.");
+            }
         }
-        
-        Console.WriteLine("Database setup completed successfully.");
-        logger.LogInformation("Database setup completed successfully.");
         
         // Seed achievements
         try
@@ -216,21 +170,19 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine($"Database setup error: {ex.Message}");
-        Console.WriteLine($"Stack trace: {ex.StackTrace}");
-        logger.LogError(ex, "An error occurred while setting up the database.");
+        logger.LogError(ex, "Database setup failed.");
         throw;
     }
 }
 
-// Seed roles and admin user on startup
+// Seed roles and admin user
 Console.WriteLine("Starting data seeding...");
 await SeedData.InitializeAsync(app.Services, app.Configuration);
 Console.WriteLine("Data seeding completed.");
 
-// Configure the HTTP request pipeline.
+// Configure HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
-    // Allow enabling developer exception page in production for debugging (set SHOW_ERRORS=true)
     var showErrors = Environment.GetEnvironmentVariable("SHOW_ERRORS") == "true";
     if (showErrors)
     {
@@ -241,30 +193,22 @@ if (!app.Environment.IsDevelopment())
         app.UseExceptionHandler("/Error", createScopeForErrors: true);
     }
     app.UseHsts();
-    // Only use HTTPS redirection in production when not behind a reverse proxy
-    // Railway terminates SSL at the edge, so we skip this
 }
 else
 {
     app.UseDeveloperExceptionPage();
-    app.UseHttpsRedirection();
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.UseAntiforgery();
 
-// Health check endpoint
 app.MapHealthChecks("/health");
-
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Map logout endpoint to handle POST with antiforgery token
 app.MapPost("/Account/Logout", async (SignInManager<ApplicationUser> signInManager) =>
 {
     await signInManager.SignOutAsync();
@@ -273,12 +217,36 @@ app.MapPost("/Account/Logout", async (SignInManager<ApplicationUser> signInManag
 
 app.Run();
 
-// Helper method to convert Railway DATABASE_URL to Npgsql connection string
+// Helper to build PostgreSQL connection string from Railway environment variables
+static string GetPostgresConnectionString(IConfiguration configuration)
+{
+    // Check for Railway DATABASE_URL format
+    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+        ?? Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL")
+        ?? Environment.GetEnvironmentVariable("POSTGRES_URL");
+
+    if (!string.IsNullOrEmpty(databaseUrl))
+    {
+        return ConvertDatabaseUrlToConnectionString(databaseUrl);
+    }
+
+    // Check appsettings connection string
+    var configConnection = configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(configConnection))
+    {
+        if (configConnection.StartsWith("postgresql://") || configConnection.StartsWith("postgres://"))
+        {
+            return ConvertDatabaseUrlToConnectionString(configConnection);
+        }
+        return configConnection;
+    }
+
+    // Default for local development with Docker PostgreSQL
+    return "Host=localhost;Port=5432;Database=dailybread;Username=postgres;Password=postgres";
+}
+
 static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
 {
-    // Railway format: postgresql://user:password@host:port/database
-    // Npgsql format: Host=host;Port=port;Database=database;Username=user;Password=password;SSL Mode=Require;Trust Server Certificate=true
-    
     try
     {
         var uri = new Uri(databaseUrl);
@@ -293,7 +261,6 @@ static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
     }
     catch
     {
-        // If parsing fails, return as-is (might already be in correct format)
         return databaseUrl;
     }
 }
