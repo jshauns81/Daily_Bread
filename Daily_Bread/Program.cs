@@ -128,30 +128,22 @@ using (var scope = app.Services.CreateScope())
         
         if (isPostgres)
         {
-            // For PostgreSQL: First delete if exists, then create fresh
-            // This ensures a clean schema from the current model
-            Console.WriteLine("PostgreSQL detected - ensuring fresh database schema...");
+            Console.WriteLine("PostgreSQL detected - creating database schema...");
             
-            // Check if tables exist by trying to query
-            try
-            {
-                var hasRoles = await db.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"AspNetRoles\" LIMIT 1");
-                Console.WriteLine("Database tables already exist.");
-            }
-            catch
-            {
-                // Tables don't exist - delete and recreate
-                Console.WriteLine("Tables don't exist - creating fresh schema...");
-                await db.Database.EnsureDeletedAsync();
-                await db.Database.EnsureCreatedAsync();
-                Console.WriteLine("Fresh database schema created.");
-            }
+            // Delete and recreate to ensure clean schema (no SQLite artifacts)
+            Console.WriteLine("Dropping existing database...");
+            await db.Database.EnsureDeletedAsync();
+            
+            Console.WriteLine("Creating fresh database schema...");
+            await db.Database.EnsureCreatedAsync();
+            
+            Console.WriteLine("PostgreSQL database schema created successfully.");
         }
         else
         {
-            // For SQLite: Use migrations as usual
-            Console.WriteLine("SQLite detected - using migrations...");
-            await db.Database.MigrateAsync();
+            // For SQLite: Use EnsureCreated (migrations were deleted)
+            Console.WriteLine("SQLite detected - using EnsureCreated...");
+            await db.Database.EnsureCreatedAsync();
         }
         
         Console.WriteLine("Database setup completed successfully.");
@@ -172,6 +164,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine($"Database setup error: {ex.Message}");
+        Console.WriteLine($"Stack trace: {ex.StackTrace}");
         logger.LogError(ex, "An error occurred while setting up the database.");
         throw;
     }
