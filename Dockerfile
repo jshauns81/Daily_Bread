@@ -1,5 +1,5 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+# Build stage - Use .NET 10 preview SDK
+FROM mcr.microsoft.com/dotnet/nightly/sdk:10.0-preview AS build
 WORKDIR /src
 
 # Copy project file and restore dependencies first (for better caching)
@@ -11,8 +11,8 @@ COPY . .
 WORKDIR /src/Daily_Bread
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
+# Runtime stage - Use .NET 10 preview runtime
+FROM mcr.microsoft.com/dotnet/nightly/aspnet:10.0-preview AS final
 WORKDIR /app
 
 # Install curl for health checks
