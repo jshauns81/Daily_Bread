@@ -1,0 +1,127 @@
+@* Empty state component for when there's no data to display *@
+
+<div class="empty-state @CssClass">
+    <div class="empty-state-icon">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <span class="emoji">@Icon</span>
+        }
+        else
+        {
+            @switch (Type)
+            {
+                case EmptyStateType.NoChores:
+                    <span class="emoji">??</span>
+                    break;
+                case EmptyStateType.NoTransactions:
+                    <span class="emoji">??</span>
+                    break;
+                case EmptyStateType.NoGoals:
+                    <span class="emoji">??</span>
+                    break;
+                case EmptyStateType.NoAchievements:
+                    <span class="emoji">??</span>
+                    break;
+                case EmptyStateType.NoChildren:
+                    <span class="emoji">???????????</span>
+                    break;
+                case EmptyStateType.NoData:
+                    <span class="emoji">??</span>
+                    break;
+                case EmptyStateType.Error:
+                    <span class="emoji">??</span>
+                    break;
+                case EmptyStateType.Search:
+                    <span class="emoji">??</span>
+                    break;
+                default:
+                    <span class="emoji">??</span>
+                    break;
+            }
+        }
+    </div>
+    
+    <h3 class="empty-state-title">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            @Title
+        }
+        else
+        {
+            @GetDefaultTitle()
+        }
+    </h3>
+    
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p class="empty-state-message">@Message</p>
+    }
+    else if (!string.IsNullOrEmpty(GetDefaultMessage()))
+    {
+        <p class="empty-state-message">@GetDefaultMessage()</p>
+    }
+    
+    @if (ActionButton != null)
+    {
+        <div class="empty-state-action">
+            @ActionButton
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(ActionText) && ActionClicked.HasDelegate)
+    {
+        <div class="empty-state-action">
+            <button class="btn btn-primary" @onclick="ActionClicked">
+                @ActionText
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EmptyStateType Type { get; set; } = EmptyStateType.NoData;
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string? ActionText { get; set; }
+    [Parameter] public EventCallback ActionClicked { get; set; }
+    [Parameter] public RenderFragment? ActionButton { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    
+    private string GetDefaultTitle() => Type switch
+    {
+        EmptyStateType.NoChores => "All Done!",
+        EmptyStateType.NoTransactions => "No Transactions Yet",
+        EmptyStateType.NoGoals => "No Savings Goals",
+        EmptyStateType.NoAchievements => "No Achievements Yet",
+        EmptyStateType.NoChildren => "No Children Added",
+        EmptyStateType.NoData => "Nothing Here Yet",
+        EmptyStateType.Error => "Something Went Wrong",
+        EmptyStateType.Search => "No Results Found",
+        _ => "Nothing Here Yet"
+    };
+    
+    private string GetDefaultMessage() => Type switch
+    {
+        EmptyStateType.NoChores => "You've completed all your chores for today. Enjoy your free time!",
+        EmptyStateType.NoTransactions => "Complete some chores to start earning money!",
+        EmptyStateType.NoGoals => "Set a savings goal to start working towards something special.",
+        EmptyStateType.NoAchievements => "Keep completing chores to earn achievements and badges!",
+        EmptyStateType.NoChildren => "Add children to start assigning chores and tracking their progress.",
+        EmptyStateType.NoData => "There's nothing to show here yet.",
+        EmptyStateType.Error => "We couldn't load the data. Please try again.",
+        EmptyStateType.Search => "Try adjusting your search or filters.",
+        _ => ""
+    };
+    
+    public enum EmptyStateType
+    {
+        NoData,
+        NoChores,
+        NoTransactions,
+        NoGoals,
+        NoAchievements,
+        NoChildren,
+        Error,
+        Search
+    }
+}

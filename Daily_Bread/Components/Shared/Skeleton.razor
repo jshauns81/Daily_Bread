@@ -1,0 +1,87 @@
+@* Skeleton loader component for loading states *@
+
+@if (Type == SkeletonType.Text)
+{
+    <div class="skeleton skeleton-text @CssClass" style="@GetStyle()"></div>
+}
+else if (Type == SkeletonType.Circle)
+{
+    <div class="skeleton skeleton-circle @CssClass" style="@GetStyle()"></div>
+}
+else if (Type == SkeletonType.Rectangle)
+{
+    <div class="skeleton skeleton-rect @CssClass" style="@GetStyle()"></div>
+}
+else if (Type == SkeletonType.Card)
+{
+    <div class="skeleton-card @CssClass">
+        <div class="skeleton skeleton-rect" style="height: 120px;"></div>
+        <div class="skeleton-card-body">
+            <div class="skeleton skeleton-text" style="width: 70%;"></div>
+            <div class="skeleton skeleton-text" style="width: 50%;"></div>
+            <div class="skeleton skeleton-text" style="width: 90%;"></div>
+        </div>
+    </div>
+}
+else if (Type == SkeletonType.TableRow)
+{
+    <tr class="skeleton-row @CssClass">
+        @for (int i = 0; i < Columns; i++)
+        {
+            <td>
+                <div class="skeleton skeleton-text"></div>
+            </td>
+        }
+    </tr>
+}
+else if (Type == SkeletonType.ListItem)
+{
+    <div class="skeleton-list-item @CssClass">
+        <div class="skeleton skeleton-circle" style="width: 40px; height: 40px;"></div>
+        <div class="skeleton-list-content">
+            <div class="skeleton skeleton-text" style="width: 60%;"></div>
+            <div class="skeleton skeleton-text" style="width: 40%; height: 12px;"></div>
+        </div>
+    </div>
+}
+else if (Type == SkeletonType.StatCard)
+{
+    <div class="skeleton-stat-card @CssClass">
+        <div class="skeleton skeleton-text" style="width: 40%; height: 14px;"></div>
+        <div class="skeleton skeleton-text" style="width: 60%; height: 32px; margin-top: 8px;"></div>
+    </div>
+}
+
+@code {
+    [Parameter] public SkeletonType Type { get; set; } = SkeletonType.Text;
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public int Columns { get; set; } = 4;
+    
+    private string GetStyle()
+    {
+        var styles = new List<string>();
+        
+        if (!string.IsNullOrEmpty(Width))
+            styles.Add($"width: {Width}");
+        
+        if (!string.IsNullOrEmpty(Height))
+            styles.Add($"height: {Height}");
+        
+        return string.Join("; ", styles);
+    }
+}
+
+@code {
+    public enum SkeletonType
+    {
+        Text,
+        Circle,
+        Rectangle,
+        Card,
+        TableRow,
+        ListItem,
+        StatCard
+    }
+}
