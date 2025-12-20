@@ -2536,7 +2536,7 @@ fieldset,
 
 :focus-visible {
     outline: 2px solid var(--nord10);
-    outline-offset:  2px;
+    outline-offset: 2px;
 }
 
 /* Specific focus styles for buttons */
@@ -2556,4 +2556,223 @@ a:focus-visible {
     outline: 2px solid var(--nord10);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
+}
+
+/* ===========================================
+   43. LOGIN DISPLAY COMPONENT
+   =========================================== */
+
+.login-display-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: transparent;
+    position: relative;
+}
+
+.user-dropdown {
+    position: relative;
+}
+
+.btn-user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    color: var(--nord4);
+    border: 1px solid var(--nord3);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-user-menu:hover {
+    background-color: var(--nord2);
+    color: var(--nord6);
+    border-color: var(--nord4);
+}
+
+.btn-user-menu .bi-person-circle {
+    font-size: 1.1rem;
+}
+
+.user-name {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-chevron {
+    font-size: 0.65rem;
+    opacity: 0.7;
+    transition: transform 0.2s ease;
+}
+
+.btn-user-menu[aria-expanded="true"] .dropdown-chevron {
+    transform: rotate(180deg);
+}
+
+.user-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background-color: var(--nord1);
+    border: 1px solid var(--nord3);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    min-width: 200px;
+    z-index: 1050;
+    overflow: hidden;
+    animation: user-dropdown-slide 0.15s ease-out;
+}
+
+@keyframes user-dropdown-slide {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--nord6);
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.user-dropdown-menu .dropdown-item:hover {
+    background-color: var(--nord2);
+}
+
+.user-dropdown-menu .dropdown-item .bi {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.user-dropdown-menu .dropdown-item-danger {
+    color: var(--nord11);
+}
+
+.user-dropdown-menu .dropdown-item-danger:hover {
+    background-color: rgba(191, 97, 106, 0.15);
+}
+
+.user-dropdown-menu .dropdown-divider {
+    border-color: var(--nord3);
+    margin: 0.25rem 0;
+    opacity: 0.5;
+}
+
+.user-dropdown-menu form {
+    margin: 0;
+    padding: 0;
+}
+
+.dropdown-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1040;
+}
+
+.btn-auth {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    color: var(--nord4);
+    border: 1px solid var(--nord3);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-auth:hover {
+    background-color: var(--nord10);
+    border-color: var(--nord10);
+    color: var(--nord6);
+}
+
+.btn-auth .bi {
+    font-size: 1rem;
+}
+
+/* Mobile user menu */
+@media (max-width: 480px) {
+    .user-name,
+    .dropdown-chevron,
+    .btn-auth-text {
+        display: none;
+    }
+    
+    .btn-user-menu,
+    .btn-auth {
+        padding: 0.5rem;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        justify-content: center;
+    }
+    
+    .btn-user-menu .bi-person-circle {
+        font-size: 1.25rem;
+    }
+    
+    .user-dropdown-menu {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: 16px 16px 0 0;
+        min-width: 100%;
+        animation: user-dropdown-slide-up 0.2s ease-out;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    
+    @keyframes user-dropdown-slide-up {
+        from {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .user-dropdown-menu .dropdown-item {
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+    }
+    
+    .dropdown-backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
 }
