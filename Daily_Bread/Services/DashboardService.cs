@@ -393,7 +393,7 @@ public class DashboardService : IDashboardService
 
             activities.Add(new RecentActivityItem
             {
-                Description = txn.Description,
+                Description = txn.Description ?? $"{category} transaction",
                 Category = category,
                 Timestamp = txn.CreatedAt,
                 ChildName = txn.User?.UserName,

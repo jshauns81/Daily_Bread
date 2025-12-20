@@ -1,4 +1,7 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@using Daily_Bread.Components.Account
+@using Daily_Bread.Components.Pages
+
+<Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
             <Authorizing>
@@ -20,7 +23,7 @@
     <NotFound>
         <PageTitle>Not Found</PageTitle>
         <LayoutView Layout="typeof(Layout.MainLayout)">
-            <Pages.NotFound />
+            <NotFound />
         </LayoutView>
     </NotFound>
 </Router>

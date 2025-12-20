@@ -7,6 +7,7 @@
 #   stop     - Stop the application
 #   restart  - Restart the application
 #   rebuild  - Pull latest code and rebuild
+#   resetdb  - Reset database (DESTROYS ALL DATA)
 #   logs     - Show live logs
 #   status   - Show container status
 #   setup    - First-time setup (creates .env file)
@@ -21,6 +22,7 @@ COMPOSE_CMD="docker-compose"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Check if docker-compose exists, try docker compose if not
@@ -99,6 +101,37 @@ case "${1:-start}" in
         echo -e "${GREEN}Daily Bread rebuilt and started!${NC}"
         echo -e "Access at: http://$(hostname -I | awk '{print $1}'):5000"
         ;;
+    
+    resetdb)
+        echo -e "${RED}=== DATABASE RESET ===${NC}"
+        echo -e "${RED}WARNING: This will DELETE ALL DATA including users, chores, and transactions!${NC}"
+        echo ""
+        
+        # Confirmation prompt
+        read -p "Are you sure you want to reset the database? Type 'yes' to confirm: " confirm
+        if [ "$confirm" != "yes" ]; then
+            echo -e "${YELLOW}Cancelled.${NC}"
+            exit 0
+        fi
+        
+        echo ""
+        echo -e "${YELLOW}Stopping containers...${NC}"
+        $COMPOSE_CMD down
+        
+        echo -e "${YELLOW}Removing database volume...${NC}"
+        docker volume rm dailybread_postgres_data 2>/dev/null || true
+        
+        echo -e "${YELLOW}Starting fresh...${NC}"
+        $COMPOSE_CMD up -d --build
+        
+        echo ""
+        echo -e "${GREEN}Database reset complete!${NC}"
+        echo -e "${CYAN}The admin user will be created from your .env settings:${NC}"
+        echo -e "  Username: \$ADMIN_USERNAME"
+        echo -e "  Password: \$ADMIN_PASSWORD"
+        echo ""
+        echo -e "Access at: http://$(hostname -I | awk '{print $1}'):5000"
+        ;;
         
     logs)
         echo -e "${GREEN}=== Daily Bread Logs (Ctrl+C to exit) ===${NC}"
@@ -111,7 +144,7 @@ case "${1:-start}" in
         ;;
         
     *)
-        echo "Usage: $0 {start|stop|restart|rebuild|logs|status|setup}"
+        echo "Usage: $0 {start|stop|restart|rebuild|resetdb|logs|status|setup}"
         echo ""
         echo "Commands:"
         echo "  setup    - First-time setup (creates .env file)"
@@ -119,6 +152,7 @@ case "${1:-start}" in
         echo "  stop     - Stop the application"
         echo "  restart  - Restart the application"
         echo "  rebuild  - Pull latest code and rebuild containers"
+        echo -e "  resetdb  - ${RED}Reset database (DESTROYS ALL DATA)${NC}"
         echo "  logs     - Show live application logs"
         echo "  status   - Show container status"
         exit 1
