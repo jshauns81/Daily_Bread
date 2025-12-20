@@ -660,7 +660,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 /* ===========================================
    11. BACKGROUND UTILITIES
-   =========================================== */
+   ===========================================  */
 
 .bg-success-subtle { background-color: rgba(163, 190, 140, 0.15) !important; }
 .bg-danger-subtle { background-color: rgba(191, 97, 106, 0.15) !important; }
