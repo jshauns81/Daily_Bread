@@ -52,6 +52,12 @@
         <Authorized>
             <div class="nav-section-label">Management</div>
             
+            <NavLink class="nav-link" href="chore-planner" @onclick="HandleNavigation">
+                <span class="bi bi-calendar-check" aria-hidden="true"></span>
+                <span class="nav-link-text">Chore Planner</span>
+            </NavLink>
+            
+            <!--
             <NavLink class="nav-link" href="manage-chores" @onclick="HandleNavigation">
                 <span class="bi bi-gear-fill" aria-hidden="true"></span>
                 <span class="nav-link-text">Manage Chores</span>
@@ -61,6 +67,7 @@
                 <span class="bi bi-printer" aria-hidden="true"></span>
                 <span class="nav-link-text">Print Chart</span>
             </NavLink>
+            -->
             
             <NavLink class="nav-link" href="ledger" @onclick="HandleNavigation">
                 <span class="bi bi-journal-text" aria-hidden="true"></span>
