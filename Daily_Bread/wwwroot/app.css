@@ -1986,21 +1986,6 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
    32. PAGE LOADING & TRANSITIONS
    =========================================== */
 
-/* Hide page content until ready */
-.page-loading-content {
-    opacity: 0;
-}
-
-.page-ready {
-    opacity: 1;
-    animation: page-fade-in 0.2s ease-out;
-}
-
-@keyframes page-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
 /* Prevent layout shift on hydration */
 .page {
     min-height: 100vh;
@@ -2024,7 +2009,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 /* Prevent table layout shift */
 .table {
-    table-layout: fixed;
+    table-layout: auto;
 }
 
 /* Prevent image layout shift */
@@ -2035,12 +2020,6 @@ img {
 
 /* Reduced motion - instant transitions */
 @media (prefers-reduced-motion: reduce) {
-    .page-loading-content,
-    .page-ready {
-        opacity: 1;
-        animation: none;
-    }
-    
     .content {
         transition: none;
     }
