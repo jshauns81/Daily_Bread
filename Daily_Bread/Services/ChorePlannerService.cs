@@ -269,7 +269,8 @@ public interface IChorePlannerService
     /// </summary>
     /// <param name="weekStart">Start of the week (Sunday). Null = current week.</param>
     /// <param name="userId">Optional: filter to specific user's chores.</param>
-    Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null);
+    /// <param name="includeStreaks">Whether to calculate streak data (can be slow).</param>
+    Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null, bool includeStreaks = true);
     
     /// <summary>
     /// Gets printable chart data for all children for a week.
@@ -317,7 +318,7 @@ public class ChorePlannerService : IChorePlannerService
         return ChoreScheduleHelper.GetWeekStartDate(date);
     }
 
-    public async Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null)
+    public async Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null, bool includeStreaks = true)
     {
         var today = _dateProvider.Today;
         var start = weekStart ?? GetWeekStart(today);
@@ -329,27 +330,34 @@ public class ChorePlannerService : IChorePlannerService
         string? childName = null;
         if (!string.IsNullOrEmpty(userId))
         {
-            var profile = await context.ChildProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+            var profile = await context.ChildProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == userId);
             childName = profile?.DisplayName;
         }
 
-        // Get all chore definitions
-        var choresQuery = context.ChoreDefinitions
+        // Get all chore definitions - use AsNoTracking for read-only queries
+        var chores = await context.ChoreDefinitions
+            .AsNoTracking()
             .Include(c => c.AssignedUser)
             .Where(c => c.IsActive)
             .Where(c => c.StartDate == null || c.StartDate <= end)
-            .Where(c => c.EndDate == null || c.EndDate >= start);
+            .Where(c => c.EndDate == null || c.EndDate >= start)
+            .Where(c => string.IsNullOrEmpty(userId) || c.AssignedUserId == userId)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync();
 
-        if (!string.IsNullOrEmpty(userId))
+        if (chores.Count == 0)
         {
-            choresQuery = choresQuery.Where(c => c.AssignedUserId == userId);
+            // Fast path: no chores, return empty data
+            return CreateEmptyPlannerData(start, end, today, userId, childName);
         }
 
-        var chores = await choresQuery.OrderBy(c => c.SortOrder).ThenBy(c => c.Name).ToListAsync();
-
-        // Get all chore logs for the week
+        // Get all chore logs for the week - single query
         var choreIds = chores.Select(c => c.Id).ToList();
         var logs = await context.ChoreLogs
+            .AsNoTracking()
             .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
             .Where(cl => cl.Date >= start && cl.Date <= end)
             .ToListAsync();
@@ -360,10 +368,11 @@ public class ChorePlannerService : IChorePlannerService
 
         // Get all overrides for the week
         var overrides = await context.ChoreScheduleOverrides
+            .AsNoTracking()
             .Include(o => o.ChoreDefinition)
             .Include(o => o.CreatedByUser)
             .Where(o => o.Date >= start && o.Date <= end)
-            .Where(o => string.IsNullOrEmpty(userId) || o.ChoreDefinition.AssignedUserId == userId)
+            .Where(o => choreIds.Contains(o.ChoreDefinitionId))
             .ToListAsync();
 
         var overridesByChoreAndDate = overrides
@@ -371,7 +380,7 @@ public class ChorePlannerService : IChorePlannerService
             .ToDictionary(g => g.Key, g => g.First());
 
         // Build day columns
-        var dayColumns = new List<ChorePlannerDayColumn>();
+        var dayColumns = new List<ChorePlannerDayColumn>(7);
         for (int i = 0; i < 7; i++)
         {
             var date = start.AddDays(i);
@@ -381,24 +390,23 @@ public class ChorePlannerService : IChorePlannerService
                 DayOfWeek = date.DayOfWeek,
                 IsToday = date == today,
                 IsPast = date < today,
-                Status = DayColumnStatus.Future, // Will be calculated after rows
+                Status = DayColumnStatus.Future,
                 TotalChores = 0,
                 CompletedChores = 0
             });
         }
 
         // Build chore rows
-        var rows = new List<ChorePlannerRow>();
+        var rows = new List<ChorePlannerRow>(chores.Count);
         foreach (var chore in chores)
         {
-            var cells = new List<ChorePlannerCell>();
+            var cells = new List<ChorePlannerCell>(7);
             int weeklyCompleted = 0;
             int weeklyApproved = 0;
 
             for (int i = 0; i < 7; i++)
             {
                 var date = start.AddDays(i);
-                var dayFlag = ChoreScheduleHelper.GetDayOfWeekFlag(date.DayOfWeek);
                 
                 // Check base schedule
                 var isBaseScheduled = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
@@ -511,8 +519,14 @@ public class ChorePlannerService : IChorePlannerService
             })
             .ToList();
 
-        // Calculate streaks
-        var (currentStreak, longestStreak) = await CalculateStreaksAsync(context, userId, today);
+        // Calculate streaks only if requested and viewing current/past week
+        int currentStreak = 0;
+        int longestStreak = 0;
+        
+        if (includeStreaks && start <= today)
+        {
+            (currentStreak, longestStreak) = await CalculateStreaksAsync(context, userId, today, chores);
+        }
 
         return new ChorePlannerData
         {
@@ -526,6 +540,39 @@ public class ChorePlannerService : IChorePlannerService
             Overrides = overrideSummaries,
             CurrentStreak = currentStreak,
             LongestStreak = longestStreak
+        };
+    }
+
+    private static ChorePlannerData CreateEmptyPlannerData(DateOnly start, DateOnly end, DateOnly today, string? userId, string? childName)
+    {
+        var dayColumns = new List<ChorePlannerDayColumn>(7);
+        for (int i = 0; i < 7; i++)
+        {
+            var date = start.AddDays(i);
+            dayColumns.Add(new ChorePlannerDayColumn
+            {
+                Date = date,
+                DayOfWeek = date.DayOfWeek,
+                IsToday = date == today,
+                IsPast = date < today,
+                Status = DayColumnStatus.NoChores,
+                TotalChores = 0,
+                CompletedChores = 0
+            });
+        }
+
+        return new ChorePlannerData
+        {
+            WeekStart = start,
+            WeekEnd = end,
+            Today = today,
+            ChildUserId = userId,
+            ChildName = childName,
+            DayColumns = dayColumns,
+            Groups = [],
+            Overrides = [],
+            CurrentStreak = 0,
+            LongestStreak = 0
         };
     }
 
@@ -803,30 +850,36 @@ public class ChorePlannerService : IChorePlannerService
     private async Task<(int currentStreak, int longestStreak)> CalculateStreaksAsync(
         ApplicationDbContext context, 
         string? userId, 
-        DateOnly today)
+        DateOnly today,
+        List<ChoreDefinition>? preloadedChores = null)
     {
-        // Get the last 60 days of data for streak calculation
-        var startDate = today.AddDays(-60);
+        // Only look back 30 days instead of 60 for better performance
+        var startDate = today.AddDays(-30);
         
-        var logsQuery = context.ChoreLogs
-            .Include(cl => cl.ChoreDefinition)
-            .Where(cl => cl.Date >= startDate && cl.Date <= today);
+        // Reuse preloaded chores if available, otherwise query
+        var choreDefs = preloadedChores ?? await context.ChoreDefinitions
+            .AsNoTracking()
+            .Where(c => c.IsActive)
+            .Where(c => string.IsNullOrEmpty(userId) || c.AssignedUserId == userId)
+            .ToListAsync();
 
-        if (!string.IsNullOrEmpty(userId))
+        if (choreDefs.Count == 0)
         {
-            logsQuery = logsQuery.Where(cl => cl.ChoreDefinition.AssignedUserId == userId);
+            return (0, 0);
         }
 
-        var logs = await logsQuery.ToListAsync();
-        var logsByDate = logs.GroupBy(l => l.Date).ToDictionary(g => g.Key, g => g.ToList());
+        var choreIds = choreDefs.Select(c => c.Id).ToList();
 
-        // Get chore definitions for checking what was scheduled
-        var choreDefsQuery = context.ChoreDefinitions.Where(c => c.IsActive);
-        if (!string.IsNullOrEmpty(userId))
-        {
-            choreDefsQuery = choreDefsQuery.Where(c => c.AssignedUserId == userId);
-        }
-        var choreDefs = await choreDefsQuery.ToListAsync();
+        // Single optimized query: get only the fields we need
+        var logs = await context.ChoreLogs
+            .AsNoTracking()
+            .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
+            .Where(cl => cl.Date >= startDate && cl.Date <= today)
+            .Select(cl => new { cl.Date, cl.ChoreDefinitionId, cl.Status })
+            .ToListAsync();
+
+        var logsByDate = logs.GroupBy(l => l.Date)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         int currentStreak = 0;
         int longestStreak = 0;
