@@ -1,6 +1,6 @@
 @page "/kid"
 @layout KidModeLayout
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using Daily_Bread.Services
 

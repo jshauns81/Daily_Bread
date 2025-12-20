@@ -1,6 +1,6 @@
 @page "/my-balance"
 @attribute [Authorize]
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using System.Security.Claims
 @using Daily_Bread.Data.Models
