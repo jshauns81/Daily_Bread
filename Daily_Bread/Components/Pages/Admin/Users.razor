@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Daily_Bread.Services
 @attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
 @inject IUserManagementService UserService
 @inject IKidModeService KidModeService
 @inject IChildProfileService ProfileService

@@ -30,10 +30,6 @@
             background-color: #2E3440;
             flex: 1;
         }
-        /* Hide content until Blazor is ready - prevents FOUC */
-        [b-loading] {
-            visibility: hidden;
-        }
     </style>
     
     <!-- Google Fonts - Inter for modern typography + Noto Color Emoji for emoji support -->
@@ -51,12 +47,12 @@
     <ImportMap />
     <link rel="icon" type="image/png" href="images/bread-icon.png" />
     <link rel="apple-touch-icon" href="images/bread-icon.png" />
-    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    <HeadOutlet />
 </head>
 
 <body>
     <CascadingAuthenticationState>
-        <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+        <Routes />
     </CascadingAuthenticationState>
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
