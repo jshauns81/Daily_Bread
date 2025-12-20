@@ -101,12 +101,14 @@ public interface IToastService
 }
 
 /// <summary>
-/// Implementation of toast notification service.
+/// Implementation of toast notification service with proper cancellation support.
 /// </summary>
 public class ToastService : IToastService, IDisposable
 {
     private readonly List<ToastMessage> _toasts = [];
+    private readonly Dictionary<Guid, CancellationTokenSource> _removalTokens = new();
     private readonly object _lock = new();
+    private bool _disposed;
     
     public event Action? OnChange;
     
@@ -167,6 +169,8 @@ public class ToastService : IToastService, IDisposable
     
     public void Show(ToastMessage toast)
     {
+        if (_disposed) return;
+        
         lock (_lock)
         {
             _toasts.Add(toast);
@@ -174,16 +178,18 @@ public class ToastService : IToastService, IDisposable
             // Limit to 5 toasts max
             while (_toasts.Count > 5)
             {
+                var oldest = _toasts[0];
+                CancelAndRemoveToken(oldest.Id);
                 _toasts.RemoveAt(0);
             }
         }
         
         OnChange?.Invoke();
         
-        // Auto-remove after duration
+        // Schedule auto-removal with cancellation support
         if (toast.DurationMs > 0)
         {
-            _ = RemoveAfterDelayAsync(toast.Id, toast.DurationMs);
+            ScheduleRemoval(toast.Id, toast.DurationMs);
         }
     }
     
@@ -191,6 +197,8 @@ public class ToastService : IToastService, IDisposable
     {
         lock (_lock)
         {
+            CancelAndRemoveToken(toastId);
+            
             var toast = _toasts.FirstOrDefault(t => t.Id == toastId);
             if (toast != null)
             {
@@ -206,20 +214,63 @@ public class ToastService : IToastService, IDisposable
     {
         lock (_lock)
         {
+            // Cancel all pending removal tasks
+            foreach (var cts in _removalTokens.Values)
+            {
+                cts.Cancel();
+                cts.Dispose();
+            }
+            _removalTokens.Clear();
             _toasts.Clear();
         }
         
         OnChange?.Invoke();
     }
     
-    private async Task RemoveAfterDelayAsync(Guid toastId, int delayMs)
+    private void ScheduleRemoval(Guid toastId, int delayMs)
     {
-        await Task.Delay(delayMs);
-        Remove(toastId);
+        var cts = new CancellationTokenSource();
+        
+        lock (_lock)
+        {
+            _removalTokens[toastId] = cts;
+        }
+        
+        _ = RemoveAfterDelayAsync(toastId, delayMs, cts.Token);
+    }
+    
+    private async Task RemoveAfterDelayAsync(Guid toastId, int delayMs, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(delayMs, cancellationToken);
+            
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                Remove(toastId);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Expected when toast is manually dismissed or service is disposed
+        }
+    }
+    
+    private void CancelAndRemoveToken(Guid toastId)
+    {
+        if (_removalTokens.TryGetValue(toastId, out var cts))
+        {
+            cts.Cancel();
+            cts.Dispose();
+            _removalTokens.Remove(toastId);
+        }
     }
     
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+        
         Clear();
     }
 }

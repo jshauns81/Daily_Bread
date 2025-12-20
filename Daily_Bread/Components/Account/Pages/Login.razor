@@ -1,11 +1,15 @@
 @page "/Account/Login"
-@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using Daily_Bread.Data
-@using Daily_Bread.Components.Shared
+@using Daily_Bread.Components.Account
+
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
-@inject NavigationManager Navigation
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Login - Daily Bread</PageTitle>
 
@@ -17,28 +21,21 @@
             <p class="tagline">Earn your daily bread, one chore at a time</p>
         </div>
         
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger">
-                @errorMessage
-            </div>
-        }
+        <StatusMessage Message="@errorMessage" />
 
-        <EditForm Model="Input" OnValidSubmit="LoginUser">
+        <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
             
             <div class="mb-4">
-                <label class="form-label">Username</label>
-                <InputText @bind-Value="Input.UserName" class="form-control" autocomplete="username" aria-required="true" placeholder="Enter your username" />
+                <label for="username" class="form-label">Username</label>
+                <InputText @bind-Value="Input.UserName" id="username" class="form-control" autocomplete="username" aria-required="true" placeholder="Enter your username" />
                 <ValidationMessage For="() => Input.UserName" class="text-danger" />
             </div>
             
             <div class="mb-4">
-                <label class="form-label">Password</label>
-                <PasswordInput @bind-Value="Input.Password" 
-                               Placeholder="Enter your password"
-                               Autocomplete="current-password" />
+                <label for="password" class="form-label">Password</label>
+                <InputText type="password" @bind-Value="Input.Password" id="password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Enter your password" />
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
             </div>
             
@@ -47,17 +44,9 @@
                 <label class="form-check-label" for="rememberMe">Remember me on this device</label>
             </div>
             
-            <button type="submit" class="btn btn-primary btn-login" disabled="@_isLoading">
-                @if (_isLoading)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    <span>Signing in...</span>
-                }
-                else
-                {
-                    <i class="bi bi-box-arrow-in-right me-2"></i>
-                    <span>Sign In</span>
-                }
+            <button type="submit" class="btn btn-primary btn-login">
+                <i class="bi bi-box-arrow-in-right me-2"></i>
+                <span>Sign In</span>
             </button>
         </EditForm>
         
@@ -71,64 +60,71 @@
 
 @code {
     private string? errorMessage;
-    private bool _isLoading = false;
 
-    private LoginInputModel Input { get; set; } = new();
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    private async Task LoginUser()
+    protected override async Task OnInitializedAsync()
     {
-        _isLoading = true;
-        errorMessage = null;
-        StateHasChanged();
-
-        try
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
-            var result = await SignInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-            
-            if (result.Succeeded)
-            {
-                // Check if user is Admin-only (not also a Parent) - redirect to user management
-                var user = await UserManager.FindByNameAsync(Input.UserName);
-                if (user != null)
-                {
-                    var roles = await UserManager.GetRolesAsync(user);
-                    if (roles.Contains("Admin") && !roles.Contains("Parent"))
-                    {
-                        Navigation.NavigateTo("/admin/users", forceLoad: true);
-                        return;
-                    }
-                }
-                
-                Navigation.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
-            }
-            else
-            {
-                errorMessage = "Invalid username or password.";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Login error: {ex.Message}";
-        }
-        finally
-        {
-            _isLoading = false;
-            StateHasChanged();
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
     }
 
-    private sealed class LoginInputModel
+    public async Task LoginUser()
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Username is required")]
+        var result = await SignInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User logged in.");
+            
+            // Check if user is Admin-only (not also a Parent) - redirect to user management
+            var user = await UserManager.FindByNameAsync(Input.UserName);
+            if (user != null)
+            {
+                var roles = await UserManager.GetRolesAsync(user);
+                if (roles.Contains("Admin") && !roles.Contains("Parent"))
+                {
+                    RedirectManager.RedirectTo("/admin/users");
+                }
+            }
+            
+            RedirectManager.RedirectTo(ReturnUrl ?? "/");
+        }
+        else if (result.RequiresTwoFactor)
+        {
+            errorMessage = "Two-factor authentication is not configured.";
+        }
+        else if (result.IsLockedOut)
+        {
+            Logger.LogWarning("User account locked out.");
+            errorMessage = "This account has been locked out. Please try again later.";
+        }
+        else
+        {
+            errorMessage = "Error: Invalid username or password.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Username is required")]
         public string UserName { get; set; } = "";
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Password is required")]
-        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Password)]
+        [Required(ErrorMessage = "Password is required")]
+        [DataType(DataType.Password)]
         public string Password { get; set; } = "";
 
+        [Display(Name = "Remember me")]
         public bool RememberMe { get; set; }
     }
 }
