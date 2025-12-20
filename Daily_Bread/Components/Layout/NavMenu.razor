@@ -85,6 +85,13 @@
     </AuthorizeView>
 </nav>
 
+<div class="nav-footer">
+    <a href="/kid" class="kid-mode-link" @onclick="HandleNavigation">
+        <span class="bi bi-phone" aria-hidden="true"></span>
+        <span>Quick PIN Login</span>
+    </a>
+</div>
+
 @code {
     [Parameter]
     public EventCallback OnNavigate { get; set; }
