@@ -166,6 +166,11 @@ Console.WriteLine("Starting data seeding...");
 await SeedData.InitializeAsync(app.Services, app.Configuration);
 Console.WriteLine("Data seeding completed.");
 
+// Seed default chores for child users
+Console.WriteLine("Starting chore seeding...");
+await SeedChores.SeedDefaultChoresAsync(app.Services, app.Configuration);
+Console.WriteLine("Chore seeding completed.");
+
 // Configure HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
