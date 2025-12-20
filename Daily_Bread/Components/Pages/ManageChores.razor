@@ -1,6 +1,6 @@
 @page "/manage-chores"
 @attribute [Authorize(Roles = "Parent")]
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using Daily_Bread.Data.Models
 @using Daily_Bread.Services

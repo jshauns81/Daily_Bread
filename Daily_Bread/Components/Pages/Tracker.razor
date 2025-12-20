@@ -1,7 +1,7 @@
 @page "/tracker"
 @page "/tracker/{DateParam}"
 @attribute [Authorize]
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using System.Security.Claims
 
