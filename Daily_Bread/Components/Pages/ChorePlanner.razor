@@ -67,16 +67,16 @@
                 <!-- Week Navigation -->
                 <div class="col-auto ms-auto">
                     <div class="d-flex align-items-center gap-2">
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousWeek">
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousWeek" disabled="@_isNavigating">
                             <span class="bi bi-chevron-left"></span>
                         </button>
                         <span class="fw-semibold text-nowrap px-2">@(_plannerData?.WeekLabel ?? "Loading...")</span>
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="NextWeek">
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="NextWeek" disabled="@_isNavigating">
                             <span class="bi bi-chevron-right"></span>
                         </button>
                         @if (_weekOffset != 0)
                         {
-                            <button class="btn btn-link btn-sm" @onclick="GoToCurrentWeek">Today</button>
+                            <button class="btn btn-link btn-sm" @onclick="GoToCurrentWeek" disabled="@_isNavigating">Today</button>
                         }
                     </div>
                 </div>
@@ -225,16 +225,19 @@ else
                     @foreach (var chore in group.Chores)
                     {
                         <div class="matrix-row @(chore.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "weekly-chore" : "")">
-                            <!-- Chore Name -->
-                            <div class="matrix-cell chore-name-cell" title="@chore.Description">
-                                <span class="chore-name">@chore.ChoreName</span>
+                            <!-- Chore Name (clickable to edit) -->
+                            <div class="matrix-cell chore-name-cell" title="Click to edit @chore.ChoreName">
+                                <span class="chore-name editable" @onclick="() => ShowEditChoreForm(chore)">
+                                    @chore.ChoreName
+                                    <span class="bi bi-pencil edit-icon"></span>
+                                </span>
                                 @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
                                 {
                                     <span class="weekly-badge" title="Complete @chore.WeeklyTargetCount times per week">
                                         @chore.WeeklyApprovedCount/@chore.WeeklyTargetCount
                                     </span>
                                 }
-                                @if (!string.IsNullOrEmpty(_selectedUserId) == false && !string.IsNullOrEmpty(chore.AssignedUserName))
+                                @if (string.IsNullOrEmpty(_selectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
                                 {
                                     <span class="assigned-user">@chore.AssignedUserName</span>
                                 }
@@ -339,11 +342,10 @@ else
                                 }
                                 else
                                 {
-                                    <span class="chore-value">$@chore.Value.ToString("F2")</span>
-                                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
-                                    {
-                                        <span class="value-multiplier">×@chore.WeeklyTargetCount</span>
-                                    }
+                                    <span class="chore-value">
+                                        $@chore.Value.ToString("F2")@if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                                        {<text> </text><span class="value-multiplier">×@chore.WeeklyTargetCount</span>}
+                                    </span>
                                 }
                             </div>
                         </div>
@@ -485,12 +487,21 @@ else
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add New Chore</h5>
+                    <h5 class="modal-title">
+                        @if (_editingChore?.Id > 0)
+                        {
+                            <span class="bi bi-pencil me-2"></span>@("Edit Chore")
+                        }
+                        else
+                        {
+                            <span class="bi bi-plus-lg me-2"></span>@("Add New Chore")
+                        }
+                    </h5>
                     <button type="button" class="btn-close" @onclick="HideChoreForm"></button>
                 </div>
                 <div class="modal-body">
                     <Daily_Bread.Components.Shared.ChoreForm 
-                        Chore="_newChore" 
+                        Chore="_editingChore" 
                         Users="_assignableUsers" 
                         OnSubmit="HandleChoreFormSubmit" 
                         OnCancel="HideChoreForm" />
@@ -509,6 +520,7 @@ else
     private int _weekOffset;
     private ViewMode _viewMode = ViewMode.Schedule;
     private bool _isLoading = true;
+    private bool _isNavigating = false; // Prevent double-clicks
     private string? _errorMessage;
     private string? _successMessage;
     private string? _currentUserId;
@@ -519,7 +531,7 @@ else
     private ChorePlannerData? _plannerData;
     private List<ChildProfileSummary> _childProfiles = [];
     private List<UserSelectItem> _assignableUsers = [];
-    private ChoreDefinitionDto? _newChore;
+    private ChoreDefinitionDto? _editingChore;
 
     // Track collapsed groups
     private HashSet<string> _collapsedGroups = [];
@@ -550,6 +562,7 @@ else
     {
         _isLoading = true;
         _errorMessage = null;
+        StateHasChanged(); // Immediately show loading spinner
 
         try
         {
@@ -565,6 +578,7 @@ else
         finally
         {
             _isLoading = false;
+            StateHasChanged(); // Update UI when done
         }
     }
 
@@ -573,22 +587,52 @@ else
         _viewMode = mode;
     }
 
-    private void PreviousWeek()
+    private async Task PreviousWeek()
     {
-        _weekOffset--;
-        _ = LoadDataAsync();
+        if (_isNavigating) return; // Prevent double-clicks
+        _isNavigating = true;
+        
+        try
+        {
+            _weekOffset--;
+            await LoadDataAsync();
+        }
+        finally
+        {
+            _isNavigating = false;
+        }
     }
 
-    private void NextWeek()
+    private async Task NextWeek()
     {
-        _weekOffset++;
-        _ = LoadDataAsync();
+        if (_isNavigating) return; // Prevent double-clicks
+        _isNavigating = true;
+        
+        try
+        {
+            _weekOffset++;
+            await LoadDataAsync();
+        }
+        finally
+        {
+            _isNavigating = false;
+        }
     }
 
-    private void GoToCurrentWeek()
+    private async Task GoToCurrentWeek()
     {
-        _weekOffset = 0;
-        _ = LoadDataAsync();
+        if (_isNavigating) return;
+        _isNavigating = true;
+        
+        try
+        {
+            _weekOffset = 0;
+            await LoadDataAsync();
+        }
+        finally
+        {
+            _isNavigating = false;
+        }
     }
 
     private bool IsGroupCollapsed(string groupKey) => _collapsedGroups.Contains(groupKey);
@@ -644,7 +688,7 @@ else
 
     private void ShowCreateChoreForm()
     {
-        _newChore = new ChoreDefinitionDto
+        _editingChore = new ChoreDefinitionDto
         {
             ActiveDays = DaysOfWeek.All,
             IsActive = true,
@@ -653,21 +697,65 @@ else
         _showChoreForm = true;
     }
 
+    private async Task ShowEditChoreForm(ChorePlannerRow chore)
+    {
+        // Load the full chore details for editing
+        try
+        {
+            var choreDetails = await ChoreManagementService.GetChoreByIdAsync(chore.ChoreDefinitionId);
+            if (choreDetails != null)
+            {
+                _editingChore = new ChoreDefinitionDto
+                {
+                    Id = choreDetails.Id,
+                    Name = choreDetails.Name,
+                    Description = choreDetails.Description,
+                    AssignedUserId = choreDetails.AssignedUserId,
+                    Value = choreDetails.Value,
+                    ScheduleType = choreDetails.ScheduleType,
+                    ActiveDays = choreDetails.ActiveDays,
+                    WeeklyTargetCount = choreDetails.WeeklyTargetCount,
+                    StartDate = choreDetails.StartDate,
+                    EndDate = choreDetails.EndDate,
+                    IsActive = choreDetails.IsActive,
+                    AutoApprove = choreDetails.AutoApprove,
+                    SortOrder = choreDetails.SortOrder
+                };
+                _showChoreForm = true;
+            }
+            else
+            {
+                _errorMessage = "Could not load chore details.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading chore: {ex.Message}";
+        }
+    }
+
     private void HideChoreForm()
     {
         _showChoreForm = false;
-        _newChore = null;
+        _editingChore = null;
     }
 
     private async Task HandleChoreFormSubmit(ChoreDefinitionDto dto)
     {
         _errorMessage = null;
 
-        var result = await ChoreManagementService.CreateChoreAsync(dto);
+        // Determine if this is an edit or a new chore
+        bool isEdit = dto.Id > 0;
+
+        var result = isEdit 
+            ? await ChoreManagementService.UpdateChoreAsync(dto) 
+            : await ChoreManagementService.CreateChoreAsync(dto);
 
         if (result.Success)
         {
-            _successMessage = $"Chore '{dto.Name}' created successfully!";
+            _successMessage = isEdit 
+                ? $"Chore '{dto.Name}' updated successfully!" 
+                : $"Chore '{dto.Name}' created successfully!";
             HideChoreForm();
             await LoadDataAsync();
         }
