@@ -57,18 +57,6 @@
                 <span class="nav-link-text">Chore Planner</span>
             </NavLink>
             
-            <!--
-            <NavLink class="nav-link" href="manage-chores" @onclick="HandleNavigation">
-                <span class="bi bi-gear-fill" aria-hidden="true"></span>
-                <span class="nav-link-text">Manage Chores</span>
-            </NavLink>
-            
-            <NavLink class="nav-link" href="chore-chart" @onclick="HandleNavigation">
-                <span class="bi bi-printer" aria-hidden="true"></span>
-                <span class="nav-link-text">Print Chart</span>
-            </NavLink>
-            -->
-            
             <NavLink class="nav-link" href="ledger" @onclick="HandleNavigation">
                 <span class="bi bi-journal-text" aria-hidden="true"></span>
                 <span class="nav-link-text">Ledger</span>
@@ -96,13 +84,6 @@
         </Authorized>
     </AuthorizeView>
 </nav>
-
-<div class="nav-footer">
-    <a href="/kid" class="kid-mode-link" @onclick="HandleNavigation">
-        <span class="bi bi-phone" aria-hidden="true"></span>
-        <span>Quick PIN Login</span>
-    </a>
-</div>
 
 @code {
     [Parameter]

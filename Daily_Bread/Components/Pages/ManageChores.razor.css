@@ -1,6 +1,7 @@
 .manage-chores-container {
     max-width: 1200px;
     margin: 0 auto;
+    overflow-x: hidden;
 }
 
 .manage-chores-container h1 {
@@ -46,4 +47,88 @@
 
 .form-check-label {
     color: var(--nord4);
+}
+
+/* ===========================================
+   MOBILE RESPONSIVE STYLES
+   =========================================== */
+
+@media (max-width: 767px) {
+    .manage-chores-container {
+        padding: 0;
+    }
+    
+    /* Header and button layout */
+    .manage-chores-container .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: var(--space-md);
+    }
+    
+    .manage-chores-container .d-flex.gap-2 {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .manage-chores-container .d-flex.gap-2 .btn {
+        width: 100%;
+    }
+    
+    /* Nav tabs scrollable */
+    .manage-chores-container .nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+    }
+    
+    .manage-chores-container .nav-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .manage-chores-container .nav-tabs .nav-item {
+        flex-shrink: 0;
+    }
+    
+    .manage-chores-container .nav-tabs .nav-link {
+        white-space: nowrap;
+        padding: var(--space-sm);
+    }
+    
+    /* Card adjustments */
+    .manage-chores-container .card {
+        border-radius: var(--radius-md);
+    }
+    
+    .manage-chores-container .card-header {
+        padding: var(--space-sm);
+    }
+    
+    .manage-chores-container .card-body {
+        padding: var(--space-sm);
+    }
+    
+    /* Week scheduler tip */
+    .manage-chores-container .alert.mt-3 {
+        font-size: var(--font-size-sm);
+        padding: var(--space-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .manage-chores-container h1 {
+        font-size: 1.5rem;
+    }
+    
+    /* Form switch on mobile */
+    .manage-chores-container .form-check.form-switch {
+        padding-left: 3rem;
+    }
+    
+    .manage-chores-container .form-check-input {
+        width: 2.5rem;
+        height: 1.25rem;
+    }
 }

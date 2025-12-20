@@ -1,4 +1,5 @@
 @page "/Account/Login"
+@layout Daily_Bread.Components.Layout.MinimalLayout
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
@@ -45,16 +46,10 @@
             </div>
             
             <button type="submit" class="btn btn-primary btn-login">
-                <i class="bi bi-box-arrow-in-right me-2"></i>
-                <span>Sign In</span>
+                <span class="bi bi-box-arrow-in-right me-2"></span>
+                Sign In
             </button>
         </EditForm>
-        
-        <div class="login-footer">
-            <a href="/kid" class="kid-mode-link">
-                <i class="bi bi-emoji-smile me-2"></i>Kid Mode (PIN Login)
-            </a>
-        </div>
     </div>
 </div>
 
