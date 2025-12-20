@@ -4,12 +4,11 @@
 @rendermode InteractiveServer
 
 @using System.Security.Claims
-@using Daily_Bread.Data.Models
-@using Daily_Bread.Services
 
 @inject ITrackerService TrackerService
 @inject IDateProvider DateProvider
 @inject ILedgerService LedgerService
+@inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Chore Tracker</PageTitle>
@@ -20,7 +19,7 @@
         
         <div class="date-navigation">
             <button class="btn btn-outline-secondary" @onclick="GoToPreviousDay" disabled="@(!IsParent && !IsToday)">
-                &larr; Previous
+                ? Previous
             </button>
             
             <div class="current-date">
@@ -32,7 +31,7 @@
             </div>
             
             <button class="btn btn-outline-secondary" @onclick="GoToNextDay" disabled="@(!IsParent && SelectedDate >= Today)">
-                Next &rarr;
+                Next ?
             </button>
             
             @if (!IsToday)
@@ -54,40 +53,56 @@
         }
     </div>
 
-    @if (!string.IsNullOrEmpty(ErrorMessage))
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @ErrorMessage
-            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(SuccessMessage))
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @SuccessMessage
-            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
-        </div>
-    }
-
     @if (IsLoading)
     {
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+        @* Skeleton loader for table *@
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><Skeleton Type="SkeletonType.Text" Width="40px" /></th>
+                        <th><Skeleton Type="SkeletonType.Text" Width="120px" /></th>
+                        @if (IsParent)
+                        {
+                            <th><Skeleton Type="SkeletonType.Text" Width="100px" /></th>
+                        }
+                        <th><Skeleton Type="SkeletonType.Text" Width="60px" /></th>
+                        <th><Skeleton Type="SkeletonType.Text" Width="80px" /></th>
+                        @if (IsParent)
+                        {
+                            <th><Skeleton Type="SkeletonType.Text" Width="120px" /></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < 5; i++)
+                    {
+                        <Skeleton Type="SkeletonType.TableRow" Columns="@(IsParent ? 6 : 4)" />
+                    }
+                </tbody>
+            </table>
         </div>
     }
     else if (ChoreItems.Count == 0)
     {
-        <div class="alert alert-info">
-            <h4>No chores scheduled</h4>
-            <p>There are no chores scheduled for this day.</p>
-            @if (IsParent)
-            {
-                <p>Go to <a href="/manage-chores"><strong>Manage Chores</strong></a> to create chore definitions.</p>
-            }
-        </div>
+        @if (IsParent)
+        {
+            <EmptyState Type="EmptyStateType.NoChores" 
+                        Icon="??"
+                        Title="No Chores Scheduled"
+                        Message="@GetEmptyMessage()">
+                <ActionButton>
+                    <a href="/manage-chores" class="btn btn-primary">Create Chores</a>
+                </ActionButton>
+            </EmptyState>
+        }
+        else
+        {
+            <EmptyState Type="EmptyStateType.NoChores" 
+                        Icon="??"
+                        Title="No Chores Scheduled"
+                        Message="@GetEmptyMessage()" />
+        }
     }
     else
     {
@@ -152,7 +167,7 @@
                                         by @item.ApprovedByUserName
                                         @if (item.ApprovedAt.HasValue)
                                         {
-                                            <span> • @GetTimeAgo(item.ApprovedAt.Value)</span>
+                                            <span> · @GetTimeAgo(item.ApprovedAt.Value)</span>
                                         }
                                     </small>
                                 }
@@ -187,7 +202,7 @@
                                             <button class="btn btn-outline-danger btn-sm"
                                                     @onclick="() => MarkMissed(item)"
                                                     title="Mark as Missed">
-                                                X
+                                                ?
                                             </button>
                                         }
                                         @if (item.Status == ChoreStatus.Missed || item.Status == ChoreStatus.Skipped)
@@ -247,8 +262,6 @@
     private DateOnly Today => DateProvider.Today;
     private bool IsToday => SelectedDate == Today;
     private bool IsLoading { get; set; } = true;
-    private string? ErrorMessage { get; set; }
-    private string? SuccessMessage { get; set; }
 
     private string? UserId { get; set; }
     private bool IsParent { get; set; }
@@ -278,7 +291,6 @@
     private async Task LoadDataAsync()
     {
         IsLoading = true;
-        ErrorMessage = null;
 
         try
         {
@@ -300,7 +312,7 @@
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Error loading chores: {ex.Message}";
+            ToastService.ShowError("Error", $"Failed to load chores: {ex.Message}");
         }
         finally
         {
@@ -308,12 +320,16 @@
         }
     }
 
+    private string GetEmptyMessage()
+    {
+        if (IsToday)
+            return "There are no chores scheduled for today.";
+        return $"There are no chores scheduled for {SelectedDate:MMMM d}.";
+    }
+
     private async Task ToggleChore(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId)) return;
-
-        ErrorMessage = null;
-        SuccessMessage = null;
 
         var result = await TrackerService.ToggleChoreCompletionAsync(
             item.ChoreDefinitionId,
@@ -323,19 +339,18 @@
 
         if (result.Success)
         {
+            ToastService.ShowSuccess("Done!", $"'{item.ChoreName}' marked as complete.");
             await LoadDataAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
         }
     }
 
     private async Task ApproveChore(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId) || !IsParent) return;
-
-        ErrorMessage = null;
 
         var result = await TrackerService.SetChoreStatusAsync(
             item.ChoreDefinitionId,
@@ -345,20 +360,18 @@
 
         if (result.Success)
         {
-            SuccessMessage = $"'{item.ChoreName}' approved!";
+            ToastService.ShowSuccess("Approved!", $"'{item.ChoreName}' approved - ${item.Value:F2} earned!");
             await LoadDataAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to approve chore.");
         }
     }
 
     private async Task MarkMissed(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId) || !IsParent) return;
-
-        ErrorMessage = null;
 
         var result = await TrackerService.MarkChoreMissedAsync(
             item.ChoreDefinitionId,
@@ -367,20 +380,18 @@
 
         if (result.Success)
         {
-            SuccessMessage = $"'{item.ChoreName}' marked as missed.";
+            ToastService.ShowWarning("Missed", $"'{item.ChoreName}' marked as missed.");
             await LoadDataAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
         }
     }
 
     private async Task MarkSkipped(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId) || !IsParent) return;
-
-        ErrorMessage = null;
 
         var result = await TrackerService.MarkChoreSkippedAsync(
             item.ChoreDefinitionId,
@@ -389,20 +400,18 @@
 
         if (result.Success)
         {
-            SuccessMessage = $"'{item.ChoreName}' marked as skipped.";
+            ToastService.ShowInfo("Skipped", $"'{item.ChoreName}' skipped for today.");
             await LoadDataAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
         }
     }
 
     private async Task ResetToPending(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId) || !IsParent) return;
-
-        ErrorMessage = null;
 
         var result = await TrackerService.ResetChoreToPendingAsync(
             item.ChoreDefinitionId,
@@ -411,12 +420,12 @@
 
         if (result.Success)
         {
-            SuccessMessage = $"'{item.ChoreName}' reset to pending.";
+            ToastService.ShowInfo("Reset", $"'{item.ChoreName}' reset to pending.");
             await LoadDataAsync();
         }
         else
         {
-            ErrorMessage = result.ErrorMessage;
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to reset chore.");
         }
     }
 

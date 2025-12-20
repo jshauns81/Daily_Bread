@@ -2,11 +2,10 @@
 @rendermode InteractiveServer
 
 @using System.Security.Claims
-@using Daily_Bread.Data.Models
-@using Daily_Bread.Services
 
 @inject IDashboardService DashboardService
 @inject IAchievementService AchievementService
+@inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 
@@ -16,22 +15,38 @@
     <Authorized>
         @if (_isLoading)
         {
-            <div class="d-flex justify-content-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+            @* Loading skeleton for dashboard *@
+            <div class="skeleton-dashboard">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <Skeleton Type="SkeletonType.Text" Width="200px" Height="32px" />
+                    <Skeleton Type="SkeletonType.Text" Width="180px" Height="20px" />
+                </div>
+                
+                <div class="skeleton-dashboard-stats mb-4">
+                    <Skeleton Type="SkeletonType.StatCard" />
+                    <Skeleton Type="SkeletonType.StatCard" />
+                    <Skeleton Type="SkeletonType.StatCard" />
+                    <Skeleton Type="SkeletonType.StatCard" />
+                </div>
+                
+                <div class="skeleton-dashboard-main">
+                    <Skeleton Type="SkeletonType.Card" />
+                    <Skeleton Type="SkeletonType.Card" />
                 </div>
             </div>
         }
         else if (_isAdminOnly)
         {
-            <div class="text-center py-5">
-                <span class="bi bi-people-fill display-1 text-muted"></span>
-                <h2 class="mt-3">Admin Account</h2>
-                <p class="text-muted">This account is for user management only.</p>
-                <a href="/admin/users" class="btn btn-primary btn-lg">
-                    <span class="bi bi-people-fill me-2"></span>Go to User Management
-                </a>
-            </div>
+            <EmptyState Type="EmptyStateType.NoData" 
+                        Icon="👨‍💼" 
+                        Title="Admin Account"
+                        Message="This account is for user management only.">
+                <ActionButton>
+                    <a href="/admin/users" class="btn btn-primary btn-lg">
+                        Go to User Management
+                    </a>
+                </ActionButton>
+            </EmptyState>
         }
         else if (_isParent && _parentData != null)
         {
@@ -41,22 +56,6 @@
                     <h1>Welcome back!</h1>
                     <span class="text-muted">@DateTime.Now.ToString("dddd, MMMM d, yyyy")</span>
                 </div>
-
-                @if (!string.IsNullOrEmpty(_successMessage))
-                {
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        @_successMessage
-                        <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
-                    </div>
-                }
-
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        @_errorMessage
-                        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
-                    </div>
-                }
 
                 <div class="row mb-4 g-3">
                     <div class="col-md-3 col-6">
@@ -89,7 +88,7 @@
                     <div class="col-lg-6 mb-4">
                         <div class="card h-100">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0"><span class="bi bi-check2-circle me-2"></span>Pending Approvals</h5>
+                                <h5 class="mb-0">✓ Pending Approvals</h5>
                                 @if (_parentData.PendingApprovals.Count > 0)
                                 {
                                     <span class="badge bg-warning text-dark">@_parentData.PendingApprovals.Count</span>
@@ -98,10 +97,10 @@
                             <div class="card-body">
                                 @if (_parentData.PendingApprovals.Count == 0)
                                 {
-                                    <div class="text-center py-4 text-muted">
-                                        <span class="bi bi-check-circle display-4"></span>
-                                        <p class="mt-2 mb-0">All caught up!</p>
-                                    </div>
+                                    <EmptyState Type="EmptyStateType.NoChores" 
+                                                Title="All Caught Up!"
+                                                Message="No chores waiting for approval."
+                                                CssClass="empty-state-compact" />
                                 }
                                 else
                                 {
@@ -116,7 +115,14 @@
                                                 <div class="d-flex align-items-center gap-2">
                                                     <span class="text-success fw-bold">$@item.Value.ToString("F2")</span>
                                                     <button class="btn btn-success btn-sm" @onclick="() => QuickApprove(item.ChoreLogId)" disabled="@_isApproving">
-                                                        @if (_approvingId == item.ChoreLogId) { <span class="spinner-border spinner-border-sm"></span> } else { <span class="bi bi-check-lg"></span> }
+                                                        @if (_approvingId == item.ChoreLogId) 
+                                                        { 
+                                                            <span class="spinner-border spinner-border-sm"></span> 
+                                                        } 
+                                                        else 
+                                                        { 
+                                                            <text>✓</text> 
+                                                        }
                                                     </button>
                                                 </div>
                                             </div>
@@ -129,13 +135,16 @@
 
                     <div class="col-lg-6 mb-4">
                         <div class="card h-100">
-                            <div class="card-header"><h5 class="mb-0"><span class="bi bi-wallet2 me-2"></span>Balances</h5></div>
+                            <div class="card-header"><h5 class="mb-0">💰 Balances</h5></div>
                             <div class="card-body">
                                 @if (_parentData.ChildrenBalances.Count == 0)
                                 {
-                                    <div class="text-center py-4 text-muted">
-                                        <p class="mb-0">No children set up yet.</p>
-                                    </div>
+                                    <EmptyState Type="EmptyStateType.NoChildren" 
+                                                CssClass="empty-state-compact">
+                                        <ActionButton>
+                                            <a href="/admin/users" class="btn btn-primary btn-sm">Add Children</a>
+                                        </ActionButton>
+                                    </EmptyState>
                                 }
                                 else
                                 {
@@ -185,9 +194,7 @@
                     @if (_childData.CurrentStreak > 0)
                     {
                         <div class="streak-display">
-                            <span class="streak-fire @(_childData.CurrentStreak >= 7 ? "animate-pulse" : "")">
-                                <span class="bi bi-fire"></span>
-                            </span>
+                            <span class="streak-fire @(_childData.CurrentStreak >= 7 ? "animate-pulse" : "")">🔥</span>
                             <span class="streak-count">@_childData.CurrentStreak day streak!</span>
                             @if (_childData.BestStreak > _childData.CurrentStreak)
                             {
@@ -201,12 +208,12 @@
                     <div class="col-md-6">
                         <div class="card balance-card h-100">
                             <div class="card-body text-center">
-                                <p class="text-muted mb-1"><span class="bi bi-wallet2"></span> Your Balance</p>
+                                <p class="text-muted mb-1">💰 Your Balance</p>
                                 <h1 class="display-4 fw-bold text-success mb-2">$@_childData.Balance.ToString("F2")</h1>
                                 @if (_childData.CanCashOut)
                                 {
                                     <a href="/my-balance" class="btn btn-success">
-                                        <span class="bi bi-cash-stack"></span> Cash Out Ready!
+                                        💵 Cash Out Ready!
                                     </a>
                                 }
                                 else
@@ -229,7 +236,7 @@
                         {
                             <div class="card savings-goal-card h-100">
                                 <div class="card-body text-center">
-                                    <p class="text-muted mb-1"><span class="bi bi-bullseye"></span> Saving For</p>
+                                    <p class="text-muted mb-1">🎯 Saving For</p>
                                     <h4 class="fw-bold">@_childData.PrimaryGoal.Name</h4>
                                     @if (!string.IsNullOrEmpty(_childData.PrimaryGoal.ImageUrl))
                                     {
@@ -247,7 +254,7 @@
                                     </p>
                                     @if (_childData.PrimaryGoal.CanComplete)
                                     {
-                                        <span class="badge bg-success mt-2"><span class="bi bi-check-circle"></span> You can afford this!</span>
+                                        <span class="badge bg-success mt-2">✓ You can afford this!</span>
                                     }
                                     else
                                     {
@@ -259,10 +266,13 @@
                         else
                         {
                             <div class="card h-100">
-                                <div class="card-body text-center d-flex flex-column justify-content-center">
-                                    <span class="bi bi-bullseye display-4 text-info"></span>
-                                    <p class="mb-2">Set a savings goal!</p>
-                                    <a href="/goals" class="btn btn-outline-primary btn-sm">Create Goal</a>
+                                <div class="card-body">
+                                    <EmptyState Type="EmptyStateType.NoGoals" 
+                                                CssClass="empty-state-compact">
+                                        <ActionButton>
+                                            <a href="/goals" class="btn btn-outline-primary btn-sm">Create Goal</a>
+                                        </ActionButton>
+                                    </EmptyState>
                                 </div>
                             </div>
                         }
@@ -296,7 +306,7 @@
 
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><span class="bi bi-list-check"></span> Today's Chores</h5>
+                        <h5 class="mb-0">📋 Today's Chores</h5>
                         @if (_childData.TodayTotalCount > 0)
                         {
                             <span class="badge @(_childData.TodayCompletedCount == _childData.TodayTotalCount ? "bg-success" : "bg-warning text-dark")">
@@ -307,11 +317,10 @@
                     <div class="card-body p-2">
                         @if (_childData.TodayChores.Count == 0)
                         {
-                            <div class="text-center py-4">
-                                <span class="bi bi-emoji-sunglasses display-4 text-warning"></span>
-                                <h4 class="mt-2">Day Off!</h4>
-                                <p class="text-muted">No chores scheduled for today. Enjoy!</p>
-                            </div>
+                            <EmptyState Type="EmptyStateType.NoChores" 
+                                        Icon="😎"
+                                        Title="Day Off!"
+                                        Message="No chores scheduled for today. Enjoy!" />
                         }
                         else
                         {
@@ -322,15 +331,15 @@
                                         <div class="chore-checkbox">
                                             @if (chore.IsApproved)
                                             {
-                                                <span class="check-icon approved bi bi-check-lg"></span>
+                                                <span class="check-icon approved">✓</span>
                                             }
                                             else if (chore.IsCompleted)
                                             {
-                                                <span class="check-icon pending bi bi-hourglass-split"></span>
+                                                <span class="check-icon pending">⏳</span>
                                             }
                                             else if (chore.IsMissed)
                                             {
-                                                <span class="check-icon missed bi bi-x-lg"></span>
+                                                <span class="check-icon missed">✕</span>
                                             }
                                             else
                                             {
@@ -353,14 +362,14 @@
                             {
                                 <div class="text-center mt-3">
                                     <a href="/tracker" class="btn btn-primary btn-lg pulse-button">
-                                        <span class="bi bi-check2-square"></span> Do Your Chores! ($@_childData.TodayPotentialEarnings.ToString("F2") possible)
+                                        ✓ Do Your Chores! ($@_childData.TodayPotentialEarnings.ToString("F2") possible)
                                     </a>
                                 </div>
                             }
                             else if (_childData.TodayCompletedCount == _childData.TodayTotalCount && _childData.TodayTotalCount > 0)
                             {
                                 <div class="text-center mt-3 all-done-celebration">
-                                    <span class="bi bi-star-fill display-4 text-warning"></span>
+                                    <span class="display-4">⭐</span>
                                     <h4 class="text-success">All Done Today!</h4>
                                 </div>
                             }
@@ -372,7 +381,7 @@
                 {
                     <div class="card mb-4">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><span class="bi bi-trophy"></span> Achievements</h5>
+                            <h5 class="mb-0">🏆 Achievements</h5>
                             <span class="badge bg-primary">@_childData.AchievementsEarned / @_childData.TotalAchievements</span>
                         </div>
                         <div class="card-body">
@@ -393,6 +402,16 @@
                 }
             </div>
         }
+        else
+        {
+            <EmptyState Type="EmptyStateType.Error" 
+                        Title="Unable to Load Dashboard"
+                        Message="We couldn't load your dashboard data. Please try refreshing the page.">
+                <ActionButton>
+                    <button class="btn btn-primary" @onclick="LoadDashboardAsync">Try Again</button>
+                </ActionButton>
+            </EmptyState>
+        }
     </Authorized>
     <NotAuthorized>
         <div class="text-center py-5">
@@ -402,7 +421,7 @@
             <hr class="my-4" />
             <p class="mb-4">Track chores, earn rewards, and learn the value of hard work!</p>
             <a href="/Account/Login" class="btn btn-primary btn-lg">
-                <span class="bi bi-box-arrow-in-right me-2"></span>Login to Get Started
+                Login to Get Started
             </a>
         </div>
     </NotAuthorized>
@@ -414,8 +433,6 @@
     private bool _isAdmin;
     private bool _isAdminOnly;
     private string? _userId;
-    private string? _successMessage;
-    private string? _errorMessage;
 
     private ParentDashboardData? _parentData;
     private ChildDashboardData? _childData;
@@ -466,7 +483,7 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Error loading dashboard: {ex.Message}";
+            ToastService.ShowError("Error", $"Failed to load dashboard: {ex.Message}");
         }
     }
 
@@ -476,25 +493,23 @@
 
         _isApproving = true;
         _approvingId = choreLogId;
-        _errorMessage = null;
-        _successMessage = null;
 
         try
         {
             var result = await DashboardService.QuickApproveAsync(choreLogId, _userId);
             if (result.Success)
             {
-                _successMessage = "Chore approved!";
+                ToastService.ShowSuccess("Approved!", "Chore has been approved and payment processed.");
                 await LoadDashboardAsync();
             }
             else
             {
-                _errorMessage = result.ErrorMessage;
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to approve chore.");
             }
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Error: {ex.Message}";
+            ToastService.ShowError("Error", ex.Message);
         }
         finally
         {

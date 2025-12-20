@@ -82,6 +82,7 @@ builder.Services.AddCascadingAuthenticationState();
 
 // Add application services
 builder.Services.AddSingleton<IDateProvider, SystemDateProvider>();
+builder.Services.AddScoped<IToastService, ToastService>();
 builder.Services.AddScoped<IChoreScheduleService, ChoreScheduleService>();
 builder.Services.AddScoped<IChoreLogService, ChoreLogService>();
 builder.Services.AddScoped<ILedgerService, LedgerService>();
