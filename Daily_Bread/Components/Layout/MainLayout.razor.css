@@ -6,27 +6,6 @@
     min-height: 100vh;
 }
 
-/* Prevent flash during initial load */
-.page-loading-content {
-    opacity: 0;
-    visibility: hidden;
-}
-
-.page-ready {
-    opacity: 1;
-    visibility: visible;
-    animation: page-appear 0.15s ease-out;
-}
-
-@keyframes page-appear {
-    from { 
-        opacity: 0; 
-    }
-    to { 
-        opacity: 1; 
-    }
-}
-
 main {
     flex: 1;
     background-color: var(--nord0);
@@ -84,13 +63,6 @@ article.content {
     article {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
-    }
-}
-
-/* Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    .page-ready {
-        animation: none;
     }
 }
 
