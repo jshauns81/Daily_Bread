@@ -600,7 +600,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .bg-primary { background-color: var(--nord10) !important; color: var(--nord6) !important; }
 .bg-secondary { background-color: var(--nord3) !important; color: var(--nord6) !important; }
-.bg-success { background-color: var(--nord14) !important; color: var(--nord0) !important; }
+.bg-success { background-color: var(--nord14) !important; color: var,--nord0 !important; }
 .bg-danger { background-color: var(--nord11) !important; color: var,--nord6 !important; }
 .bg-warning { background-color: var(--nord12) !important; color: var,--nord0 !important; }
 .bg-info { background-color: var(--nord8) !important; color: var,--nord0 !important; }
@@ -1980,4 +1980,189 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     .empty-state-icon .emoji {
         animation: none;
     }
+}
+
+/* ===========================================
+   32. PAGE LOADING & TRANSITIONS
+   =========================================== */
+
+/* Hide page content until ready */
+.page-loading-content {
+    opacity: 0;
+}
+
+.page-ready {
+    opacity: 1;
+    animation: page-fade-in 0.2s ease-out;
+}
+
+@keyframes page-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Prevent layout shift on hydration */
+.page {
+    min-height: 100vh;
+}
+
+/* Smooth content transitions */
+.content {
+    transition: opacity 0.15s ease-out;
+}
+
+/* Ensure sidebar doesn't flash */
+.sidebar {
+    background-color: var(--nord1);
+}
+
+/* Cards should not shift */
+.card {
+    min-height: 0;
+    contain: layout;
+}
+
+/* Prevent table layout shift */
+.table {
+    table-layout: fixed;
+}
+
+/* Prevent image layout shift */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Reduced motion - instant transitions */
+@media (prefers-reduced-motion: reduce) {
+    .page-loading-content,
+    .page-ready {
+        opacity: 1;
+        animation: none;
+    }
+    
+    .content {
+        transition: none;
+    }
+}
+
+/* ===========================================
+   33. GLOBAL DARK THEME OVERRIDES
+   Ensures no white backgrounds leak through
+   =========================================== */
+
+/* Prevent ANY white backgrounds */
+* {
+    --bs-body-bg: var(--nord0);
+    --bs-body-color: var(--nord6);
+}
+
+/* Override Bootstrap's default backgrounds */
+.bg-body,
+.bg-white,
+.bg-light {
+    background-color: var(--nord1) !important;
+}
+
+/* Ensure all forms have dark backgrounds */
+form,
+fieldset,
+.form-group {
+    background-color: transparent;
+}
+
+/* Override any lingering Bootstrap white backgrounds */
+.navbar,
+.navbar-light,
+.bg-body-tertiary {
+    background-color: var(--nord1) !important;
+}
+
+/* Ensure auth row never has white background */
+.auth-row,
+.auth-row * {
+    background-color: transparent !important;
+}
+
+/* Exception for specific elements that need backgrounds */
+.auth-row .btn-auth {
+    background-color: transparent !important;
+}
+
+.auth-row .btn-auth:hover {
+    background-color: var(--nord10) !important;
+}
+
+/* Override Bootstrap card backgrounds that might be white */
+.card,
+.card-body,
+.card-header,
+.card-footer {
+    background-color: var(--nord1);
+}
+
+.card-header {
+    background-color: var(--nord2);
+}
+
+/* Ensure input groups don't have white backgrounds */
+.input-group,
+.input-group-text {
+    background-color: var(--nord2);
+}
+
+/* Modal backdrop fix */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* Popover and tooltip dark theme */
+.popover,
+.tooltip-inner {
+    background-color: var(--nord1);
+    color: var(--nord6);
+}
+
+.popover-header {
+    background-color: var(--nord2);
+    color: var(--nord6);
+}
+
+.popover-body {
+    color: var(--nord4);
+}
+
+/* Offcanvas dark theme */
+.offcanvas {
+    background-color: var(--nord1);
+    color: var(--nord6);
+}
+
+/* Accordion dark theme */
+.accordion-item {
+    background-color: var(--nord1);
+    border-color: var(--nord3);
+}
+
+.accordion-button {
+    background-color: var(--nord2);
+    color: var(--nord6);
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: var(--nord10);
+    color: var(--nord6);
+}
+
+/* Breadcrumb dark theme */
+.breadcrumb {
+    background-color: transparent;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: var(--nord4);
+}
+
+.breadcrumb-item.active {
+    color: var(--nord4);
 }
