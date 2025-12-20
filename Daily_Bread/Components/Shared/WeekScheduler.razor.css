@@ -3,6 +3,8 @@
     padding: var(--space-lg);
     border-radius: var(--radius-lg);
     border: 1px solid var(--nord3);
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 .week-scheduler h5 {
@@ -167,12 +169,194 @@
     color: var(--nord0);
 }
 
-@media (max-width: 768px) {
+/* ===========================================
+   TABLET LAYOUT (768px and below)
+   =========================================== */
+
+@media (max-width: 991px) {
     .week-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-xs);
     }
 
     .day-column {
         min-height: 180px;
+    }
+    
+    .day-header {
+        padding: var(--space-xs);
+    }
+    
+    .day-name {
+        font-size: 0.65rem;
+    }
+    
+    .day-date {
+        font-size: var(--font-size-md);
+    }
+    
+    .chore-card .chore-name {
+        font-size: var(--font-size-xs);
+    }
+    
+    .chore-card .chore-value {
+        font-size: var(--font-size-xs);
+    }
+}
+
+/* ===========================================
+   MOBILE LAYOUT (768px and below)
+   =========================================== */
+
+@media (max-width: 767px) {
+    .week-scheduler {
+        padding: var(--space-md);
+    }
+    
+    .week-scheduler .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: var(--space-sm);
+        align-items: stretch !important;
+    }
+    
+    .week-scheduler .d-flex.justify-content-between h5 {
+        text-align: center;
+        order: -1;
+        margin-bottom: var(--space-sm);
+    }
+    
+    .week-scheduler .d-flex.justify-content-between button {
+        flex: 1;
+    }
+    
+    .week-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+    }
+
+    .day-column {
+        min-height: 160px;
+    }
+    
+    .day-chores {
+        padding: var(--space-xs);
+    }
+    
+    .chore-card {
+        padding: var(--space-xs);
+        margin-bottom: var(--space-xs);
+    }
+    
+    /* Always show remove button on touch devices */
+    .remove-btn {
+        opacity: 0.7;
+    }
+    
+    .drop-zone {
+        padding: var(--space-md);
+        font-size: var(--font-size-sm);
+    }
+}
+
+/* ===========================================
+   SMALL MOBILE (480px and below)  
+   =========================================== */
+
+@media (max-width: 480px) {
+    .week-scheduler {
+        padding: var(--space-sm);
+        border-radius: var(--radius-md);
+    }
+    
+    .week-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+    }
+    
+    .day-column {
+        min-height: 100px;
+    }
+    
+    .day-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-sm);
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+    
+    .day-name {
+        font-size: var(--font-size-xs);
+        margin-right: var(--space-sm);
+    }
+    
+    .day-date {
+        font-size: var(--font-size-md);
+    }
+    
+    .day-chores {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        padding: var(--space-sm);
+    }
+    
+    .chore-card {
+        flex: 1 1 calc(50% - var(--space-xs));
+        min-width: 100px;
+        margin-bottom: 0;
+    }
+    
+    .empty-day {
+        width: 100%;
+        text-align: center;
+        padding: var(--space-sm);
+    }
+    
+    /* Available chores section */
+    .week-scheduler .mt-4 {
+        margin-top: var(--space-md) !important;
+    }
+    
+    .week-scheduler .d-flex.flex-wrap.gap-2 {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+    }
+    
+    .chore-card.available {
+        display: block;
+        margin: 0;
+    }
+}
+
+/* ===========================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .chore-card {
+        /* Larger touch target */
+        min-height: 44px;
+        padding: var(--space-sm);
+    }
+    
+    .remove-btn {
+        /* Always visible on touch */
+        opacity: 0.6;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .chore-card:active {
+        transform: scale(0.98);
+    }
+    
+    /* Disable drag hints on touch */
+    .drop-zone {
+        display: none;
     }
 }

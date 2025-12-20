@@ -9,6 +9,7 @@
 .nav-header {
     padding: 1rem;
     border-bottom: 1px solid var(--nord3);
+    flex-shrink: 0;
 }
 
 .nav-brand {
@@ -25,6 +26,7 @@
     width: 40px;
     height: 40px;
     object-fit: contain;
+    flex-shrink: 0;
 }
 
 .nav-brand-text {
@@ -45,8 +47,14 @@
 .nav-menu {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0.5rem 0;
     -webkit-overflow-scrolling: touch;
+    /* Prevent content from being cut off */
+    min-height: 0;
+    /* Scrollbar styling for mobile */
+    scrollbar-width: thin;
+    scrollbar-color: var(--nord3) transparent;
 }
 
 /* Section labels */
@@ -58,6 +66,8 @@
     letter-spacing: 0.1em;
     color: var(--nord4);
     opacity: 0.7;
+    /* Don't let it shrink */
+    flex-shrink: 0;
 }
 
 /* ===========================================
@@ -78,6 +88,11 @@
     font-weight: 500;
     position: relative;
     -webkit-tap-highlight-color: transparent;
+    /* Ensure minimum touch target */
+    min-height: 44px;
+    box-sizing: border-box;
+    /* Prevent text overflow */
+    overflow: hidden;
 }
 
 .nav-link .bi {
@@ -92,6 +107,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0; /* Allow text to shrink */
 }
 
 /* Hover state */
@@ -138,39 +154,35 @@
     background-color: var(--nord13);
     color: var(--nord0);
     border-radius: 11px;
+    flex-shrink: 0;
 }
 
 /* ===========================================
-   NAV FOOTER
+   MOBILE OPTIMIZATIONS
    =========================================== */
 
-.nav-footer {
-    padding: 1rem;
-    border-top: 1px solid var(--nord3);
-}
-
-.kid-mode-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background-color: var(--nord2);
-    color: var(--nord4);
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.kid-mode-link:hover {
-    background-color: var(--nord3);
-    color: var(--nord6);
-}
-
-.kid-mode-link .bi {
-    font-size: 1rem;
+@media (max-width: 767px) {
+    .nav-menu {
+        /* Extra padding at bottom for better scrolling */
+        padding-bottom: 1rem;
+    }
+    
+    .nav-link {
+        padding: 1rem;
+        min-height: 48px;
+        margin: 0.25rem 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .nav-link .bi {
+        font-size: 1.35rem;
+        width: 28px;
+    }
+    
+    .nav-section-label {
+        padding: 1.25rem 1rem 0.5rem 1rem;
+        font-size: 0.75rem;
+    }
 }
 
 /* ===========================================
@@ -185,10 +197,11 @@
     
     .nav-link:active {
         background-color: var(--nord2);
+        transform: scale(0.98);
     }
     
-    .kid-mode-link:active {
-        background-color: var(--nord3);
+    .nav-link.active:active {
+        background: linear-gradient(90deg, rgba(94, 129, 172, 0.35) 0%, rgba(94, 129, 172, 0.2) 100%);
     }
 }
 
@@ -201,8 +214,8 @@
         transition: none;
     }
     
-    .kid-mode-link {
-        transition: none;
+    .nav-link:active {
+        transform: none;
     }
 }
 
@@ -225,4 +238,16 @@
 
 .nav-menu::-webkit-scrollbar-thumb:hover {
     background-color: var(--nord4);
+}
+
+/* Hide scrollbar on mobile but keep functionality */
+@media (max-width: 767px) {
+    .nav-menu {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .nav-menu::-webkit-scrollbar {
+        display: none;
+    }
 }

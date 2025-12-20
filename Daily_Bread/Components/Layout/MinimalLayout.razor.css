@@ -1,0 +1,32 @@
+/* Minimal Layout - No header, no sidebar */
+.minimal-layout {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: linear-gradient(135deg, var(--nord0) 0%, var(--nord1) 50%, var(--nord2) 100%);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Blazor error UI */
+#blazor-error-ui {
+    background: var(--nord1);
+    border-top: 3px solid var(--nord12);
+    bottom: 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 2000;
+    color: var(--nord6);
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+    color: var(--nord4);
+}
