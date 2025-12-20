@@ -25,15 +25,15 @@ public class ToastMessage
     public bool IsVisible { get; set; } = true;
     
     /// <summary>
-    /// Icon based on toast type.
+    /// Bootstrap Icon class based on toast type.
     /// </summary>
-    public string Icon => Type switch
+    public string IconClass => Type switch
     {
-        ToastType.Success => "?",
-        ToastType.Error => "?",
-        ToastType.Warning => "?",
-        ToastType.Info => "?",
-        _ => "?"
+        ToastType.Success => "bi-check-lg",
+        ToastType.Error => "bi-x-circle",
+        ToastType.Warning => "bi-exclamation-triangle",
+        ToastType.Info => "bi-info-circle",
+        _ => "bi-info-circle"
     };
     
     /// <summary>

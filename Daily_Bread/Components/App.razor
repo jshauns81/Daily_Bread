@@ -7,13 +7,32 @@
     <meta name="theme-color" content="#2E3440" />
     <base href="/" />
     
-    <!-- Critical CSS to prevent flash - minimal -->
+    <!-- Critical CSS to prevent flash - must be inline and comprehensive -->
     <style>
         html, body {
             background-color: #2E3440;
             color: #ECEFF4;
             margin: 0;
             padding: 0;
+            min-height: 100vh;
+        }
+        /* Prevent layout shift during hydration */
+        .page {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #2E3440;
+        }
+        .sidebar {
+            background-color: #3B4252;
+        }
+        main {
+            background-color: #2E3440;
+            flex: 1;
+        }
+        /* Hide content until Blazor is ready - prevents FOUC */
+        [b-loading] {
+            visibility: hidden;
         }
     </style>
     
@@ -32,12 +51,12 @@
     <ImportMap />
     <link rel="icon" type="image/png" href="images/bread-icon.png" />
     <link rel="apple-touch-icon" href="images/bread-icon.png" />
-    <HeadOutlet />
+    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
 </head>
 
 <body>
     <CascadingAuthenticationState>
-        <Routes />
+        <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     </CascadingAuthenticationState>
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
