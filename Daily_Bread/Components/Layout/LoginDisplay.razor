@@ -4,23 +4,25 @@
     <Authorized>
         <div class="login-display-container">
             <div class="user-dropdown">
-                <button class="btn-user-menu" @onclick="ToggleDropdown" @onclick:stopPropagation="true">
-                    <span class="bi bi-person-circle me-1"></span>
+                <button class="btn-user-menu" @onclick="ToggleDropdown" @onclick:stopPropagation="true" aria-expanded="@_showDropdown" aria-haspopup="true">
+                    <span class="bi bi-person-circle" aria-hidden="true"></span>
                     <span class="user-name">@context.User.Identity?.Name</span>
-                    <span class="bi bi-chevron-down ms-1 dropdown-chevron"></span>
+                    <span class="bi bi-chevron-down dropdown-chevron" aria-hidden="true"></span>
                 </button>
                 
                 @if (_showDropdown)
                 {
-                    <div class="user-dropdown-menu">
-                        <a href="/account/change-password" class="dropdown-item">
-                            <span class="bi bi-key me-2"></span> Change Password
+                    <div class="user-dropdown-menu" role="menu">
+                        <a href="/account/change-password" class="dropdown-item" role="menuitem">
+                            <span class="bi bi-key" aria-hidden="true"></span> 
+                            <span>Change Password</span>
                         </a>
                         <hr class="dropdown-divider" />
                         <form method="post" action="/Account/Logout" @formname="logout-form">
                             <AntiforgeryToken />
-                            <button type="submit" class="dropdown-item text-danger">
-                                <span class="bi bi-box-arrow-right me-2"></span> Logout
+                            <button type="submit" class="dropdown-item dropdown-item-danger" role="menuitem">
+                                <span class="bi bi-box-arrow-right" aria-hidden="true"></span>
+                                <span>Logout</span>
                             </button>
                         </form>
                     </div>
@@ -35,7 +37,8 @@
     </Authorized>
     <NotAuthorized>
         <a href="/Account/Login" class="btn-auth">
-            <span class="bi bi-box-arrow-in-right me-1"></span> Login
+            <span class="bi bi-box-arrow-in-right" aria-hidden="true"></span>
+            <span class="btn-auth-text">Login</span>
         </a>
     </NotAuthorized>
 </AuthorizeView>

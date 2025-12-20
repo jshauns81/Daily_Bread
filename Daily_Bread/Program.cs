@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Daily_Bread.Components;
+using Daily_Bread.Components.Account;
 using Daily_Bread.Data;
 using Daily_Bread.Services;
 
@@ -50,8 +52,20 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     });
 }, ServiceLifetime.Scoped);
 
-// Add Identity services
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+// Add Identity services with proper Blazor configuration
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<IdentityUserAccessor>();
+builder.Services.AddScoped<IdentityRedirectManager>();
+builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+})
+.AddIdentityCookies();
+
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
@@ -61,7 +75,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.SignIn.RequireConfirmedAccount = false;
     options.SignIn.RequireConfirmedEmail = false;
 })
+.AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
+.AddSignInManager()
 .AddDefaultTokenProviders();
 
 // Configure authentication cookie
@@ -78,7 +94,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 // Add authorization
 builder.Services.AddAuthorization();
-builder.Services.AddCascadingAuthenticationState();
 
 // Add application services
 builder.Services.AddSingleton<IDateProvider, SystemDateProvider>();
@@ -200,11 +215,8 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.MapPost("/Account/Logout", async (SignInManager<ApplicationUser> signInManager) =>
-{
-    await signInManager.SignOutAsync();
-    return Results.Redirect("/");
-});
+// Map additional Identity endpoints
+app.MapAdditionalIdentityEndpoints();
 
 app.Run();
 
@@ -253,5 +265,24 @@ static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
     catch
     {
         return databaseUrl;
+    }
+}
+
+/// <summary>
+/// Extension methods for mapping additional Identity endpoints.
+/// </summary>
+internal static class IdentityEndpointsExtensions
+{
+    public static IEndpointConventionBuilder MapAdditionalIdentityEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("/Account");
+
+        group.MapPost("/Logout", async (SignInManager<ApplicationUser> signInManager) =>
+        {
+            await signInManager.SignOutAsync();
+            return Results.LocalRedirect("~/");
+        });
+
+        return group;
     }
 }

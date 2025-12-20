@@ -1,0 +1,40 @@
+@using Daily_Bread.Components.Account
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    var statusMessageClass = Message.StartsWith("Error") ? "alert-danger" : "alert-success";
+    <div class="alert @statusMessageClass" role="alert">
+        @Message
+    </div>
+}
+
+@code {
+    private string? messageFromCookie;
+
+    [Parameter]
+    public string? Message { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        // Read status message from cookie if available
+        if (HttpContext.Request.Cookies.TryGetValue(IdentityRedirectManager.StatusCookieName, out var value))
+        {
+            messageFromCookie = value;
+            
+            // Delete the cookie after reading
+            HttpContext.Response.Cookies.Delete(IdentityRedirectManager.StatusCookieName);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Use cookie message if no parameter message is provided
+        if (Message is null && messageFromCookie is not null)
+        {
+            Message = messageFromCookie;
+        }
+    }
+}

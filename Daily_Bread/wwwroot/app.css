@@ -2182,3 +2182,378 @@ fieldset,
 .breadcrumb-item.active {
     color: var(--nord4);
 }
+
+/* ===========================================
+   34. MOBILE TOUCH OPTIMIZATIONS
+   =========================================== */
+
+/* Larger touch targets on mobile */
+@media (hover: none) and (pointer: coarse) {
+    /* Minimum touch target size (44x44px recommended by Apple/Google) */
+    .btn,
+    .form-control,
+    .form-select,
+    .nav-link,
+    .list-group-item-action,
+    .dropdown-item {
+        min-height: 44px;
+    }
+    
+    /* Form elements */
+    .form-control,
+    .form-select {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+        padding: 12px 16px;
+    }
+    
+    /* Checkboxes and radios */
+    .form-check-input {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .form-check-label {
+        padding-left: 8px;
+        line-height: 22px;
+    }
+    
+    /* Table rows should be tappable */
+    .table-hover tbody tr {
+        cursor: pointer;
+    }
+    
+    /* Disable hover effects (use active instead) */
+    .btn:hover {
+        transform: none;
+    }
+    
+    .btn:active {
+        transform: scale(0.98);
+    }
+    
+    /* Ripple effect for buttons */
+    .btn {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+        transition: transform 0.3s, opacity 0.3s;
+    }
+    
+    .btn:active::after {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 1;
+        transition: none;
+    }
+    
+    /* Disable text selection on interactive elements */
+    .btn,
+    .nav-link,
+    .list-group-item-action {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* ===========================================
+   35. SAFE AREA INSETS (Notched Devices)
+   =========================================== */
+
+/* Apply safe area padding where needed */
+@supports (padding: env(safe-area-inset-top)) {
+    .mobile-safe-top {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    .mobile-safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .mobile-safe-left {
+        padding-left: env(safe-area-inset-left);
+    }
+    
+    .mobile-safe-right {
+        padding-right: env(safe-area-inset-right);
+    }
+    
+    .mobile-safe-all {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+}
+
+/* ===========================================
+   36. MOBILE RESPONSIVE BREAKPOINTS
+   =========================================== */
+
+/* Extra small devices (phones, less than 576px) */
+@media (max-width: 575.98px) {
+    /* Typography scaling */
+    html {
+        font-size: 14px;
+    }
+    
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.25rem; }
+    
+    /* Reduce spacing */
+    .card-body {
+        padding: var(--space-sm);
+    }
+    
+    .card-header {
+        padding: var(--space-sm);
+    }
+    
+    /* Stack buttons */
+    .btn-group-mobile-stack {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group-mobile-stack .btn {
+        width: 100%;
+        margin-bottom: var(--space-xs);
+    }
+    
+    /* Full width modals */
+    .modal-dialog {
+        margin: 0;
+        max-width: 100%;
+        height: 100%;
+    }
+    
+    .modal-content {
+        border-radius: 0;
+        height: 100%;
+    }
+    
+    /* Tables: make scrollable */
+    .table-responsive-mobile {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Hide secondary text on mobile */
+    .mobile-hide {
+        display: none !important;
+    }
+    
+    /* Summary cards grid */
+    .summary-cards-mobile {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+    }
+    
+    /* Action buttons smaller */
+    .action-btn {
+        padding: var(--space-xs);
+        font-size: var(--font-size-xs);
+    }
+}
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    /* Slightly more room */
+    .card-body {
+        padding: var(--space-md);
+    }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    /* Tablet optimizations */
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    /* Desktop optimizations */
+}
+
+/* ===========================================
+   37. LANDSCAPE MODE OPTIMIZATIONS
+   =========================================== */
+
+@media (max-height: 500px) and (orientation: landscape) {
+    /* Reduce vertical spacing */
+    .card-body {
+        padding: var(--space-sm);
+    }
+    
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    
+    /* Smaller buttons */
+    .btn {
+        padding: var(--space-xs) var(--space-sm);
+    }
+    
+    /* Hide non-essential elements */
+    .landscape-hide {
+        display: none !important;
+    }
+}
+
+/* ===========================================
+   38. PWA STANDALONE MODE
+   =========================================== */
+
+/* When running as installed PWA */
+@media (display-mode: standalone) {
+    /* Remove browser-specific UI styling */
+    body {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    
+    /* Allow text selection in content areas */
+    .content,
+    .card-body,
+    input,
+    textarea {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+    
+    /* Pull-to-refresh prevention */
+    body {
+        overscroll-behavior-y: contain;
+    }
+}
+
+/* iOS standalone mode */
+@media (display-mode: standalone) and (-webkit-device-pixel-ratio: 2),
+       (display-mode: standalone) and (-webkit-device-pixel-ratio: 3) {
+    /* iOS-specific optimizations */
+    body {
+        -webkit-touch-callout: none;
+    }
+}
+
+/* ===========================================
+   39. DARK MODE MEDIA QUERY
+   (In case system preference matters)
+   =========================================== */
+
+/* Our app is always dark, but this ensures consistency */
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    /* Still use dark theme - user chose our app */
+    :root {
+        color-scheme: dark;
+    }
+}
+
+/* ===========================================
+   40. HIGH CONTRAST MODE
+   =========================================== */
+
+@media (prefers-contrast: high) {
+    :root {
+        --nord3: #5C6A7E;
+        --nord4: #F0F4FC;
+    }
+    
+    .btn {
+        border-width: 2px;
+    }
+    
+    .card {
+        border-width: 2px;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        outline: 3px solid var(--nord10);
+        outline-offset: 2px;
+    }
+}
+
+/* ===========================================
+   41. REDUCED MOTION
+   =========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .skeleton {
+        animation: none;
+        background: var(--nord2);
+    }
+    
+    .toast-show,
+    .toast-hide {
+        animation: none;
+    }
+    
+    .animate-pulse,
+    .animate-bounce,
+    .wave,
+    .pulse-button {
+        animation: none;
+    }
+}
+
+/* ===========================================
+   42. FOCUS VISIBLE (Keyboard Navigation)
+   =========================================== */
+
+/* Only show focus ring for keyboard navigation */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset:  2px;
+}
+
+/* Specific focus styles for buttons */
+.btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.4);
+}
+
+/* Form elements */
+.form-control:focus-visible,
+.form-select:focus-visible {
+    border-color: var(--nord10);
+    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.25);
+}
+
+/* Links */
+a:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}

@@ -1,114 +1,106 @@
 ﻿@using Daily_Bread.Services
 @inject IDashboardService DashboardService
 @inject AuthenticationStateProvider AuthStateProvider
-@rendermode InteractiveServer
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">
-            <img src="images/bread-icon.png" alt="" class="brand-icon" />
-            Daily Bread
-        </a>
-    </div>
+<div class="nav-header">
+    <a class="nav-brand" href="">
+        <img src="images/bread-icon.png" alt="" class="nav-brand-icon" />
+        <span class="nav-brand-text">Daily Bread</span>
+    </a>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<nav class="nav-menu" role="navigation">
+    @if (!_isAdminOnly)
+    {
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="HandleNavigation">
+            <span class="bi bi-house-door-fill" aria-hidden="true"></span>
+            <span class="nav-link-text">Home</span>
+        </NavLink>
+    }
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        @if (!_isAdminOnly)
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+    <AuthorizeView>
+        <Authorized>
+            @if (!_isAdminOnly)
+            {
+                <NavLink class="nav-link" href="tracker" @onclick="HandleNavigation">
+                    <span class="bi bi-check2-square" aria-hidden="true"></span>
+                    <span class="nav-link-text">Tracker</span>
                 </NavLink>
-            </div>
-        }
-
-        <AuthorizeView>
-            <Authorized>
-                @if (!_isAdminOnly)
+                
+                <NavLink class="nav-link" href="calendar" @onclick="HandleNavigation">
+                    <span class="bi bi-calendar3" aria-hidden="true"></span>
+                    <span class="nav-link-text">Calendar</span>
+                </NavLink>
+                
+                @if (!_isParentOnly)
                 {
-                    <!-- Tracker and Calendar visible to both Parents and Children -->
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="tracker">
-                            <span class="bi bi-check2-square-nav-menu" aria-hidden="true"></span> Tracker
-                        </NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="calendar">
-                            <span class="bi bi-calendar3-nav-menu" aria-hidden="true"></span> Calendar
-                        </NavLink>
-                    </div>
+                    <NavLink class="nav-link" href="my-balance" @onclick="HandleNavigation">
+                        <span class="bi bi-wallet2" aria-hidden="true"></span>
+                        <span class="nav-link-text">My Balance</span>
+                    </NavLink>
                     
-                    <!-- My Balance and Goals only for Children -->
-                    @if (!_isParentOnly)
-                    {
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="my-balance">
-                                <span class="bi bi-wallet-nav-menu" aria-hidden="true"></span> My Balance
-                            </NavLink>
-                        </div>
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="goals">
-                                <span class="bi bi-bullseye-nav-menu" aria-hidden="true"></span> Goals
-                            </NavLink>
-                        </div>
-                    }
+                    <NavLink class="nav-link" href="goals" @onclick="HandleNavigation">
+                        <span class="bi bi-bullseye" aria-hidden="true"></span>
+                        <span class="nav-link-text">Goals</span>
+                    </NavLink>
                 }
-            </Authorized>
-        </AuthorizeView>
+            }
+        </Authorized>
+    </AuthorizeView>
 
-        <AuthorizeView Roles="Parent">
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="manage-chores">
-                        <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span> Manage Chores
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="chore-chart">
-                        <span class="bi bi-printer-nav-menu" aria-hidden="true"></span> Print Chart
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="ledger">
-                        <span class="bi bi-journal-text-nav-menu" aria-hidden="true"></span> Ledger
-                    </NavLink>
-                </div>
-                @if (_pendingCount > 0)
-                {
-                    <div class="nav-item px-3">
-                        <a class="nav-link d-flex justify-content-between align-items-center text-warning" href="/">
-                            <span>
-                                <span class="bi bi-exclamation-circle-fill" aria-hidden="true"></span> Approvals
-                            </span>
-                            <span class="badge bg-warning text-dark">@_pendingCount</span>
-                        </a>
-                    </div>
-                }
-            </Authorized>
-        </AuthorizeView>
+    <AuthorizeView Roles="Parent">
+        <Authorized>
+            <div class="nav-section-label">Management</div>
+            
+            <NavLink class="nav-link" href="manage-chores" @onclick="HandleNavigation">
+                <span class="bi bi-gear-fill" aria-hidden="true"></span>
+                <span class="nav-link-text">Manage Chores</span>
+            </NavLink>
+            
+            <NavLink class="nav-link" href="chore-chart" @onclick="HandleNavigation">
+                <span class="bi bi-printer" aria-hidden="true"></span>
+                <span class="nav-link-text">Print Chart</span>
+            </NavLink>
+            
+            <NavLink class="nav-link" href="ledger" @onclick="HandleNavigation">
+                <span class="bi bi-journal-text" aria-hidden="true"></span>
+                <span class="nav-link-text">Ledger</span>
+            </NavLink>
+            
+            @if (_pendingCount > 0)
+            {
+                <NavLink class="nav-link nav-link-alert" href="/" @onclick="HandleNavigation">
+                    <span class="bi bi-exclamation-circle-fill" aria-hidden="true"></span>
+                    <span class="nav-link-text">Approvals</span>
+                    <span class="nav-badge">@_pendingCount</span>
+                </NavLink>
+            }
+        </Authorized>
+    </AuthorizeView>
 
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-                @if (_isAdminOnly)
-                {
-                    <div class="nav-item px-3 mt-2">
-                        <small class="text-muted px-2">ADMIN</small>
-                    </div>
-                }
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="admin/users">
-                        <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Users
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-    </nav>
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <div class="nav-section-label">Admin</div>
+            
+            <NavLink class="nav-link" href="admin/users" @onclick="HandleNavigation">
+                <span class="bi bi-people-fill" aria-hidden="true"></span>
+                <span class="nav-link-text">Users</span>
+            </NavLink>
+        </Authorized>
+    </AuthorizeView>
+</nav>
+
+<div class="nav-footer">
+    <a href="/kid" class="kid-mode-link" @onclick="HandleNavigation">
+        <span class="bi bi-phone" aria-hidden="true"></span>
+        <span>Quick PIN Login</span>
+    </a>
 </div>
 
 @code {
+    [Parameter]
+    public EventCallback OnNavigate { get; set; }
+
     private int _pendingCount;
     private bool _isAdminOnly;
     private bool _isParentOnly;
@@ -118,10 +110,7 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        // Check if user is Admin-only (not also a Parent or Child)
         _isAdminOnly = user.IsInRole("Admin") && !user.IsInRole("Parent") && !user.IsInRole("Child");
-        
-        // Check if user is Parent-only (not also a Child) - Parents don't need My Balance or Goals
         _isParentOnly = user.IsInRole("Parent") && !user.IsInRole("Child");
 
         if (user.IsInRole("Parent"))
@@ -134,6 +123,14 @@
             {
                 _pendingCount = 0;
             }
+        }
+    }
+
+    private async Task HandleNavigation()
+    {
+        if (OnNavigate.HasDelegate)
+        {
+            await OnNavigate.InvokeAsync();
         }
     }
 }
