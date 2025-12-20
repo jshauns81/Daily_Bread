@@ -128,31 +128,16 @@ using (var scope = app.Services.CreateScope())
         }
         else
         {
-            var canConnect = await db.Database.CanConnectAsync();
-            
-            if (canConnect)
+            // Always ensure database and schema exist
+            // EnsureCreatedAsync is idempotent - it won't recreate existing tables
+            var created = await db.Database.EnsureCreatedAsync();
+            if (created)
             {
-                Console.WriteLine("Database connection successful.");
-                
-                // Check if schema exists
-                try
-                {
-                    await db.Database.ExecuteSqlRawAsync(
-                        "SELECT 1 FROM information_schema.tables WHERE table_name = 'AspNetUsers' LIMIT 1");
-                    Console.WriteLine("Database schema exists.");
-                }
-                catch
-                {
-                    Console.WriteLine("Creating database schema...");
-                    await db.Database.EnsureCreatedAsync();
-                    Console.WriteLine("Database schema created.");
-                }
+                Console.WriteLine("Database schema created successfully.");
             }
             else
             {
-                Console.WriteLine("Creating new database...");
-                await db.Database.EnsureCreatedAsync();
-                Console.WriteLine("Database created successfully.");
+                Console.WriteLine("Database schema already exists.");
             }
         }
         
