@@ -3,6 +3,28 @@
     display: flex;
     flex-direction: column;
     background-color: var(--nord0);
+    min-height: 100vh;
+}
+
+/* Prevent flash during initial load */
+.page-loading-content {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.page-ready {
+    opacity: 1;
+    visibility: visible;
+    animation: page-appear 0.15s ease-out;
+}
+
+@keyframes page-appear {
+    from { 
+        opacity: 0; 
+    }
+    to { 
+        opacity: 1; 
+    }
 }
 
 main {
@@ -14,13 +36,16 @@ main {
     background-color: var(--nord1);
 }
 
-/* Auth row - minimal, just for login button */
+/* Auth row - minimal, positioned top-right */
 .auth-row {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    padding: 0.5rem 1.5rem;
-    background-color: var(--nord0);
+    padding: 0.75rem 1.5rem;
+    background-color: transparent;
+    /* Remove any default styling that could cause white box */
+    border: none;
+    box-shadow: none;
 }
 
 article.content {
@@ -31,6 +56,7 @@ article.content {
 @media (max-width: 640.98px) {
     .auth-row {
         padding: 0.5rem 1rem;
+        background-color: transparent;
     }
 }
 
@@ -51,13 +77,20 @@ article.content {
         position: sticky;
         top: 0;
         z-index: 1;
-        background-color: var(--nord0);
+        background-color: transparent;
         padding: 0.75rem 2rem;
     }
 
     article {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .page-ready {
+        animation: none;
     }
 }
 

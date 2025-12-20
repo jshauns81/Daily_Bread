@@ -1,6 +1,6 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
+<div class="page @(_isReady ? "page-ready" : "page-loading-content")">
     <div class="sidebar">
         <NavMenu />
     </div>
@@ -23,3 +23,16 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">×</span>
 </div>
+
+@code {
+    private bool _isReady;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isReady = true;
+            StateHasChanged();
+        }
+    }
+}

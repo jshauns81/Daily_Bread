@@ -1,6 +1,9 @@
 ﻿<Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <Authorizing>
+                @* Show nothing during authorization check to prevent flash *@
+            </Authorizing>
             <NotAuthorized>
                 @if (context.User.Identity?.IsAuthenticated != true)
                 {
