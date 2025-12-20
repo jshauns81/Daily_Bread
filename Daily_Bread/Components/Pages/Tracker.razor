@@ -19,7 +19,7 @@
         
         <div class="date-navigation">
             <button class="btn btn-outline-secondary" @onclick="GoToPreviousDay" disabled="@(!IsParent && !IsToday)">
-                ? Previous
+                <span class="bi bi-chevron-left"></span> Previous
             </button>
             
             <div class="current-date">
@@ -31,7 +31,7 @@
             </div>
             
             <button class="btn btn-outline-secondary" @onclick="GoToNextDay" disabled="@(!IsParent && SelectedDate >= Today)">
-                Next ?
+                Next <span class="bi bi-chevron-right"></span>
             </button>
             
             @if (!IsToday)
