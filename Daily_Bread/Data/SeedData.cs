@@ -38,13 +38,17 @@ public static class SeedData
         await EnsureRoleAsync(roleManager, ParentRole);
         await EnsureRoleAsync(roleManager, ChildRole);
 
-        // Seed bootstrap admin user from configuration
-        var adminUserName = configuration["Seed:AdminUserName"];
-        var adminPassword = configuration["Seed:AdminPassword"];
+        // Seed bootstrap admin user from configuration/environment
+        // These come from .env file: ADMIN_USERNAME and ADMIN_PASSWORD
+        var adminUserName = configuration["Seed:AdminUserName"] 
+            ?? Environment.GetEnvironmentVariable("ADMIN_USERNAME");
+        var adminPassword = configuration["Seed:AdminPassword"] 
+            ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
 
         if (string.IsNullOrWhiteSpace(adminUserName) || string.IsNullOrWhiteSpace(adminPassword))
         {
-            logger.LogInformation("Seed:AdminUserName or Seed:AdminPassword not configured. Skipping admin user creation.");
+            logger.LogInformation("Admin credentials not configured. Skipping admin user creation.");
+            logger.LogInformation("Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables to create an admin user.");
             return;
         }
 
