@@ -3,7 +3,7 @@ using Daily_Bread.Data.Models;
 namespace Daily_Bread.Services;
 
 /// <summary>
-/// Static helper class for chore scheduling logic shared across services.
+/// Static helper class for chore scheduling logic shared across services. 
 /// </summary>
 public static class ChoreScheduleHelper
 {
