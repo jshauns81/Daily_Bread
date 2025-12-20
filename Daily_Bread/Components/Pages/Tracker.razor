@@ -1,7 +1,6 @@
 @page "/tracker"
 @page "/tracker/{DateParam}"
 @attribute [Authorize]
-@rendermode InteractiveServer
 
 @using System.Security.Claims
 
@@ -202,7 +201,7 @@
                                             <button class="btn btn-outline-danger btn-sm"
                                                     @onclick="() => MarkMissed(item)"
                                                     title="Mark as Missed">
-                                                ?
+                                                <i class="bi bi-x-lg"></i>
                                             </button>
                                         }
                                         @if (item.Status == ChoreStatus.Missed || item.Status == ChoreStatus.Skipped)

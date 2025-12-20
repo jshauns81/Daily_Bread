@@ -1,7 +1,6 @@
 @page "/ledger"
 @page "/ledger/{ProfileIdParam:int?}"
 @attribute [Authorize]
-@rendermode InteractiveServer
 
 @using System.Security.Claims
 
@@ -59,7 +58,7 @@
                     <div class="filter-item filter-item-btn">
                         <label class="form-label d-none d-md-block">&nbsp;</label>
                         <button class="btn btn-outline-secondary" @onclick="ClearFilters">
-                            ? Clear
+                            <span class="bi bi-x-lg"></span> Clear
                         </button>
                     </div>
                 </div>

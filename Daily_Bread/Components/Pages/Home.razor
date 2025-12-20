@@ -1,5 +1,4 @@
 ﻿@page "/"
-@rendermode InteractiveServer
 
 @using System.Security.Claims
 
@@ -331,15 +330,15 @@
                                         <div class="chore-checkbox">
                                             @if (chore.IsApproved)
                                             {
-                                                <span class="check-icon approved">✓</span>
+                                                <span class="check-icon approved"><span class="bi bi-check-lg"></span></span>
                                             }
                                             else if (chore.IsCompleted)
                                             {
-                                                <span class="check-icon pending">⏳</span>
+                                                <span class="check-icon pending"><span class="bi bi-hourglass-split"></span></span>
                                             }
                                             else if (chore.IsMissed)
                                             {
-                                                <span class="check-icon missed">✕</span>
+                                                <span class="check-icon missed"><span class="bi bi-x-lg"></span></span>
                                             }
                                             else
                                             {

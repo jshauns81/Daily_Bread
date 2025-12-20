@@ -8,7 +8,7 @@
              role="alert" 
              aria-live="assertive" 
              aria-atomic="true">
-            <div class="toast-icon">@toast.Icon</div>
+            <div class="toast-icon"><span class="bi @toast.IconClass"></span></div>
             <div class="toast-content">
                 <div class="toast-title">@toast.Title</div>
                 @if (!string.IsNullOrEmpty(toast.Message))
@@ -20,7 +20,7 @@
                     class="toast-close" 
                     aria-label="Close"
                     @onclick="() => Dismiss(toast.Id)">
-                ×
+                <span class="bi bi-x-lg"></span>
             </button>
             @if (toast.DurationMs > 0)
             {
