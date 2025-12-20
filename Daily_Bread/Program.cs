@@ -112,6 +112,7 @@ builder.Services.AddScoped<ISavingsGoalService, SavingsGoalService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<IKidModeService, KidModeService>();
 builder.Services.AddScoped<IChoreChartService, ChoreChartService>();
+builder.Services.AddScoped<IChorePlannerService, ChorePlannerService>();
 
 // Add health checks
 builder.Services.AddHealthChecks()

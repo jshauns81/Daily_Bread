@@ -1,0 +1,774 @@
+@page "/chore-planner"
+@page "/chore-planner/{WeekOffsetParam:int}"
+@attribute [Authorize(Roles = "Parent")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using System.Security.Claims
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+
+@inject IChorePlannerService PlannerService
+@inject IChildProfileService ProfileService
+@inject IChoreManagementService ChoreManagementService
+@inject IDateProvider DateProvider
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Chore Planner</PageTitle>
+
+<!-- Screen Controls (hidden when printing) -->
+<div class="screen-controls no-print">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><span class="bi bi-calendar-check me-2"></span>Chore Planner</h1>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                <span class="bi bi-printer me-1"></span> Print
+            </button>
+            <button class="btn btn-primary" @onclick="ShowCreateChoreForm">
+                <span class="bi bi-plus-lg me-1"></span> Add Chore
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters and Mode Toggle -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center g-3">
+                <!-- Child Filter -->
+                <div class="col-auto">
+                    <label class="form-label mb-0 me-2">Child:</label>
+                    <select class="form-select form-select-sm d-inline-block" style="width: auto;" 
+                            @bind="_selectedUserId" @bind:after="LoadDataAsync">
+                        <option value="">All Children</option>
+                        @foreach (var child in _childProfiles)
+                        {
+                            <option value="@child.UserId">@child.DisplayName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Mode Toggle -->
+                <div class="col-auto">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="viewMode" id="modeSchedule" 
+                               checked="@(_viewMode == ViewMode.Schedule)" @onchange="() => SetViewMode(ViewMode.Schedule)">
+                        <label class="btn btn-outline-primary btn-sm" for="modeSchedule">
+                            <span class="bi bi-calendar3 me-1"></span> Schedule
+                        </label>
+
+                        <input type="radio" class="btn-check" name="viewMode" id="modeProgress" 
+                               checked="@(_viewMode == ViewMode.Progress)" @onchange="() => SetViewMode(ViewMode.Progress)">
+                        <label class="btn btn-outline-primary btn-sm" for="modeProgress">
+                            <span class="bi bi-graph-up me-1"></span> Progress
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Week Navigation -->
+                <div class="col-auto ms-auto">
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousWeek">
+                            <span class="bi bi-chevron-left"></span>
+                        </button>
+                        <span class="fw-semibold text-nowrap px-2">@(_plannerData?.WeekLabel ?? "Loading...")</span>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="NextWeek">
+                            <span class="bi bi-chevron-right"></span>
+                        </button>
+                        @if (_weekOffset != 0)
+                        {
+                            <button class="btn btn-link btn-sm" @onclick="GoToCurrentWeek">Today</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Summary (Progress Mode) -->
+    @if (_viewMode == ViewMode.Progress && _plannerData != null)
+    {
+        <div class="row mb-4 g-2">
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value text-success">$@_plannerData.TotalWeeklyEarned.ToString("F2")</span>
+                    <span class="summary-label">Earned</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value">$@_plannerData.TotalWeeklyPotential.ToString("F2")</span>
+                    <span class="summary-label">Potential</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value text-warning">
+                        <span class="bi bi-fire"></span> @_plannerData.CurrentStreak
+                    </span>
+                    <span class="summary-label">Current Streak</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    <span class="summary-value text-info">
+                        <span class="bi bi-trophy"></span> @_plannerData.LongestStreak
+                    </span>
+                    <span class="summary-label">Best Streak</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    @{
+                        var perfectDays = _plannerData.DayColumns.Count(d => d.Status == DayColumnStatus.AllComplete);
+                    }
+                    <span class="summary-value text-success">@perfectDays / 7</span>
+                    <span class="summary-label">Perfect Days</span>
+                </div>
+            </div>
+            <div class="col-md-2 col-4">
+                <div class="summary-card h-100">
+                    @{
+                        var overrideCount = _plannerData.Overrides.Count;
+                    }
+                    <span class="summary-value @(overrideCount > 0 ? "text-info" : "")">
+                        @if (overrideCount > 0)
+                        {
+                            <span class="bi bi-lightning-fill"></span>
+                        }
+                        @overrideCount
+                    </span>
+                    <span class="summary-label">Overrides</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (_isLoading)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (_plannerData == null || !_plannerData.Groups.Any())
+{
+    <div class="alert alert-info">
+        <span class="bi bi-info-circle me-2"></span>
+        No chores found. 
+        <button class="btn btn-link p-0 ms-1" @onclick="ShowCreateChoreForm">Add your first chore</button> to get started!
+    </div>
+}
+else
+{
+    <!-- Main Planner Matrix -->
+    <div class="planner-container @(_viewMode == ViewMode.Progress ? "progress-mode" : "schedule-mode")">
+        
+        <!-- Print Header (only visible when printing) -->
+        <div class="print-header print-only">
+            <h1>@(_plannerData.ChildName ?? "Family") Chore Chart</h1>
+            <div class="week-label">@_plannerData.WeekLabel</div>
+        </div>
+
+        <!-- Matrix Table -->
+        <div class="planner-matrix">
+            <!-- Header Row -->
+            <div class="matrix-header">
+                <div class="matrix-cell chore-label-cell">
+                    <span class="chore-header-text">Chore</span>
+                </div>
+                @foreach (var day in _plannerData.DayColumns)
+                {
+                    <div class="matrix-cell day-header-cell @GetDayHeaderClass(day)">
+                        <div class="day-name">@day.DayName</div>
+                        <div class="day-number">@day.DayNumber</div>
+                        @if (_viewMode == ViewMode.Progress && day.IsPast)
+                        {
+                            <div class="day-status-bar @GetDayStatusClass(day)"></div>
+                        }
+                    </div>
+                }
+                <div class="matrix-cell value-header-cell">
+                    <span class="value-header-text">Value</span>
+                </div>
+            </div>
+
+            <!-- Chore Groups -->
+            @foreach (var group in _plannerData.Groups)
+            {
+                <!-- Group Header -->
+                <div class="matrix-group-header @(group.IsCollapsible && IsGroupCollapsed(group.GroupKey) ? "collapsed" : "")"
+                     @onclick="() => ToggleGroupCollapse(group.GroupKey)">
+                    <div class="matrix-cell group-label-cell" style="grid-column: 1 / -1;">
+                        <span class="group-toggle">
+                            <span class="bi @(IsGroupCollapsed(group.GroupKey) ? "bi-chevron-right" : "bi-chevron-down")"></span>
+                        </span>
+                        <span class="group-name">@group.GroupName</span>
+                        <span class="group-count">(@group.Chores.Count chores)</span>
+                        @if (group.DailyTotal > 0)
+                        {
+                            <span class="group-daily-total">$@group.DailyTotal.ToString("F2")/day</span>
+                        }
+                        @if (_viewMode == ViewMode.Progress)
+                        {
+                            <span class="group-earned ms-auto">
+                                $@group.WeeklyEarned.ToString("F2") / $@group.WeeklyPotential.ToString("F2")
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Chore Rows (collapsible) -->
+                @if (!IsGroupCollapsed(group.GroupKey))
+                {
+                    @foreach (var chore in group.Chores)
+                    {
+                        <div class="matrix-row @(chore.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "weekly-chore" : "")">
+                            <!-- Chore Name -->
+                            <div class="matrix-cell chore-name-cell" title="@chore.Description">
+                                <span class="chore-name">@chore.ChoreName</span>
+                                @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                                {
+                                    <span class="weekly-badge" title="Complete @chore.WeeklyTargetCount times per week">
+                                        @chore.WeeklyApprovedCount/@chore.WeeklyTargetCount
+                                    </span>
+                                }
+                                @if (!string.IsNullOrEmpty(_selectedUserId) == false && !string.IsNullOrEmpty(chore.AssignedUserName))
+                                {
+                                    <span class="assigned-user">@chore.AssignedUserName</span>
+                                }
+                            </div>
+
+                            <!-- Day Cells -->
+                            @foreach (var cell in chore.Cells)
+                            {
+                                <div class="matrix-cell chore-cell @GetCellClass(cell)"
+                                     @onclick="() => HandleCellClick(chore, cell)"
+                                     title="@GetCellTooltip(chore, cell)">
+                                    @if (_viewMode == ViewMode.Schedule)
+                                    {
+                                        @* Schedule Mode: Show schedule indicators *@
+                                        @if (cell.IsScheduled)
+                                        {
+                                            <span class="cell-indicator scheduled">
+                                                @if (cell.HasOverride)
+                                                {
+                                                    <span class="bi bi-lightning-fill override-icon"></span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="bi bi-circle-fill"></span>
+                                                }
+                                            </span>
+                                        }
+                                        else if (cell.Status == ChoreCellStatus.Available)
+                                        {
+                                            <span class="cell-indicator available">
+                                                <span class="bi bi-circle"></span>
+                                            </span>
+                                        }
+                                        else if (cell.HasOverride && cell.OverrideType == ScheduleOverrideType.Remove)
+                                        {
+                                            <span class="cell-indicator removed">
+                                                <span class="bi bi-x-lg"></span>
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @* Progress Mode: Show completion status *@
+                                        @switch (cell.Status)
+                                        {
+                                            case ChoreCellStatus.Completed:
+                                                <span class="cell-indicator completed">
+                                                    <span class="bi bi-check-circle-fill"></span>
+                                                </span>
+                                                break;
+                                            case ChoreCellStatus.Pending:
+                                                <span class="cell-indicator pending">
+                                                    <span class="bi bi-hourglass-split"></span>
+                                                </span>
+                                                break;
+                                            case ChoreCellStatus.Missed:
+                                                <span class="cell-indicator missed">
+                                                    <span class="bi bi-x-circle-fill"></span>
+                                                </span>
+                                                break;
+                                            case ChoreCellStatus.Skipped:
+                                                <span class="cell-indicator skipped">
+                                                    <span class="bi bi-dash-circle"></span>
+                                                </span>
+                                                break;
+                                            case ChoreCellStatus.Scheduled:
+                                                <span class="cell-indicator scheduled-future">
+                                                    @if (cell.HasOverride)
+                                                    {
+                                                        <span class="bi bi-lightning"></span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="bi bi-circle"></span>
+                                                    }
+                                                </span>
+                                                break;
+                                            case ChoreCellStatus.Available:
+                                                <span class="cell-indicator available">
+                                                    <span class="bi bi-circle-dotted"></span>
+                                                </span>
+                                                break;
+                                            default:
+                                                <span class="cell-indicator empty"></span>
+                                                break;
+                                        }
+
+                                        @if (cell.HasOverride && cell.Status != ChoreCellStatus.NotScheduled)
+                                        {
+                                            <span class="override-badge" title="Schedule override">?</span>
+                                        }
+                                    }
+                                </div>
+                            }
+
+                            <!-- Value -->
+                            <div class="matrix-cell value-cell">
+                                @if (_viewMode == ViewMode.Progress && chore.WeeklyEarned > 0)
+                                {
+                                    <span class="earned-value">$@chore.WeeklyEarned.ToString("F2")</span>
+                                    <span class="potential-value">/ $@chore.WeeklyPotential.ToString("F2")</span>
+                                }
+                                else
+                                {
+                                    <span class="chore-value">$@chore.Value.ToString("F2")</span>
+                                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                                    {
+                                        <span class="value-multiplier">×@chore.WeeklyTargetCount</span>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            }
+        </div>
+
+        <!-- Overrides Summary (if any) -->
+        @if (_plannerData.Overrides.Any() && _viewMode == ViewMode.Schedule)
+        {
+            <div class="overrides-panel mt-4">
+                <div class="overrides-header" @onclick="() => _showOverrides = !_showOverrides">
+                    <span class="bi @(_showOverrides ? "bi-chevron-down" : "bi-chevron-right") me-2"></span>
+                    <span class="bi bi-lightning-fill text-info me-1"></span>
+                    Schedule Overrides This Week (@_plannerData.Overrides.Count)
+                </div>
+                @if (_showOverrides)
+                {
+                    <div class="overrides-list">
+                        @foreach (var ovr in _plannerData.Overrides)
+                        {
+                            <div class="override-item">
+                                <span class="override-chore">@ovr.ChoreName</span>
+                                <span class="override-action">
+                                    @switch (ovr.Type)
+                                    {
+                                        case ScheduleOverrideType.Add:
+                                            <span class="text-success">Added to</span>
+                                            break;
+                                        case ScheduleOverrideType.Remove:
+                                            <span class="text-danger">Removed from</span>
+                                            break;
+                                        case ScheduleOverrideType.Move:
+                                            <span class="text-info">Moved to</span>
+                                            break;
+                                    }
+                                </span>
+                                <span class="override-date">@ovr.Date.ToString("ddd, MMM d")</span>
+                                @if (!string.IsNullOrEmpty(ovr.CreatedByUserName))
+                                {
+                                    <span class="override-by text-muted">by @ovr.CreatedByUserName</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Legend -->
+        <div class="planner-legend mt-4 no-print">
+            @if (_viewMode == ViewMode.Schedule)
+            {
+                <div class="legend-title">Legend:</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="bi bi-circle-fill text-primary"></span> Scheduled
+                    </div>
+                    <div class="legend-item">
+                        <span class="bi bi-circle text-secondary"></span> Available (weekly)
+                    </div>
+                    <div class="legend-item">
+                        <span class="bi bi-lightning-fill text-info"></span> Override
+                    </div>
+                    <div class="legend-item">
+                        <span class="bi bi-x-lg text-danger"></span> Removed
+                    </div>
+                </div>
+                <div class="legend-tip">
+                    <span class="bi bi-lightbulb text-warning me-1"></span>
+                    Click a cell to create a one-time override for that date.
+                </div>
+            }
+            else
+            {
+                <div class="legend-title">Status:</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="bi bi-check-circle-fill text-success"></span> Completed
+                    </div>
+                    <div class="legend-item">
+                        <span class="bi bi-hourglass-split text-warning"></span> Pending Approval
+                    </div>
+                    <div class="legend-item">
+                        <span class="bi bi-x-circle-fill text-danger"></span> Missed
+                    </div>
+                    <div class="legend-item">
+                        <span class="bi bi-dash-circle text-secondary"></span> Skipped
+                    </div>
+                    <div class="legend-item">
+                        <span class="bi bi-circle text-muted"></span> Scheduled
+                    </div>
+                </div>
+                <div class="legend-tip">
+                    <span class="bi bi-lightbulb text-warning me-1"></span>
+                    Column colors show daily completion: 
+                    <span class="status-dot bg-success"></span> All done
+                    <span class="status-dot bg-warning"></span> Partial
+                    <span class="status-dot bg-danger"></span> None done
+                </div>
+            }
+        </div>
+
+        <!-- Print Footer -->
+        <div class="print-footer print-only">
+            <div class="potential-earnings">
+                Earn up to: <strong>$@_plannerData.TotalWeeklyPotential.ToString("F2")</strong> this week!
+            </div>
+            <div class="print-date">
+                Printed: @DateTime.Now.ToString("MMM d, yyyy")
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Error Message -->
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible mt-3 no-print">
+        @_errorMessage
+        <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+    </div>
+}
+
+<!-- Success Message -->
+@if (!string.IsNullOrEmpty(_successMessage))
+{
+    <div class="alert alert-success alert-dismissible mt-3 no-print">
+        @_successMessage
+        <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
+    </div>
+}
+
+<!-- Add Chore Modal -->
+@if (_showChoreForm)
+{
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Chore</h5>
+                    <button type="button" class="btn-close" @onclick="HideChoreForm"></button>
+                </div>
+                <div class="modal-body">
+                    <Daily_Bread.Components.Shared.ChoreForm 
+                        Chore="_newChore" 
+                        Users="_assignableUsers" 
+                        OnSubmit="HandleChoreFormSubmit" 
+                        OnCancel="HideChoreForm" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private enum ViewMode { Schedule, Progress }
+
+    [Parameter]
+    public int? WeekOffsetParam { get; set; }
+
+    private int _weekOffset;
+    private ViewMode _viewMode = ViewMode.Schedule;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+    private string? _successMessage;
+    private string? _currentUserId;
+    private string? _selectedUserId;
+    private bool _showOverrides = false;
+    private bool _showChoreForm = false;
+
+    private ChorePlannerData? _plannerData;
+    private List<ChildProfileSummary> _childProfiles = [];
+    private List<UserSelectItem> _assignableUsers = [];
+    private ChoreDefinitionDto? _newChore;
+
+    // Track collapsed groups
+    private HashSet<string> _collapsedGroups = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        _weekOffset = WeekOffsetParam ?? 0;
+
+        _childProfiles = await ProfileService.GetAllChildProfilesAsync();
+        _assignableUsers = await ChoreManagementService.GetAssignableUsersAsync();
+
+        await LoadDataAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (WeekOffsetParam.HasValue && WeekOffsetParam.Value != _weekOffset)
+        {
+            _weekOffset = WeekOffsetParam.Value;
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var today = DateProvider.Today;
+            var weekStart = PlannerService.GetWeekStart(today).AddDays(_weekOffset * 7);
+            
+            _plannerData = await PlannerService.GetPlannerDataAsync(weekStart, _selectedUserId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading planner: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void SetViewMode(ViewMode mode)
+    {
+        _viewMode = mode;
+    }
+
+    private void PreviousWeek()
+    {
+        _weekOffset--;
+        _ = LoadDataAsync();
+    }
+
+    private void NextWeek()
+    {
+        _weekOffset++;
+        _ = LoadDataAsync();
+    }
+
+    private void GoToCurrentWeek()
+    {
+        _weekOffset = 0;
+        _ = LoadDataAsync();
+    }
+
+    private bool IsGroupCollapsed(string groupKey) => _collapsedGroups.Contains(groupKey);
+
+    private void ToggleGroupCollapse(string groupKey)
+    {
+        if (_collapsedGroups.Contains(groupKey))
+        {
+            _collapsedGroups.Remove(groupKey);
+        }
+        else
+        {
+            _collapsedGroups.Add(groupKey);
+        }
+    }
+
+    private async Task HandleCellClick(ChorePlannerRow chore, ChorePlannerCell cell)
+    {
+        if (_viewMode != ViewMode.Schedule || string.IsNullOrEmpty(_currentUserId))
+        {
+            return;
+        }
+
+        // Don't allow changes to past dates
+        if (cell.IsPast)
+        {
+            _errorMessage = "Cannot modify schedule for past dates.";
+            return;
+        }
+
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var result = await PlannerService.ToggleOverrideAsync(chore.ChoreDefinitionId, cell.Date, _currentUserId);
+
+            if (result.Success)
+            {
+                _successMessage = "Schedule updated!";
+                await LoadDataAsync();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error updating schedule: {ex.Message}";
+        }
+    }
+
+    private void ShowCreateChoreForm()
+    {
+        _newChore = new ChoreDefinitionDto
+        {
+            ActiveDays = DaysOfWeek.All,
+            IsActive = true,
+            Value = 1.00m
+        };
+        _showChoreForm = true;
+    }
+
+    private void HideChoreForm()
+    {
+        _showChoreForm = false;
+        _newChore = null;
+    }
+
+    private async Task HandleChoreFormSubmit(ChoreDefinitionDto dto)
+    {
+        _errorMessage = null;
+
+        var result = await ChoreManagementService.CreateChoreAsync(dto);
+
+        if (result.Success)
+        {
+            _successMessage = $"Chore '{dto.Name}' created successfully!";
+            HideChoreForm();
+            await LoadDataAsync();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+
+    #region CSS Class Helpers
+
+    private string GetDayHeaderClass(ChorePlannerDayColumn day)
+    {
+        var classes = new List<string>();
+        
+        if (day.IsToday) classes.Add("today");
+        if (day.IsPast) classes.Add("past");
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetDayStatusClass(ChorePlannerDayColumn day) => day.Status switch
+    {
+        DayColumnStatus.AllComplete => "status-complete",
+        DayColumnStatus.PartialComplete => "status-partial",
+        DayColumnStatus.NoneComplete => "status-none",
+        DayColumnStatus.NoChores => "status-empty",
+        _ => ""
+    };
+
+    private string GetCellClass(ChorePlannerCell cell)
+    {
+        var classes = new List<string>();
+
+        if (cell.IsToday) classes.Add("today");
+        if (cell.IsPast) classes.Add("past");
+        if (cell.HasOverride) classes.Add("has-override");
+        if (!cell.IsScheduled && cell.Status != ChoreCellStatus.Available) classes.Add("not-scheduled");
+
+        if (_viewMode == ViewMode.Progress)
+        {
+            classes.Add(cell.Status switch
+            {
+                ChoreCellStatus.Completed => "cell-completed",
+                ChoreCellStatus.Pending => "cell-pending",
+                ChoreCellStatus.Missed => "cell-missed",
+                ChoreCellStatus.Skipped => "cell-skipped",
+                ChoreCellStatus.Scheduled => "cell-scheduled",
+                ChoreCellStatus.Available => "cell-available",
+                _ => "cell-empty"
+            });
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetCellTooltip(ChorePlannerRow chore, ChorePlannerCell cell)
+    {
+        var parts = new List<string> { cell.Date.ToString("dddd, MMM d") };
+
+        if (cell.HasOverride)
+        {
+            parts.Add($"[Override: {cell.OverrideType}]");
+        }
+
+        if (_viewMode == ViewMode.Progress)
+        {
+            parts.Add(cell.Status switch
+            {
+                ChoreCellStatus.Completed => "? Completed",
+                ChoreCellStatus.Pending => "? Pending approval",
+                ChoreCellStatus.Missed => "? Missed",
+                ChoreCellStatus.Skipped => "– Skipped",
+                ChoreCellStatus.Scheduled => "Scheduled",
+                ChoreCellStatus.Available => "Available (weekly goal)",
+                _ => "Not scheduled"
+            });
+
+            if (cell.EarnedAmount.HasValue)
+            {
+                parts.Add($"Earned: ${cell.EarnedAmount:F2}");
+            }
+        }
+        else
+        {
+            if (cell.IsScheduled)
+            {
+                parts.Add("Click to remove from this day");
+            }
+            else if (cell.Status == ChoreCellStatus.Available)
+            {
+                parts.Add("Click to add to this day");
+            }
+            else
+            {
+                parts.Add("Click to add to this day");
+            }
+        }
+
+        return string.Join(" | ", parts);
+    }
+
+    #endregion
+}

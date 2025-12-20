@@ -1,0 +1,882 @@
+/* ============================================
+   CHORE PLANNER - UNIFIED MATRIX VIEW
+   Nord Theme + Print Optimized Styles
+   ============================================ */
+
+/* ===========================================
+   SCREEN CONTROLS
+   =========================================== */
+
+.screen-controls {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.screen-controls h1 {
+    color: var(--nord6);
+    font-weight: var(--font-weight-bold);
+}
+
+/* Summary Cards */
+.summary-card {
+    background: var(--nord1);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.summary-value {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--nord6);
+    line-height: 1.2;
+}
+
+.summary-label {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: var(--space-xs);
+}
+
+/* ===========================================
+   PLANNER CONTAINER
+   =========================================== */
+
+.planner-container {
+    background: var(--nord1);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ===========================================
+   MATRIX LAYOUT
+   =========================================== */
+
+.planner-matrix {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow-x: auto;
+}
+
+/* Header Row */
+.matrix-header {
+    display: grid;
+    grid-template-columns: minmax(180px, 2fr) repeat(7, 1fr) minmax(80px, 0.8fr);
+    gap: 2px;
+    background: var(--nord2);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Group Header */
+.matrix-group-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    background: var(--nord2);
+    border-top: 2px solid var(--nord3);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.matrix-group-header:hover {
+    background: var(--nord3);
+}
+
+.matrix-group-header.collapsed {
+    margin-bottom: var(--space-xs);
+}
+
+/* Chore Row */
+.matrix-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 2fr) repeat(7, 1fr) minmax(80px, 0.8fr);
+    gap: 2px;
+    background: var(--nord0);
+    border-bottom: 1px solid var(--nord2);
+    transition: background-color var(--transition-fast);
+}
+
+.matrix-row:hover {
+    background: var(--nord1);
+}
+
+.matrix-row.weekly-chore {
+    background: rgba(163, 190, 140, 0.05);
+}
+
+.matrix-row.weekly-chore:hover {
+    background: rgba(163, 190, 140, 0.1);
+}
+
+/* ===========================================
+   MATRIX CELLS
+   =========================================== */
+
+.matrix-cell {
+    padding: var(--space-sm) var(--space-md);
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+}
+
+/* Chore Label Cell (header) */
+.chore-label-cell {
+    background: var(--nord3);
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord4);
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.chore-header-text {
+    opacity: 0.8;
+}
+
+/* Day Header Cells */
+.day-header-cell {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    padding: var(--space-sm);
+    background: var(--nord3);
+    position: relative;
+}
+
+.day-header-cell.today {
+    background: var(--nord10);
+}
+
+.day-header-cell.past {
+    opacity: 0.7;
+}
+
+.day-name {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.day-header-cell.today .day-name {
+    color: var(--nord6);
+}
+
+.day-number {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--nord6);
+    line-height: 1.2;
+}
+
+/* Day Status Bar (Progress Mode) */
+.day-status-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.day-status-bar.status-complete {
+    background: var(--nord14);
+}
+
+.day-status-bar.status-partial {
+    background: var(--nord13);
+}
+
+.day-status-bar.status-none {
+    background: var(--nord11);
+}
+
+.day-status-bar.status-empty {
+    background: var(--nord3);
+}
+
+/* Value Header Cell */
+.value-header-cell {
+    background: var(--nord3);
+    justify-content: flex-end;
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord4);
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+}
+
+/* Group Label Cell */
+.group-label-cell {
+    padding: var(--space-sm) var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord6);
+}
+
+.group-toggle {
+    color: var(--nord4);
+    transition: transform var(--transition-fast);
+}
+
+.group-name {
+    font-size: var(--font-size-md);
+}
+
+.group-count {
+    font-size: var(--font-size-sm);
+    color: var(--nord4);
+    font-weight: var(--font-weight-normal);
+}
+
+.group-daily-total {
+    font-size: var(--font-size-sm);
+    color: var(--nord14);
+    font-weight: var(--font-weight-semibold);
+    margin-left: var(--space-sm);
+    padding: 2px 8px;
+    background: rgba(163, 190, 140, 0.15);
+    border-radius: var(--radius-sm);
+}
+
+.group-earned {
+    font-size: var(--font-size-sm);
+    color: var(--nord14);
+}
+
+/* Chore Name Cell */
+.chore-name-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    padding-left: var(--space-lg);
+}
+
+.chore-name {
+    font-weight: var(--font-weight-medium);
+    color: var(--nord6);
+    font-size: var(--font-size-sm);
+    line-height: 1.3;
+}
+
+.weekly-badge {
+    font-size: var(--font-size-xs);
+    background: rgba(163, 190, 140, 0.2);
+    color: var(--nord14);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: var(--font-weight-semibold);
+}
+
+.assigned-user {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+}
+
+/* ===========================================
+   CHORE CELLS (The Main Grid Cells)
+   =========================================== */
+
+.chore-cell {
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    min-width: 50px;
+}
+
+.chore-cell:hover {
+    background: var(--nord2);
+}
+
+.chore-cell.today {
+    background: rgba(136, 192, 208, 0.1);
+    border-left: 2px solid var(--nord8);
+    border-right: 2px solid var(--nord8);
+}
+
+.chore-cell.past {
+    opacity: 0.85;
+}
+
+.chore-cell.not-scheduled {
+    opacity: 0.4;
+}
+
+.chore-cell.has-override {
+    background: rgba(136, 192, 208, 0.08);
+}
+
+/* Cell Indicators */
+.cell-indicator {
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cell-indicator.scheduled {
+    color: var(--nord10);
+}
+
+.cell-indicator.available {
+    color: var(--nord4);
+}
+
+.cell-indicator.removed {
+    color: var(--nord11);
+    opacity: 0.6;
+}
+
+.cell-indicator.completed {
+    color: var(--nord14);
+}
+
+.cell-indicator.pending {
+    color: var(--nord13);
+}
+
+.cell-indicator.missed {
+    color: var(--nord11);
+}
+
+.cell-indicator.skipped {
+    color: var(--nord4);
+}
+
+.cell-indicator.scheduled-future {
+    color: var(--nord9);
+}
+
+.cell-indicator.empty {
+    color: transparent;
+}
+
+.override-icon {
+    color: var(--nord8) !important;
+}
+
+.override-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.6rem;
+    color: var(--nord8);
+}
+
+/* Progress Mode Cell States */
+.progress-mode .chore-cell.cell-completed {
+    background: rgba(163, 190, 140, 0.1);
+}
+
+.progress-mode .chore-cell.cell-pending {
+    background: rgba(235, 203, 139, 0.1);
+}
+
+.progress-mode .chore-cell.cell-missed {
+    background: rgba(191, 97, 106, 0.1);
+}
+
+/* Value Cell */
+.value-cell {
+    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+}
+
+.chore-value {
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord14);
+    font-size: var(--font-size-sm);
+}
+
+.value-multiplier {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+}
+
+.earned-value {
+    font-weight: var(--font-weight-bold);
+    color: var(--nord14);
+    font-size: var(--font-size-sm);
+}
+
+.potential-value {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+}
+
+/* ===========================================
+   OVERRIDES PANEL
+   =========================================== */
+
+.overrides-panel {
+    background: var(--nord2);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.overrides-header {
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    font-weight: var(--font-weight-medium);
+    color: var(--nord6);
+    display: flex;
+    align-items: center;
+    transition: background-color var(--transition-fast);
+}
+
+.overrides-header:hover {
+    background: var(--nord3);
+}
+
+.overrides-list {
+    padding: var(--space-sm) var(--space-md);
+    border-top: 1px solid var(--nord3);
+}
+
+.override-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) 0;
+    font-size: var(--font-size-sm);
+}
+
+.override-chore {
+    font-weight: var(--font-weight-medium);
+    color: var(--nord6);
+}
+
+.override-action {
+    font-size: var(--font-size-xs);
+}
+
+.override-date {
+    color: var(--nord4);
+}
+
+.override-by {
+    font-size: var(--font-size-xs);
+    margin-left: auto;
+}
+
+/* ===========================================
+   LEGEND
+   =========================================== */
+
+.planner-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--nord2);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+}
+
+.legend-title {
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord4);
+}
+
+.legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--nord6);
+}
+
+.legend-tip {
+    color: var(--nord4);
+    font-size: var(--font-size-xs);
+    margin-left: auto;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 2px;
+}
+
+/* ===========================================
+   PRINT-ONLY ELEMENTS
+   =========================================== */
+
+.print-header,
+.print-footer {
+    display: none;
+}
+
+.print-only {
+    display: none !important;
+}
+
+/* ===========================================
+   RESPONSIVE DESIGN
+   =========================================== */
+
+@media (max-width: 992px) {
+    .matrix-header,
+    .matrix-row {
+        grid-template-columns: minmax(140px, 1.5fr) repeat(7, 1fr) minmax(60px, 0.6fr);
+    }
+
+    .matrix-cell {
+        padding: var(--space-xs) var(--space-sm);
+        min-height: 42px;
+    }
+
+    .chore-name-cell {
+        padding-left: var(--space-md);
+    }
+
+    .cell-indicator {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .planner-container {
+        padding: var(--space-md);
+    }
+
+    .matrix-header,
+    .matrix-row {
+        grid-template-columns: minmax(100px, 1fr) repeat(7, minmax(36px, 1fr)) minmax(50px, 0.5fr);
+    }
+
+    .matrix-cell {
+        padding: var(--space-xs);
+        min-height: 36px;
+    }
+
+    .chore-name {
+        font-size: var(--font-size-xs);
+    }
+
+    .day-name {
+        font-size: 0.65rem;
+    }
+
+    .day-number {
+        font-size: var(--font-size-sm);
+    }
+
+    .cell-indicator {
+        font-size: 0.9rem;
+    }
+
+    .legend-tip {
+        width: 100%;
+        margin-left: 0;
+        margin-top: var(--space-sm);
+    }
+}
+
+/* ===========================================
+   PRINT STYLES
+   =========================================== */
+
+@media print {
+    /* Force colors to print */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Page setup */
+    @page {
+        size: landscape;
+        margin: 0.4in;
+    }
+
+    /* Hide screen-only elements */
+    .no-print,
+    .screen-controls,
+    nav,
+    .sidebar,
+    .nav-scrollable,
+    .top-row,
+    header,
+    footer,
+    .navbar,
+    .planner-legend,
+    .overrides-panel {
+        display: none !important;
+    }
+
+    /* Show print-only elements */
+    .print-only {
+        display: block !important;
+    }
+
+    /* Reset body */
+    body {
+        background: white !important;
+        color: #333 !important;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Hide main layout padding */
+    .page,
+    main,
+    article {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Print container styles */
+    .planner-container {
+        max-width: none;
+        padding: 0;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        background: white !important;
+    }
+
+    /* Print Header */
+    .print-header {
+        display: block !important;
+        text-align: center;
+        padding: 16px 0;
+        margin-bottom: 16px;
+        background: #5E81AC !important;
+        color: white !important;
+        border-radius: 8px;
+    }
+
+    .print-header h1 {
+        margin: 0 0 4px 0;
+        font-size: 1.5rem;
+        color: white !important;
+    }
+
+    .print-header .week-label {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Matrix Print Styles */
+    .planner-matrix {
+        border: 2px solid #333;
+        border-radius: 0;
+    }
+
+    .matrix-header {
+        background: #f0f0f0 !important;
+    }
+
+    .matrix-cell {
+        border: 1px solid #ddd;
+        background: white !important;
+    }
+
+    .day-header-cell {
+        background: #e9ecef !important;
+    }
+
+    .day-header-cell.today {
+        background: #d4edff !important;
+        border: 2px solid #5E81AC;
+    }
+
+    .day-name {
+        color: #555 !important;
+    }
+
+    .day-number {
+        color: #333 !important;
+    }
+
+    .chore-label-cell,
+    .value-header-cell {
+        background: #f5f5f5 !important;
+        color: #333 !important;
+    }
+
+    .group-label-cell {
+        background: #e0e0e0 !important;
+        color: #333 !important;
+    }
+
+    .chore-name-cell {
+        background: white !important;
+    }
+
+    .chore-name {
+        color: #333 !important;
+    }
+
+    /* Hide status bar in print */
+    .day-status-bar {
+        display: none !important;
+    }
+
+    /* Print-friendly cell indicators (checkboxes) */
+    .chore-cell {
+        background: white !important;
+    }
+
+    .cell-indicator {
+        color: #333 !important;
+    }
+
+    /* Make scheduled cells show empty checkboxes */
+    .cell-indicator.scheduled .bi-circle-fill::before,
+    .cell-indicator.scheduled .bi-lightning-fill::before {
+        content: "?";
+        font-family: inherit;
+        font-size: 1.2rem;
+    }
+
+    .cell-indicator.scheduled-future .bi-circle::before,
+    .cell-indicator.scheduled-future .bi-lightning::before {
+        content: "?";
+        font-family: inherit;
+        font-size: 1.2rem;
+    }
+
+    /* Override indicators for print */
+    .cell-indicator.scheduled .bi-lightning-fill::before,
+    .cell-indicator.scheduled-future .bi-lightning::before {
+        content: "??";
+    }
+
+    .cell-indicator.available .bi-circle::before,
+    .cell-indicator.available .bi-circle-dotted::before {
+        content: "?";
+        font-family: inherit;
+    }
+
+    .cell-indicator.removed {
+        display: none;
+    }
+
+    /* Value cells */
+    .value-cell {
+        background: white !important;
+    }
+
+    .chore-value {
+        color: #2e7d32 !important;
+    }
+
+    /* Print Footer */
+    .print-footer {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        margin-top: 16px;
+        background: #e8f5e9 !important;
+        border-radius: 8px;
+        border: 1px solid #a5d6a7;
+    }
+
+    .potential-earnings {
+        color: #2e7d32;
+        font-size: 1rem;
+    }
+
+    .potential-earnings strong {
+        font-size: 1.2rem;
+    }
+
+    .print-date {
+        color: #666;
+        font-size: 0.85rem;
+    }
+
+    /* Weekly chore row styling for print */
+    .matrix-row.weekly-chore {
+        background: #fafff9 !important;
+    }
+
+    .weekly-badge {
+        background: #e8f5e9 !important;
+        color: #2e7d32 !important;
+        border: 1px solid #a5d6a7;
+    }
+
+    /* Page break support */
+    .page-break {
+        page-break-before: always;
+    }
+}
+
+/* ===========================================
+   PROGRESS MODE SPECIFIC STYLES
+   =========================================== */
+
+.progress-mode .matrix-row {
+    transition: none;
+}
+
+.progress-mode .chore-cell {
+    cursor: default;
+}
+
+.progress-mode .chore-cell:hover {
+    background: inherit;
+}
+
+.progress-mode .chore-cell.cell-completed:hover {
+    background: rgba(163, 190, 140, 0.1);
+}
+
+.progress-mode .chore-cell.cell-pending:hover {
+    background: rgba(235, 203, 139, 0.1);
+}
+
+.progress-mode .chore-cell.cell-missed:hover {
+    background: rgba(191, 97, 106, 0.1);
+}
+
+/* ===========================================
+   SCHEDULE MODE SPECIFIC STYLES
+   =========================================== */
+
+.schedule-mode .chore-cell {
+    cursor: pointer;
+}
+
+.schedule-mode .chore-cell.past {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.schedule-mode .chore-cell:not(.past):hover {
+    background: var(--nord3);
+    transform: scale(1.05);
+}
+
+.schedule-mode .chore-cell:not(.past):active {
+    transform: scale(0.98);
+}
