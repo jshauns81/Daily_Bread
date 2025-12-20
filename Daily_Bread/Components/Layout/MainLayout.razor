@@ -1,11 +1,12 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 @implements IDisposable
 
-<div class="page @(_sidebarOpen ? "sidebar-open" : "")">
+<div class="page @(_sidebarOpen ? "sidebar-open" : "")" id="page-container">
     <!-- Mobile Header -->
     <header class="mobile-header">
-        <button class="hamburger-btn" @onclick="ToggleSidebar" aria-label="Toggle navigation">
+        <button class="hamburger-btn" onclick="window.toggleSidebar()" aria-label="Toggle navigation">
             <span class="hamburger-icon">
                 <span></span>
                 <span></span>
@@ -22,13 +23,10 @@
     </header>
 
     <!-- Sidebar Overlay (mobile) -->
-    @if (_sidebarOpen)
-    {
-        <div class="sidebar-overlay" @onclick="CloseSidebar"></div>
-    }
+    <div class="sidebar-overlay @(_sidebarOpen ? "" : "d-none")" onclick="window.closeSidebar()"></div>
 
     <!-- Sidebar -->
-    <aside class="sidebar @(_sidebarOpen ? "open" : "")">
+    <aside class="sidebar @(_sidebarOpen ? "open" : "")" id="sidebar">
         <NavMenu OnNavigate="CloseSidebar" />
     </aside>
 
@@ -54,6 +52,35 @@
     <span class="dismiss">×</span>
 </div>
 
+<script suppress-error="BL9992">
+    // Global sidebar functions that work without Blazor interactivity
+    window.toggleSidebar = function() {
+        var page = document.getElementById('page-container');
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.querySelector('.sidebar-overlay');
+        
+        if (page.classList.contains('sidebar-open')) {
+            page.classList.remove('sidebar-open');
+            sidebar.classList.remove('open');
+            overlay.classList.add('d-none');
+        } else {
+            page.classList.add('sidebar-open');
+            sidebar.classList.add('open');
+            overlay.classList.remove('d-none');
+        }
+    };
+    
+    window.closeSidebar = function() {
+        var page = document.getElementById('page-container');
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.querySelector('.sidebar-overlay');
+        
+        page.classList.remove('sidebar-open');
+        sidebar.classList.remove('open');
+        overlay.classList.add('d-none');
+    };
+</script>
+
 @code {
     private bool _sidebarOpen = false;
 
@@ -62,14 +89,11 @@
         NavigationManager.LocationChanged += OnLocationChanged;
     }
 
-    private void ToggleSidebar()
-    {
-        _sidebarOpen = !_sidebarOpen;
-    }
-
     private void CloseSidebar()
     {
         _sidebarOpen = false;
+        // Also call JS to sync state
+        _ = JS.InvokeVoidAsync("closeSidebar");
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -78,6 +102,7 @@
         if (_sidebarOpen)
         {
             _sidebarOpen = false;
+            _ = JS.InvokeVoidAsync("closeSidebar");
             InvokeAsync(StateHasChanged);
         }
     }
