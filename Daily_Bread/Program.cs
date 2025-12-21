@@ -96,7 +96,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddAuthorization();
 
 // Add application services
-builder.Services.AddSingleton<IDateProvider, SystemDateProvider>();
+builder.Services.AddScoped<IDateProvider, SystemDateProvider>();
 builder.Services.AddScoped<IToastService, ToastService>();
 builder.Services.AddScoped<IChoreScheduleService, ChoreScheduleService>();
 builder.Services.AddScoped<IChoreLogService, ChoreLogService>();
