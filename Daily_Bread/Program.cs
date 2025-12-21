@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Authorization;
 using Daily_Bread.Components;
 using Daily_Bread.Components.Account;
 using Daily_Bread.Data;
@@ -127,7 +128,7 @@ builder.Services.AddAuthorization(options =>
 {
     // FallbackPolicy applies to any endpoint that doesn't have explicit authorization
     // This means all Razor components require authentication by default
-    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
 });
@@ -245,128 +246,78 @@ else
 
 app.UseStatusCodePagesWithReExecute("/not-found");
 
-// CRITICAL: Static files middleware MUST run FIRST, before any other middleware
-// This ensures CSS, JS, images are served directly without ANY processing
-// iPhone Safari is particularly sensitive to this ordering
-app.UseStaticFiles(new StaticFileOptions
-{
-    OnPrepareResponse = ctx =>
-    {
-        // Add cache headers for static files
-        // But also allow revalidation to ensure fresh content after deployments
-        var headers = ctx.Context.Response.Headers;
-        
-        // Cache static files for 1 day, but allow revalidation
-        headers.CacheControl = "public, max-age=86400, must-revalidate";
-        
-        // Ensure correct content types are set (helps Safari)
-        // The static file middleware should do this, but be explicit
-        var contentType = ctx.Context.Response.ContentType;
-        if (string.IsNullOrEmpty(contentType))
-        {
-            var path = ctx.File.Name.ToLowerInvariant();
-            if (path.EndsWith(".css")) ctx.Context.Response.ContentType = "text/css";
-            else if (path.EndsWith(".js")) ctx.Context.Response.ContentType = "application/javascript";
-            else if (path.EndsWith(".png")) ctx.Context.Response.ContentType = "image/png";
-            else if (path.EndsWith(".svg")) ctx.Context.Response.ContentType = "image/svg+xml";
-            else if (path.EndsWith(".ico")) ctx.Context.Response.ContentType = "image/x-icon";
-            else if (path.EndsWith(".woff2")) ctx.Context.Response.ContentType = "font/woff2";
-            else if (path.EndsWith(".woff")) ctx.Context.Response.ContentType = "font/woff";
-        }
-    }
-});
+// Serve static files from wwwroot
+// Configure with explicit file provider to ensure correct root
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Server-side redirect for unauthenticated document navigations only
-// This middleware ONLY redirects page/document requests, never static assets
-// 
-// WHY THIS MATTERS FOR IPHONE SAFARI:
-// - Safari sends different Accept headers than desktop browsers
-// - Safari may request CSS with Accept: */* instead of text/css
-// - Safari is less forgiving of redirects on static asset requests
-// - If we redirect a CSS request to /Account/Login, Safari receives HTML
-//   with Content-Type: text/html, causing the page to render unstyled
-//
-// SOLUTION: Use multiple detection methods to identify static assets:
-// 1. Path.HasExtension() - catches files with any extension
-// 2. Allowed path prefixes - framework paths, identity pages
-// 3. Accept header inspection - only redirect if client wants HTML
+// Redirect unauthenticated document requests to login
+// Static files are already served above, so this only affects page requests
 app.Use(async (context, next) =>
 {
-    var path = context.Request.Path;
-    var isAuthenticated = context.User?.Identity?.IsAuthenticated == true;
-    
-    // Authenticated users proceed without redirect
-    if (isAuthenticated)
+    // Skip if authenticated
+    if (context.User?.Identity?.IsAuthenticated == true)
     {
         await next();
         return;
     }
     
-    // METHOD 1: Static asset detection by file extension
-    // Path.HasExtension() returns true for any path ending in .xxx
-    // This catches ALL static files: .css, .js, .png, .woff2, .json, etc.
-    // This is more robust than maintaining an allowlist of extensions
-    if (Path.HasExtension(path.Value))
+    var path = context.Request.Path.Value ?? "";
+    
+    // Allow static assets (files with extensions)
+    if (Path.HasExtension(path))
     {
         await next();
         return;
     }
     
-    // METHOD 2: Framework and allowed path prefixes
-    // These paths must be accessible without authentication
-    var allowedPathPrefixes = new[]
-    {
-        "/Account",           // Identity pages (login, logout, access denied)
-        "/kid",               // Kid mode PIN login
-        "/_blazor",           // Blazor SignalR hub and negotiation
-        "/_framework",        // Blazor framework files
-        "/_content",          // Razor class library static content
-        "/health",            // Health check endpoint
-        "/not-found"          // 404 error page
-    };
-    
-    foreach (var prefix in allowedPathPrefixes)
-    {
-        if (path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            await next();
-            return;
-        }
-    }
-    
-    // METHOD 3: Accept header inspection for document navigation detection
-    // Only redirect requests that explicitly want HTML documents
-    // 
-    // Desktop Chrome: Accept: text/html,application/xhtml+xml,...
-    // iPhone Safari:  Accept: text/html,application/xhtml+xml,...
-    // CSS request:    Accept: text/css,*/*;q=0.1  (or just */*)
-    // Image request:  Accept: image/webp,image/apng,image/*,*/*;q=0.8
-    // Font request:   Accept: */*
-    //
-    // A request is a document navigation if it accepts text/html
-    var acceptHeader = context.Request.Headers.Accept.ToString();
-    var isDocumentRequest = !string.IsNullOrEmpty(acceptHeader) && 
-                            acceptHeader.Contains("text/html", StringComparison.OrdinalIgnoreCase);
-    
-    // If the request doesn't want HTML, don't redirect
-    // This prevents redirecting asset requests that Safari sends with Accept: */*
-    if (!isDocumentRequest)
+    // Allow framework paths
+    if (path.StartsWith("/_", StringComparison.OrdinalIgnoreCase))
     {
         await next();
         return;
     }
     
-    // This is an unauthenticated document navigation request - redirect to login
+    // Allow specific anonymous pages
+    if (context.Request.Path.StartsWithSegments("/Account", StringComparison.OrdinalIgnoreCase) ||
+        context.Request.Path.StartsWithSegments("/kid", StringComparison.OrdinalIgnoreCase) ||
+        context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase) ||
+        context.Request.Path.StartsWithSegments("/not-found", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+    
+    // Check headers to avoid redirecting non-document requests
+    var secFetchDest = context.Request.Headers["Sec-Fetch-Dest"].ToString();
+    if (!string.IsNullOrEmpty(secFetchDest) && secFetchDest != "document")
+    {
+        await next();
+        return;
+    }
+    
+    var accept = context.Request.Headers.Accept.ToString();
+    if (string.IsNullOrEmpty(accept) || !accept.Contains("text/html", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+    
+    // Redirect to login
     context.Response.Redirect("/Account/Login");
 });
 
 app.UseAntiforgery();
 
-app.MapHealthChecks("/health");
-app.MapStaticAssets();
+// Map endpoints - these run AFTER the middleware above
+app.MapHealthChecks("/health").AllowAnonymous();
+
+// MapStaticAssets serves fingerprinted assets generated by @Assets[] directive
+// MUST allow anonymous access since these are CSS/JS files needed before login
+app.MapStaticAssets().AllowAnonymous();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
@@ -378,7 +329,6 @@ app.Run();
 // Helper to build PostgreSQL connection string from Railway environment variables
 static string GetPostgresConnectionString(IConfiguration configuration)
 {
-    // Check for Railway DATABASE_URL format
     var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
         ?? Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL")
         ?? Environment.GetEnvironmentVariable("POSTGRES_URL");
@@ -388,7 +338,6 @@ static string GetPostgresConnectionString(IConfiguration configuration)
         return ConvertDatabaseUrlToConnectionString(databaseUrl);
     }
 
-    // Check appsettings connection string
     var configConnection = configuration.GetConnectionString("DefaultConnection");
     if (!string.IsNullOrEmpty(configConnection))
     {
@@ -399,7 +348,6 @@ static string GetPostgresConnectionString(IConfiguration configuration)
         return configConnection;
     }
 
-    // Default for local development with Docker PostgreSQL
     return "Host=localhost;Port=5432;Database=dailybread;Username=postgres;Password=postgres";
 }
 
@@ -423,9 +371,6 @@ static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
     }
 }
 
-/// <summary>
-/// Extension methods for mapping additional Identity endpoints.
-/// </summary>
 internal static class IdentityEndpointsExtensions
 {
     public static IEndpointConventionBuilder MapAdditionalIdentityEndpoints(this IEndpointRouteBuilder endpoints)
