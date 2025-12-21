@@ -144,8 +144,16 @@ small, .small {
 }
 
 hr {
-    border-color: var(--nord3);
-    opacity: 0.5;
+    border: none;
+    border-top: 1px solid var(--nord3);
+    opacity: 0.3;
+    margin: var(--space-lg) 0;
+}
+
+/* Hide hr elements that shouldn't be visible */
+hr.invisible,
+.no-hr hr {
+    display: none;
 }
 
 code {
@@ -411,7 +419,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .card {
     background-color: var(--nord1);
-    border: 1px solid var(--nord3);
+    border: none;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     transition: box-shadow var(--transition-normal);
@@ -425,7 +433,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .card-header {
     background-color: var(--nord2);
-    border-bottom: 1px solid var(--nord3);
+    border-bottom: none;
     color: var(--nord6);
     font-weight: var(--font-weight-semibold);
     padding: var(--space-md);
@@ -442,7 +450,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .card-footer {
     background-color: var(--nord2);
-    border-top: 1px solid var(--nord3);
+    border-top: none;
     padding: var(--space-md);
     border-radius: 0; /* Remove any inherited radius */
 }
@@ -675,14 +683,14 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .modal-content {
     background-color: var(--nord1);
-    border: 1px solid var(--nord3);
+    border: none;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
 }
 
 .modal-header {
     background-color: var(--nord2);
-    border-bottom: 1px solid var(--nord3);
+    border-bottom: none;
     padding: var(--space-md);
 }
 
@@ -695,7 +703,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .modal-footer {
     background-color: var(--nord2);
-    border-top: 1px solid var(--nord3);
+    border-top: none;
     padding: var(--space-md);
 }
 
@@ -705,7 +713,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .dropdown-menu {
     background-color: var(--nord1);
-    border: 1px solid var(--nord3);
+    border: none;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
 }
@@ -721,7 +729,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     color: var(--nord6);
 }
 
-.dropdown-divider { border-color: var(--nord3); }
+.dropdown-divider { border-color: var(--nord2); }
 
 /* ===========================================
    14. LIST GROUPS
@@ -729,7 +737,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .list-group-item {
     background-color: var(--nord1);
-    border-color: var(--nord3);
+    border-color: var(--nord2);
     color: var(--nord6);
     transition: background-color var(--transition-fast);
 }
@@ -771,7 +779,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
    =========================================== */
 
 .nav-tabs {
-    border-bottom: 1px solid var(--nord3);
+    border-bottom: none;
 }
 
 .nav-tabs .nav-link {
@@ -816,7 +824,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .summary-card,
 .stat-card {
     background-color: var(--nord2);
-    border: 1px solid var(--nord3);
+    border: none;
     border-radius: var(--radius-md);
     padding: var(--space-md);
     text-align: center;
