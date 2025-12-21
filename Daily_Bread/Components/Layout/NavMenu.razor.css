@@ -120,8 +120,6 @@
 .nav-link.active {
     background: linear-gradient(90deg, rgba(94, 129, 172, 0.25) 0%, rgba(94, 129, 172, 0.1) 100%);
     color: var(--nord10);
-    border-left: 3px solid var(--nord10);
-    margin-left: calc(0.5rem - 3px);
 }
 
 .nav-link.active .bi {
