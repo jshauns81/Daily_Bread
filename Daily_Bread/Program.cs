@@ -245,10 +245,36 @@ else
 
 app.UseStatusCodePagesWithReExecute("/not-found");
 
-// CRITICAL: Static files middleware MUST run before authentication
-// Static files are served directly without auth checks
-// This ensures CSS, JS, images load correctly on all browsers including iPhone Safari
-app.UseStaticFiles();
+// CRITICAL: Static files middleware MUST run FIRST, before any other middleware
+// This ensures CSS, JS, images are served directly without ANY processing
+// iPhone Safari is particularly sensitive to this ordering
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Add cache headers for static files
+        // But also allow revalidation to ensure fresh content after deployments
+        var headers = ctx.Context.Response.Headers;
+        
+        // Cache static files for 1 day, but allow revalidation
+        headers.CacheControl = "public, max-age=86400, must-revalidate";
+        
+        // Ensure correct content types are set (helps Safari)
+        // The static file middleware should do this, but be explicit
+        var contentType = ctx.Context.Response.ContentType;
+        if (string.IsNullOrEmpty(contentType))
+        {
+            var path = ctx.File.Name.ToLowerInvariant();
+            if (path.EndsWith(".css")) ctx.Context.Response.ContentType = "text/css";
+            else if (path.EndsWith(".js")) ctx.Context.Response.ContentType = "application/javascript";
+            else if (path.EndsWith(".png")) ctx.Context.Response.ContentType = "image/png";
+            else if (path.EndsWith(".svg")) ctx.Context.Response.ContentType = "image/svg+xml";
+            else if (path.EndsWith(".ico")) ctx.Context.Response.ContentType = "image/x-icon";
+            else if (path.EndsWith(".woff2")) ctx.Context.Response.ContentType = "font/woff2";
+            else if (path.EndsWith(".woff")) ctx.Context.Response.ContentType = "font/woff";
+        }
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
