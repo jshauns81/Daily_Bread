@@ -38,6 +38,9 @@ public static class SeedData
         await EnsureRoleAsync(roleManager, ParentRole);
         await EnsureRoleAsync(roleManager, ChildRole);
 
+        // Seed default app settings
+        await SeedAppSettingsAsync(context, logger);
+
         // Seed bootstrap admin user from configuration/environment
         // These come from .env file: ADMIN_USERNAME and ADMIN_PASSWORD
         var adminUserName = configuration["Seed:AdminUserName"] 
@@ -65,6 +68,46 @@ public static class SeedData
                 throw new Exception($"Failed to create role '{roleName}': {string.Join(", ", result.Errors.Select(e => e.Description))}");
             }
         }
+    }
+
+    private static async Task SeedAppSettingsAsync(ApplicationDbContext context, ILogger logger)
+    {
+        var settingsToSeed = new List<AppSetting>
+        {
+            new()
+            {
+                Key = AppSettingKeys.TimeZone,
+                Value = AppSettingKeys.DefaultTimeZone,
+                Description = "Family timezone for determining 'today' and scheduling (IANA format)",
+                DataType = SettingDataType.String
+            },
+            new()
+            {
+                Key = AppSettingKeys.CashOutThreshold,
+                Value = AppSettingKeys.DefaultCashOutThreshold.ToString("F2"),
+                Description = "Minimum balance required before cash out is allowed",
+                DataType = SettingDataType.Decimal
+            },
+            new()
+            {
+                Key = AppSettingKeys.AllowChildSelfReport,
+                Value = "true",
+                Description = "Whether children can mark their own chores as completed",
+                DataType = SettingDataType.Boolean
+            }
+        };
+
+        foreach (var setting in settingsToSeed)
+        {
+            var existing = await context.AppSettings.FirstOrDefaultAsync(s => s.Key == setting.Key);
+            if (existing == null)
+            {
+                context.AppSettings.Add(setting);
+                logger.LogInformation("Seeded app setting: {Key} = {Value}", setting.Key, setting.Value);
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 
     private static async Task EnsureAdminUserAsync(

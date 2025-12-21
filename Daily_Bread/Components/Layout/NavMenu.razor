@@ -62,6 +62,11 @@
                 <span class="nav-link-text">Ledger</span>
             </NavLink>
             
+            <NavLink class="nav-link" href="settings" @onclick="HandleNavigation">
+                <span class="bi bi-gear-fill" aria-hidden="true"></span>
+                <span class="nav-link-text">Settings</span>
+            </NavLink>
+            
             @if (_pendingCount > 0)
             {
                 <NavLink class="nav-link nav-link-alert" href="/" @onclick="HandleNavigation">

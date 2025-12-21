@@ -1,0 +1,347 @@
+@page "/settings"
+@attribute [Authorize(Roles = "Parent,Admin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using Daily_Bread.Data
+@using Daily_Bread.Data.Models
+@using Microsoft.EntityFrameworkCore
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IDateProvider DateProvider
+@inject IToastService ToastService
+
+<PageTitle>Settings - Daily Bread</PageTitle>
+
+<div class="settings-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>?? Settings</h1>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- Timezone Settings -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">?? Time Zone</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Set your family's time zone. This determines when "today" starts and ends for chore tracking.
+                        </p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Time Zone</label>
+                            <select class="form-select" @bind="_selectedTimeZone">
+                                @foreach (var tz in TimeZoneOptions.USTimeZones)
+                                {
+                                    <option value="@tz.Id">@tz.DisplayName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="alert alert-info mb-3">
+                            <strong>Current time:</strong> @_currentTime.ToString("h:mm tt") on @_currentTime.ToString("dddd, MMMM d, yyyy")
+                            <br/>
+                            <small class="text-muted">Based on selected timezone</small>
+                        </div>
+
+                        <button class="btn btn-primary" @onclick="SaveTimeZone" disabled="@_isSaving">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Save Time Zone
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cash Out Settings -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">?? Cash Out Threshold</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Set the minimum balance required before children can request a cash out.
+                        </p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Minimum Balance for Cash Out</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       @bind="_cashOutThreshold" 
+                                       min="0" 
+                                       step="0.01" />
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" @onclick="SaveCashOutThreshold" disabled="@_isSaving">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Save Threshold
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Behavior Settings -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">? Chore Completion</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Control how chores can be marked as complete.
+                        </p>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="allowChildSelfReport" 
+                                   @bind="_allowChildSelfReport" />
+                            <label class="form-check-label" for="allowChildSelfReport">
+                                Allow children to mark their own chores as complete
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mb-3">
+                            When enabled, children can mark chores as done. Parents still need to approve for payment.
+                        </small>
+
+                        <button class="btn btn-primary" @onclick="SaveBehaviorSettings" disabled="@_isSaving">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    private string _selectedTimeZone = AppSettingKeys.DefaultTimeZone;
+    private decimal _cashOutThreshold = AppSettingKeys.DefaultCashOutThreshold;
+    private bool _allowChildSelfReport = true;
+    private DateTime _currentTime;
+
+    private System.Timers.Timer? _clockTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettingsAsync();
+        
+        // Update clock every second
+        _clockTimer = new System.Timers.Timer(1000);
+        _clockTimer.Elapsed += (_, _) =>
+        {
+            UpdateCurrentTime();
+            InvokeAsync(StateHasChanged);
+        };
+        _clockTimer.Start();
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+
+            // Load timezone
+            var tzSetting = await context.AppSettings.FirstOrDefaultAsync(s => s.Key == AppSettingKeys.TimeZone);
+            _selectedTimeZone = tzSetting?.Value ?? AppSettingKeys.DefaultTimeZone;
+
+            // Load cash out threshold
+            var thresholdSetting = await context.AppSettings.FirstOrDefaultAsync(s => s.Key == AppSettingKeys.CashOutThreshold);
+            if (thresholdSetting != null && decimal.TryParse(thresholdSetting.Value, out var threshold))
+            {
+                _cashOutThreshold = threshold;
+            }
+
+            // Load child self-report setting
+            var selfReportSetting = await context.AppSettings.FirstOrDefaultAsync(s => s.Key == AppSettingKeys.AllowChildSelfReport);
+            _allowChildSelfReport = selfReportSetting?.Value?.ToLower() != "false";
+
+            UpdateCurrentTime();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", $"Failed to load settings: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void UpdateCurrentTime()
+    {
+        try
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(_selectedTimeZone);
+            _currentTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+        }
+        catch
+        {
+            _currentTime = DateTime.UtcNow;
+        }
+    }
+
+    private async Task SaveTimeZone()
+    {
+        _isSaving = true;
+
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+
+            var setting = await context.AppSettings.FirstOrDefaultAsync(s => s.Key == AppSettingKeys.TimeZone);
+            if (setting == null)
+            {
+                setting = new AppSetting
+                {
+                    Key = AppSettingKeys.TimeZone,
+                    Value = _selectedTimeZone,
+                    Description = "Family timezone for determining 'today' and scheduling",
+                    DataType = SettingDataType.String
+                };
+                context.AppSettings.Add(setting);
+            }
+            else
+            {
+                setting.Value = _selectedTimeZone;
+                setting.ModifiedAt = DateTime.UtcNow;
+            }
+
+            await context.SaveChangesAsync();
+
+            // Refresh the date provider's cached timezone
+            await DateProvider.RefreshTimeZoneAsync();
+
+            ToastService.ShowSuccess("Saved!", "Time zone updated successfully.");
+            UpdateCurrentTime();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", $"Failed to save time zone: {ex.Message}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task SaveCashOutThreshold()
+    {
+        if (_cashOutThreshold < 0)
+        {
+            ToastService.ShowWarning("Invalid", "Threshold cannot be negative.");
+            return;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+
+            var setting = await context.AppSettings.FirstOrDefaultAsync(s => s.Key == AppSettingKeys.CashOutThreshold);
+            if (setting == null)
+            {
+                setting = new AppSetting
+                {
+                    Key = AppSettingKeys.CashOutThreshold,
+                    Value = _cashOutThreshold.ToString("F2"),
+                    Description = "Minimum balance required before cash out is allowed",
+                    DataType = SettingDataType.Decimal
+                };
+                context.AppSettings.Add(setting);
+            }
+            else
+            {
+                setting.Value = _cashOutThreshold.ToString("F2");
+                setting.ModifiedAt = DateTime.UtcNow;
+            }
+
+            await context.SaveChangesAsync();
+            ToastService.ShowSuccess("Saved!", "Cash out threshold updated.");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", $"Failed to save threshold: {ex.Message}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task SaveBehaviorSettings()
+    {
+        _isSaving = true;
+
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+
+            var setting = await context.AppSettings.FirstOrDefaultAsync(s => s.Key == AppSettingKeys.AllowChildSelfReport);
+            if (setting == null)
+            {
+                setting = new AppSetting
+                {
+                    Key = AppSettingKeys.AllowChildSelfReport,
+                    Value = _allowChildSelfReport.ToString().ToLower(),
+                    Description = "Whether children can mark their own chores as completed",
+                    DataType = SettingDataType.Boolean
+                };
+                context.AppSettings.Add(setting);
+            }
+            else
+            {
+                setting.Value = _allowChildSelfReport.ToString().ToLower();
+                setting.ModifiedAt = DateTime.UtcNow;
+            }
+
+            await context.SaveChangesAsync();
+            ToastService.ShowSuccess("Saved!", "Behavior settings updated.");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", $"Failed to save settings: {ex.Message}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _clockTimer?.Stop();
+        _clockTimer?.Dispose();
+    }
+}
