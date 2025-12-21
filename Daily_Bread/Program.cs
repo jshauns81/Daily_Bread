@@ -209,6 +209,24 @@ else
 app.UseStatusCodePagesWithReExecute("/not-found");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Server-side redirect for unauthenticated users hitting root path
+// This prevents the UI flash by redirecting BEFORE Blazor renders anything
+app.Use(async (context, next) =>
+{
+    // Only redirect exact root path for unauthenticated users
+    // Exclude /Account/* paths to prevent redirect loops
+    if (context.Request.Path.Equals("/", StringComparison.OrdinalIgnoreCase) &&
+        context.User?.Identity?.IsAuthenticated != true &&
+        !context.Request.Path.StartsWithSegments("/Account"))
+    {
+        context.Response.Redirect("/Account/Login");
+        return;
+    }
+    
+    await next();
+});
+
 app.UseAntiforgery();
 
 app.MapHealthChecks("/health");
