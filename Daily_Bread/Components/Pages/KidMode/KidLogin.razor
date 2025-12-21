@@ -1,7 +1,9 @@
 @page "/kid"
+@attribute [AllowAnonymous]
 @layout Daily_Bread.Components.Layout.MinimalLayout
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using Daily_Bread.Data
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Daily_Bread.Services
 

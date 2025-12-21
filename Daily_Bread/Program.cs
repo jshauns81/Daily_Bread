@@ -80,20 +80,57 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddSignInManager()
 .AddDefaultTokenProviders();
 
-// Configure authentication cookie
+// Configure authentication cookie with hardened security settings
 builder.Services.ConfigureApplicationCookie(options =>
 {
+    // Redirect paths
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
+    
+    // Session duration - 7 days with sliding expiration
+    // Each authenticated request extends the session by this duration
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
+    
+    // Cookie name - customize to avoid fingerprinting default ASP.NET cookies
+    options.Cookie.Name = ".DailyBread.Auth";
+    
+    // HttpOnly = true prevents JavaScript from accessing the cookie
+    // This mitigates XSS attacks that try to steal session cookies
     options.Cookie.HttpOnly = true;
+    
+    // SameSite = Lax provides CSRF protection while allowing navigation links
+    // - Strict: Cookie only sent for same-site requests (breaks external links)
+    // - Lax: Cookie sent for same-site + top-level navigations (good balance)
+    // - None: Cookie sent for all requests (requires Secure, allows CSRF)
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    
+    // SecurePolicy = SameAsRequest allows HTTP locally, HTTPS in production
+    // When behind a reverse proxy with HTTPS termination (Railway, Azure, etc.),
+    // UseForwardedHeaders() ensures the app sees the original HTTPS scheme,
+    // so cookies will be marked Secure automatically.
+    //
+    // For HTTPS-only deployments without a proxy, change to:
+    // options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    
+    // IsEssential = true means this cookie is required for the app to function
+    // and won't be blocked by cookie consent policies
+    options.Cookie.IsEssential = true;
 });
 
-// Add authorization
-builder.Services.AddAuthorization();
+// Add authorization with default-deny policy
+// This makes [Authorize] the default for all pages/endpoints
+// Pages that need anonymous access must explicitly use [AllowAnonymous]
+builder.Services.AddAuthorization(options =>
+{
+    // FallbackPolicy applies to any endpoint that doesn't have explicit authorization
+    // This means all Razor components require authentication by default
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // Add application services
 builder.Services.AddScoped<IDateProvider, SystemDateProvider>();
@@ -210,21 +247,64 @@ app.UseStatusCodePagesWithReExecute("/not-found");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Server-side redirect for unauthenticated users hitting root path
-// This prevents the UI flash by redirecting BEFORE Blazor renders anything
+// Comprehensive server-side redirect for unauthenticated users
+// This prevents UI flashes and URL probing by redirecting BEFORE Blazor renders anything
 app.Use(async (context, next) =>
 {
-    // Only redirect exact root path for unauthenticated users
-    // Exclude /Account/* paths to prevent redirect loops
-    if (context.Request.Path.Equals("/", StringComparison.OrdinalIgnoreCase) &&
-        context.User?.Identity?.IsAuthenticated != true &&
-        !context.Request.Path.StartsWithSegments("/Account"))
+    var path = context.Request.Path;
+    var isAuthenticated = context.User?.Identity?.IsAuthenticated == true;
+    
+    // Skip redirect for authenticated users
+    if (isAuthenticated)
     {
-        context.Response.Redirect("/Account/Login");
+        await next();
         return;
     }
     
-    await next();
+    // Allow these paths without authentication:
+    // 1. Identity/Account pages (login, logout, access denied, etc.)
+    // 2. Kid mode PIN login
+    // 3. Static assets (CSS, JS, images, fonts)
+    // 4. Blazor framework endpoints (_blazor, _framework)
+    // 5. Health check endpoint
+    // 6. Not found page (for proper 404 handling)
+    
+    var allowedPaths = new[]
+    {
+        "/Account",           // Identity pages
+        "/kid",               // Kid PIN login
+        "/_blazor",           // Blazor SignalR hub
+        "/_framework",        // Blazor framework files
+        "/_content",          // Razor class library content
+        "/health",            // Health check endpoint
+        "/not-found"          // 404 page
+    };
+    
+    var allowedExtensions = new[]
+    {
+        ".css", ".js", ".map",           // Stylesheets and scripts
+        ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp",  // Images
+        ".woff", ".woff2", ".ttf", ".eot", // Fonts
+        ".json", ".xml"                   // Data files
+    };
+    
+    // Check if path starts with an allowed prefix
+    var isAllowedPath = allowedPaths.Any(allowed => 
+        path.StartsWithSegments(allowed, StringComparison.OrdinalIgnoreCase));
+    
+    // Check if path is a static asset by extension
+    var isStaticAsset = allowedExtensions.Any(ext => 
+        path.Value?.EndsWith(ext, StringComparison.OrdinalIgnoreCase) == true);
+    
+    // Allow if path is permitted or is a static asset
+    if (isAllowedPath || isStaticAsset)
+    {
+        await next();
+        return;
+    }
+    
+    // Redirect all other unauthenticated requests to login
+    context.Response.Redirect("/Account/Login");
 });
 
 app.UseAntiforgery();
@@ -299,7 +379,7 @@ internal static class IdentityEndpointsExtensions
         group.MapPost("/Logout", async (SignInManager<ApplicationUser> signInManager) =>
         {
             await signInManager.SignOutAsync();
-            return Results.LocalRedirect("~/");
+            return Results.LocalRedirect("~/Account/Login");
         });
 
         return group;
