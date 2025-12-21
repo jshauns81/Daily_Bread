@@ -1,4 +1,6 @@
 @page "/kid"
+@layout Daily_Bread.Components.Layout.MinimalLayout
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using Daily_Bread.Data
 @using Microsoft.AspNetCore.Identity
 @using Daily_Bread.Services
@@ -27,7 +29,7 @@
                     <div class="pin-dot @(index < _pin.Length ? "filled" : "")">
                         @if (index < _pin.Length)
                         {
-                            <span>&#x25CF;</span>
+                            <span>?</span>
                         }
                     </div>
                 }
@@ -93,9 +95,6 @@
 </div>
 
 @code {
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
-    
     private string _pin = "";
     private string? _errorMessage;
     private bool _isValidating;
@@ -135,6 +134,7 @@
     {
         _isValidating = true;
         _errorMessage = null;
+        StateHasChanged();
 
         try
         {
