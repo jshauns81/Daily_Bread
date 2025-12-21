@@ -69,15 +69,21 @@
     <ImportMap />
     
     <!-- Favicons and Apple Touch Icons -->
-    <link rel="icon" type="image/png" href="images/bread-icon.png" />
-    <link rel="apple-touch-icon" href="images/bread-icon.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="images/icons/icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="images/icons/icon-192x192.png" />
-    <link rel="apple-touch-icon" sizes="167x167" href="images/icons/icon-192x192.png" />
+    <!-- SVG favicon is preferred for modern browsers (scalable, crisp at any size) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Fallback for browsers that don't support SVG favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/web-app-manifest-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/web-app-manifest-512x512.png" />
     
     <!-- Splash screens for iOS -->
     <meta name="apple-mobile-web-app-title" content="Daily Bread">
-    <link rel="apple-touch-startup-image" href="images/bread-icon.png">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png">
     
     <HeadOutlet />
 </head>

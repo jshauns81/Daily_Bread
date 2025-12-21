@@ -244,6 +244,11 @@ else
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found");
+
+// Static files should be served BEFORE authentication redirect
+// This ensures CSS, JS, images are always accessible
+app.MapStaticAssets();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -277,7 +282,10 @@ app.Use(async (context, next) =>
         "/_framework",        // Blazor framework files
         "/_content",          // Razor class library content
         "/health",            // Health check endpoint
-        "/not-found"          // 404 page
+        "/not-found",         // 404 page
+        "/images",            // Public images (bread-icon.png, etc.)
+        "/lib",               // Library assets (bootstrap, etc.)
+        "/favicon"            // Favicon
     };
     
     var allowedExtensions = new[]
@@ -310,7 +318,6 @@ app.Use(async (context, next) =>
 app.UseAntiforgery();
 
 app.MapHealthChecks("/health");
-app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
