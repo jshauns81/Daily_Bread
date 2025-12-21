@@ -245,79 +245,102 @@ else
 
 app.UseStatusCodePagesWithReExecute("/not-found");
 
-// Static files should be served BEFORE authentication redirect
-// This ensures CSS, JS, images are always accessible
-app.MapStaticAssets();
+// CRITICAL: Static files middleware MUST run before authentication
+// Static files are served directly without auth checks
+// This ensures CSS, JS, images load correctly on all browsers including iPhone Safari
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Comprehensive server-side redirect for unauthenticated users
-// This prevents UI flashes and URL probing by redirecting BEFORE Blazor renders anything
+// Server-side redirect for unauthenticated document navigations only
+// This middleware ONLY redirects page/document requests, never static assets
+// 
+// WHY THIS MATTERS FOR IPHONE SAFARI:
+// - Safari sends different Accept headers than desktop browsers
+// - Safari may request CSS with Accept: */* instead of text/css
+// - Safari is less forgiving of redirects on static asset requests
+// - If we redirect a CSS request to /Account/Login, Safari receives HTML
+//   with Content-Type: text/html, causing the page to render unstyled
+//
+// SOLUTION: Use multiple detection methods to identify static assets:
+// 1. Path.HasExtension() - catches files with any extension
+// 2. Allowed path prefixes - framework paths, identity pages
+// 3. Accept header inspection - only redirect if client wants HTML
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path;
     var isAuthenticated = context.User?.Identity?.IsAuthenticated == true;
     
-    // Skip redirect for authenticated users
+    // Authenticated users proceed without redirect
     if (isAuthenticated)
     {
         await next();
         return;
     }
     
-    // Allow these paths without authentication:
-    // 1. Identity/Account pages (login, logout, access denied, etc.)
-    // 2. Kid mode PIN login
-    // 3. Static assets (CSS, JS, images, fonts)
-    // 4. Blazor framework endpoints (_blazor, _framework)
-    // 5. Health check endpoint
-    // 6. Not found page (for proper 404 handling)
-    
-    var allowedPaths = new[]
-    {
-        "/Account",           // Identity pages
-        "/kid",               // Kid PIN login
-        "/_blazor",           // Blazor SignalR hub
-        "/_framework",        // Blazor framework files
-        "/_content",          // Razor class library content
-        "/health",            // Health check endpoint
-        "/not-found",         // 404 page
-        "/images",            // Public images (bread-icon.png, etc.)
-        "/lib",               // Library assets (bootstrap, etc.)
-        "/favicon"            // Favicon
-    };
-    
-    var allowedExtensions = new[]
-    {
-        ".css", ".js", ".map",           // Stylesheets and scripts
-        ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp",  // Images
-        ".woff", ".woff2", ".ttf", ".eot", // Fonts
-        ".json", ".xml"                   // Data files
-    };
-    
-    // Check if path starts with an allowed prefix
-    var isAllowedPath = allowedPaths.Any(allowed => 
-        path.StartsWithSegments(allowed, StringComparison.OrdinalIgnoreCase));
-    
-    // Check if path is a static asset by extension
-    var isStaticAsset = allowedExtensions.Any(ext => 
-        path.Value?.EndsWith(ext, StringComparison.OrdinalIgnoreCase) == true);
-    
-    // Allow if path is permitted or is a static asset
-    if (isAllowedPath || isStaticAsset)
+    // METHOD 1: Static asset detection by file extension
+    // Path.HasExtension() returns true for any path ending in .xxx
+    // This catches ALL static files: .css, .js, .png, .woff2, .json, etc.
+    // This is more robust than maintaining an allowlist of extensions
+    if (Path.HasExtension(path.Value))
     {
         await next();
         return;
     }
     
-    // Redirect all other unauthenticated requests to login
+    // METHOD 2: Framework and allowed path prefixes
+    // These paths must be accessible without authentication
+    var allowedPathPrefixes = new[]
+    {
+        "/Account",           // Identity pages (login, logout, access denied)
+        "/kid",               // Kid mode PIN login
+        "/_blazor",           // Blazor SignalR hub and negotiation
+        "/_framework",        // Blazor framework files
+        "/_content",          // Razor class library static content
+        "/health",            // Health check endpoint
+        "/not-found"          // 404 error page
+    };
+    
+    foreach (var prefix in allowedPathPrefixes)
+    {
+        if (path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            await next();
+            return;
+        }
+    }
+    
+    // METHOD 3: Accept header inspection for document navigation detection
+    // Only redirect requests that explicitly want HTML documents
+    // 
+    // Desktop Chrome: Accept: text/html,application/xhtml+xml,...
+    // iPhone Safari:  Accept: text/html,application/xhtml+xml,...
+    // CSS request:    Accept: text/css,*/*;q=0.1  (or just */*)
+    // Image request:  Accept: image/webp,image/apng,image/*,*/*;q=0.8
+    // Font request:   Accept: */*
+    //
+    // A request is a document navigation if it accepts text/html
+    var acceptHeader = context.Request.Headers.Accept.ToString();
+    var isDocumentRequest = !string.IsNullOrEmpty(acceptHeader) && 
+                            acceptHeader.Contains("text/html", StringComparison.OrdinalIgnoreCase);
+    
+    // If the request doesn't want HTML, don't redirect
+    // This prevents redirecting asset requests that Safari sends with Accept: */*
+    if (!isDocumentRequest)
+    {
+        await next();
+        return;
+    }
+    
+    // This is an unauthenticated document navigation request - redirect to login
     context.Response.Redirect("/Account/Login");
 });
 
 app.UseAntiforgery();
 
 app.MapHealthChecks("/health");
+app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
