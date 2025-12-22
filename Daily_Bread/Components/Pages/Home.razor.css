@@ -445,7 +445,7 @@
     }
 }
 
-/* Reduced motion */
+/* Reduced motio n */
 @media (prefers-reduced-motion: reduce) {
     .chore-check.approved,
     .chore-check.pending,
