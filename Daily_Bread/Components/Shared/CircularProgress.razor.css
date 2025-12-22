@@ -1,0 +1,193 @@
+/* ============================================
+   CIRCULAR PROGRESS - Activity Ring Style
+   ============================================ */
+
+.circular-progress-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Size variants */
+.circular-progress-container.size-sm {
+    width: 60px;
+    height: 60px;
+}
+
+.circular-progress-container.size-md {
+    width: 100px;
+    height: 100px;
+}
+
+.circular-progress-container.size-lg {
+    width: 140px;
+    height: 140px;
+}
+
+.circular-progress-container.size-xl {
+    width: 180px;
+    height: 180px;
+}
+
+.circular-progress {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+/* Background ring */
+.progress-bg {
+    stroke: var(--nord2);
+    opacity: 0.5;
+}
+
+/* Progress ring - base styles */
+.progress-ring {
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+.progress-ring.animated {
+    animation: progress-pulse 2s ease-in-out infinite;
+}
+
+/* Color variants */
+.progress-ring.color-success {
+    stroke: var(--nord14);
+    color: var(--nord14);
+}
+
+.progress-ring.color-info {
+    stroke: var(--nord8);
+    color: var(--nord8);
+}
+
+.progress-ring.color-warning {
+    stroke: var(--nord12);
+    color: var(--nord12);
+}
+
+.progress-ring.color-danger {
+    stroke: var(--nord11);
+    color: var(--nord11);
+}
+
+/* Complete state - extra glow */
+.progress-ring.complete {
+    filter: drop-shadow(0 0 12px var(--nord14));
+    animation: complete-glow 1.5s ease-in-out infinite alternate;
+}
+
+/* Center content */
+.progress-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Percentage display */
+.progress-percentage {
+    font-weight: 700;
+    color: var(--nord6);
+    line-height: 1;
+}
+
+.size-sm .progress-percentage {
+    font-size: 1rem;
+}
+
+.size-md .progress-percentage {
+    font-size: 1.5rem;
+}
+
+.size-lg .progress-percentage {
+    font-size: 2rem;
+}
+
+.size-xl .progress-percentage {
+    font-size: 2.5rem;
+}
+
+.percent-sign {
+    font-size: 0.6em;
+    opacity: 0.7;
+    font-weight: 500;
+}
+
+/* Fraction display */
+.progress-fraction {
+    font-weight: 700;
+    color: var(--nord6);
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+.size-sm .progress-fraction {
+    font-size: 0.9rem;
+}
+
+.size-md .progress-fraction {
+    font-size: 1.25rem;
+}
+
+.size-lg .progress-fraction {
+    font-size: 1.75rem;
+}
+
+.size-xl .progress-fraction {
+    font-size: 2.25rem;
+}
+
+.fraction-current {
+    color: var(--nord14);
+}
+
+.fraction-separator {
+    opacity: 0.5;
+    font-weight: 400;
+}
+
+.fraction-total {
+    opacity: 0.7;
+    font-size: 0.8em;
+}
+
+/* Animations */
+@keyframes progress-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.85;
+    }
+}
+
+@keyframes complete-glow {
+    from {
+        filter: drop-shadow(0 0 8px var(--nord14));
+    }
+    to {
+        filter: drop-shadow(0 0 20px var(--nord14));
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .progress-ring {
+        transition: none;
+        animation: none;
+    }
+    
+    .progress-ring.complete {
+        animation: none;
+    }
+}

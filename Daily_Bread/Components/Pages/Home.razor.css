@@ -24,6 +24,68 @@
     animation: wave-animation 2s ease-in-out infinite;
 }
 
+/* ===========================================
+   DAILY PROGRESS RING SECTION - NEW
+   =========================================== */
+
+.daily-progress-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, rgba(94, 129, 172, 0.15) 0%, rgba(136, 192, 208, 0.1) 100%);
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(136, 192, 208, 0.2);
+}
+
+.progress-ring-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.progress-ring-label {
+    font-size: var(--font-size-sm);
+    color: var(--nord4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: var(--font-weight-medium);
+}
+
+.progress-ring-label .all-done-text {
+    color: var(--nord14);
+    font-weight: var(--font-weight-bold);
+    animation: all-done-pulse 1s ease-in-out infinite;
+}
+
+.potential-earnings {
+    margin-top: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(163, 190, 140, 0.15);
+    border-radius: var(--radius-full);
+}
+
+.earnings-label {
+    font-size: var(--font-size-sm);
+    color: var(--nord4);
+}
+
+.earnings-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--nord14);
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+@keyframes all-done-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.02); }
+}
+
 /* Streak Display */
 .streak-display {
     background: linear-gradient(135deg, var(--nord12) 0%, var(--nord11) 100%);
@@ -80,7 +142,10 @@
     border-color: var(--nord15) !important;
 }
 
-/* Chore Checklist */
+/* ===========================================
+   CHORE CHECKLIST - ENHANCED
+   =========================================== */
+
 .chore-checklist {
     display: flex;
     flex-direction: column;
@@ -90,12 +155,13 @@
 .chore-item {
     display: flex;
     align-items: center;
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-md);
     border-radius: var(--radius-lg);
     background: var(--nord2);
     text-decoration: none;
     color: var(--nord4);
     transition: all var(--transition-fast);
+    min-height: 64px;
 }
 
 .chore-item:hover {
@@ -104,66 +170,126 @@
     color: var(--nord6);
 }
 
+.chore-item:active {
+    transform: scale(0.98);
+}
+
 .chore-item.completed {
-    background: rgba(163, 190, 140, 0.2);
+    background: rgba(136, 192, 208, 0.2);
 }
 
 .chore-item.approved {
-    background: rgba(163, 190, 140, 0.15);
-    opacity: 0.8;
+    background: rgba(163, 190, 140, 0.2);
 }
 
 .chore-item.missed {
     background: rgba(191, 97, 106, 0.2);
 }
 
-.chore-checkbox {
-    width: 40px;
-    height: 40px;
+/* Enhanced Checkbox Wrapper */
+.chore-checkbox-wrapper {
+    flex-shrink: 0;
+    margin-right: var(--space-md);
+}
+
+.chore-check {
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    border: 3px solid var(--nord3);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: var(--space-sm);
-    flex-shrink: 0;
-}
-
-.check-icon {
-    font-size: var(--font-size-lg);
+    font-size: 1.25rem;
     font-weight: var(--font-weight-bold);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.check-icon.approved {
-    color: var(--nord14);
+.chore-check.empty {
+    border: 3px solid var(--nord3);
+    background: transparent;
 }
 
-.check-icon.pending {
-    color: var(--nord8);
+.chore-check.approved {
+    background: linear-gradient(135deg, var(--nord14) 0%, #8fad7a 100%);
+    color: var(--nord0);
+    border: none;
+    box-shadow: 0 0 12px rgba(163, 190, 140, 0.4);
+    animation: check-pop 0.3s ease-out;
 }
 
-.check-icon.missed {
-    color: var(--nord11);
+.chore-check.pending {
+    background: linear-gradient(135deg, var(--nord8) 0%, var(--nord7) 100%);
+    color: var(--nord0);
+    border: none;
+    animation: pending-pulse 2s ease-in-out infinite;
+}
+
+.chore-check.missed {
+    background: linear-gradient(135deg, var(--nord11) 0%, #a54e56 100%);
+    color: var(--nord6);
+    border: none;
+}
+
+@keyframes check-pop {
+    0% { transform: scale(0.8); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+@keyframes pending-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(136, 192, 208, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(136, 192, 208, 0); }
 }
 
 .chore-details {
     flex: 1;
+    min-width: 0;
 }
 
 .chore-item .chore-name {
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-semibold);
     display: block;
     color: var(--nord6);
+    font-size: var(--font-size-md);
 }
 
 .chore-value {
     font-weight: var(--font-weight-bold);
     color: var(--nord14);
     font-size: var(--font-size-lg);
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 .pulse-button {
     animation: pulse-shadow 2s ease-in-out infinite;
+    font-size: var(--font-size-md);
+    padding: var(--space-md) var(--space-lg);
+}
+
+/* ===========================================
+   ALL DONE CELEBRATION - ENHANCED
+   =========================================== */
+
+.all-done-celebration {
+    padding: var(--space-lg);
+    animation: celebrate 0.5s ease-out;
+}
+
+.celebration-star {
+    font-size: 4rem;
+    display: block;
+    animation: star-spin 1s ease-out, star-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes star-spin {
+    0% { transform: rotate(0deg) scale(0); opacity: 0; }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); opacity: 1; }
+}
+
+@keyframes star-glow {
+    from { filter: drop-shadow(0 0 8px rgba(235, 203, 139, 0.6)); }
+    to { filter: drop-shadow(0 0 20px rgba(235, 203, 139, 0.9)); }
 }
 
 /* Achievements */
@@ -182,6 +308,11 @@
     background: var(--nord2);
     border-radius: var(--radius-lg);
     min-width: 80px;
+    transition: transform 0.2s ease;
+}
+
+.achievement-badge:hover {
+    transform: translateY(-2px);
 }
 
 .achievement-badge.new {
@@ -226,10 +357,6 @@
     font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 }
 
-.all-done-celebration {
-    animation: celebrate 0.5s ease-out;
-}
-
 /* Animations */
 @keyframes wave-animation {
     0%, 100% { transform: rotate(0deg); }
@@ -262,4 +389,72 @@
     0% { transform: scale(0.8); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
+}
+
+/* ===========================================
+   MOBILE RESPONSIVE
+   =========================================== */
+
+@media (max-width: 575.98px) {
+    .daily-progress-section {
+        padding: var(--space-md);
+    }
+    
+    .chore-item {
+        padding: var(--space-sm) var(--space-md);
+        min-height: 56px;
+    }
+    
+    .chore-check {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+    
+    .chore-item .chore-name {
+        font-size: var(--font-size-sm);
+    }
+    
+    .chore-value {
+        font-size: var(--font-size-md);
+    }
+    
+    .achievement-celebration {
+        right: 10px;
+        left: 10px;
+    }
+    
+    .achievement-toast {
+        padding: var(--space-sm) var(--space-md);
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .chore-item {
+        min-height: 64px;
+    }
+    
+    .chore-check {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .chore-item:active {
+        background: var(--nord3);
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .chore-check.approved,
+    .chore-check.pending,
+    .celebration-star,
+    .pulse-button {
+        animation: none;
+    }
+    
+    .chore-item {
+        transition: none;
+    }
 }
