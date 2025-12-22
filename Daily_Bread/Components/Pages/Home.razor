@@ -12,6 +12,9 @@
 
 <PageTitle>Daily Bread - Home</PageTitle>
 
+@* Confetti celebration when all chores complete *@
+<Confetti IsActive="_showConfetti" OnComplete="() => _showConfetti = false" ParticleCount="60" />
+
 @if (_isLoading)
 {
     @* Loading skeleton for dashboard *@
@@ -203,6 +206,37 @@ else if (_childData != null)
             }
         </div>
 
+        @* Daily Progress Ring - NEW *@
+        <div class="daily-progress-section mb-4">
+            <div class="progress-ring-wrapper">
+                <CircularProgress 
+                    Current="@_childData.TodayCompletedCount" 
+                    Total="@_childData.TodayTotalCount"
+                    Size="xl"
+                    Color="auto"
+                    ShowFraction="true"
+                    Animated="true" />
+                <div class="progress-ring-label">
+                    @if (_childData.TodayCompletedCount == _childData.TodayTotalCount && _childData.TodayTotalCount > 0)
+                    {
+                        <span class="all-done-text">All Done! ⭐</span>
+                    }
+                    else
+                    {
+                        <span>Chores Today</span>
+                    }
+                </div>
+            </div>
+            
+            @if (_childData.TodayTotalCount > 0)
+            {
+                <div class="potential-earnings">
+                    <span class="earnings-label">Today's potential:</span>
+                    <span class="earnings-value">$@_childData.TodayPotentialEarnings.ToString("F2")</span>
+                </div>
+            }
+        </div>
+
         <div class="row mb-4 g-3">
             <div class="col-md-6">
                 <div class="card balance-card h-100">
@@ -327,22 +361,22 @@ else if (_childData != null)
                         @foreach (var chore in _childData.TodayChores)
                         {
                             <a href="/tracker" class="chore-item @GetChoreItemClass(chore)">
-                                <div class="chore-checkbox">
+                                <div class="chore-checkbox-wrapper">
                                     @if (chore.IsApproved)
                                     {
-                                        <span class="check-icon approved"><span class="bi bi-check-lg"></span></span>
+                                        <span class="chore-check approved"><span class="bi bi-check-lg"></span></span>
                                     }
                                     else if (chore.IsCompleted)
                                     {
-                                        <span class="check-icon pending"><span class="bi bi-hourglass-split"></span></span>
+                                        <span class="chore-check pending"><span class="bi bi-hourglass-split"></span></span>
                                     }
                                     else if (chore.IsMissed)
                                     {
-                                        <span class="check-icon missed"><span class="bi bi-x-lg"></span></span>
+                                        <span class="chore-check missed"><span class="bi bi-x-lg"></span></span>
                                     }
                                     else
                                     {
-                                        <span class="check-icon empty"></span>
+                                        <span class="chore-check empty"></span>
                                     }
                                 </div>
                                 <div class="chore-details">
@@ -368,8 +402,9 @@ else if (_childData != null)
                     else if (_childData.TodayCompletedCount == _childData.TodayTotalCount && _childData.TodayTotalCount > 0)
                     {
                         <div class="text-center mt-3 all-done-celebration">
-                            <span class="display-4">⭐</span>
+                            <span class="celebration-star">⭐</span>
                             <h4 class="text-success">All Done Today!</h4>
+                            <p class="text-muted mb-0">Great job! 🎉</p>
                         </div>
                     }
                 }
@@ -423,6 +458,8 @@ else
     private bool _isAdmin;
     private bool _isAdminOnly;
     private string? _userId;
+    private bool _showConfetti;
+    private bool _hasTriggeredConfetti;
 
     private ParentDashboardData? _parentData;
     private ChildDashboardData? _childData;
@@ -457,6 +494,24 @@ else
         if (_childData?.NewAchievements.Count > 0 && !string.IsNullOrEmpty(_userId))
         {
             ScheduleAchievementMarking(_userId);
+        }
+        
+        // Trigger confetti if all chores are done (only once per page load)
+        if (_childData != null && 
+            _childData.TodayTotalCount > 0 && 
+            _childData.TodayCompletedCount == _childData.TodayTotalCount &&
+            !_hasTriggeredConfetti)
+        {
+            _hasTriggeredConfetti = true;
+            // Small delay so UI renders first
+            _ = Task.Delay(500).ContinueWith(_ => 
+            {
+                InvokeAsync(() =>
+                {
+                    _showConfetti = true;
+                    StateHasChanged();
+                });
+            });
         }
 
         _isLoading = false;

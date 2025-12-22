@@ -1,0 +1,104 @@
+@* Circular Progress Ring Component - Apple Activity Ring Style *@
+
+<div class="circular-progress-container @SizeClass">
+    <svg class="circular-progress" viewBox="0 0 100 100">
+        @* Background circle *@
+        <circle 
+            class="progress-bg"
+            cx="50" 
+            cy="50" 
+            r="@Radius"
+            fill="none"
+            stroke-width="@StrokeWidth" />
+        
+        @* Progress circle *@
+        <circle 
+            class="progress-ring @ColorClass @(Animated ? "animated" : "")"
+            cx="50" 
+            cy="50" 
+            r="@Radius"
+            fill="none"
+            stroke-width="@StrokeWidth"
+            stroke-linecap="round"
+            style="stroke-dasharray: @Circumference; stroke-dashoffset: @StrokeDashoffset;" />
+    </svg>
+    
+    <div class="progress-content">
+        @if (ChildContent != null)
+        {
+            @ChildContent
+        }
+        else if (ShowPercentage)
+        {
+            <span class="progress-percentage">@Percentage<span class="percent-sign">%</span></span>
+        }
+        else if (ShowFraction)
+        {
+            <span class="progress-fraction">
+                <span class="fraction-current">@Current</span>
+                <span class="fraction-separator">/</span>
+                <span class="fraction-total">@Total</span>
+            </span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Current { get; set; }
+    [Parameter] public int Total { get; set; }
+    [Parameter] public bool ShowPercentage { get; set; } = true;
+    [Parameter] public bool ShowFraction { get; set; }
+    [Parameter] public bool Animated { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Size: sm (60px), md (100px), lg (140px), xl (180px)
+    /// </summary>
+    [Parameter] public string Size { get; set; } = "md";
+    
+    /// <summary>
+    /// Color theme: success (green), info (blue), warning (orange), danger (red), auto (based on percentage)
+    /// </summary>
+    [Parameter] public string Color { get; set; } = "auto";
+
+    private int Percentage => Total > 0 ? (int)Math.Round((double)Current / Total * 100) : 0;
+    
+    private double Radius => Size switch
+    {
+        "sm" => 42,
+        "lg" => 40,
+        "xl" => 38,
+        _ => 42 // md
+    };
+    
+    private double StrokeWidth => Size switch
+    {
+        "sm" => 6,
+        "lg" => 10,
+        "xl" => 12,
+        _ => 8 // md
+    };
+    
+    private double Circumference => 2 * Math.PI * Radius;
+    
+    private double StrokeDashoffset => Circumference - (Circumference * Math.Min(Percentage, 100) / 100);
+    
+    private string SizeClass => $"size-{Size}";
+    
+    private string ColorClass => Color switch
+    {
+        "success" => "color-success",
+        "info" => "color-info",
+        "warning" => "color-warning",
+        "danger" => "color-danger",
+        "auto" => Percentage switch
+        {
+            100 => "color-success complete",
+            >= 75 => "color-success",
+            >= 50 => "color-info",
+            >= 25 => "color-warning",
+            _ => "color-danger"
+        },
+        _ => "color-info"
+    };
+}

@@ -13,6 +13,9 @@
 
 <PageTitle>Chore Tracker</PageTitle>
 
+@* Confetti celebration when all chores complete *@
+<Confetti IsActive="_showConfetti" OnComplete="() => _showConfetti = false" ParticleCount="60" />
+
 <div class="tracker-container">
     <div class="tracker-header">
         <h1>Chore Tracker</h1>
@@ -106,11 +109,67 @@
     }
     else
     {
-        <div class="table-responsive">
+        @* Mobile Card View *@
+        <div class="chore-cards d-md-none">
+            @foreach (var item in ChoreItems)
+            {
+                <div class="chore-card @GetCardClass(item)">
+                    <div class="chore-card-checkbox-wrapper">
+                        <button class="chore-card-checkbox @GetCheckboxClass(item)"
+                                disabled="@IsCheckboxDisabled(item)"
+                                @onclick="() => ToggleChore(item)">
+                            @if (item.IsCompleted)
+                            {
+                                <span class="bi bi-check-lg"></span>
+                            }
+                        </button>
+                    </div>
+                    <div class="chore-card-content">
+                        <span class="chore-card-name @(item.IsCompleted ? "completed" : "")">
+                            @item.ChoreName
+                        </span>
+                        <div class="chore-card-meta">
+                            @if (IsParent && !string.IsNullOrEmpty(item.AssignedUserName))
+                            {
+                                <span>@item.AssignedUserName</span>
+                            }
+                            <span class="badge @GetStatusBadgeClass(item.Status) badge-sm">
+                                @GetStatusDisplay(item.Status)
+                            </span>
+                        </div>
+                    </div>
+                    <div class="chore-card-right">
+                        <span class="chore-card-value @(item.IsMissed ? "text-danger" : "")">
+                            @(item.IsMissed ? "-" : "")$@item.Value.ToString("F2")
+                        </span>
+                        @if (IsParent)
+                        {
+                            <div class="chore-card-actions">
+                                @if (item.Status == ChoreStatus.Completed)
+                                {
+                                    <button class="btn btn-success btn-sm" @onclick="() => ApproveChore(item)">
+                                        ?
+                                    </button>
+                                }
+                                @if (item.Status == ChoreStatus.Pending)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => MarkSkipped(item)">
+                                        Skip
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* Desktop Table View *@
+        <div class="table-responsive d-none d-md-block">
             <table class="table table-hover chore-table">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 50px;">Done</th>
+                        <th style="width: 60px;">Done</th>
                         <th>Chore</th>
                         @if (IsParent)
                         {
@@ -129,11 +188,14 @@
                     {
                         <tr class="@GetRowClass(item)">
                             <td class="text-center">
-                                <input type="checkbox"
-                                       class="form-check-input chore-checkbox"
-                                       checked="@item.IsCompleted"
-                                       disabled="@IsCheckboxDisabled(item)"
-                                       @onchange="() => ToggleChore(item)" />
+                                <button class="chore-checkbox-btn @GetCheckboxClass(item)"
+                                        disabled="@IsCheckboxDisabled(item)"
+                                        @onclick="() => ToggleChore(item)">
+                                    @if (item.IsCompleted)
+                                    {
+                                        <span class="bi bi-check-lg"></span>
+                                    }
+                                </button>
                             </td>
                             <td>
                                 <span class="chore-name @(item.IsCompleted ? "completed" : "")">
@@ -250,6 +312,18 @@
                 </div>
             </div>
         </div>
+        
+        @* All Done Message *@
+        @if (ChoreItems.Count > 0 && ChoreItems.All(c => c.IsCompleted || c.IsMissed || c.Status == ChoreStatus.Skipped))
+        {
+            <div class="all-done-banner mt-4">
+                <span class="all-done-star">?</span>
+                <div>
+                    <h4 class="mb-0">All Done for Today!</h4>
+                    <p class="mb-0 text-muted">Great work! You earned $@ChoreItems.Where(c => c.IsCompleted).Sum(c => c.Value).ToString("F2") today.</p>
+                </div>
+            </div>
+        }
     }
 </div>
 
@@ -266,6 +340,9 @@
     private string? UserId { get; set; }
     private bool IsParent { get; set; }
     private decimal Balance { get; set; }
+    
+    private bool _showConfetti;
+    private int _previousCompletedCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -291,6 +368,7 @@
     private async Task LoadDataAsync()
     {
         IsLoading = true;
+        var previousCount = ChoreItems.Count(c => c.IsCompleted);
 
         try
         {
@@ -309,6 +387,20 @@
             {
                 Balance = await LedgerService.GetUserBalanceAsync(UserId);
             }
+            
+            // Check if all chores just became completed (trigger confetti)
+            var currentCompleted = ChoreItems.Count(c => c.IsCompleted);
+            var totalChores = ChoreItems.Count;
+            
+            if (totalChores > 0 && 
+                currentCompleted == totalChores && 
+                previousCount < totalChores &&
+                _previousCompletedCount < totalChores)
+            {
+                _showConfetti = true;
+            }
+            
+            _previousCompletedCount = currentCompleted;
         }
         catch (Exception ex)
         {
@@ -485,6 +577,24 @@
         ChoreStatus.Skipped => "table-secondary",
         _ => ""
     };
+    
+    private string GetCardClass(TrackerChoreItem item) => item.Status switch
+    {
+        ChoreStatus.Approved => "approved",
+        ChoreStatus.Completed => "completed",
+        ChoreStatus.Missed => "missed",
+        ChoreStatus.Skipped => "skipped",
+        _ => ""
+    };
+    
+    private string GetCheckboxClass(TrackerChoreItem item)
+    {
+        if (item.Status == ChoreStatus.Approved) return "checked approved";
+        if (item.IsCompleted) return "checked pending";
+        if (item.Status == ChoreStatus.Missed) return "missed";
+        if (item.Status == ChoreStatus.Skipped) return "skipped";
+        return "";
+    }
 
     private string GetStatusBadgeClass(ChoreStatus status) => status switch
     {

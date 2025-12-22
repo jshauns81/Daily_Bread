@@ -1,0 +1,98 @@
+@* Confetti Celebration Component *@
+
+@if (IsVisible)
+{
+    <div class="confetti-container @(IsActive ? "active" : "")">
+        @for (int i = 0; i < ParticleCount; i++)
+        {
+            var delay = Random.Shared.NextDouble() * 0.5;
+            var duration = 2.5 + Random.Shared.NextDouble() * 1.5;
+            var left = Random.Shared.Next(0, 100);
+            var rotation = Random.Shared.Next(0, 360);
+            var color = Colors[i % Colors.Length];
+            var size = 8 + Random.Shared.Next(0, 8);
+            var shape = Shapes[i % Shapes.Length];
+            
+            <div class="confetti-piece @shape"
+                 style="left: @(left)%; 
+                        animation-delay: @(delay.ToString("F2"))s; 
+                        animation-duration: @(duration.ToString("F1"))s;
+                        --rotation: @(rotation)deg;
+                        --color: @color;
+                        --size: @(size)px;">
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public int ParticleCount { get; set; } = 50;
+    [Parameter] public int DurationMs { get; set; } = 4000;
+    [Parameter] public EventCallback OnComplete { get; set; }
+    
+    private bool IsVisible { get; set; }
+    private System.Timers.Timer? _timer;
+    
+    private static readonly string[] Colors = [
+        "#A3BE8C", // Green (nord14)
+        "#88C0D0", // Cyan (nord8)
+        "#EBCB8B", // Yellow (nord13)
+        "#D08770", // Orange (nord12)
+        "#B48EAD", // Purple (nord15)
+        "#5E81AC", // Blue (nord10)
+        "#BF616A", // Red (nord11)
+        "#8FBCBB"  // Teal (nord7)
+    ];
+    
+    private static readonly string[] Shapes = [
+        "square",
+        "circle", 
+        "triangle",
+        "rectangle"
+    ];
+    
+    protected override void OnParametersSet()
+    {
+        if (IsActive && !IsVisible)
+        {
+            StartConfetti();
+        }
+        else if (!IsActive && IsVisible)
+        {
+            StopConfetti();
+        }
+    }
+    
+    private void StartConfetti()
+    {
+        IsVisible = true;
+        
+        _timer?.Dispose();
+        _timer = new System.Timers.Timer(DurationMs);
+        _timer.Elapsed += async (s, e) =>
+        {
+            _timer?.Stop();
+            await InvokeAsync(() =>
+            {
+                IsVisible = false;
+                StateHasChanged();
+                OnComplete.InvokeAsync();
+            });
+        };
+        _timer.AutoReset = false;
+        _timer.Start();
+    }
+    
+    private void StopConfetti()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+        IsVisible = false;
+    }
+    
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}
