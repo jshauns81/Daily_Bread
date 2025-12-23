@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,7 +42,7 @@ public interface IChoreScheduleService
     /// <summary>
     /// Gets weekly progress for all weekly frequency chores for a user in the specified week.
     /// </summary>
-    Task<Dictionary<int, WeeklyChoreProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek);
+    Task<Dictionary<int, ChoreScheduleWeeklyProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek);
 
     /// <summary>
     /// Checks if a weekly frequency chore has met its target for the week.
@@ -77,8 +77,10 @@ public interface IChoreScheduleService
 
 /// <summary>
 /// Represents the weekly progress for a frequency-based chore.
+/// NOTE: Use Services.WeeklyChoreProgress from WeeklyProgressService for the full implementation.
+/// This is a legacy wrapper for backward compatibility.
 /// </summary>
-public class WeeklyChoreProgress
+public class ChoreScheduleWeeklyProgress
 {
     public int ChoreDefinitionId { get; set; }
     public string ChoreName { get; set; } = string.Empty;
@@ -92,19 +94,26 @@ public class WeeklyChoreProgress
 public class ChoreScheduleService : IChoreScheduleService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IFamilySettingsService _familySettingsService;
 
-    public ChoreScheduleService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    public ChoreScheduleService(
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IFamilySettingsService familySettingsService)
     {
         _contextFactory = contextFactory;
+        _familySettingsService = familySettingsService;
     }
 
     public DateOnly GetWeekStartDate(DateOnly date)
     {
+        // Synchronous helper - uses default Monday start
+        // For configurable week start, use async method via FamilySettingsService
         return ChoreScheduleHelper.GetWeekStartDate(date);
     }
 
     public DateOnly GetWeekEndDate(DateOnly date)
     {
+        // Synchronous helper - uses default Monday start
         return ChoreScheduleHelper.GetWeekEndDate(date);
     }
 
@@ -181,7 +190,7 @@ public class ChoreScheduleService : IChoreScheduleService
             .CountAsync();
     }
 
-    public async Task<Dictionary<int, WeeklyChoreProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek)
+    public async Task<Dictionary<int, ChoreScheduleWeeklyProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
@@ -199,7 +208,7 @@ public class ChoreScheduleService : IChoreScheduleService
 
         if (weeklyChores.Count == 0)
         {
-            return new Dictionary<int, WeeklyChoreProgress>();
+            return new Dictionary<int, ChoreScheduleWeeklyProgress>();
         }
 
         var choreIds = weeklyChores.Select(c => c.Id).ToList();
@@ -217,11 +226,11 @@ public class ChoreScheduleService : IChoreScheduleService
             })
             .ToDictionaryAsync(x => x.ChoreDefinitionId);
 
-        var result = new Dictionary<int, WeeklyChoreProgress>();
+        var result = new Dictionary<int, ChoreScheduleWeeklyProgress>();
 
         foreach (var chore in weeklyChores)
         {
-            var progress = new WeeklyChoreProgress
+            var progress = new ChoreScheduleWeeklyProgress
             {
                 ChoreDefinitionId = chore.Id,
                 ChoreName = chore.Name,

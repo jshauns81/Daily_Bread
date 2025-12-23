@@ -1,20 +1,22 @@
-@page "/settings"
+﻿@page "/settings"
 @attribute [Authorize(Roles = "Parent,Admin")]
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using Daily_Bread.Data
 @using Daily_Bread.Data.Models
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IDateProvider DateProvider
 @inject IToastService ToastService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Settings - Daily Bread</PageTitle>
 
 <div class="settings-container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>?? Settings</h1>
+        <h1>⚙️ Settings</h1>
     </div>
 
     @if (_isLoading)
@@ -28,11 +30,47 @@
     else
     {
         <div class="row g-4">
+            <!-- Push Notifications - NEW -->
+            <div class="col-lg-6">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">🔔 Push Notifications</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Get notified on your phone or browser when your child requests help with a chore.
+                        </p>
+                        
+                        @if (!string.IsNullOrEmpty(_currentUserId))
+                        {
+                            <PushNotificationToggle UserId="@_currentUserId" 
+                                                    Label="Enable notifications on this device"
+                                                    ShowDeviceInfo="true" />
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                <span class="bi bi-exclamation-triangle me-2"></span>
+                                Unable to load user information. Please refresh the page.
+                            </div>
+                        }
+                        
+                        <hr class="my-3" />
+                        
+                        <small class="text-muted">
+                            <span class="bi bi-info-circle me-1"></span>
+                            <strong>Tip:</strong> Enable notifications on each device where you want to receive alerts 
+                            (phone, tablet, computer). You'll be notified instantly when Victor needs help!
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Timezone Settings -->
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">?? Time Zone</h5>
+                        <h5 class="mb-0">🕐 Time Zone</h5>
                     </div>
                     <div class="card-body">
                         <p class="text-muted mb-3">
@@ -70,7 +108,7 @@
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">?? Cash Out Threshold</h5>
+                        <h5 class="mb-0">💰 Cash Out Threshold</h5>
                     </div>
                     <div class="card-body">
                         <p class="text-muted mb-3">
@@ -104,7 +142,7 @@
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">? Chore Completion</h5>
+                        <h5 class="mb-0">✅ Chore Completion</h5>
                     </div>
                     <div class="card-body">
                         <p class="text-muted mb-3">
@@ -141,6 +179,7 @@
 @code {
     private bool _isLoading = true;
     private bool _isSaving;
+    private string? _currentUserId;
 
     private string _selectedTimeZone = AppSettingKeys.DefaultTimeZone;
     private decimal _cashOutThreshold = AppSettingKeys.DefaultCashOutThreshold;
@@ -151,6 +190,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Get current user ID for push notifications
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
         await LoadSettingsAsync();
         
         // Update clock every second

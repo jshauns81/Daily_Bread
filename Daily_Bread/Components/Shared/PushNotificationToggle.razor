@@ -1,0 +1,230 @@
+﻿@using System.Text.Json
+@inject IPushNotificationService PushService
+@inject IJSRuntime JS
+@inject ILogger<PushNotificationToggle> Logger
+
+<div class="push-notification-toggle @CssClass">
+    @if (!_isSupported)
+    {
+        <div class="alert alert-secondary">
+            <span class="bi bi-bell-slash me-2"></span>
+            Push notifications are not supported on this device/browser.
+        </div>
+    }
+    else if (_permissionStatus == "denied")
+    {
+        <div class="alert alert-warning">
+            <span class="bi bi-exclamation-triangle me-2"></span>
+            <strong>Notifications Blocked</strong>
+            <p class="mb-0 mt-1">
+                You've blocked notifications. To enable them, click the lock icon in your browser's address bar
+                and change the notification setting to "Allow".
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="form-check form-switch">
+            <input type="checkbox" 
+                   class="form-check-input" 
+                   id="pushToggle-@_instanceId"
+                   checked="@_isSubscribed"
+                   disabled="@_isLoading"
+                   @onchange="ToggleSubscription" />
+            <label class="form-check-label" for="pushToggle-@_instanceId">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                else if (_isSubscribed)
+                {
+                    <span class="bi bi-bell-fill text-success me-1"></span>
+                }
+                else
+                {
+                    <span class="bi bi-bell me-1"></span>
+                }
+                @Label
+            </label>
+        </div>
+        
+        @if (_isSubscribed && ShowDeviceInfo)
+        {
+            <small class="text-muted d-block mt-1">
+                <span class="bi bi-phone me-1"></span>
+                @_deviceName
+            </small>
+        }
+        
+        @if (_error != null)
+        {
+            <div class="alert alert-danger mt-2 py-1 px-2 small">
+                @_error
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private readonly string _instanceId = Guid.NewGuid().ToString("N")[..8];
+    
+    [Parameter]
+    public string UserId { get; set; } = string.Empty;
+    
+    [Parameter]
+    public string Label { get; set; } = "Push Notifications";
+    
+    [Parameter]
+    public string CssClass { get; set; } = string.Empty;
+    
+    [Parameter]
+    public bool ShowDeviceInfo { get; set; } = true;
+    
+    [Parameter]
+    public EventCallback<bool> OnSubscriptionChanged { get; set; }
+    
+    private bool _isSupported;
+    private string _permissionStatus = "default";
+    private bool _isSubscribed;
+    private bool _isLoading = true;
+    private string? _error;
+    private string? _deviceName;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckPushStatus();
+            StateHasChanged();
+        }
+    }
+
+    private async Task CheckPushStatus()
+    {
+        try
+        {
+            _isSupported = await JS.InvokeAsync<bool>("PushNotifications.isSupported");
+            
+            if (!_isSupported)
+            {
+                _isLoading = false;
+                return;
+            }
+            
+            _permissionStatus = await JS.InvokeAsync<string>("PushNotifications.getPermissionStatus");
+            _isSubscribed = await JS.InvokeAsync<bool>("PushNotifications.isSubscribed");
+            
+            if (_isSubscribed)
+            {
+                var deviceInfo = await JS.InvokeAsync<JsonElement>("PushNotifications.getDeviceInfo");
+                _deviceName = deviceInfo.GetProperty("deviceName").GetString();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error checking push notification status");
+            _error = "Failed to check notification status";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ToggleSubscription()
+    {
+        if (string.IsNullOrEmpty(UserId))
+        {
+            _error = "User not authenticated";
+            return;
+        }
+        
+        _isLoading = true;
+        _error = null;
+        StateHasChanged();
+        
+        try
+        {
+            if (_isSubscribed)
+            {
+                // Unsubscribe
+                var success = await JS.InvokeAsync<bool>("PushNotifications.unsubscribe");
+                
+                if (success)
+                {
+                    // Get current subscription endpoint to remove from server
+                    var subscriptionJson = await JS.InvokeAsync<string?>("PushNotifications.getSubscription");
+                    if (subscriptionJson != null)
+                    {
+                        var subscription = JsonSerializer.Deserialize<PushSubscriptionDto>(subscriptionJson, 
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        
+                        if (subscription != null)
+                        {
+                            await PushService.UnsubscribeAsync(UserId, subscription.Endpoint);
+                        }
+                    }
+                    
+                    _isSubscribed = false;
+                    await OnSubscriptionChanged.InvokeAsync(false);
+                }
+            }
+            else
+            {
+                // Request permission first
+                _permissionStatus = await JS.InvokeAsync<string>("PushNotifications.requestPermission");
+                
+                if (_permissionStatus != "granted")
+                {
+                    _error = _permissionStatus == "denied" 
+                        ? "Notification permission denied" 
+                        : "Notification permission not granted";
+                    return;
+                }
+                
+                // Get VAPID public key
+                var vapidKey = await PushService.GetPublicVapidKeyAsync();
+                
+                // Subscribe in browser
+                var subscriptionJson = await JS.InvokeAsync<string>("PushNotifications.subscribe", vapidKey);
+                var subscription = JsonSerializer.Deserialize<PushSubscriptionDto>(subscriptionJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                if (subscription == null)
+                {
+                    _error = "Failed to create subscription";
+                    return;
+                }
+                
+                // Get device info
+                var deviceInfo = await JS.InvokeAsync<JsonElement>("PushNotifications.getDeviceInfo");
+                _deviceName = deviceInfo.GetProperty("deviceName").GetString();
+                var userAgent = deviceInfo.GetProperty("userAgent").GetString();
+                
+                // Save to server
+                var result = await PushService.SubscribeAsync(UserId, subscription, _deviceName, userAgent);
+                
+                if (result.Success)
+                {
+                    _isSubscribed = true;
+                    await OnSubscriptionChanged.InvokeAsync(true);
+                }
+                else
+                {
+                    _error = result.ErrorMessage ?? "Failed to save subscription";
+                    // Unsubscribe from browser since server save failed
+                    await JS.InvokeVoidAsync("PushNotifications.unsubscribe");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error toggling push subscription");
+            _error = "An error occurred. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -77,11 +77,16 @@ public class LedgerService : ILedgerService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
+    private readonly IFamilySettingsService _familySettingsService;
 
-    public LedgerService(IDbContextFactory<ApplicationDbContext> contextFactory, IDateProvider dateProvider)
+    public LedgerService(
+        IDbContextFactory<ApplicationDbContext> contextFactory, 
+        IDateProvider dateProvider,
+        IFamilySettingsService familySettingsService)
     {
         _contextFactory = contextFactory;
         _dateProvider = dateProvider;
+        _familySettingsService = familySettingsService;
     }
 
     public async Task<ServiceResult> ReconcileChoreLogTransactionAsync(int choreLogId)
@@ -127,7 +132,10 @@ public class LedgerService : ILedgerService
         }
 
         var existingTransaction = choreLog.LedgerTransaction;
-        var (needsTransaction, amount, transactionType, description) = DetermineTransaction(choreLog, choreDefinition);
+        
+        // Calculate amount - may need weekly context for diminishing returns
+        var (needsTransaction, amount, transactionType, description) = await DetermineTransactionAsync(
+            context, choreLog, choreDefinition);
 
         if (!needsTransaction)
         {
@@ -473,5 +481,109 @@ public class LedgerService : ILedgerService
 
             _ => (false, 0, TransactionType.ChoreEarning, string.Empty)
         };
+    }
+
+    private async Task<(bool NeedsTransaction, decimal Amount, TransactionType Type, string Description)> DetermineTransactionAsync(
+        ApplicationDbContext context,
+        ChoreLog choreLog,
+        ChoreDefinition choreDefinition)
+    {
+        // Non-approved statuses - no transaction
+        if (choreLog.Status != ChoreStatus.Approved && choreLog.Status != ChoreStatus.Missed)
+        {
+            return (false, 0, TransactionType.ChoreEarning, string.Empty);
+        }
+        
+        // Missed chores - apply penalty if any
+        if (choreLog.Status == ChoreStatus.Missed)
+        {
+            if (choreDefinition.PenaltyValue > 0)
+            {
+                return (true, -choreDefinition.PenaltyValue, TransactionType.ChoreDeduction, 
+                    $"Missed: {choreDefinition.Name}");
+            }
+            return (false, 0, TransactionType.ChoreDeduction, string.Empty);
+        }
+        
+        // Approved status - calculate earnings
+        if (choreDefinition.EarnValue <= 0)
+        {
+            // Expectation chore - no earnings
+            return (false, 0, TransactionType.ChoreEarning, string.Empty);
+        }
+        
+        // For weekly frequency chores with diminishing returns
+        if (choreDefinition.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+        {
+            var earnAmount = await CalculateWeeklyChoreEarningAsync(context, choreLog, choreDefinition);
+            
+            if (earnAmount <= 0)
+            {
+                return (false, 0, TransactionType.ChoreEarning, string.Empty);
+            }
+            
+            // Determine if this is a bonus completion (beyond quota)
+            var weekStart = await _familySettingsService.GetWeekStartForDateAsync(choreLog.Date);
+            var weekEnd = await _familySettingsService.GetWeekEndForDateAsync(choreLog.Date);
+            
+            var completionsBefore = await context.ChoreLogs
+                .Where(l => l.ChoreDefinitionId == choreDefinition.Id)
+                .Where(l => l.Date >= weekStart && l.Date <= weekEnd)
+                .Where(l => l.Status == ChoreStatus.Approved)
+                .Where(l => l.Id < choreLog.Id) // Only logs BEFORE this one
+                .CountAsync();
+            
+            var isBonus = completionsBefore >= choreDefinition.WeeklyTargetCount;
+            
+            var description = isBonus 
+                ? $"Bonus: {choreDefinition.Name} (+{completionsBefore - choreDefinition.WeeklyTargetCount + 1} extra)"
+                : $"Completed: {choreDefinition.Name} ({completionsBefore + 1}/{choreDefinition.WeeklyTargetCount})";
+                
+            return (true, earnAmount, TransactionType.ChoreEarning, description);
+        }
+        
+        // Standard daily chore
+        return (true, choreDefinition.EarnValue, TransactionType.ChoreEarning, 
+            $"Completed: {choreDefinition.Name}");
+    }
+
+    /// <summary>
+    /// Calculates the earning amount for a weekly chore completion,
+    /// applying diminishing returns for bonus completions beyond quota.
+    /// </summary>
+    private async Task<decimal> CalculateWeeklyChoreEarningAsync(
+        ApplicationDbContext context,
+        ChoreLog choreLog,
+        ChoreDefinition choreDefinition)
+    {
+        var weekStart = await _familySettingsService.GetWeekStartForDateAsync(choreLog.Date);
+        var weekEnd = await _familySettingsService.GetWeekEndForDateAsync(choreLog.Date);
+        
+        // Count approved completions BEFORE this one in the week
+        var completionsBefore = await context.ChoreLogs
+            .Where(l => l.ChoreDefinitionId == choreDefinition.Id)
+            .Where(l => l.Date >= weekStart && l.Date <= weekEnd)
+            .Where(l => l.Status == ChoreStatus.Approved)
+            .Where(l => l.Id < choreLog.Id) // Only logs with lower ID (created before)
+            .CountAsync();
+        
+        // If under quota, earn full value
+        if (completionsBefore < choreDefinition.WeeklyTargetCount)
+        {
+            return choreDefinition.EarnValue;
+        }
+        
+        // At or over quota - check if repeatable
+        if (!choreDefinition.IsRepeatable)
+        {
+            // Not repeatable and quota met - no additional earnings
+            return 0;
+        }
+        
+        // Repeatable: diminishing returns
+        // Bonus completions: 50% → 25% → 12.5% → ...
+        var bonusCompletions = completionsBefore - choreDefinition.WeeklyTargetCount;
+        var multiplier = Math.Pow(0.5, bonusCompletions + 1);
+        return Math.Round(choreDefinition.EarnValue * (decimal)multiplier, 2);
     }
 }

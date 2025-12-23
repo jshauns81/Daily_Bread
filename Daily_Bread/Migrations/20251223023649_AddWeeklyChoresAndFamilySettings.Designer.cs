@@ -3,6 +3,7 @@ using System;
 using Daily_Bread.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Daily_Bread.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251223023649_AddWeeklyChoresAndFamilySettings")]
+    partial class AddWeeklyChoresAndFamilySettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -417,26 +420,11 @@ namespace Daily_Bread.Migrations
                     b.Property<bool>("EnableConfetti")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("EnablePushNotifications")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("EnableStreaks")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VapidPrivateKey")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("VapidPublicKey")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("VapidSubject")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
 
                     b.Property<int>("WeekStartDay")
                         .HasColumnType("integer");
@@ -547,65 +535,6 @@ namespace Daily_Bread.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("LedgerTransactions");
-                });
-
-            modelBuilder.Entity("Daily_Bread.Data.Models.PushSubscription", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Auth")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeviceName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("Endpoint")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<int>("FailedAttempts")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastUsedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("P256dh")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("UserAgent")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "Endpoint")
-                        .IsUnique();
-
-                    b.ToTable("PushSubscriptions");
                 });
 
             modelBuilder.Entity("Daily_Bread.Data.Models.SavingsGoal", b =>
@@ -971,17 +900,6 @@ namespace Daily_Bread.Migrations
                     b.Navigation("ChoreLog");
 
                     b.Navigation("LedgerAccount");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Daily_Bread.Data.Models.PushSubscription", b =>
-                {
-                    b.HasOne("Daily_Bread.Data.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("User");
                 });

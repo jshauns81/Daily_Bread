@@ -1,0 +1,128 @@
+﻿@namespace Daily_Bread.Components.Shared
+@using Daily_Bread.Services
+@inject IJSRuntime JS
+
+<div class="swipeable-card-container" @ref="_containerRef">
+    <!-- Help action (revealed on swipe left) -->
+    <div class="swipe-action swipe-action-left">
+        <div class="action-content help-action">
+            <span class="bi bi-exclamation-triangle-fill"></span>
+            <span>Help</span>
+        </div>
+    </div>
+    
+    <!-- Done action (revealed on swipe right) -->
+    <div class="swipe-action swipe-action-right">
+        <div class="action-content done-action">
+            <span class="bi bi-check-lg"></span>
+            <span>Done</span>
+        </div>
+    </div>
+    
+    <!-- The card itself -->
+    <div class="swipeable-card @GetCardStateClass()" 
+         @ref="_cardRef"
+         data-chore-id="@Chore.ChoreDefinitionId">
+        <div class="card-content">
+            <div class="chore-info">
+                <span class="chore-name">@Chore.ChoreName</span>
+                @if (Chore.IsWeeklyFlexible && Chore.WeeklyTargetCount > 0)
+                {
+                    <span class="weekly-progress">
+                        @Chore.WeeklyCompletedCount/@Chore.WeeklyTargetCount this week
+                        @if (Chore.IsWeeklyQuotaMet && Chore.IsRepeatable)
+                        {
+                            <span class="bonus-indicator">• Bonus</span>
+                        }
+                    </span>
+                }
+            </div>
+            <div class="chore-value">
+                @if (Chore.EarnValue > 0)
+                {
+                    @if (Chore.IsWeeklyFlexible && Chore.IsWeeklyQuotaMet && Chore.NextCompletionValue.HasValue)
+                    {
+                        <span class="value-amount bonus">$@Chore.NextCompletionValue.Value.ToString("F2")</span>
+                    }
+                    else
+                    {
+                        <span class="value-amount">$@Chore.EarnValue.ToString("F2")</span>
+                    }
+                }
+            </div>
+        </div>
+        
+        @if (IsProcessing)
+        {
+            <div class="processing-overlay">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Processing...</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public required TrackerChoreItem Chore { get; set; }
+    
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnComplete { get; set; }
+    
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnRequestHelp { get; set; }
+    
+    [Parameter]
+    public bool IsProcessing { get; set; }
+    
+    private ElementReference _containerRef;
+    private ElementReference _cardRef;
+    private DotNetObjectReference<SwipeableChoreCard>? _dotNetRef;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("SwipeGestures.init", _containerRef, _dotNetRef);
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleSwipeComplete(string direction)
+    {
+        if (IsProcessing) return;
+        
+        if (direction == "right")
+        {
+            await OnComplete.InvokeAsync(Chore);
+        }
+        else if (direction == "left")
+        {
+            await OnRequestHelp.InvokeAsync(Chore);
+        }
+    }
+    
+    private string GetCardStateClass()
+    {
+        if (Chore.IsApproved) return "completed";
+        if (Chore.IsCompleted) return "pending-approval";
+        if (Chore.IsHelp) return "help-requested";
+        if (Chore.IsMissed) return "missed";
+        return "";
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_dotNetRef != null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("SwipeGestures.destroy", _containerRef);
+            }
+            catch { /* Ignore disposal errors */ }
+            _dotNetRef.Dispose();
+        }
+    }
+}

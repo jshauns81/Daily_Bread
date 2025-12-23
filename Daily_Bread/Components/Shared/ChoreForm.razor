@@ -151,17 +151,51 @@
                 @if (FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency)
                 {
                     <div class="alert alert-info mb-3">
-                        <div class="row align-items-center">
+                        <div class="row align-items-center g-2">
                             <div class="col-auto">
                                 <label for="weeklyTarget" class="form-label mb-0"><strong>Times per week:</strong></label>
                             </div>
                             <div class="col-auto">
                                 <InputNumber id="weeklyTarget" @bind-Value="FormModel.WeeklyTargetCount" class="form-control" style="width: 80px;" min="1" max="7" />
                             </div>
-                            <div class="col">
+                            <div class="col-12 col-md-auto">
                                 <small class="text-muted">Chore must be completed @FormModel.WeeklyTargetCount time(s) each week</small>
                             </div>
                         </div>
+                        
+                        @if (FormModel.ChoreType == ChoreTypeOption.Earning)
+                        {
+                            <hr class="my-3" />
+                            <div class="form-check form-switch">
+                                <InputCheckbox id="isRepeatable" @bind-Value="FormModel.IsRepeatable" class="form-check-input" />
+                                <label class="form-check-label" for="isRepeatable">
+                                    <strong>Allow Bonus Completions</strong>
+                                </label>
+                            </div>
+                            <div class="mt-2">
+                                @if (FormModel.IsRepeatable)
+                                {
+                                    <small class="text-info">
+                                        <span class="bi bi-arrow-up-circle me-1"></span>
+                                        <strong>Bonus mode:</strong> Child can do this chore more than @FormModel.WeeklyTargetCount times for extra earnings 
+                                        with diminishing returns (50% → 25% → 12.5%...).
+                                        <br/>
+                                        <em>Example: @FormModel.WeeklyTargetCount×$@FormModel.EarnValue.ToString("F2") = $@((FormModel.WeeklyTargetCount * FormModel.EarnValue).ToString("F2")), 
+                                        then +$@((FormModel.EarnValue * 0.5m).ToString("F2")), +$@((FormModel.EarnValue * 0.25m).ToString("F2"))...</em>
+                                    </small>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">
+                                        <span class="bi bi-x-circle me-1"></span>
+                                        <strong>Standard mode:</strong> Chore can only be completed @FormModel.WeeklyTargetCount time(s) per week. 
+                                        No bonus for extra completions.
+                                        <br/>
+                                        <em>Best for: Laundry, Cook Dinner (once is enough!)</em>
+                                    </small>
+                                }
+                            </div>
+                        }
                     </div>
                 }
 
@@ -321,6 +355,7 @@
                 ScheduleType = Chore.ScheduleType,
                 ActiveDays = Chore.ActiveDays,
                 WeeklyTargetCount = Chore.WeeklyTargetCount,
+                IsRepeatable = Chore.IsRepeatable,
                 StartDate = Chore.StartDate,
                 EndDate = Chore.EndDate,
                 IsActive = Chore.IsActive,
@@ -338,6 +373,7 @@
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 WeeklyTargetCount = 1,
+                IsRepeatable = false,
                 IsActive = true,
                 AutoApprove = true,
                 EarnValue = 0.25m,
@@ -371,6 +407,7 @@
             FormModel.EarnValue = 0;
             FormModel.PenaltyValue = 0;
             FormModel.AutoApprove = true; // Expectations are always auto-approved
+            FormModel.IsRepeatable = false; // Expectations can't be repeatable
         }
     }
 
@@ -382,6 +419,12 @@
         if (scheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ActiveDays == DaysOfWeek.None)
         {
             FormModel.ActiveDays = DaysOfWeek.All;
+        }
+        
+        // Reset IsRepeatable when switching to SpecificDays
+        if (scheduleType == ChoreScheduleType.SpecificDays)
+        {
+            FormModel.IsRepeatable = false;
         }
     }
 
@@ -421,6 +464,9 @@
                 ScheduleType = FormModel.ScheduleType,
                 ActiveDays = FormModel.ActiveDays,
                 WeeklyTargetCount = FormModel.WeeklyTargetCount,
+                IsRepeatable = FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ChoreType == ChoreTypeOption.Earning 
+                    ? FormModel.IsRepeatable 
+                    : false,
                 StartDate = FormModel.StartDate,
                 EndDate = FormModel.EndDate,
                 IsActive = FormModel.IsActive,
@@ -470,6 +516,8 @@
 
         [Range(1, 7, ErrorMessage = "Weekly target must be between 1 and 7")]
         public int WeeklyTargetCount { get; set; } = 1;
+        
+        public bool IsRepeatable { get; set; } = false;
 
         public DateOnly? StartDate { get; set; }
 

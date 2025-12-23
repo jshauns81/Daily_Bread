@@ -1,4 +1,4 @@
-using Daily_Bread.Data.Models;
+﻿using Daily_Bread.Data.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +25,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<SavingsGoal> SavingsGoals => Set<SavingsGoal>();
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    public DbSet<FamilySettings> FamilySettings => Set<FamilySettings>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -245,6 +247,39 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             // Unique constraint: one preference per user per key
             entity.HasIndex(e => new { e.UserId, e.Key }).IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // FamilySettings configuration
+        builder.Entity<FamilySettings>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DailyExpectationPenalty).HasPrecision(10, 2);
+            entity.Property(e => e.WeeklyIncompletePenaltyPercent).HasPrecision(5, 4);
+            entity.Property(e => e.CashOutThreshold).HasPrecision(10, 2);
+            entity.Property(e => e.VapidPublicKey).HasMaxLength(500);
+            entity.Property(e => e.VapidPrivateKey).HasMaxLength(500);
+            entity.Property(e => e.VapidSubject).HasMaxLength(200);
+        });
+
+        // PushSubscription configuration
+        builder.Entity<PushSubscription>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Endpoint).HasMaxLength(2000).IsRequired();
+            entity.Property(e => e.P256dh).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Auth).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.DeviceName).HasMaxLength(200);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.IsActive);
+            // Unique endpoint per user (same device can't subscribe twice)
+            entity.HasIndex(e => new { e.UserId, e.Endpoint }).IsUnique();
 
             entity.HasOne(e => e.User)
                 .WithMany()

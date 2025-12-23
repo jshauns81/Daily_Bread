@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components.Authorization;
+﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -154,6 +154,10 @@ builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<IKidModeService, KidModeService>();
 builder.Services.AddScoped<IChoreChartService, ChoreChartService>();
 builder.Services.AddScoped<IChorePlannerService, ChorePlannerService>();
+builder.Services.AddScoped<IFamilySettingsService, FamilySettingsService>();
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+builder.Services.AddScoped<IWeeklyProgressService, WeeklyProgressService>();
+builder.Services.AddScoped<IWeeklyReconciliationService, WeeklyReconciliationService>();
 
 // Add health checks
 builder.Services.AddHealthChecks()
@@ -201,6 +205,18 @@ using (var scope = app.Services.CreateScope())
         catch (Exception seedEx)
         {
             Console.WriteLine($"Achievement seeding error (non-fatal): {seedEx.Message}");
+        }
+        
+        // Seed default family settings
+        try
+        {
+            var familySettingsService = scope.ServiceProvider.GetRequiredService<IFamilySettingsService>();
+            await familySettingsService.GetSettingsAsync(); // Creates default if not exists
+            Console.WriteLine("Family settings initialized.");
+        }
+        catch (Exception seedEx)
+        {
+            Console.WriteLine($"Family settings initialization error (non-fatal): {seedEx.Message}");
         }
     }
     catch (Exception ex)
