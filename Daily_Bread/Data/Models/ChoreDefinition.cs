@@ -16,6 +16,11 @@ public class ChoreDefinition
     /// Optional description with details about the chore.
     /// </summary>
     public string? Description { get; set; }
+    
+    /// <summary>
+    /// Icon/emoji for visual display (e.g., "???", "???", "??").
+    /// </summary>
+    public string? Icon { get; set; }
 
     /// <summary>
     /// The user assigned to this chore. Nullable for unassigned chores.
@@ -24,9 +29,28 @@ public class ChoreDefinition
     public ApplicationUser? AssignedUser { get; set; }
 
     /// <summary>
-    /// Amount earned (or deducted if missed) for this chore.
+    /// Amount earned when this chore is completed.
+    /// Set to 0 for "expectation" chores that don't earn money.
     /// </summary>
-    public decimal Value { get; set; }
+    public decimal EarnValue { get; set; } = 0;
+    
+    /// <summary>
+    /// Amount deducted when this chore is missed (not done and not asked for help).
+    /// Set to 0 for no penalty.
+    /// </summary>
+    public decimal PenaltyValue { get; set; } = 0;
+
+    /// <summary>
+    /// Legacy property for backward compatibility.
+    /// Returns EarnValue if set, otherwise PenaltyValue.
+    /// New code should use EarnValue and PenaltyValue directly.
+    /// </summary>
+    [Obsolete("Use EarnValue and PenaltyValue instead")]
+    public decimal Value
+    {
+        get => EarnValue > 0 ? EarnValue : PenaltyValue;
+        set => EarnValue = value; // For backward compatibility during migration
+    }
 
     /// <summary>
     /// The scheduling type for this chore.
@@ -63,10 +87,10 @@ public class ChoreDefinition
 
     /// <summary>
     /// When true, the chore is automatically approved when marked complete.
-    /// Useful for simple tasks like "Make Bed" that don't need inspection.
+    /// This is the DEFAULT behavior - most chores don't need parent inspection.
     /// When false, a parent must manually approve the completed chore.
     /// </summary>
-    public bool AutoApprove { get; set; } = false;
+    public bool AutoApprove { get; set; } = true;
 
     /// <summary>
     /// Sort order for display purposes.
@@ -85,6 +109,18 @@ public class ChoreDefinition
 
     // Navigation property
     public ICollection<ChoreLog> ChoreLogs { get; set; } = [];
+    
+    // Helper properties
+    
+    /// <summary>
+    /// True if this is an "expectation" chore (no earn, only penalty).
+    /// </summary>
+    public bool IsExpectation => EarnValue == 0 && PenaltyValue > 0;
+    
+    /// <summary>
+    /// True if this is an "earning" chore (can earn money).
+    /// </summary>
+    public bool IsEarning => EarnValue > 0;
 }
 
 /// <summary>

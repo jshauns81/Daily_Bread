@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -13,15 +13,19 @@ public class ChoreDefinitionDto
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? Icon { get; set; }
     public string? AssignedUserId { get; set; }
-    public decimal Value { get; set; }
+    public decimal EarnValue { get; set; }
+    public decimal PenaltyValue { get; set; }
+    [Obsolete("Use EarnValue and PenaltyValue instead")]
+    public decimal Value { get => EarnValue; set => EarnValue = value; }
     public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
     public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
     public int WeeklyTargetCount { get; set; } = 1;
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public bool IsActive { get; set; } = true;
-    public bool AutoApprove { get; set; } = false;
+    public bool AutoApprove { get; set; } = true;
     public int SortOrder { get; set; }
 }
 
@@ -97,9 +101,14 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult<ChoreDefinition>.Fail("Chore name is required.");
         }
 
-        if (dto.Value < 0)
+        if (dto.EarnValue < 0)
         {
-            return ServiceResult<ChoreDefinition>.Fail("Value cannot be negative.");
+            return ServiceResult<ChoreDefinition>.Fail("Earn value cannot be negative.");
+        }
+
+        if (dto.PenaltyValue < 0)
+        {
+            return ServiceResult<ChoreDefinition>.Fail("Penalty value cannot be negative.");
         }
 
         // Validate weekly target count for frequency-based chores
@@ -128,8 +137,10 @@ public class ChoreManagementService : IChoreManagementService
         {
             Name = dto.Name.Trim(),
             Description = dto.Description?.Trim(),
+            Icon = dto.Icon?.Trim(),
             AssignedUserId = dto.AssignedUserId,
-            Value = dto.Value,
+            EarnValue = dto.EarnValue,
+            PenaltyValue = dto.PenaltyValue,
             ScheduleType = dto.ScheduleType,
             ActiveDays = dto.ActiveDays,
             WeeklyTargetCount = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.WeeklyTargetCount : 1,
@@ -162,9 +173,14 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult.Fail("Chore name is required.");
         }
 
-        if (dto.Value < 0)
+        if (dto.EarnValue < 0)
         {
-            return ServiceResult.Fail("Value cannot be negative.");
+            return ServiceResult.Fail("Earn value cannot be negative.");
+        }
+
+        if (dto.PenaltyValue < 0)
+        {
+            return ServiceResult.Fail("Penalty value cannot be negative.");
         }
 
         // Validate weekly target count for frequency-based chores
@@ -197,8 +213,10 @@ public class ChoreManagementService : IChoreManagementService
 
         chore.Name = dto.Name.Trim();
         chore.Description = dto.Description?.Trim();
+        chore.Icon = dto.Icon?.Trim();
         chore.AssignedUserId = dto.AssignedUserId;
-        chore.Value = dto.Value;
+        chore.EarnValue = dto.EarnValue;
+        chore.PenaltyValue = dto.PenaltyValue;
         chore.ScheduleType = dto.ScheduleType;
         chore.ActiveDays = dto.ActiveDays;
         chore.WeeklyTargetCount = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.WeeklyTargetCount : 1;
@@ -259,23 +277,17 @@ public class ChoreManagementService : IChoreManagementService
 
     public async Task<List<UserSelectItem>> GetAssignableUsersAsync()
     {
-        var users = await _userManager.Users.ToListAsync();
-        var result = new List<UserSelectItem>();
-
-        foreach (var user in users)
-        {
-            var roles = await _userManager.GetRolesAsync(user);
-            var primaryRole = roles.Contains("Parent") ? "Parent" : 
-                             roles.Contains("Child") ? "Child" : "User";
-
-            result.Add(new UserSelectItem
+        // Get only users in the Child role - chores can only be assigned to children
+        var childUsers = await _userManager.GetUsersInRoleAsync("Child");
+        
+        return childUsers
+            .Select(user => new UserSelectItem
             {
                 Id = user.Id,
                 UserName = user.UserName ?? "Unknown",
-                Role = primaryRole
-            });
-        }
-
-        return result.OrderBy(u => u.Role).ThenBy(u => u.UserName).ToList();
+                Role = "Child"
+            })
+            .OrderBy(u => u.UserName)
+            .ToList();
     }
 }

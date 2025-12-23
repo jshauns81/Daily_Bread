@@ -1,4 +1,4 @@
-@page "/chore-planner"
+﻿@page "/chore-planner"
 @page "/chore-planner/{WeekOffsetParam:int}"
 @attribute [Authorize(Roles = "Parent")]
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -14,18 +14,18 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 
-<PageTitle>Chore Planner</PageTitle>
+<PageTitle>Labor Planner</PageTitle>
 
 <!-- Screen Controls (hidden when printing) -->
 <div class="screen-controls no-print">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><span class="bi bi-calendar-check me-2"></span>Chore Planner</h1>
+        <h1><span class="bi bi-calendar-check me-2"></span>Labor Planner</h1>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
                 <span class="bi bi-printer me-1"></span> Print
             </button>
             <button class="btn btn-primary" @onclick="ShowCreateChoreForm">
-                <span class="bi bi-plus-lg me-1"></span> Add Chore
+                <span class="bi bi-plus-lg me-1"></span> Add Labor
             </button>
         </div>
     </div>
@@ -35,17 +35,20 @@
         <div class="card-body">
             <div class="row align-items-center g-3">
                 <!-- Child Filter -->
-                <div class="col-auto">
-                    <label class="form-label mb-0 me-2">Child:</label>
-                    <select class="form-select form-select-sm d-inline-block" style="width: auto;" 
-                            @bind="_selectedUserId" @bind:after="LoadDataAsync">
-                        <option value="">All Children</option>
-                        @foreach (var child in _childProfiles)
-                        {
-                            <option value="@child.UserId">@child.DisplayName</option>
-                        }
-                    </select>
-                </div>
+                @if (_childProfiles.Count > 1)
+                {
+                    <div class="col-auto">
+                        <label class="form-label mb-0 me-2">Child:</label>
+                        <select class="form-select form-select-sm d-inline-block" style="width: auto;" 
+                                @bind="_selectedUserId" @bind:after="LoadDataAsync">
+                            <option value="">All Children</option>
+                            @foreach (var child in _childProfiles)
+                            {
+                                <option value="@child.UserId">@child.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+                }
 
                 <!-- Mode Toggle -->
                 <div class="col-auto">
@@ -91,7 +94,7 @@
             <div class="col-md-2 col-4">
                 <div class="summary-card h-100">
                     <span class="summary-value text-success">$@_plannerData.TotalWeeklyEarned.ToString("F2")</span>
-                    <span class="summary-label">Earned</span>
+                    <span class="summary-label">Wages</span>
                 </div>
             </div>
             <div class="col-md-2 col-4">
@@ -156,8 +159,8 @@ else if (_plannerData == null || !_plannerData.Groups.Any())
 {
     <div class="alert alert-info">
         <span class="bi bi-info-circle me-2"></span>
-        No chores found. 
-        <button class="btn btn-link p-0 ms-1" @onclick="ShowCreateChoreForm">Add your first chore</button> to get started!
+        No labors found. 
+        <button class="btn btn-link p-0 ms-1" @onclick="ShowCreateChoreForm">Add your first labor</button> to get started!
     </div>
 }
 else
@@ -167,7 +170,7 @@ else
         
         <!-- Print Header (only visible when printing) -->
         <div class="print-header print-only">
-            <h1>@(_plannerData.ChildName ?? "Family") Chore Chart</h1>
+            <h1>@(_plannerData.ChildName ?? "Family") Labor Chart</h1>
             <div class="week-label">@_plannerData.WeekLabel</div>
         </div>
 
@@ -176,7 +179,7 @@ else
             <!-- Header Row -->
             <div class="matrix-header">
                 <div class="matrix-cell chore-label-cell">
-                    <span class="chore-header-text">Chore</span>
+                    <span class="chore-header-text">Labor</span>
                 </div>
                 @foreach (var day in _plannerData.DayColumns)
                 {
@@ -199,18 +202,27 @@ else
             {
                 <!-- Group Header -->
                 <div class="matrix-group-header @(group.IsCollapsible && IsGroupCollapsed(group.GroupKey) ? "collapsed" : "")"
-                     @onclick="() => ToggleGroupCollapse(group.GroupKey)">
+                     @onclick="() => ToggleGroupCollapse(group.GroupKey)"
+                     @key="@($"group-{group.GroupKey}")">
                     <div class="matrix-cell group-label-cell" style="grid-column: 1 / -1;">
                         <span class="group-toggle">
                             <span class="bi @(IsGroupCollapsed(group.GroupKey) ? "bi-chevron-right" : "bi-chevron-down")"></span>
                         </span>
-                        <span class="group-name">@group.GroupName</span>
-                        <span class="group-count">(@group.Chores.Count chores)</span>
-                        @if (group.DailyTotal > 0)
+                        @if (group.GroupKey == "earning")
                         {
-                            <span class="group-daily-total">$@group.DailyTotal.ToString("F2")/day</span>
+                            <span class="bi bi-currency-dollar text-success me-1"></span>
                         }
-                        @if (_viewMode == ViewMode.Progress)
+                        else if (group.GroupKey == "expectations")
+                        {
+                            <span class="bi bi-check2-circle text-secondary me-1"></span>
+                        }
+                        <span class="group-name">@group.GroupName</span>
+                        <span class="group-count">(@group.Chores.Count labors)</span>
+                        @if (group.GroupKey == "earning" && group.WeeklyPotential > 0)
+                        {
+                            <span class="group-daily-total text-success">$@group.WeeklyPotential.ToString("F2") potential</span>
+                        }
+                        @if (_viewMode == ViewMode.Progress && group.GroupKey == "earning")
                         {
                             <span class="group-earned ms-auto">
                                 $@group.WeeklyEarned.ToString("F2") / $@group.WeeklyPotential.ToString("F2")
@@ -224,10 +236,15 @@ else
                 {
                     @foreach (var chore in group.Chores)
                     {
-                        <div class="matrix-row @(chore.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "weekly-chore" : "")">
+                        <div class="matrix-row @(chore.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "weekly-chore" : "") @(!chore.IsEarningChore ? "expectation-chore" : "")"
+                             @key="@($"chore-{chore.ChoreDefinitionId}")">
                             <!-- Chore Name (clickable to edit) -->
                             <div class="matrix-cell chore-name-cell" title="Click to edit @chore.ChoreName">
-                                <span class="chore-name editable" @onclick="() => ShowEditChoreForm(chore)">
+                                <span class="chore-name editable" @onclick="() => ShowEditChoreForm(chore)" @onclick:stopPropagation="true">
+                                    @if (!string.IsNullOrEmpty(chore.Icon))
+                                    {
+                                        <span class="chore-icon me-1">@chore.Icon</span>
+                                    }
                                     @chore.ChoreName
                                     <span class="bi bi-pencil edit-icon"></span>
                                 </span>
@@ -236,6 +253,10 @@ else
                                     <span class="weekly-badge" title="Complete @chore.WeeklyTargetCount times per week">
                                         @chore.WeeklyApprovedCount/@chore.WeeklyTargetCount
                                     </span>
+                                }
+                                else if (!chore.IsDailyChore)
+                                {
+                                    <span class="schedule-badge" title="@chore.ScheduleDescription">(@chore.ScheduleDescription)</span>
                                 }
                                 @if (string.IsNullOrEmpty(_selectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
                                 {
@@ -246,10 +267,19 @@ else
                             <!-- Day Cells -->
                             @foreach (var cell in chore.Cells)
                             {
-                                <div class="matrix-cell chore-cell @GetCellClass(cell)"
+                                var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
+                                var isUpdating = _updatingCellKey == cellKey;
+                                
+                                <div class="matrix-cell chore-cell @GetCellClass(cell) @(isUpdating ? "updating" : "")"
                                      @onclick="() => HandleCellClick(chore, cell)"
-                                     title="@GetCellTooltip(chore, cell)">
-                                    @if (_viewMode == ViewMode.Schedule)
+                                     @onclick:stopPropagation="true"
+                                     title="@GetCellTooltip(chore, cell)"
+                                     @key="@cellKey">
+                                    @if (isUpdating)
+                                    {
+                                        <span class="spinner-border spinner-border-sm text-primary"></span>
+                                    }
+                                    else if (_viewMode == ViewMode.Schedule)
                                     {
                                         @* Schedule Mode: Show schedule indicators *@
                                         @if (cell.IsScheduled)
@@ -334,8 +364,12 @@ else
                             }
 
                             <!-- Value -->
-                            <div class="matrix-cell value-cell">
-                                @if (_viewMode == ViewMode.Progress && chore.WeeklyEarned > 0)
+                            <div class="matrix-cell value-cell @(!chore.IsEarningChore ? "expectation-value" : "")">
+                                @if (!chore.IsEarningChore)
+                                {
+                                    <span class="chore-value text-muted">—</span>
+                                }
+                                else if (_viewMode == ViewMode.Progress && chore.WeeklyEarned > 0)
                                 {
                                     <span class="earned-value">$@chore.WeeklyEarned.ToString("F2")</span>
                                     <span class="potential-value">/ $@chore.WeeklyPotential.ToString("F2")</span>
@@ -453,7 +487,7 @@ else
         <!-- Print Footer -->
         <div class="print-footer print-only">
             <div class="potential-earnings">
-                Earn up to: <strong>$@_plannerData.TotalWeeklyPotential.ToString("F2")</strong> this week!
+                Earn up to: <strong>$@_plannerData.TotalWeeklyPotential.ToString("F2")</strong> in wages this week!
             </div>
             <div class="print-date">
                 Printed: @DateTime.Now.ToString("MMM d, yyyy")
@@ -480,7 +514,7 @@ else
     </div>
 }
 
-<!-- Add Chore Modal -->
+<!-- Add Labor Modal -->
 @if (_showChoreForm)
 {
     <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
@@ -490,11 +524,11 @@ else
                     <h5 class="modal-title">
                         @if (_editingChore?.Id > 0)
                         {
-                            <span class="bi bi-pencil me-2"></span>@("Edit Chore")
+                            <span class="bi bi-pencil me-2"></span>@("Edit Labor")
                         }
                         else
                         {
-                            <span class="bi bi-plus-lg me-2"></span>@("Add New Chore")
+                            <span class="bi bi-plus-lg me-2"></span>@("Add New Labor")
                         }
                     </h5>
                     <button type="button" class="btn-close" @onclick="HideChoreForm"></button>
@@ -535,6 +569,9 @@ else
 
     // Track collapsed groups
     private HashSet<string> _collapsedGroups = [];
+    
+    // Track currently updating cell to prevent double-clicks
+    private string? _updatingCellKey;
 
     protected override async Task OnInitializedAsync()
     {
@@ -545,6 +582,12 @@ else
 
         _childProfiles = await ProfileService.GetAllChildProfilesAsync();
         _assignableUsers = await ChoreManagementService.GetAssignableUsersAsync();
+
+        // Auto-select if there's only one child
+        if (_childProfiles.Count == 1)
+        {
+            _selectedUserId = _childProfiles[0].UserId;
+        }
 
         await LoadDataAsync();
     }
@@ -562,7 +605,6 @@ else
     {
         _isLoading = true;
         _errorMessage = null;
-        StateHasChanged(); // Immediately show loading spinner
 
         try
         {
@@ -578,18 +620,18 @@ else
         finally
         {
             _isLoading = false;
-            StateHasChanged(); // Update UI when done
         }
     }
 
     private void SetViewMode(ViewMode mode)
     {
+        if (_viewMode == mode) return;
         _viewMode = mode;
     }
 
     private async Task PreviousWeek()
     {
-        if (_isNavigating) return; // Prevent double-clicks
+        if (_isNavigating) return;
         _isNavigating = true;
         
         try
@@ -605,7 +647,7 @@ else
 
     private async Task NextWeek()
     {
-        if (_isNavigating) return; // Prevent double-clicks
+        if (_isNavigating) return;
         _isNavigating = true;
         
         try
@@ -647,6 +689,7 @@ else
         {
             _collapsedGroups.Add(groupKey);
         }
+        // No StateHasChanged() needed - Blazor will automatically re-render
     }
 
     private async Task HandleCellClick(ChorePlannerRow chore, ChorePlannerCell cell)
@@ -660,9 +703,15 @@ else
         if (cell.IsPast)
         {
             _errorMessage = "Cannot modify schedule for past dates.";
+            StateHasChanged();
             return;
         }
 
+        // Prevent double-clicks on the same cell
+        var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
+        if (_updatingCellKey == cellKey) return;
+        
+        _updatingCellKey = cellKey;
         _errorMessage = null;
         _successMessage = null;
 
@@ -672,8 +721,16 @@ else
 
             if (result.Success)
             {
+                // Update only the affected cell locally without full reload
+                await UpdateCellStateAsync(chore.ChoreDefinitionId, cell.Date);
                 _successMessage = "Schedule updated!";
-                await LoadDataAsync();
+                
+                // Clear success message after 2 seconds
+                _ = Task.Delay(2000).ContinueWith(_ => InvokeAsync(() => 
+                {
+                    _successMessage = null;
+                    StateHasChanged();
+                }));
             }
             else
             {
@@ -684,6 +741,18 @@ else
         {
             _errorMessage = $"Error updating schedule: {ex.Message}";
         }
+        finally
+        {
+            _updatingCellKey = null;
+            StateHasChanged(); // Only update the UI once at the end
+        }
+    }
+    
+    private async Task UpdateCellStateAsync(int choreDefinitionId, DateOnly date)
+    {
+        // For now, do a full reload to ensure consistency
+        // TODO: Optimize with partial updates if performance becomes an issue
+        await LoadDataAsync();
     }
 
     private void ShowCreateChoreForm()
@@ -692,14 +761,13 @@ else
         {
             ActiveDays = DaysOfWeek.All,
             IsActive = true,
-            Value = 1.00m
+            EarnValue = 1.00m
         };
         _showChoreForm = true;
     }
 
     private async Task ShowEditChoreForm(ChorePlannerRow chore)
     {
-        // Load the full chore details for editing
         try
         {
             var choreDetails = await ChoreManagementService.GetChoreByIdAsync(chore.ChoreDefinitionId);
@@ -710,8 +778,10 @@ else
                     Id = choreDetails.Id,
                     Name = choreDetails.Name,
                     Description = choreDetails.Description,
+                    Icon = choreDetails.Icon,
                     AssignedUserId = choreDetails.AssignedUserId,
-                    Value = choreDetails.Value,
+                    EarnValue = choreDetails.EarnValue,
+                    PenaltyValue = choreDetails.PenaltyValue,
                     ScheduleType = choreDetails.ScheduleType,
                     ActiveDays = choreDetails.ActiveDays,
                     WeeklyTargetCount = choreDetails.WeeklyTargetCount,
@@ -744,7 +814,6 @@ else
     {
         _errorMessage = null;
 
-        // Determine if this is an edit or a new chore
         bool isEdit = dto.Id > 0;
 
         var result = isEdit 
@@ -754,8 +823,8 @@ else
         if (result.Success)
         {
             _successMessage = isEdit 
-                ? $"Chore '{dto.Name}' updated successfully!" 
-                : $"Chore '{dto.Name}' created successfully!";
+                ? $"Labor '{dto.Name}' updated successfully!" 
+                : $"Labor '{dto.Name}' created successfully!";
             HideChoreForm();
             await LoadDataAsync();
         }
@@ -828,7 +897,7 @@ else
                 ChoreCellStatus.Completed => "? Completed",
                 ChoreCellStatus.Pending => "? Pending approval",
                 ChoreCellStatus.Missed => "? Missed",
-                ChoreCellStatus.Skipped => "� Skipped",
+                ChoreCellStatus.Skipped => "– Skipped",
                 ChoreCellStatus.Scheduled => "Scheduled",
                 ChoreCellStatus.Available => "Available (weekly goal)",
                 _ => "Not scheduled"

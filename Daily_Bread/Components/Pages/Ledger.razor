@@ -1,4 +1,4 @@
-@page "/ledger"
+﻿@page "/ledger"
 @page "/ledger/{ProfileIdParam:int?}"
 @attribute [Authorize]
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -12,10 +12,10 @@
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Ledger</PageTitle>
+<PageTitle>Treasury</PageTitle>
 
 <div class="ledger-container">
-    <h1>Ledger</h1>
+    <h1>Treasury</h1>
 
     <!-- Filters Card -->
     @if (IsParent)
@@ -93,7 +93,7 @@
             <div class="stats-grid">
                 <div class="stat-card bg-success-subtle">
                     <span class="stat-value text-success">$@Stats.TotalEarnings.ToString("F2")</span>
-                    <span class="stat-label">Earned</span>
+                    <span class="stat-label">Wages</span>
                 </div>
                 <div class="stat-card bg-danger-subtle">
                     <span class="stat-value text-danger">$@Stats.TotalDeductions.ToString("F2")</span>
@@ -105,7 +105,7 @@
                 </div>
                 <div class="stat-card bg-warning-subtle">
                     <span class="stat-value text-warning">$@Stats.TotalPenalties.ToString("F2")</span>
-                    <span class="stat-label">Penalties</span>
+                    <span class="stat-label">Penance</span>
                 </div>
                 <div class="stat-card bg-secondary-subtle">
                     <span class="stat-value">$@Stats.TotalPayouts.ToString("F2")</span>
@@ -121,18 +121,18 @@
     else if (!IsParent && SelectedAccountId == 0)
     {
         <EmptyState Type="EmptyStateType.Error" 
-                    Icon="??"
-                    Title="No Account Found"
-                    Message="Please contact a parent to set up your account." />
+                    Icon="🏛️"
+                    Title="No Treasury Found"
+                    Message="Please contact a parent to set up your treasury account." />
     }
     else if (IsParent && SelectedProfileId == 0)
     {
         @if (ChildProfiles.Count == 0)
         {
             <EmptyState Type="EmptyStateType.NoChildren" 
-                        Icon="??"
+                        Icon="👨‍👩‍👧‍👦"
                         Title="No Children Added"
-                        Message="Add children to view their ledger.">
+                        Message="Add children to view their treasury.">
                 <ActionButton>
                     <a href="/admin/users" class="btn btn-primary">Add Children</a>
                 </ActionButton>
@@ -141,9 +141,9 @@
         else
         {
             <EmptyState Type="EmptyStateType.NoChildren" 
-                        Icon="??"
+                        Icon="🏛️"
                         Title="Select a Child"
-                        Message="Choose a child from the dropdown above to view their ledger." />
+                        Message="Choose a child from the dropdown above to view their treasury." />
         }
     }
 
@@ -242,11 +242,11 @@
                       OnCancel="() => ShowBonus = false" />
 }
 
-<!-- Penalty Modal -->
+<!-- Penance Modal -->
 @if (ShowPenalty)
 {
-    <TransactionModal Title="Add Penalty"
-                      AmountLabel="Penalty Amount"
+    <TransactionModal Title="Add Penance"
+                      AmountLabel="Penance Amount"
                       IsPositive="false"
                       OnConfirm="ProcessPenalty"
                       OnCancel="() => ShowPenalty = false" />
@@ -489,14 +489,14 @@
         
         if (result.Success)
         {
-            ToastService.ShowWarning("Penalty Applied", $"${penalty.Amount:F2} penalty deducted.");
+            ToastService.ShowWarning("Penance Applied", $"${penalty.Amount:F2} penance deducted.");
             ShowPenalty = false;
             ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
             await LoadTransactionsAsync();
         }
         else
         {
-            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to apply penalty.");
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to apply penance.");
         }
     }
 
@@ -534,10 +534,10 @@
 
     private string GetTypeDisplay(TransactionType type) => type switch
     {
-        TransactionType.ChoreEarning => "Chore",
+        TransactionType.ChoreEarning => "Labor",
         TransactionType.ChoreDeduction => "Missed",
         TransactionType.Bonus => "Bonus",
-        TransactionType.Penalty => "Penalty",
+        TransactionType.Penalty => "Penance",
         TransactionType.Adjustment => "Adjustment",
         TransactionType.Payout => "Payout",
         TransactionType.Transfer => "Transfer",

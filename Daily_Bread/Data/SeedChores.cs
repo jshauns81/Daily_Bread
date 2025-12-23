@@ -86,7 +86,7 @@ public static class SeedChores
                 Name = "Make Bed",
                 Description = "Make your bed neatly each morning",
                 AssignedUserId = childUserId,
-                Value = 0.10m,
+                EarnValue = 0.10m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -97,7 +97,7 @@ public static class SeedChores
                 Name = "Tidy Room",
                 Description = "Keep your room clean and organized",
                 AssignedUserId = childUserId,
-                Value = 0.15m,
+                EarnValue = 0.15m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = false,
@@ -108,7 +108,7 @@ public static class SeedChores
                 Name = "Trash/Recycling (Room)",
                 Description = "Empty trash and recycling from your room",
                 AssignedUserId = childUserId,
-                Value = 0.10m,
+                EarnValue = 0.10m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -119,7 +119,7 @@ public static class SeedChores
                 Name = "Feed Gemma - Morning",
                 Description = "Feed Gemma breakfast",
                 AssignedUserId = childUserId,
-                Value = 0.15m,
+                EarnValue = 0.15m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -130,7 +130,7 @@ public static class SeedChores
                 Name = "Feed Gemma - Evening",
                 Description = "Feed Gemma dinner",
                 AssignedUserId = childUserId,
-                Value = 0.15m,
+                EarnValue = 0.15m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -141,7 +141,7 @@ public static class SeedChores
                 Name = "Set & Clear Table",
                 Description = "Set the table for dinner and clear it after",
                 AssignedUserId = childUserId,
-                Value = 0.15m,
+                EarnValue = 0.15m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = false,
@@ -152,7 +152,7 @@ public static class SeedChores
                 Name = "Load/Unload Dishwasher",
                 Description = "Help with the dishwasher",
                 AssignedUserId = childUserId,
-                Value = 0.15m,
+                EarnValue = 0.15m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = false,
@@ -163,7 +163,7 @@ public static class SeedChores
                 Name = "Have Bag Ready",
                 Description = "Pack your bag for the next day",
                 AssignedUserId = childUserId,
-                Value = 0.10m,
+                EarnValue = 0.10m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.Weekdays, // School days only
                 AutoApprove = true,
@@ -174,7 +174,7 @@ public static class SeedChores
                 Name = "Reading Time",
                 Description = "Read for 20-40 minutes",
                 AssignedUserId = childUserId,
-                Value = 0.25m,
+                EarnValue = 0.25m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -190,7 +190,7 @@ public static class SeedChores
                 Name = "Use Your Brain",
                 Description = "Educational activity - 20 mins on non-school days",
                 AssignedUserId = childUserId,
-                Value = 0.75m,
+                EarnValue = 0.75m,
                 ScheduleType = ChoreScheduleType.WeeklyFrequency,
                 WeeklyTargetCount = 2,
                 ActiveDays = DaysOfWeek.Weekends, // Sat/Sun only
@@ -202,7 +202,7 @@ public static class SeedChores
                 Name = "Trash to Curb",
                 Description = "Take trash and recycling bins to the curb",
                 AssignedUserId = childUserId,
-                Value = 0.75m,
+                EarnValue = 0.75m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.Sunday,
                 AutoApprove = false,
@@ -213,7 +213,7 @@ public static class SeedChores
                 Name = "Bring Trash Up",
                 Description = "Bring empty trash and recycling bins back up",
                 AssignedUserId = childUserId,
-                Value = 0.50m,
+                EarnValue = 0.50m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.Monday,
                 AutoApprove = false,
@@ -224,7 +224,7 @@ public static class SeedChores
                 Name = "Sort Laundry",
                 Description = "Sort dirty laundry into whites and colors",
                 AssignedUserId = childUserId,
-                Value = 0.75m,
+                EarnValue = 0.75m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.Saturday,
                 AutoApprove = false,
@@ -235,7 +235,7 @@ public static class SeedChores
                 Name = "Cleanup Yard",
                 Description = "Help clean up the yard",
                 AssignedUserId = childUserId,
-                Value = 1.00m,
+                EarnValue = 1.00m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.Saturday,
                 AutoApprove = false,
@@ -246,7 +246,7 @@ public static class SeedChores
                 Name = "Walk Gemma",
                 Description = "Take Gemma for a walk",
                 AssignedUserId = childUserId,
-                Value = 0.75m,
+                EarnValue = 0.75m,
                 ScheduleType = ChoreScheduleType.WeeklyFrequency,
                 WeeklyTargetCount = 3,
                 ActiveDays = DaysOfWeek.All, // Can be any day
@@ -258,7 +258,7 @@ public static class SeedChores
                 Name = "Cook Dinner",
                 Description = "Pick a night to help cook dinner",
                 AssignedUserId = childUserId,
-                Value = 1.50m,
+                EarnValue = 1.50m,
                 ScheduleType = ChoreScheduleType.WeeklyFrequency,
                 WeeklyTargetCount = 1,
                 ActiveDays = DaysOfWeek.All, // Can be any day
@@ -282,11 +282,11 @@ public static class SeedChores
             {
                 // Count the number of active days
                 var dayCount = CountActiveDays(chore.ActiveDays);
-                total += chore.Value * dayCount;
+                total += chore.EarnValue * dayCount;
             }
             else // WeeklyFrequency
             {
-                total += chore.Value * chore.WeeklyTargetCount;
+                total += chore.EarnValue * chore.WeeklyTargetCount;
             }
         }
         

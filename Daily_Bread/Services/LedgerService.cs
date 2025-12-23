@@ -440,33 +440,36 @@ public class LedgerService : ILedgerService
     {
         return choreLog.Status switch
         {
-            // Completed earns the full value
-            ChoreStatus.Completed => (
+            // Approved earns the EarnValue (if any)
+            ChoreStatus.Approved when choreDefinition.EarnValue > 0 => (
                 true,
-                choreDefinition.Value,
+                choreDefinition.EarnValue,
                 TransactionType.ChoreEarning,
                 $"Completed: {choreDefinition.Name}"
             ),
+            
+            // Approved but no earn value (expectation chore done) - no transaction
+            ChoreStatus.Approved => (false, 0, TransactionType.ChoreEarning, string.Empty),
 
-            // Approved also earns the full value (same as completed, but parent-verified)
-            ChoreStatus.Approved => (
-                true,
-                choreDefinition.Value,
-                TransactionType.ChoreEarning,
-                $"Approved: {choreDefinition.Name}"
-            ),
+            // Completed (waiting approval) - no transaction until approved
+            // Money only moves when fully approved
+            ChoreStatus.Completed => (false, 0, TransactionType.ChoreEarning, string.Empty),
 
-            // Missed deducts the value
-            ChoreStatus.Missed => (
+            // Missed deducts the PenaltyValue (if any)
+            ChoreStatus.Missed when choreDefinition.PenaltyValue > 0 => (
                 true,
-                -choreDefinition.Value,
+                -choreDefinition.PenaltyValue,
                 TransactionType.ChoreDeduction,
                 $"Missed: {choreDefinition.Name}"
             ),
+            
+            // Missed but no penalty - no transaction
+            ChoreStatus.Missed => (false, 0, TransactionType.ChoreDeduction, string.Empty),
 
-            // Pending and Skipped have no financial impact
+            // Pending, Skipped, Help have no financial impact
             ChoreStatus.Pending => (false, 0, TransactionType.ChoreEarning, string.Empty),
             ChoreStatus.Skipped => (false, 0, TransactionType.ChoreEarning, string.Empty),
+            ChoreStatus.Help => (false, 0, TransactionType.ChoreEarning, string.Empty),
 
             _ => (false, 0, TransactionType.ChoreEarning, string.Empty)
         };

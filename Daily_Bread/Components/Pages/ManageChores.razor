@@ -197,7 +197,7 @@
         {
             ActiveDays = DaysOfWeek.All,
             IsActive = true,
-            Value = 1.00m
+            EarnValue = 1.00m
         };
         ShowForm = true;
         ClearMessages();
@@ -211,7 +211,8 @@
             Name = chore.Name,
             Description = chore.Description,
             AssignedUserId = chore.AssignedUserId,
-            Value = chore.Value,
+            EarnValue = chore.EarnValue,
+            PenaltyValue = chore.PenaltyValue,
             ActiveDays = chore.ActiveDays,
             StartDate = chore.StartDate,
             EndDate = chore.EndDate,

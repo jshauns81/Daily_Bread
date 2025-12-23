@@ -50,6 +50,7 @@ public class ChorePlannerRow
     public int ChoreDefinitionId { get; init; }
     public required string ChoreName { get; init; }
     public string? Description { get; init; }
+    public string? Icon { get; init; }
     public decimal Value { get; init; }
     public ChoreScheduleType ScheduleType { get; init; }
     public DaysOfWeek ActiveDays { get; init; }
@@ -73,9 +74,55 @@ public class ChorePlannerRow
     public int WeeklyApprovedCount { get; init; }
     
     /// <summary>
+    /// Whether this chore earns money (Value > 0).
+    /// </summary>
+    public bool IsEarningChore => Value > 0;
+    
+    /// <summary>
     /// Whether this is a "daily" chore (scheduled all 7 days).
     /// </summary>
     public bool IsDailyChore => ScheduleType == ChoreScheduleType.SpecificDays && ActiveDays == DaysOfWeek.All;
+    
+    /// <summary>
+    /// Human-readable schedule description for inline display.
+    /// </summary>
+    public string ScheduleDescription
+    {
+        get
+        {
+            if (ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            {
+                return $"{WeeklyTargetCount}x/week";
+            }
+            
+            if (ActiveDays == DaysOfWeek.All)
+            {
+                return "daily";
+            }
+            
+            if (ActiveDays == DaysOfWeek.Weekdays)
+            {
+                return "weekdays";
+            }
+            
+            if (ActiveDays == DaysOfWeek.Weekends)
+            {
+                return "weekends";
+            }
+            
+            // Build list of day abbreviations
+            var days = new List<string>();
+            if (ActiveDays.HasFlag(DaysOfWeek.Sunday)) days.Add("Sun");
+            if (ActiveDays.HasFlag(DaysOfWeek.Monday)) days.Add("Mon");
+            if (ActiveDays.HasFlag(DaysOfWeek.Tuesday)) days.Add("Tue");
+            if (ActiveDays.HasFlag(DaysOfWeek.Wednesday)) days.Add("Wed");
+            if (ActiveDays.HasFlag(DaysOfWeek.Thursday)) days.Add("Thu");
+            if (ActiveDays.HasFlag(DaysOfWeek.Friday)) days.Add("Fri");
+            if (ActiveDays.HasFlag(DaysOfWeek.Saturday)) days.Add("Sat");
+            
+            return string.Join("/", days);
+        }
+    }
     
     /// <summary>
     /// Total earned this week for this chore.
@@ -359,7 +406,7 @@ public class ChorePlannerService : IChorePlannerService
         var logs = await context.ChoreLogs
             .AsNoTracking()
             .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
-            .Where(cl => cl.Date >= start && cl.Date <= end)
+            // .Where(cl => cl.Date >= start && cl.Date <= end)
             .ToListAsync();
 
         var logsByChoreAndDate = logs
@@ -437,7 +484,7 @@ public class ChorePlannerService : IChorePlannerService
                 decimal? earnedAmount = null;
                 if (log?.Status == ChoreStatus.Approved)
                 {
-                    earnedAmount = chore.Value;
+                    earnedAmount = chore.EarnValue;
                     weeklyApproved++;
                 }
                 if (log?.Status == ChoreStatus.Completed || log?.Status == ChoreStatus.Approved)
@@ -463,7 +510,8 @@ public class ChorePlannerService : IChorePlannerService
                 ChoreDefinitionId = chore.Id,
                 ChoreName = chore.Name,
                 Description = chore.Description,
-                Value = chore.Value,
+                Icon = chore.Icon,
+                Value = chore.EarnValue,
                 ScheduleType = chore.ScheduleType,
                 ActiveDays = chore.ActiveDays,
                 WeeklyTargetCount = chore.WeeklyTargetCount,
@@ -602,13 +650,14 @@ public class ChorePlannerService : IChorePlannerService
                     ChoreDefinitionId = c.ChoreDefinitionId,
                     ChoreName = c.ChoreName,
                     Description = c.Description,
+                    Icon = c.Icon,
                     Value = c.Value,
                     ScheduleType = c.ScheduleType,
                     ActiveDays = c.ActiveDays,
                     WeeklyTargetCount = c.WeeklyTargetCount,
                     AssignedUserId = c.AssignedUserId,
                     AssignedUserName = c.AssignedUserName,
-                    WeeklyCompletedCount = 0, // Reset for print
+                    WeeklyCompletedCount = 0,
                     WeeklyApprovedCount = 0,
                     Cells = c.Cells.Select(cell => new ChorePlannerCell
                     {
@@ -618,7 +667,7 @@ public class ChorePlannerService : IChorePlannerService
                         HasOverride = cell.HasOverride,
                         OverrideType = cell.OverrideType,
                         IsToday = cell.IsToday,
-                        IsPast = false, // Don't show past status in print
+                        IsPast = false,
                         EarnedAmount = null
                     }).ToList()
                 }).ToList()
@@ -800,45 +849,29 @@ public class ChorePlannerService : IChorePlannerService
     {
         var groups = new List<ChorePlannerGroup>();
 
-        // Group 1: Daily Routines (chores scheduled every day)
-        var dailyChores = rows.Where(r => r.IsDailyChore).ToList();
-        if (dailyChores.Count > 0)
+        // Group 1: Earning Chores (chores with Value > 0)
+        var earningChores = rows.Where(r => r.IsEarningChore).ToList();
+        if (earningChores.Count > 0)
         {
             groups.Add(new ChorePlannerGroup
             {
-                GroupName = "Daily Routines",
-                GroupKey = "daily",
-                Chores = dailyChores,
+                GroupName = "Earning Chores",
+                GroupKey = "earning",
+                Chores = earningChores,
                 IsCollapsible = true,
                 IsCollapsedByDefault = false
             });
         }
 
-        // Group 2: Specific Day Chores (scheduled on specific days, not all)
-        var specificDayChores = rows
-            .Where(r => r.ScheduleType == ChoreScheduleType.SpecificDays && !r.IsDailyChore)
-            .ToList();
-        if (specificDayChores.Count > 0)
+        // Group 2: Daily Expectations (chores with Value == 0, no earnings)
+        var expectationChores = rows.Where(r => !r.IsEarningChore).ToList();
+        if (expectationChores.Count > 0)
         {
             groups.Add(new ChorePlannerGroup
             {
-                GroupName = "Scheduled Chores",
-                GroupKey = "scheduled",
-                Chores = specificDayChores,
-                IsCollapsible = true,
-                IsCollapsedByDefault = false
-            });
-        }
-
-        // Group 3: Weekly Frequency Chores
-        var weeklyChores = rows.Where(r => r.ScheduleType == ChoreScheduleType.WeeklyFrequency).ToList();
-        if (weeklyChores.Count > 0)
-        {
-            groups.Add(new ChorePlannerGroup
-            {
-                GroupName = "Weekly Goals",
-                GroupKey = "weekly",
-                Chores = weeklyChores,
+                GroupName = "Daily Expectations",
+                GroupKey = "expectations",
+                Chores = expectationChores,
                 IsCollapsible = true,
                 IsCollapsedByDefault = false
             });

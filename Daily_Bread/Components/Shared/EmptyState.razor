@@ -1,4 +1,4 @@
-@* Empty state component for when there's no data to display *@
+﻿@* Empty state component for when there's no data to display *@
 
 <div class="empty-state @CssClass">
     <div class="empty-state-icon">
@@ -11,31 +11,31 @@
             @switch (Type)
             {
                 case EmptyStateType.NoChores:
-                    <span class="emoji">??</span>
+                    <span class="emoji">@EmojiConstants.PartyingFace</span>
                     break;
                 case EmptyStateType.NoTransactions:
-                    <span class="emoji">??</span>
+                    <span class="emoji">@EmojiConstants.MoneyBag</span>
                     break;
                 case EmptyStateType.NoGoals:
-                    <span class="emoji">??</span>
+                    <span class="emoji">@EmojiConstants.Target</span>
                     break;
                 case EmptyStateType.NoAchievements:
-                    <span class="emoji">??</span>
+                    <span class="emoji">@EmojiConstants.Trophy</span>
                     break;
                 case EmptyStateType.NoChildren:
-                    <span class="emoji">???????????</span>
+                    <span class="emoji">@EmojiConstants.Family</span>
                     break;
                 case EmptyStateType.NoData:
-                    <span class="emoji">??</span>
+                    <span class="emoji">@EmojiConstants.Package</span>
                     break;
                 case EmptyStateType.Error:
-                    <span class="emoji">??</span>
+                    <span class="emoji">@EmojiConstants.Warning</span>
                     break;
                 case EmptyStateType.Search:
-                    <span class="emoji">??</span>
+                    <span class="emoji">@EmojiConstants.MagnifyingGlass</span>
                     break;
                 default:
-                    <span class="emoji">??</span>
+                    <span class="emoji">@EmojiConstants.Package</span>
                     break;
             }
         }

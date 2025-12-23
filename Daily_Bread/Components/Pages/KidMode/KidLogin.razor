@@ -1,4 +1,4 @@
-@page "/kid"
+﻿@page "/kid"
 @attribute [AllowAnonymous]
 @layout Daily_Bread.Components.Layout.MinimalLayout
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -31,7 +31,7 @@
                     <div class="pin-dot @(index < _pin.Length ? "filled" : "")">
                         @if (index < _pin.Length)
                         {
-                            <span>?</span>
+                            <span>@EmojiConstants.FilledCircle</span>
                         }
                     </div>
                 }

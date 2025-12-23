@@ -3,6 +3,19 @@
    Nord Theme + Print Optimized Styles
    ============================================ */
 
+/* Reference global Nord variables from app.css */
+.planner-container {
+    --planner-bg: var(--nord0);
+    --planner-surface: var(--nord1);
+    --planner-surface-2: var(--nord2);
+    --planner-surface-3: var(--nord3);
+    --planner-text: var(--nord6);
+    --planner-muted: var(--nord4);
+    --planner-accent-blue: var(--nord10);
+    --planner-accent-green: var(--nord14);
+    --planner-accent-yellow: var(--nord13);
+}
+
 /* ===========================================
    SCREEN CONTROLS
    =========================================== */
@@ -13,14 +26,26 @@
 }
 
 .screen-controls h1 {
-    color: var(--nord6);
+    color: var(--planner-text);
     font-weight: var(--font-weight-bold);
+}
+
+/* Mode Toggle - Apply gradient to both buttons when active */
+.screen-controls .btn-check:checked + .btn-outline-primary {
+    background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%);
+    border-color: transparent;
+    color: var(--nord6);
+}
+
+/* Inverted gradient for Progress button (second button in group) */
+.screen-controls .btn-group .btn-check:checked + .btn-outline-primary:last-of-type {
+    background: linear-gradient(135deg, var(--nord9) 0%, var(--nord10) 100%);
 }
 
 /* Summary Cards */
 .summary-card {
-    background: var(--nord1);
-    border: 1px solid var(--nord3);
+    background: var(--planner-surface);
+    border: 1px solid var(--planner-surface-3);
     border-radius: var(--radius-md);
     padding: var(--space-md);
     text-align: center;
@@ -32,13 +57,13 @@
 .summary-value {
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-bold);
-    color: var(--nord6);
+    color: var(--planner-text);
     line-height: 1.2;
 }
 
 .summary-label {
     font-size: var(--font-size-xs);
-    color: var(--nord4);
+    color: var(--planner-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: var(--space-xs);
@@ -49,8 +74,8 @@
    =========================================== */
 
 .planner-container {
-    background: var(--nord1);
-    border: 1px solid var(--nord3);
+    background: var(--planner-surface);
+    border: 1px solid var(--planner-surface-3);
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     max-width: 1200px;
@@ -73,25 +98,34 @@
     display: grid;
     grid-template-columns: minmax(180px, 2fr) repeat(7, 1fr) minmax(80px, 0.8fr);
     gap: 2px;
-    background: var(--nord2);
+    background: var(--planner-surface-2);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     position: sticky;
     top: 0;
     z-index: 10;
+    border: 1px solid var(--planner-surface-3);
+}
+
+.matrix-header > * {
+    border-right: 1px solid var(--planner-surface-3);
+}
+
+.matrix-header > *:last-child {
+    border-right: 0;
 }
 
 /* Group Header */
 .matrix-group-header {
     display: grid;
     grid-template-columns: 1fr;
-    background: var(--nord2);
-    border-top: 2px solid var(--nord3);
+    background: var(--planner-surface-2);
+    border-top: 2px solid var(--planner-surface-3);
     cursor: pointer;
     transition: background-color var(--transition-fast);
 }
 
 .matrix-group-header:hover {
-    background: var(--nord3);
+    background: var(--planner-surface-3);
 }
 
 .matrix-group-header.collapsed {
@@ -103,13 +137,28 @@
     display: grid;
     grid-template-columns: minmax(180px, 2fr) repeat(7, 1fr) minmax(80px, 0.8fr);
     gap: 2px;
-    background: var(--nord0);
-    border-bottom: 1px solid var(--nord2);
+    background: var(--planner-bg);
+    border-bottom: 1px solid var(--planner-surface-2);
     transition: background-color var(--transition-fast);
+    border-left: 1px solid var(--planner-surface-3);
+    border-right: 1px solid var(--planner-surface-3);
+}
+
+.matrix-row + .matrix-row {
+    border-top: 1px solid var(--planner-surface-3);
+}
+
+.matrix-row .matrix-cell {
+    border-right: 1px solid var(--planner-surface-3);
+    border-bottom: 1px solid var(--planner-surface-3);
+}
+
+.matrix-row .matrix-cell:last-child {
+    border-right: 0;
 }
 
 .matrix-row:hover {
-    background: var(--nord1);
+    background: var(--planner-surface);
 }
 
 .matrix-row.weekly-chore {
@@ -133,9 +182,9 @@
 
 /* Chore Label Cell (header) */
 .chore-label-cell {
-    background: var(--nord3);
+    background: var(--planner-surface-3);
     font-weight: var(--font-weight-semibold);
-    color: var(--nord4);
+    color: var(--planner-muted);
     font-size: var(--font-size-sm);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -151,12 +200,18 @@
     justify-content: center;
     text-align: center;
     padding: var(--space-sm);
-    background: var(--nord3);
+    background: var(--planner-surface-3);
     position: relative;
 }
 
 .day-header-cell.today {
-    background: var(--nord10);
+    background: var(--planner-accent-blue);
+    color: var(--planner-text);
+}
+
+.day-header-cell.today .day-name,
+.day-header-cell.today .day-number {
+    color: var(--planner-text);
 }
 
 .day-header-cell.past {
@@ -166,19 +221,19 @@
 .day-name {
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
-    color: var(--nord4);
+    color: var(--planner-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .day-header-cell.today .day-name {
-    color: var(--nord6);
+    color: var(--planner-text);
 }
 
 .day-number {
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-bold);
-    color: var(--nord6);
+    color: var(--planner-text);
     line-height: 1.2;
 }
 
@@ -192,11 +247,11 @@
 }
 
 .day-status-bar.status-complete {
-    background: var(--nord14);
+    background: var(--planner-accent-green);
 }
 
 .day-status-bar.status-partial {
-    background: var(--nord13);
+    background: var(--planner-accent-yellow);
 }
 
 .day-status-bar.status-none {
@@ -204,15 +259,15 @@
 }
 
 .day-status-bar.status-empty {
-    background: var(--nord3);
+    background: var(--planner-surface-3);
 }
 
 /* Value Header Cell */
 .value-header-cell {
-    background: var(--nord3);
+    background: var(--planner-surface-3);
     justify-content: flex-end;
     font-weight: var(--font-weight-semibold);
-    color: var(--nord4);
+    color: var(--planner-muted);
     font-size: var(--font-size-sm);
     text-transform: uppercase;
 }
@@ -224,11 +279,11 @@
     align-items: center;
     gap: var(--space-sm);
     font-weight: var(--font-weight-semibold);
-    color: var(--nord6);
+    color: var(--planner-text);
 }
 
 .group-toggle {
-    color: var(--nord4);
+    color: var(--planner-muted);
     transition: transform var(--transition-fast);
 }
 
@@ -238,13 +293,13 @@
 
 .group-count {
     font-size: var(--font-size-sm);
-    color: var(--nord4);
+    color: var(--planner-muted);
     font-weight: var(--font-weight-normal);
 }
 
 .group-daily-total {
     font-size: var(--font-size-sm);
-    color: var(--nord14);
+    color: var(--planner-accent-green);
     font-weight: var(--font-weight-semibold);
     margin-left: var(--space-sm);
     padding: 2px 8px;
@@ -254,7 +309,7 @@
 
 .group-earned {
     font-size: var(--font-size-sm);
-    color: var(--nord14);
+    color: var(--planner-accent-green);
 }
 
 /* Chore Name Cell */
@@ -268,7 +323,7 @@
 
 .chore-name {
     font-weight: var(--font-weight-medium);
-    color: var(--nord6);
+    color: var(--planner-text);
     font-size: var(--font-size-sm);
     line-height: 1.3;
 }
@@ -285,13 +340,13 @@
 }
 
 .chore-name.editable:hover {
-    background: var(--nord3);
+    background: var(--planner-surface-3);
 }
 
 .chore-name.editable .edit-icon {
     font-size: 0.7rem;
     opacity: 0;
-    color: var(--nord4);
+    color: var(--planner-muted);
     transition: opacity var(--transition-fast);
 }
 
@@ -302,7 +357,7 @@
 .weekly-badge {
     font-size: var(--font-size-xs);
     background: rgba(163, 190, 140, 0.2);
-    color: var(--nord14);
+    color: var(--planner-accent-green);
     padding: 1px 6px;
     border-radius: 10px;
     font-weight: var(--font-weight-semibold);
@@ -310,7 +365,7 @@
 
 .assigned-user {
     font-size: var(--font-size-xs);
-    color: var(--nord4);
+    color: var(--planner-muted);
 }
 
 /* ===========================================
@@ -326,13 +381,18 @@
 }
 
 .chore-cell:hover {
-    background: var(--nord2);
+    background: var(--planner-surface-2);
+}
+
+.chore-cell.updating {
+    pointer-events: none;
+    opacity: 0.7;
 }
 
 .chore-cell.today {
-    background: rgba(136, 192, 208, 0.1);
-    border-left: 2px solid var(--nord8);
-    border-right: 2px solid var(--nord8);
+    background: rgba(94, 129, 172, 0.2);
+    border-left: 2px solid var(--planner-accent-blue);
+    border-right: 2px solid var(--planner-accent-blue);
 }
 
 .chore-cell.past {
@@ -356,11 +416,11 @@
 }
 
 .cell-indicator.scheduled {
-    color: var(--nord10);
+    color: var(--planner-accent-blue);
 }
 
 .cell-indicator.available {
-    color: var(--nord4);
+    color: var(--planner-muted);
 }
 
 .cell-indicator.removed {
@@ -369,11 +429,11 @@
 }
 
 .cell-indicator.completed {
-    color: var(--nord14);
+    color: var(--planner-accent-green);
 }
 
 .cell-indicator.pending {
-    color: var(--nord13);
+    color: var(--planner-accent-yellow);
 }
 
 .cell-indicator.missed {
@@ -381,7 +441,7 @@
 }
 
 .cell-indicator.skipped {
-    color: var(--nord4);
+    color: var(--planner-muted);
 }
 
 .cell-indicator.scheduled-future {
@@ -393,7 +453,7 @@
 }
 
 .override-icon {
-    color: var(--nord8) !important;
+    color: var(--planner-accent-blue) !important;
 }
 
 .override-badge {
@@ -401,7 +461,7 @@
     top: 2px;
     right: 2px;
     font-size: 0.6rem;
-    color: var(--nord8);
+    color: var(--planner-accent-blue);
 }
 
 /* Progress Mode Cell States */
@@ -428,25 +488,25 @@
 
 .chore-value {
     font-weight: var(--font-weight-semibold);
-    color: var(--nord14);
+    color: var(--planner-accent-green);
     font-size: var(--font-size-sm);
 }
 
 .value-multiplier {
     font-size: var(--font-size-xs);
-    color: var(--nord4);
+    color: var(--planner-muted);
     opacity: 0.8;
 }
 
 .earned-value {
     font-weight: var(--font-weight-bold);
-    color: var(--nord14);
+    color: var(--planner-accent-green);
     font-size: var(--font-size-sm);
 }
 
 .potential-value {
     font-size: var(--font-size-xs);
-    color: var(--nord4);
+    color: var(--planner-muted);
 }
 
 /* ===========================================
@@ -454,7 +514,7 @@
    =========================================== */
 
 .overrides-panel {
-    background: var(--nord2);
+    background: var(--planner-surface-2);
     border-radius: var(--radius-md);
     overflow: hidden;
 }
@@ -463,19 +523,19 @@
     padding: var(--space-sm) var(--space-md);
     cursor: pointer;
     font-weight: var(--font-weight-medium);
-    color: var(--nord6);
+    color: var(--planner-text);
     display: flex;
     align-items: center;
     transition: background-color var(--transition-fast);
 }
 
 .overrides-header:hover {
-    background: var(--nord3);
+    background: var(--planner-surface-3);
 }
 
 .overrides-list {
     padding: var(--space-sm) var(--space-md);
-    border-top: 1px solid var(--nord3);
+    border-top: 1px solid var(--planner-surface-3);
 }
 
 .override-item {
@@ -488,7 +548,7 @@
 
 .override-chore {
     font-weight: var(--font-weight-medium);
-    color: var(--nord6);
+    color: var(--planner-text);
 }
 
 .override-action {
@@ -496,7 +556,7 @@
 }
 
 .override-date {
-    color: var(--nord4);
+    color: var(--planner-muted);
 }
 
 .override-by {
@@ -514,14 +574,14 @@
     align-items: center;
     gap: var(--space-md);
     padding: var(--space-md);
-    background: var(--nord2);
+    background: var(--planner-surface-2);
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
 }
 
 .legend-title {
     font-weight: var(--font-weight-semibold);
-    color: var(--nord4);
+    color: var(--planner-muted);
 }
 
 .legend-items {
@@ -534,11 +594,11 @@
     display: flex;
     align-items: center;
     gap: var(--space-xs);
-    color: var(--nord6);
+    color: var(--planner-text);
 }
 
 .legend-tip {
-    color: var(--nord4);
+    color: var(--planner-muted);
     font-size: var(--font-size-xs);
     margin-left: auto;
 }
@@ -665,8 +725,8 @@
 
     /* Reset body */
     body {
-        background: white !important;
-        color: #333 !important;
+        background: var(--planner-bg) !important;
+        color: var(--planner-text) !important;
         margin: 0;
         padding: 0;
     }
@@ -686,7 +746,7 @@
         margin: 0;
         border: none;
         border-radius: 0;
-        background: white !important;
+        background: var(--planner-surface) !important;
     }
 
     /* Print Header */
@@ -695,15 +755,15 @@
         text-align: center;
         padding: 16px 0;
         margin-bottom: 16px;
-        background: #5E81AC !important;
-        color: white !important;
+        background: var(--planner-accent-blue) !important;
+        color: var(--planner-text) !important;
         border-radius: 8px;
     }
 
     .print-header h1 {
         margin: 0 0 4px 0;
         font-size: 1.5rem;
-        color: white !important;
+        color: var(--planner-text) !important;
     }
 
     .print-header .week-label {
@@ -713,53 +773,53 @@
 
     /* Matrix Print Styles */
     .planner-matrix {
-        border: 2px solid #333;
+        border: 2px solid var(--planner-text);
         border-radius: 0;
     }
 
     .matrix-header {
-        background: #f0f0f0 !important;
+        background: var(--planner-surface-2) !important;
     }
 
     .matrix-cell {
-        border: 1px solid #ddd;
-        background: white !important;
+        border: 1px solid var(--planner-surface-3);
+        background: var(--planner-surface) !important;
     }
 
     .day-header-cell {
-        background: #e9ecef !important;
+        background: var(--planner-surface-2) !important;
     }
 
     .day-header-cell.today {
-        background: #d4edff !important;
-        border: 2px solid #5E81AC;
+        background: rgba(94, 129, 172, 0.2) !important;
+        border: 2px solid var(--planner-accent-blue);
     }
 
     .day-name {
-        color: #555 !important;
+        color: var(--planner-muted) !important;
     }
 
     .day-number {
-        color: #333 !important;
+        color: var(--planner-text) !important;
     }
 
     .chore-label-cell,
     .value-header-cell {
-        background: #f5f5f5 !important;
-        color: #333 !important;
+        background: var(--planner-surface-2) !important;
+        color: var(--planner-text) !important;
     }
 
     .group-label-cell {
-        background: #e0e0e0 !important;
-        color: #333 !important;
+        background: var(--planner-surface-2) !important;
+        color: var(--planner-text) !important;
     }
 
     .chore-name-cell {
-        background: white !important;
+        background: var(--planner-surface) !important;
     }
 
     .chore-name {
-        color: #333 !important;
+        color: var(--planner-text) !important;
     }
 
     /* Hide status bar in print */
@@ -769,11 +829,11 @@
 
     /* Print-friendly cell indicators (checkboxes) */
     .chore-cell {
-        background: white !important;
+        background: var(--planner-surface) !important;
     }
 
     .cell-indicator {
-        color: #333 !important;
+        color: var(--planner-text) !important;
     }
 
     /* Make scheduled cells show empty checkboxes */
@@ -794,7 +854,7 @@
     /* Override indicators for print */
     .cell-indicator.scheduled .bi-lightning-fill::before,
     .cell-indicator.scheduled-future .bi-lightning::before {
-        content: "??";
+        content: "?";
     }
 
     .cell-indicator.available .bi-circle::before,
@@ -809,11 +869,11 @@
 
     /* Value cells */
     .value-cell {
-        background: white !important;
+        background: var(--planner-surface) !important;
     }
 
     .chore-value {
-        color: #2e7d32 !important;
+        color: var(--planner-accent-green) !important;
     }
 
     /* Print Footer */
@@ -823,13 +883,13 @@
         align-items: center;
         padding: 12px 16px;
         margin-top: 16px;
-        background: #e8f5e9 !important;
+        background: rgba(163, 190, 140, 0.15) !important;
         border-radius: 8px;
-        border: 1px solid #a5d6a7;
+        border: 1px solid var(--planner-accent-green);
     }
 
     .potential-earnings {
-        color: #2e7d32;
+        color: var(--planner-accent-green);
         font-size: 1rem;
     }
 
@@ -838,19 +898,19 @@
     }
 
     .print-date {
-        color: #666;
+        color: var(--planner-muted);
         font-size: 0.85rem;
     }
 
     /* Weekly chore row styling for print */
     .matrix-row.weekly-chore {
-        background: #fafff9 !important;
+        background: rgba(163, 190, 140, 0.08) !important;
     }
 
     .weekly-badge {
-        background: #e8f5e9 !important;
-        color: #2e7d32 !important;
-        border: 1px solid #a5d6a7;
+        background: rgba(163, 190, 140, 0.15) !important;
+        color: var(--planner-accent-green) !important;
+        border: 1px solid var(--planner-accent-green);
     }
 
     /* Page break support */
@@ -901,9 +961,9 @@
 }
 
 .schedule-mode .chore-cell:not(.past):hover {
-    background: var(--nord3);
+    background: var(--planner-surface-3);
 }
 
 .schedule-mode .chore-cell:not(.past):active {
-    background: var(--nord4);
+    background: var(--planner-muted);
 }
