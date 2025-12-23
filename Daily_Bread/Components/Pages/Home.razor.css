@@ -1,3 +1,384 @@
+/* ===========================================
+   STREAMLINED CHILD DASHBOARD
+   =========================================== */
+
+.child-dashboard {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 120px);
+}
+
+/* ===========================================
+   COMPACT HEADER
+   =========================================== */
+
+.child-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) 0;
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid var(--nord3);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.child-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--nord6);
+}
+
+.streak-badge {
+    background: linear-gradient(135deg, var(--nord12) 0%, var(--nord11) 100%);
+    color: var(--nord6);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+}
+
+.balance-display {
+    text-decoration: none;
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(163, 190, 140, 0.15);
+    border: 1px solid var(--nord14);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+}
+
+.balance-display:hover {
+    background: rgba(163, 190, 140, 0.25);
+}
+
+.balance-amount {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--nord14);
+}
+
+/* ===========================================
+   CHORES SECTION
+   =========================================== */
+
+.chores-section {
+    flex: 1;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.section-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord6);
+}
+
+.section-count {
+    font-size: var(--font-size-sm);
+    color: var(--nord4);
+    background: var(--nord2);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-full);
+}
+
+.swipeable-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.swipe-hint {
+    text-align: center;
+    padding: var(--space-md);
+    color: var(--nord4);
+    font-size: var(--font-size-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+}
+
+.swipe-hint .bi {
+    font-size: var(--font-size-md);
+}
+
+/* ===========================================
+   ALL DONE / NO CHORES BANNERS
+   =========================================== */
+
+.all-done-banner,
+.no-chores-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: var(--space-2xl);
+    margin: var(--space-xl) 0;
+    background: var(--nord1);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--nord3);
+}
+
+.all-done-banner {
+    background: linear-gradient(135deg, rgba(163, 190, 140, 0.15) 0%, rgba(163, 190, 140, 0.05) 100%);
+    border-color: var(--nord14);
+}
+
+.done-icon {
+    font-size: 3rem;
+}
+
+.done-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.done-text strong {
+    font-size: var(--font-size-xl);
+    color: var(--nord6);
+}
+
+.done-text span {
+    font-size: var(--font-size-sm);
+    color: var(--nord4);
+}
+
+/* ===========================================
+   DONE SECTION (Collapsed)
+   =========================================== */
+
+.done-section {
+    margin-top: var(--space-lg);
+    border-top: 1px solid var(--nord3);
+    padding-top: var(--space-md);
+}
+
+.done-section-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) 0;
+    background: transparent;
+    border: none;
+    color: var(--nord4);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.done-section-toggle:hover {
+    color: var(--nord6);
+}
+
+.done-section-toggle .section-title {
+    font-size: var(--font-size-md);
+    color: inherit;
+}
+
+.done-section-toggle .section-count {
+    margin-left: var(--space-sm);
+}
+
+.done-section-toggle .bi {
+    font-size: var(--font-size-lg);
+}
+
+.done-list {
+    padding: var(--space-sm) 0;
+    animation: expand-in 0.2s ease-out;
+}
+
+.done-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    margin-bottom: var(--space-xs);
+    background: var(--nord1);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--nord3);
+}
+
+.done-item.approved {
+    border-left-color: var(--nord14);
+    background: rgba(163, 190, 140, 0.1);
+}
+
+.done-item.pending {
+    border-left-color: var(--nord8);
+    background: rgba(136, 192, 208, 0.1);
+}
+
+.done-check {
+    margin-right: var(--space-sm);
+    font-size: var(--font-size-lg);
+}
+
+.done-item.approved .done-check {
+    color: var(--nord14);
+}
+
+.done-item.pending .done-check {
+    color: var(--nord8);
+}
+
+.done-name {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--nord4);
+    text-decoration: line-through;
+}
+
+.done-value {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: var(--font-size-sm);
+    color: var(--nord4);
+}
+
+.done-value.earned {
+    color: var(--nord14);
+}
+
+/* ===========================================
+   QUICK LINKS FOOTER
+   =========================================== */
+
+.quick-links {
+    display: flex;
+    justify-content: space-around;
+    padding: var(--space-md) 0;
+    margin-top: auto;
+    border-top: 1px solid var(--nord3);
+}
+
+.quick-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    color: var(--nord4);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.quick-link:hover,
+.quick-link:active {
+    color: var(--nord6);
+    background: var(--nord2);
+}
+
+.quick-link .bi {
+    font-size: var(--font-size-xl);
+}
+
+.quick-link span:last-child {
+    font-size: var(--font-size-xs);
+}
+
+/* ===========================================
+   ACHIEVEMENT CELEBRATION (kept from original)
+   =========================================== */
+
+.achievement-celebration {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.achievement-toast {
+    background: linear-gradient(135deg, var(--nord13) 0%, var(--nord12) 100%);
+    color: var(--nord0);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    box-shadow: var(--shadow-lg);
+}
+
+.achievement-icon {
+    font-size: var(--font-size-2xl);
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.animate-bounce {
+    animation: bounce 0.5s ease-out;
+}
+
+@keyframes bounce {
+    0% { transform: translateY(-20px); opacity: 0; }
+    50% { transform: translateY(5px); }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes expand-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===========================================
+   MOBILE OPTIMIZATIONS
+   =========================================== */
+
+@media (max-width: 575.98px) {
+    .child-dashboard {
+        padding: var(--space-sm);
+    }
+    
+    .child-header {
+        padding: var(--space-sm) 0;
+    }
+    
+    .child-name {
+        font-size: var(--font-size-lg);
+    }
+    
+    .balance-amount {
+        font-size: var(--font-size-md);
+    }
+    
+    .achievement-celebration {
+        right: 10px;
+        left: 10px;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .quick-link {
+        padding: var(--space-md) var(--space-lg);
+    }
+    
+    .quick-link .bi {
+        font-size: var(--font-size-2xl);
+    }
+    
+    .done-section-toggle {
+        padding: var(--space-md) 0;
+    }
+}
+
+/* ===========================================
+   KEEP PARENT DASHBOARD STYLES (existing)
+   =========================================== */
+
 .dashboard-container h1 {
     color: var(--nord6);
 }

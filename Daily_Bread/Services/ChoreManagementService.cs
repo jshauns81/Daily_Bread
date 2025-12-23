@@ -22,6 +22,10 @@ public class ChoreDefinitionDto
     public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
     public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
     public int WeeklyTargetCount { get; set; } = 1;
+    /// <summary>
+    /// For weekly chores: allows bonus completions beyond the target with diminishing returns.
+    /// </summary>
+    public bool IsRepeatable { get; set; } = false;
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public bool IsActive { get; set; } = true;
@@ -144,6 +148,7 @@ public class ChoreManagementService : IChoreManagementService
             ScheduleType = dto.ScheduleType,
             ActiveDays = dto.ActiveDays,
             WeeklyTargetCount = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.WeeklyTargetCount : 1,
+            IsRepeatable = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.IsRepeatable : false,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             IsActive = dto.IsActive,
@@ -220,6 +225,7 @@ public class ChoreManagementService : IChoreManagementService
         chore.ScheduleType = dto.ScheduleType;
         chore.ActiveDays = dto.ActiveDays;
         chore.WeeklyTargetCount = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.WeeklyTargetCount : 1;
+        chore.IsRepeatable = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.IsRepeatable : false;
         chore.StartDate = dto.StartDate;
         chore.EndDate = dto.EndDate;
         chore.IsActive = dto.IsActive;

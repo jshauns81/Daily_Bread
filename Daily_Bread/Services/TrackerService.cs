@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +25,20 @@ public class TrackerChoreItem
     public string? HelpReason { get; init; }
     public DateTime? HelpRequestedAt { get; init; }
     
+    // Schedule type
+    public ChoreScheduleType ScheduleType { get; init; }
+    
+    // Weekly chore properties
+    public int WeeklyTargetCount { get; init; }
+    public int WeeklyCompletedCount { get; init; }
+    public bool IsRepeatable { get; init; }
+    
+    /// <summary>
+    /// For weekly chores: what this specific completion will earn.
+    /// Accounts for diminishing returns on bonus completions.
+    /// </summary>
+    public decimal? NextCompletionValue { get; init; }
+    
     // Status helpers
     public bool IsCompleted => Status is ChoreStatus.Completed or ChoreStatus.Approved;
     public bool IsApproved => Status == ChoreStatus.Approved;
@@ -34,8 +48,15 @@ public class TrackerChoreItem
     public bool IsHelp => Status == ChoreStatus.Help;
     
     // Chore type helpers
-    public bool IsExpectation => EarnValue == 0 && PenaltyValue > 0;
+    public bool IsExpectation => EarnValue == 0; // Any chore with no earning value is a daily task/expectation
     public bool IsEarning => EarnValue > 0;
+    public bool IsWeeklyFlexible => ScheduleType == ChoreScheduleType.WeeklyFrequency;
+    public bool IsDailyFixed => ScheduleType == ChoreScheduleType.SpecificDays;
+    
+    // Weekly progress helpers
+    public bool IsWeeklyQuotaMet => WeeklyCompletedCount >= WeeklyTargetCount;
+    public int WeeklyRemainingCount => Math.Max(0, WeeklyTargetCount - WeeklyCompletedCount);
+    public bool CanDoMore => IsRepeatable || !IsWeeklyQuotaMet;
 }
 
 /// <summary>
@@ -116,17 +137,26 @@ public class TrackerService : ITrackerService
     private readonly IChoreScheduleService _scheduleService;
     private readonly IChoreLogService _choreLogService;
     private readonly ILedgerService _ledgerService;
+    private readonly IPushNotificationService _pushNotificationService;
+    private readonly IWeeklyProgressService _weeklyProgressService;
+    private readonly IFamilySettingsService _familySettingsService;
 
     public TrackerService(
         IDbContextFactory<ApplicationDbContext> contextFactory,
         IChoreScheduleService scheduleService,
         IChoreLogService choreLogService,
-        ILedgerService ledgerService)
+        ILedgerService ledgerService,
+        IPushNotificationService pushNotificationService,
+        IWeeklyProgressService weeklyProgressService,
+        IFamilySettingsService familySettingsService)
     {
         _contextFactory = contextFactory;
         _scheduleService = scheduleService;
         _choreLogService = choreLogService;
         _ledgerService = ledgerService;
+        _pushNotificationService = pushNotificationService;
+        _weeklyProgressService = weeklyProgressService;
+        _familySettingsService = familySettingsService;
     }
 
     public async Task<List<TrackerChoreItem>> GetTrackerItemsForDateAsync(DateOnly date)
@@ -141,17 +171,35 @@ public class TrackerService : ITrackerService
             .Where(c => c.Date == date)
             .ToDictionaryAsync(c => c.ChoreDefinitionId);
 
+        // Get weekly progress for weekly chores
+        var weeklyChoreIds = scheduledChores
+            .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            .Select(c => c.Id)
+            .ToList();
+        
+        var weeklyProgress = new Dictionary<int, Services.WeeklyChoreProgress>();
+        foreach (var choreId in weeklyChoreIds)
+        {
+            var progress = await _weeklyProgressService.GetChoreProgressAsync(choreId, date);
+            if (progress != null)
+            {
+                weeklyProgress[choreId] = progress;
+            }
+        }
+
         var items = new List<TrackerChoreItem>();
 
         foreach (var chore in scheduledChores)
         {
+            weeklyProgress.TryGetValue(chore.Id, out var progress);
+            
             if (existingLogs.TryGetValue(chore.Id, out var log))
             {
-                items.Add(CreateTrackerItem(chore, log));
+                items.Add(CreateTrackerItem(chore, log, progress));
             }
             else
             {
-                items.Add(CreateTrackerItem(chore, null));
+                items.Add(CreateTrackerItem(chore, null, progress));
             }
         }
 
@@ -171,17 +219,23 @@ public class TrackerService : ITrackerService
             .Where(c => c.ChoreDefinition.AssignedUserId == userId)
             .ToDictionaryAsync(c => c.ChoreDefinitionId);
 
+        // Get weekly progress for this user
+        var weeklyProgressSummary = await _weeklyProgressService.GetWeeklyProgressForUserAsync(userId, date);
+        var weeklyProgress = weeklyProgressSummary.ChoreProgress.ToDictionary(p => p.ChoreDefinition.Id);
+
         var items = new List<TrackerChoreItem>();
 
         foreach (var chore in scheduledChores)
         {
+            weeklyProgress.TryGetValue(chore.Id, out var progress);
+            
             if (existingLogs.TryGetValue(chore.Id, out var log))
             {
-                items.Add(CreateTrackerItem(chore, log));
+                items.Add(CreateTrackerItem(chore, log, progress));
             }
             else
             {
-                items.Add(CreateTrackerItem(chore, null));
+                items.Add(CreateTrackerItem(chore, null, progress));
             }
         }
 
@@ -335,6 +389,12 @@ public class TrackerService : ITrackerService
         }
 
         await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        // Get chore details and child name for notification
+        var choreDefinition = await context.ChoreDefinitions
+            .Include(c => c.AssignedUser)
+            .FirstOrDefaultAsync(c => c.Id == choreDefinitionId);
+        
         var logToUpdate = await context.ChoreLogs.FindAsync(choreLog.Id);
         
         if (logToUpdate == null)
@@ -349,7 +409,12 @@ public class TrackerService : ITrackerService
         
         await context.SaveChangesAsync();
         
-        // TODO: Send notification to parents
+        // Send push notification to parents
+        var childName = choreDefinition?.AssignedUser?.UserName ?? "Your child";
+        var choreName = choreDefinition?.Name ?? "a chore";
+        
+        // Fire and forget - don't block on notification
+        _ = _pushNotificationService.SendHelpRequestNotificationAsync(childName, choreName, reason);
         
         return ServiceResult.Ok();
     }
@@ -406,7 +471,10 @@ public class TrackerService : ITrackerService
         return ServiceResult.Ok();
     }
 
-    private static TrackerChoreItem CreateTrackerItem(ChoreDefinition chore, ChoreLog? log)
+    private static TrackerChoreItem CreateTrackerItem(
+        ChoreDefinition chore, 
+        ChoreLog? log, 
+        Services.WeeklyChoreProgress? weeklyProgress = null)
     {
         return new TrackerChoreItem
         {
@@ -423,7 +491,16 @@ public class TrackerService : ITrackerService
             ApprovedByUserName = log?.ApprovedByUser?.UserName,
             ApprovedAt = log?.ApprovedAt,
             HelpReason = log?.HelpReason,
-            HelpRequestedAt = log?.HelpRequestedAt
+            HelpRequestedAt = log?.HelpRequestedAt,
+            
+            // Schedule type
+            ScheduleType = chore.ScheduleType,
+            
+            // Weekly chore properties
+            WeeklyTargetCount = chore.WeeklyTargetCount,
+            WeeklyCompletedCount = weeklyProgress?.CompletedCount ?? 0,
+            IsRepeatable = chore.IsRepeatable,
+            NextCompletionValue = weeklyProgress?.NextBonusValue ?? chore.EarnValue
         };
     }
 }

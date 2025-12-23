@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -93,6 +93,25 @@ public class ChildDashboardData
     public int BestStreak { get; init; }
     public List<TrackerChoreItem> TodayChores { get; init; } = [];
     
+    /// <summary>
+    /// Chores that are pending (not yet completed) - for swipeable action view.
+    /// </summary>
+    public List<TrackerChoreItem> PendingChores => TodayChores
+        .Where(c => c.IsPending || c.IsHelp)
+        .ToList();
+    
+    /// <summary>
+    /// Chores that are done (completed or approved) - collapsed section.
+    /// </summary>
+    public List<TrackerChoreItem> CompletedChores => TodayChores
+        .Where(c => c.IsCompleted || c.IsApproved)
+        .ToList();
+    
+    /// <summary>
+    /// Weekly flexible chores with progress data.
+    /// </summary>
+    public WeeklyProgressSummary? WeeklyProgress { get; init; }
+    
     // New features
     public SavingsGoalProgress? PrimaryGoal { get; init; }
     public List<AchievementDisplay> RecentAchievements { get; init; } = [];
@@ -152,6 +171,7 @@ public class DashboardService : IDashboardService
     private readonly ILedgerService _ledgerService;
     private readonly ISavingsGoalService _savingsGoalService;
     private readonly IAchievementService _achievementService;
+    private readonly IWeeklyProgressService _weeklyProgressService;
 
     // Default cash out threshold - should match AppSettings
     private const decimal DefaultCashOutThreshold = 10.00m;
@@ -164,7 +184,8 @@ public class DashboardService : IDashboardService
         IPayoutService payoutService,
         ILedgerService ledgerService,
         ISavingsGoalService savingsGoalService,
-        IAchievementService achievementService)
+        IAchievementService achievementService,
+        IWeeklyProgressService weeklyProgressService)
     {
         _contextFactory = contextFactory;
         _dateProvider = dateProvider;
@@ -174,6 +195,7 @@ public class DashboardService : IDashboardService
         _ledgerService = ledgerService;
         _savingsGoalService = savingsGoalService;
         _achievementService = achievementService;
+        _weeklyProgressService = weeklyProgressService;
     }
 
     public async Task<ParentDashboardData> GetParentDashboardAsync()
@@ -248,6 +270,9 @@ public class DashboardService : IDashboardService
         // Get today's chores
         var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, today);
 
+        // Get weekly progress for weekly flexible chores
+        var weeklyProgress = await _weeklyProgressService.GetWeeklyProgressForUserAsync(userId, today);
+
         // Calculate streaks
         var (currentStreak, bestStreak) = await CalculateStreaksAsync(userId);
 
@@ -294,6 +319,7 @@ public class DashboardService : IDashboardService
             CurrentStreak = currentStreak,
             BestStreak = bestStreak,
             TodayChores = todayChores,
+            WeeklyProgress = weeklyProgress,
             PrimaryGoal = primaryGoal,
             RecentAchievements = recentAchievements,
             NewAchievements = newAchievements,

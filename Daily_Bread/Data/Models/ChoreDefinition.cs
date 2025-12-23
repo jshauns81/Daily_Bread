@@ -1,4 +1,4 @@
-namespace Daily_Bread.Data.Models;
+﻿namespace Daily_Bread.Data.Models;
 
 /// <summary>
 /// Defines a chore that can be assigned and scheduled.
@@ -69,6 +69,13 @@ public class ChoreDefinition
     /// Ignored for SpecificDays schedule type.
     /// </summary>
     public int WeeklyTargetCount { get; set; } = 1;
+    
+    /// <summary>
+    /// For WeeklyFrequency chores: whether the chore can be done more than the target count
+    /// for bonus earnings with diminishing returns (100% → 50% → 25% → ...).
+    /// When false, chore can only be completed up to WeeklyTargetCount times per week.
+    /// </summary>
+    public bool IsRepeatable { get; set; } = false;
 
     /// <summary>
     /// Optional start date for the chore schedule. Null means no start restriction.
@@ -121,6 +128,16 @@ public class ChoreDefinition
     /// True if this is an "earning" chore (can earn money).
     /// </summary>
     public bool IsEarning => EarnValue > 0;
+    
+    /// <summary>
+    /// True if this is a weekly flexible chore (can be done any day to meet quota).
+    /// </summary>
+    public bool IsWeeklyFlexible => ScheduleType == ChoreScheduleType.WeeklyFrequency;
+    
+    /// <summary>
+    /// True if this is a daily fixed chore (must be done on specific days).
+    /// </summary>
+    public bool IsDailyFixed => ScheduleType == ChoreScheduleType.SpecificDays;
 }
 
 /// <summary>

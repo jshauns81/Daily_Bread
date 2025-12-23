@@ -3,9 +3,11 @@
 @implements IDisposable
 
 @using System.Security.Claims
+@using Daily_Bread.Components.Shared
 
 @inject IDashboardService DashboardService
 @inject IAchievementService AchievementService
+@inject ITrackerService TrackerService
 @inject IDateProvider DateProvider
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
@@ -172,7 +174,7 @@ else if (_isParent && _parentData != null)
 }
 else if (_childData != null)
 {
-    <!-- Child Dashboard -->
+    <!-- Child Dashboard - Streamlined Action-First View -->
     <div class="child-dashboard">
         @if (_childData.NewAchievements.Count > 0)
         {
@@ -182,7 +184,7 @@ else if (_childData != null)
                     <div class="achievement-toast animate-bounce">
                         <span class="achievement-icon">@achievement.Icon</span>
                         <div>
-                            <strong>Blessing Unlocked!</strong><br />
+                            <strong>Unlocked!</strong><br />
                             <span>@achievement.Name</span>
                         </div>
                     </div>
@@ -190,273 +192,126 @@ else if (_childData != null)
             </div>
         }
 
-        <div class="text-center mb-4">
-            <h1 class="display-5">Hey, @_childData.DisplayName! <span class="wave">👋</span></h1>
-            <p class="text-muted mb-2">@DateTime.Now.ToString("dddd, MMMM d")</p>
-            
-            @if (_childData.CurrentStreak > 0)
-            {
-                <div class="streak-display">
-                    <span class="streak-fire @(_childData.CurrentStreak >= 7 ? "animate-pulse" : "")">🔥</span>
-                    <span class="streak-count">@_childData.CurrentStreak day streak!</span>
-                    @if (_childData.BestStreak > _childData.CurrentStreak)
-                    {
-                        <small class="text-white-50 d-block">Best: @_childData.BestStreak days</small>
-                    }
-                </div>
-            }
-        </div>
-
-        @* Daily Progress Ring *@
-        <div class="daily-progress-section mb-4">
-            <div class="progress-ring-wrapper">
-                <CircularProgress 
-                    Current="@_childData.TodayCompletedCount" 
-                    Total="@_childData.TodayTotalCount"
-                    Size="xl"
-                    Color="auto"
-                    ShowFraction="true"
-                    Animated="true" />
-                <div class="progress-ring-label">
-                    @if (_childData.TodayCompletedCount == _childData.TodayTotalCount && _childData.TodayTotalCount > 0)
-                    {
-                        <span class="all-done-text">All Done! ⭐</span>
-                    }
-                    else
-                    {
-                        <span>Labors Today</span>
-                    }
-                </div>
-            </div>
-            
-            @if (_childData.TodayTotalCount > 0)
-            {
-                <div class="potential-earnings">
-                    <span class="earnings-label">Today's potential wages:</span>
-                    <span class="earnings-value">$@_childData.TodayPotentialEarnings.ToString("F2")</span>
-                </div>
-            }
-        </div>
-
-        <div class="row mb-4 g-3">
-            <div class="col-md-6">
-                <div class="card balance-card h-100">
-                    <div class="card-body text-center">
-                        <p class="text-muted mb-1">💰 Your Balance</p>
-                        <h1 class="display-4 fw-bold text-success mb-2">$@_childData.Balance.ToString("F2")</h1>
-                        @if (_childData.CanCashOut)
-                        {
-                            <a href="/my-balance" class="btn btn-success">
-                                💵 Cash Out Ready!
-                            </a>
-                        }
-                        else
-                        {
-                            <div class="progress mb-2">
-                                @{ var cashOutProgress = _childData.CashOutThreshold > 0 ? Math.Min(100, (_childData.Balance / _childData.CashOutThreshold) * 100) : 0; }
-                                <div class="progress-bar bg-success" style="width: @cashOutProgress.ToString("F0")%;"></div>
-                            </div>
-                            <small class="text-muted">$@((_childData.CashOutThreshold - _childData.Balance).ToString("F2")) to cash out</small>
-                        }
-                        <div class="mt-2">
-                            <small class="text-muted">Lifetime: $@_childData.TotalLifetimeEarnings.ToString("F2")</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                @if (_childData.PrimaryGoal != null)
+        <!-- Compact Header: Name, Streak, Balance -->
+        <div class="child-header">
+            <div class="header-left">
+                <span class="child-name">@_childData.DisplayName</span>
+                @if (_childData.CurrentStreak > 0)
                 {
-                    <div class="card savings-goal-card h-100">
-                        <div class="card-body text-center">
-                            <p class="text-muted mb-1">🎯 Saving For</p>
-                            <h4 class="fw-bold">@_childData.PrimaryGoal.Name</h4>
-                            @if (!string.IsNullOrEmpty(_childData.PrimaryGoal.ImageUrl))
-                            {
-                                <img src="@_childData.PrimaryGoal.ImageUrl" alt="@_childData.PrimaryGoal.Name" class="goal-image my-2" />
-                            }
-                            <div class="progress mb-2">
-                                <div class="progress-bar bg-info progress-bar-striped" style="width: @_childData.PrimaryGoal.ProgressPercent%;
-                                    transition: width 0.6s ease;">
-                                    @_childData.PrimaryGoal.ProgressPercent%
-                                </div>
-                            </div>
-                            <p class="mb-0">
-                                <span class="text-success fw-bold">$@_childData.Balance.ToString("F2")</span>
-                                <span class="text-muted"> / $@_childData.PrimaryGoal.TargetAmount.ToString("F2")</span>
-                            </p>
-                            @if (_childData.PrimaryGoal.CanComplete)
-                            {
-                                <span class="badge bg-success mt-2">✓ You can afford this!</span>
-                            }
-                            else
-                            {
-                                <small class="text-muted">$@_childData.PrimaryGoal.AmountRemaining.ToString("F2") to go!</small>
-                            }
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <EmptyState Type="EmptyStateType.NoGoals" 
-                                        CssClass="empty-state-compact">
-                                <ActionButton>
-                                    <a href="/goals" class="btn btn-outline-primary btn-sm">Create Goal</a>
-                                </ActionButton>
-                            </EmptyState>
-                        </div>
-                    </div>
+                    <span class="streak-badge" title="@_childData.CurrentStreak day streak">
+                        🔥@_childData.CurrentStreak
+                    </span>
                 }
             </div>
+            <a href="/my-balance" class="balance-display">
+                <span class="balance-amount">$@_childData.Balance.ToString("F2")</span>
+            </a>
         </div>
 
-        <div class="card mb-4 weekly-stats-card">
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <p class="text-muted mb-1 small">This Week's Wages</p>
-                        <h3 class="text-success mb-0">$@_childData.WeeklyStats.ThisWeekEarnings.ToString("F2")</h3>
-                        <small class="text-muted">@_childData.WeeklyStats.ThisWeekChoresCompleted labors</small>
-                    </div>
-                    <div class="col-6">
-                        <p class="text-muted mb-1 small">vs Last Week</p>
-                        <h3 class="@(_childData.WeeklyStats.IsImprovement ? "text-success" : "text-danger") mb-0">
-                            @(_childData.WeeklyStats.EarningsChange >= 0 ? "+" : "")$@_childData.WeeklyStats.EarningsChange.ToString("F2")
-                        </h3>
-                        <small class="@(_childData.WeeklyStats.IsImprovement ? "text-success" : "text-danger")">
-                            @if (_childData.WeeklyStats.EarningsChangePercent != 0)
-                            {
-                                var pct = Math.Abs(_childData.WeeklyStats.EarningsChangePercent);
-                                <text>@(_childData.WeeklyStats.IsImprovement ? "↑" : "↓") @(pct)%</text>
-                            }
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        @* Today's Labors - Split into Earnings and Expectations *@
-        @if (_childData.TodayChores.Count == 0)
+        <!-- TO DO Section - Swipeable Cards -->
+        @if (_childData.PendingChores.Count > 0)
         {
-            <div class="card mb-4">
-                <div class="card-body">
-                    <EmptyState Type="EmptyStateType.NoChores" 
-                                Icon="😎"
-                                Title="Day Off!"
-                                Message="No labors scheduled for today. Enjoy!" />
+            <div class="chores-section">
+                <div class="section-header">
+                    <span class="section-title">To Do</span>
+                    <span class="section-count">@_childData.PendingChores.Count left</span>
+                </div>
+                
+                <div class="swipeable-list">
+                    @foreach (var chore in _childData.PendingChores)
+                    {
+                        <SwipeableChoreCard 
+                            Chore="@chore"
+                            OnComplete="HandleChoreComplete"
+                            OnRequestHelp="HandleHelpRequest"
+                            IsProcessing="@(_processingChoreId == chore.ChoreDefinitionId)" />
+                    }
+                </div>
+                
+                <div class="swipe-hint">
+                    <span class="bi bi-arrow-left-right"></span>
+                    Swipe right to complete • Swipe left for help
+                </div>
+            </div>
+        }
+        else if (_childData.TodayTotalCount > 0)
+        {
+            <!-- All Done State -->
+            <div class="all-done-banner">
+                <span class="done-icon">⭐</span>
+                <div class="done-text">
+                    <strong>All Done!</strong>
+                    <span>Great work today</span>
                 </div>
             </div>
         }
         else
         {
-            var earningChores = _childData.TodayChores.Where(c => c.IsEarning).ToList();
-            var expectationChores = _childData.TodayChores.Where(c => c.IsExpectation).ToList();
-            var earningCompleted = earningChores.Count(c => c.IsCompleted);
-            var expectationCompleted = expectationChores.Count(c => c.IsCompleted);
-            
-            <div class="labors-grid mb-4">
-                @* Earning Labors Section *@
-                @if (earningChores.Count > 0)
-                {
-                    <div class="labor-section earning-section">
-                        <div class="labor-section-header @(_earningsExpanded ? "" : "collapsed")" @onclick="() => _earningsExpanded = !_earningsExpanded">
-                            <div class="section-title">
-                                <span class="section-icon">💰</span>
-                                <span class="section-name">Earning Labors</span>
-                            </div>
-                            <div class="section-summary">
-                                <span class="section-progress @(earningCompleted == earningChores.Count ? "complete" : "")">
-                                    @earningCompleted/@earningChores.Count
-                                </span>
-                                <span class="section-potential">$@earningChores.Sum(c => c.Value).ToString("F2")</span>
-                                <span class="bi @(_earningsExpanded ? "bi-chevron-up" : "bi-chevron-down") toggle-icon"></span>
-                            </div>
-                        </div>
-                        
-                        @if (_earningsExpanded)
-                        {
-                            <div class="labor-section-body">
-                                @foreach (var chore in earningChores)
-                                {
-                                    @RenderChoreItem(chore)
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-
-                @* Expectations Section (no money, just checkmarks) *@
-                @if (expectationChores.Count > 0)
-                {
-                    <div class="labor-section expectation-section">
-                        <div class="labor-section-header @(_expectationsExpanded ? "" : "collapsed")" @onclick="() => _expectationsExpanded = !_expectationsExpanded">
-                            <div class="section-title">
-                                <span class="section-icon">✓</span>
-                                <span class="section-name">Daily Tasks</span>
-                            </div>
-                            <div class="section-summary">
-                                <span class="section-progress @(expectationCompleted == expectationChores.Count ? "complete" : "")">
-                                    @expectationCompleted/@expectationChores.Count
-                                </span>
-                                <span class="bi @(_expectationsExpanded ? "bi-chevron-up" : "bi-chevron-down") toggle-icon"></span>
-                            </div>
-                        </div>
-                        
-                        @if (_expectationsExpanded)
-                        {
-                            <div class="labor-section-body">
-                                @foreach (var chore in expectationChores)
-                                {
-                                    @RenderChoreItem(chore, showValue: false)
-                                }
-                            </div>
-                        }
-                    </div>
-                }
+            <!-- No Chores Today -->
+            <div class="no-chores-banner">
+                <span class="done-icon">😎</span>
+                <div class="done-text">
+                    <strong>Day Off</strong>
+                    <span>No chores scheduled</span>
+                </div>
             </div>
-
-            @if (_childData.TodayPendingCount > 0)
-            {
-                <div class="text-center mb-4">
-                    <small class="text-muted">Tap the circles to mark labors done!</small>
-                </div>
-            }
-            else if (_childData.TodayCompletedCount == _childData.TodayTotalCount && _childData.TodayTotalCount > 0)
-            {
-                <div class="all-done-celebration mb-4">
-                    <span class="celebration-star">⭐</span>
-                    <h4 class="text-success">All Done Today!</h4>
-                    <p class="text-muted mb-0">Great job! 🎉</p>
-                </div>
-            }
         }
 
-        @if (_childData.RecentAchievements.Count > 0)
+        <!-- DONE Section - Collapsed -->
+        @if (_childData.CompletedChores.Count > 0)
         {
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">✝️ Blessings</h5>
-                    <span class="badge bg-primary">@_childData.AchievementsEarned / @_childData.TotalAchievements</span>
-                </div>
-                <div class="card-body">
-                    <div class="achievements-grid">
-                        @foreach (var achievement in _childData.RecentAchievements)
+            <div class="done-section">
+                <button class="done-section-toggle" @onclick="ToggleDoneSection">
+                    <span class="section-title">Done</span>
+                    <span class="section-count">@_childData.CompletedChores.Count</span>
+                    <span class="bi @(_doneExpanded ? "bi-chevron-up" : "bi-chevron-down")"></span>
+                </button>
+                
+                @if (_doneExpanded)
+                {
+                    <div class="done-list">
+                        @foreach (var chore in _childData.CompletedChores)
                         {
-                            <div class="achievement-badge @(achievement.IsNew ? "new" : "")">
-                                <span class="badge-icon">@achievement.Icon</span>
-                                <span class="badge-name">@achievement.Name</span>
+                            <div class="done-item @(chore.IsApproved ? "approved" : "pending")">
+                                <span class="done-check">
+                                    @if (chore.IsApproved)
+                                    {
+                                        <span class="bi bi-check-circle-fill"></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="bi bi-hourglass-split"></span>
+                                    }
+                                </span>
+                                <span class="done-name">@chore.ChoreName</span>
+                                @if (chore.EarnValue > 0)
+                                {
+                                    <span class="done-value @(chore.IsApproved ? "earned" : "")">
+                                        @(chore.IsApproved ? "+" : "")$@chore.EarnValue.ToString("F2")
+                                    </span>
+                                }
                             </div>
                         }
                     </div>
-                    <div class="text-center mt-2">
-                        <small class="text-muted">@_childData.TotalAchievementPoints total blessing points</small>
-                    </div>
-                </div>
+                }
             </div>
         }
+
+        <!-- Quick Links Footer -->
+        <div class="quick-links">
+            <a href="/my-balance" class="quick-link">
+                <span class="bi bi-wallet2"></span>
+                <span>Balance</span>
+            </a>
+            <a href="/tracker" class="quick-link">
+                <span class="bi bi-list-check"></span>
+                <span>All Chores</span>
+            </a>
+            <a href="/goals" class="quick-link">
+                <span class="bi bi-bullseye"></span>
+                <span>Goals</span>
+            </a>
+        </div>
     </div>
 }
 else if (!_isAuthenticated)
@@ -485,7 +340,11 @@ else
     private bool _hasTriggeredConfetti;
     private int? _togglingChoreId;
     
-    // Collapsible section state
+    // Child dashboard state
+    private bool _doneExpanded = false;
+    private int? _processingChoreId;
+    
+    // Collapsible section state (legacy - keeping for parent view)
     private bool _earningsExpanded = true;
     private bool _expectationsExpanded = false;
 
@@ -506,7 +365,6 @@ else
 
         if (!_isAuthenticated)
         {
-            // User will be redirected by AuthorizeRouteView, just return
             return;
         }
 
@@ -517,20 +375,17 @@ else
 
         await LoadDashboardAsync();
 
-        // Mark achievements as seen after displaying (with cancellation support)
         if (_childData?.NewAchievements.Count > 0 && !string.IsNullOrEmpty(_userId))
         {
             ScheduleAchievementMarking(_userId);
         }
         
-        // Trigger confetti if all chores are done (only once per page load)
         if (_childData != null && 
             _childData.TodayTotalCount > 0 && 
             _childData.TodayCompletedCount == _childData.TodayTotalCount &&
             !_hasTriggeredConfetti)
         {
             _hasTriggeredConfetti = true;
-            // Small delay so UI renders first
             _ = Task.Delay(500).ContinueWith(_ => 
             {
                 InvokeAsync(() =>
@@ -580,7 +435,6 @@ else
             }
             catch (TaskCanceledException)
             {
-                // Expected when component is disposed before delay completes
             }
         }, token);
     }
@@ -604,12 +458,18 @@ else
         }
     }
 
-    private async Task ToggleChore(TrackerChoreItem chore)
+    private void ToggleDoneSection()
+    {
+        _doneExpanded = !_doneExpanded;
+    }
+    
+    private async Task HandleChoreComplete(TrackerChoreItem chore)
     {
         if (string.IsNullOrEmpty(_userId) || _childData == null) return;
-        if (chore.IsMissed || chore.IsSkipped) return;
+        if (_processingChoreId.HasValue) return;
         
-        _togglingChoreId = chore.ChoreDefinitionId;
+        _processingChoreId = chore.ChoreDefinitionId;
+        StateHasChanged();
         
         try
         {
@@ -621,31 +481,17 @@ else
 
             if (result.Success && result.Data != null)
             {
-                // Update the chore in the list
-                var index = _childData.TodayChores.FindIndex(c => c.ChoreDefinitionId == chore.ChoreDefinitionId);
-                if (index >= 0)
-                {
-                    _childData.TodayChores[index] = result.Data;
-                }
-                
-                // Show appropriate toast
                 if (result.Data.IsApproved)
                 {
-                    ToastService.ShowSuccess("Done!", $"'{chore.ChoreName}' completed! +${chore.Value:F2}");
+                    ToastService.ShowSuccess("Done!", $"+${chore.EarnValue:F2}");
                 }
                 else if (result.Data.IsCompleted)
                 {
-                    ToastService.ShowInfo("Marked!", $"'{chore.ChoreName}' - waiting for approval");
-                }
-                else
-                {
-                    ToastService.ShowInfo("Undone", $"'{chore.ChoreName}' unmarked");
+                    ToastService.ShowInfo("Marked!", "Waiting for approval");
                 }
                 
-                // Reload full dashboard to update counts, balance, etc.
                 await LoadDashboardAsync();
                 
-                // Check if all chores are now done (trigger confetti!)
                 if (!_hasTriggeredConfetti)
                 {
                     CheckAndTriggerConfetti();
@@ -653,7 +499,7 @@ else
             }
             else
             {
-                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to complete chore");
             }
         }
         catch (Exception ex)
@@ -662,7 +508,44 @@ else
         }
         finally
         {
-            _togglingChoreId = null;
+            _processingChoreId = null;
+        }
+    }
+    
+    private async Task HandleHelpRequest(TrackerChoreItem chore)
+    {
+        if (string.IsNullOrEmpty(_userId) || _childData == null) return;
+        if (_processingChoreId.HasValue) return;
+        
+        _processingChoreId = chore.ChoreDefinitionId;
+        StateHasChanged();
+        
+        try
+        {
+            var today = DateProvider.Today;
+            var result = await TrackerService.RequestHelpAsync(
+                chore.ChoreDefinitionId,
+                today,
+                _userId,
+                "Need help with this");
+
+            if (result.Success)
+            {
+                ToastService.ShowInfo("Help Requested", "Your parents have been notified");
+                await LoadDashboardAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to request help");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", ex.Message);
+        }
+        finally
+        {
+            _processingChoreId = null;
         }
     }
 
@@ -696,75 +579,6 @@ else
             _approvingId = null;
         }
     }
-
-    private static string GetChoreItemClass(TrackerChoreItem chore)
-    {
-        if (chore.IsApproved) return "approved";
-        if (chore.IsCompleted) return "completed";
-        if (chore.IsMissed) return "missed";
-        return "";
-    }
-    
-    private static string GetCheckboxClass(TrackerChoreItem chore)
-    {
-        if (chore.IsApproved) return "checked approved";
-        if (chore.IsCompleted) return "checked pending";
-        if (chore.IsMissed) return "missed";
-        if (chore.IsSkipped) return "skipped";
-        return "empty";
-    }
-    
-    private RenderFragment RenderChoreItem(TrackerChoreItem chore, bool showValue = true) => __builder =>
-    {
-        var isToggling = _togglingChoreId == chore.ChoreDefinitionId;
-        var canToggle = !chore.IsMissed && !chore.IsSkipped && !isToggling;
-        
-        <div class="chore-item @GetChoreItemClass(chore) @(isToggling ? "toggling" : "")">
-            <button class="chore-checkbox-btn @GetCheckboxClass(chore)"
-                    disabled="@(!canToggle)"
-                    @onclick="() => ToggleChore(chore)"
-                    @onclick:stopPropagation="true">
-                @if (isToggling)
-                {
-                    <span class="spinner-border spinner-border-sm"></span>
-                }
-                else if (chore.IsApproved)
-                {
-                    <span class="bi bi-check-lg"></span>
-                }
-                else if (chore.IsCompleted)
-                {
-                    <span class="bi bi-hourglass-split"></span>
-                }
-                else if (chore.IsMissed)
-                {
-                    <span class="bi bi-x-lg"></span>
-                }
-            </button>
-            
-            <a href="/tracker" class="chore-details-link">
-                <div class="chore-details">
-                    <span class="chore-name">@chore.ChoreName</span>
-                    @if (chore.IsCompleted && !chore.IsApproved)
-                    {
-                        <small class="status-text text-info">Waiting for blessing...</small>
-                    }
-                    else if (chore.IsApproved && showValue)
-                    {
-                        <small class="status-text text-success">Blessed! +$@chore.Value.ToString("F2")</small>
-                    }
-                    else if (chore.IsApproved && !showValue)
-                    {
-                        <small class="status-text text-success">Done! ✓</small>
-                    }
-                </div>
-                @if (showValue)
-                {
-                    <div class="chore-value">$@chore.Value.ToString("F2")</div>
-                }
-            </a>
-        </div>
-    };
 
     public void Dispose()
     {

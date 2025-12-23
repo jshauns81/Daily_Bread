@@ -1,0 +1,284 @@
+/* ===========================================
+   SWIPEABLE CHORE CARD - Nord Theme
+   =========================================== */
+
+.swipeable-card-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-sm);
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ===========================================
+   SWIPE ACTION BACKGROUNDS
+   =========================================== */
+
+.swipe-action {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.swipe-action-left {
+    right: 0;
+    justify-content: flex-end;
+    background: linear-gradient(90deg, transparent 0%, var(--nord12) 30%, var(--nord11) 100%);
+}
+
+.swipe-action-right {
+    left: 0;
+    justify-content: flex-start;
+    background: linear-gradient(90deg, var(--nord14) 0%, #8fbc8f 70%, transparent 100%);
+}
+
+.swipeable-card-container.swiping-left .swipe-action-left,
+.swipeable-card-container.swiping-right .swipe-action-right {
+    opacity: 1;
+}
+
+.action-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-lg);
+    color: var(--nord6);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.action-content .bi {
+    font-size: 1.5rem;
+}
+
+.help-action {
+    color: var(--nord6);
+}
+
+.done-action {
+    color: var(--nord0);
+}
+
+/* ===========================================
+   THE CARD ITSELF
+   =========================================== */
+
+.swipeable-card {
+    position: relative;
+    background: var(--nord1);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md) var(--space-lg);
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    will-change: transform;
+    z-index: 1;
+}
+
+.swipeable-card-container.dragging .swipeable-card {
+    transition: none;
+}
+
+.swipeable-card:active {
+    background: var(--nord2);
+}
+
+/* Card states */
+.swipeable-card.completed {
+    background: rgba(163, 190, 140, 0.15);
+    border-color: var(--nord14);
+}
+
+.swipeable-card.pending-approval {
+    background: rgba(136, 192, 208, 0.15);
+    border-color: var(--nord8);
+}
+
+.swipeable-card.help-requested {
+    background: rgba(235, 203, 139, 0.15);
+    border-color: var(--nord13);
+}
+
+.swipeable-card.missed {
+    background: rgba(191, 97, 106, 0.15);
+    border-color: var(--nord11);
+    opacity: 0.7;
+}
+
+/* ===========================================
+   CARD CONTENT
+   =========================================== */
+
+.card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.chore-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.chore-name {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-md);
+    color: var(--nord6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.weekly-progress {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+}
+
+.bonus-indicator {
+    color: var(--nord13);
+    font-weight: var(--font-weight-bold);
+}
+
+.chore-value {
+    flex-shrink: 0;
+}
+
+.value-amount {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-lg);
+    color: var(--nord14);
+}
+
+.value-amount.bonus {
+    color: var(--nord13);
+}
+
+/* ===========================================
+   PROCESSING STATE
+   =========================================== */
+
+.processing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(46, 52, 64, 0.8);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.processing-overlay .spinner-border {
+    color: var(--nord8);
+}
+
+/* ===========================================
+   SWIPE THRESHOLD INDICATORS
+   =========================================== */
+
+.swipeable-card-container.threshold-reached-right .swipeable-card {
+    border-color: var(--nord14);
+    box-shadow: 0 0 0 2px rgba(163, 190, 140, 0.3);
+}
+
+.swipeable-card-container.threshold-reached-left .swipeable-card {
+    border-color: var(--nord11);
+    box-shadow: 0 0 0 2px rgba(191, 97, 106, 0.3);
+}
+
+/* ===========================================
+   COMPLETION ANIMATION
+   =========================================== */
+
+.swipeable-card-container.completing {
+    animation: complete-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.swipeable-card-container.completing .swipeable-card {
+    background: var(--nord14);
+}
+
+@keyframes complete-slide {
+    0% { 
+        opacity: 1;
+        transform: translateX(0);
+    }
+    100% { 
+        opacity: 0;
+        transform: translateX(100%);
+        height: 0;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+.swipeable-card-container.help-requesting {
+    animation: help-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes help-slide {
+    0% { 
+        opacity: 1;
+        transform: translateX(0);
+    }
+    50% {
+        transform: translateX(-20%);
+    }
+    100% { 
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ===========================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .swipeable-card {
+        padding: var(--space-md) var(--space-lg);
+        min-height: 64px;
+    }
+    
+    .chore-name {
+        font-size: var(--font-size-md);
+    }
+    
+    .action-content {
+        padding: var(--space-xl);
+    }
+    
+    .action-content .bi {
+        font-size: 2rem;
+    }
+}
+
+/* ===========================================
+   REDUCED MOTION
+   =========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .swipeable-card {
+        transition: none;
+    }
+    
+    .swipeable-card-container.completing,
+    .swipeable-card-container.help-requesting {
+        animation: none;
+    }
+}

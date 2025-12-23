@@ -165,44 +165,136 @@ self.addEventListener('sync', (event) => {
     }
 });
 
-// Push notifications (future enhancement)
+// ============================================
+// PUSH NOTIFICATIONS
+// ============================================
+
 self.addEventListener('push', (event) => {
-    if (event.data) {
-        const data = event.data.json();
-        const options = {
-            body: data.body,
-            icon: '/images/icons/icon-192x192.png',
-            badge: '/images/icons/badge-72x72.png',
-            vibrate: [100, 50, 100],
-            data: {
-                url: data.url || '/'
-            }
-        };
-        
-        event.waitUntil(
-            self.registration.showNotification(data.title, options)
-        );
+    console.log('[ServiceWorker] Push received');
+    
+    if (!event.data) {
+        console.log('[ServiceWorker] Push event but no data');
+        return;
     }
+    
+    let data;
+    try {
+        data = event.data.json();
+    } catch (e) {
+        // If not JSON, use text
+        data = {
+            title: 'Daily Bread',
+            body: event.data.text()
+        };
+    }
+    
+    const options = {
+        body: data.body || 'You have a new notification',
+        icon: data.icon || '/web-app-manifest-192x192.png',
+        badge: data.badge || '/favicon-96x96.png',
+        vibrate: [100, 50, 100, 50, 100],
+        tag: data.tag || 'default',
+        renotify: true, // Vibrate again even if replacing notification with same tag
+        requireInteraction: true, // Keep notification visible until user interacts
+        data: {
+            url: data.url || '/',
+            ...data.data
+        },
+        actions: getNotificationActions(data)
+    };
+    
+    event.waitUntil(
+        self.registration.showNotification(data.title || 'Daily Bread', options)
+    );
 });
+
+// Get appropriate actions based on notification type
+function getNotificationActions(data) {
+    const type = data.data?.type || data.type;
+    
+    if (type === 'help-request') {
+        return [
+            { action: 'view', title: '👀 View', icon: '/favicon-96x96.png' },
+            { action: 'dismiss', title: '✖️ Dismiss' }
+        ];
+    }
+    
+    if (type === 'chore-approval') {
+        return [
+            { action: 'approve', title: '✅ Approve' },
+            { action: 'view', title: '👀 View' }
+        ];
+    }
+    
+    // Default actions
+    return [
+        { action: 'view', title: '👀 Open', icon: '/favicon-96x96.png' }
+    ];
+}
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
+    console.log('[ServiceWorker] Notification clicked:', event.action);
+    
     event.notification.close();
     
-    const url = event.notification.data?.url || '/';
+    const data = event.notification.data || {};
+    let url = data.url || '/';
     
+    // Handle specific actions
+    if (event.action === 'dismiss') {
+        return; // Just close the notification
+    }
+    
+    if (event.action === 'approve' && data.choreLogId) {
+        // Could call API to approve directly, but for now just navigate
+        url = `/tracker?approve=${data.choreLogId}`;
+    }
+    
+    // Open or focus the app
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((clientList) => {
-                // If app is already open, focus it
+                // If app is already open, focus it and navigate
                 for (const client of clientList) {
                     if (client.url.includes(self.location.origin) && 'focus' in client) {
-                        client.navigate(url);
-                        return client.focus();
+                        return client.focus().then((focusedClient) => {
+                            if (focusedClient && url !== '/') {
+                                focusedClient.navigate(url);
+                            }
+                            return focusedClient;
+                        });
                     }
                 }
                 // Otherwise open new window
                 return clients.openWindow(url);
+            })
+    );
+});
+
+// Handle notification close (user dismissed without clicking)
+self.addEventListener('notificationclose', (event) => {
+    console.log('[ServiceWorker] Notification closed by user');
+    // Could track dismissals for analytics
+});
+
+// Handle push subscription change (browser rotated keys)
+self.addEventListener('pushsubscriptionchange', (event) => {
+    console.log('[ServiceWorker] Push subscription changed');
+    
+    event.waitUntil(
+        self.registration.pushManager.subscribe({ userVisibleOnly: true })
+            .then((subscription) => {
+                // Notify the app to update the subscription on the server
+                return clients.matchAll({ type: 'window' })
+                    .then((clientList) => {
+                        clientList.forEach((client) => {
+                            client.postMessage({
+                                type: 'PUSH_SUBSCRIPTION_CHANGED',
+                                subscription: subscription.toJSON()
+                            });
+                        });
+                    });
             })
     );
 });
