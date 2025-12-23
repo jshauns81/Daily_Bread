@@ -36,7 +36,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.Value).HasPrecision(10, 2);
+            entity.Property(e => e.Icon).HasMaxLength(50);
+            entity.Property(e => e.EarnValue).HasPrecision(10, 2);
+            entity.Property(e => e.PenaltyValue).HasPrecision(10, 2);
+            // Note: Value property is obsolete - it's a computed property, not stored in DB
+            entity.Ignore(e => e.Value);
             entity.HasIndex(e => e.AssignedUserId);
             entity.HasIndex(e => e.IsActive);
 
@@ -51,6 +55,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.HelpReason).HasMaxLength(500);
 
             // Unique constraint: one log per chore per date
             entity.HasIndex(e => new { e.ChoreDefinitionId, e.Date }).IsUnique();

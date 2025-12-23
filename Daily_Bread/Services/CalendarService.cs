@@ -203,7 +203,7 @@ public class CalendarService : ICalendarService
                 Date = date,
                 Status = DayCompletionStatus.Future,
                 TotalChores = scheduledChores.Count,
-                PotentialAmount = scheduledChores.Sum(cd => cd.Value)
+                PotentialAmount = scheduledChores.Sum(cd => cd.EarnValue)
             };
         }
 
@@ -239,9 +239,9 @@ public class CalendarService : ICalendarService
         // Calculate earnings - handle potential null ChoreDefinition
         var earnedAmount = dayLogs
             .Where(l => l.Status == ChoreStatus.Approved && l.ChoreDefinition != null)
-            .Sum(l => l.ChoreDefinition.Value);
+            .Sum(l => l.ChoreDefinition.EarnValue);
 
-        var potentialAmount = scheduledChores.Sum(c => c.Value);
+        var potentialAmount = scheduledChores.Sum(c => c.EarnValue);
 
         // Determine status
         DayCompletionStatus status;

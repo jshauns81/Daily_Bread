@@ -1,4 +1,4 @@
-@using Daily_Bread.Data.Models
+﻿@using Daily_Bread.Data.Models
 @using Daily_Bread.Services
 @using System.ComponentModel.DataAnnotations
 
@@ -6,8 +6,51 @@
     <EditForm Model="FormModel" OnValidSubmit="HandleSubmit">
         <DataAnnotationsValidator />
 
+        <!-- Chore Type Toggle and Assigned To - Top Row -->
+        <div class="card mb-3 border-primary">
+            <div class="card-body">
+                <div class="row align-items-start">
+                    <div class="@(Users.Count > 1 ? "col-md-8" : "col-12")">
+                        <label class="form-label fw-bold mb-3">What type of chore is this?</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" id="choreTypeEarning" name="choreType"
+                                   checked="@(FormModel.ChoreType == ChoreTypeOption.Earning)"
+                                   @onchange="() => SetChoreType(ChoreTypeOption.Earning)" />
+                            <label class="btn btn-outline-success" for="choreTypeEarning">
+                                <span class="bi bi-currency-dollar me-1"></span>
+                                <strong>Earning Chore</strong>
+                                <small class="d-block">Earns money when completed</small>
+                            </label>
+
+                            <input type="radio" class="btn-check" id="choreTypeExpectation" name="choreType"
+                                   checked="@(FormModel.ChoreType == ChoreTypeOption.Expectation)"
+                                   @onchange="() => SetChoreType(ChoreTypeOption.Expectation)" />
+                            <label class="btn btn-outline-secondary" for="choreTypeExpectation">
+                                <span class="bi bi-check2-circle me-1"></span>
+                                <strong>Daily Expectation</strong>
+                                <small class="d-block">Must-do responsibility</small>
+                            </label>
+                        </div>
+                    </div>
+                    @if (Users.Count > 1)
+                    {
+                        <div class="col-md-4">
+                            <label for="assignedUser" class="form-label fw-bold mb-3">Assigned To</label>
+                            <InputSelect id="assignedUser" @bind-Value="FormModel.AssignedUserId" class="form-select">
+                                <option value="">-- Unassigned --</option>
+                                @foreach (var user in Users)
+                                {
+                                    <option value="@user.Id">@user.UserName</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-md-5">
                 <div class="mb-3">
                     <label for="name" class="form-label">Chore Name <span class="text-danger">*</span></label>
                     <InputText id="name" @bind-Value="FormModel.Name" class="form-control" placeholder="e.g., Make Bed" />
@@ -16,9 +59,16 @@
             </div>
             <div class="col-md-4">
                 <div class="mb-3">
-                    <label for="value" class="form-label">Value ($) <span class="text-danger">*</span></label>
-                    <InputNumber id="value" @bind-Value="FormModel.Value" class="form-control" step="0.25" min="0" />
-                    <ValidationMessage For="() => FormModel.Value" class="text-danger" />
+                    <label class="form-label">Icon</label>
+                    <div>
+                        <EmojiPicker @bind-Value="FormModel.Icon" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="mb-3">
+                    <label for="sortOrder" class="form-label">Sort Order</label>
+                    <InputNumber id="sortOrder" @bind-Value="FormModel.SortOrder" class="form-control" />
                 </div>
             </div>
         </div>
@@ -28,32 +78,51 @@
             <InputTextArea id="description" @bind-Value="FormModel.Description" class="form-control" rows="2" placeholder="Optional details about the chore..." />
         </div>
 
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="assignedUser" class="form-label">Assigned To</label>
-                    <InputSelect id="assignedUser" @bind-Value="FormModel.AssignedUserId" class="form-select">
-                        <option value="">-- Unassigned --</option>
-                        @foreach (var user in Users)
-                        {
-                            <option value="@user.Id">@user.UserName (@user.Role)</option>
-                        }
-                    </InputSelect>
+        <!-- Simplified Money Settings Based on Chore Type -->
+        @if (FormModel.ChoreType == ChoreTypeOption.Earning)
+        {
+            <div class="card mb-3 border-success">
+                <div class="card-header bg-success text-white">
+                    <strong><span class="bi bi-currency-dollar me-1"></span> Earning Amount</strong>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label for="earnValue" class="form-label">Amount Earned ($)</label>
+                            <InputNumber id="earnValue" @bind-Value="FormModel.EarnValue" class="form-control form-control-lg" step="1" min="0" />
+                            <ValidationMessage For="() => FormModel.EarnValue" class="text-danger" />
+                        </div>
+                        <div class="col-md-8">
+                            <div class="alert alert-success mb-0 mt-3 mt-md-0">
+                                <span class="bi bi-info-circle me-1"></span>
+                                Child earns <strong>$@FormModel.EarnValue.ToString("F2")</strong> each time this chore is completed.
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="sortOrder" class="form-label">Sort Order</label>
-                    <InputNumber id="sortOrder" @bind-Value="FormModel.SortOrder" class="form-control" />
-                    <small class="text-muted">Lower numbers appear first</small>
+        }
+        else
+        {
+            <div class="card mb-3 border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <strong><span class="bi bi-check2-circle me-1"></span> Expectation Settings</strong>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-secondary mb-0">
+                        <span class="bi bi-info-circle me-1"></span>
+                        This is an <strong>expected responsibility</strong> - no money earned. 
+                        It's something that must be done as part of daily routines.
+                        <br/><small class="text-muted">Examples: Make bed, brush teeth, put away backpack</small>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
 
         <!-- Schedule Type Selection -->
         <div class="card mb-3 @(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "border-info" : "")">
             <div class="card-header">
-                <strong>Scheduling</strong>
+                <strong><span class="bi bi-calendar3 me-1"></span> Schedule</strong>
             </div>
             <div class="card-body">
                 <div class="mb-3">
@@ -145,37 +214,40 @@
             </div>
         </div>
 
-        <!-- Approval Settings Card -->
-        <div class="card mb-3 @(FormModel.AutoApprove ? "border-success" : "")">
-            <div class="card-body">
-                <div class="form-check form-switch">
-                    <InputCheckbox id="autoApprove" @bind-Value="FormModel.AutoApprove" class="form-check-input" />
-                    <label class="form-check-label fw-bold" for="autoApprove">
-                        <span class="@(FormModel.AutoApprove ? "text-success" : "")">
-                            @(FormModel.AutoApprove ? "Auto-Approve Enabled" : "Requires Parent Approval")
-                        </span>
-                    </label>
-                </div>
-                <div class="mt-2">
-                    @if (FormModel.AutoApprove)
-                    {
-                        <small class="text-success">
-                            <strong>Auto-approve:</strong> When the child marks this chore as done, it will be 
-                            automatically approved and credited to their balance. Best for simple, trust-based tasks 
-                            like <em>Make Bed</em> or <em>Brush Teeth</em>.
-                        </small>
-                    }
-                    else
-                    {
-                        <small class="text-muted">
-                            <strong>Manual approval:</strong> A parent must review and approve this chore before 
-                            it's credited. Best for tasks that need inspection like <em>Mow the Yard</em> or 
-                            <em>Clean Room</em>.
-                        </small>
-                    }
+        <!-- Approval Settings Card (only for earning chores) -->
+        @if (FormModel.ChoreType == ChoreTypeOption.Earning)
+        {
+            <div class="card mb-3 @(FormModel.AutoApprove ? "border-success" : "")">
+                <div class="card-body">
+                    <div class="form-check form-switch">
+                        <InputCheckbox id="autoApprove" @bind-Value="FormModel.AutoApprove" class="form-check-input" />
+                        <label class="form-check-label fw-bold" for="autoApprove">
+                            <span class="@(FormModel.AutoApprove ? "text-success" : "")">
+                                @(FormModel.AutoApprove ? "Auto-Approve Enabled" : "Requires Parent Approval")
+                            </span>
+                        </label>
+                    </div>
+                    <div class="mt-2">
+                        @if (FormModel.AutoApprove)
+                        {
+                            <small class="text-success">
+                                <strong>Auto-approve:</strong> When the child marks this chore as done, it will be 
+                                automatically approved and credited to their balance. Best for simple, trust-based tasks 
+                                like <em>Make Bed</em> or <em>Brush Teeth</em>.
+                            </small>
+                        }
+                        else
+                        {
+                            <small class="text-muted">
+                                <strong>Manual approval:</strong> A parent must review and approve this chore before 
+                                it's credited. Best for tasks that need inspection like <em>Mow the Yard</em> or 
+                                <em>Clean Room</em>.
+                            </small>
+                        }
+                    </div>
                 </div>
             </div>
-        </div>
+        }
 
         <div class="mb-3">
             <div class="form-check">
@@ -204,6 +276,8 @@
 </div>
 
 @code {
+    private enum ChoreTypeOption { Earning, Expectation }
+
     [Parameter]
     public ChoreDefinitionDto? Chore { get; set; }
 
@@ -240,8 +314,10 @@
                 Id = Chore.Id,
                 Name = Chore.Name,
                 Description = Chore.Description,
+                Icon = Chore.Icon,
                 AssignedUserId = Chore.AssignedUserId,
-                Value = Chore.Value,
+                EarnValue = Chore.EarnValue,
+                PenaltyValue = Chore.PenaltyValue,
                 ScheduleType = Chore.ScheduleType,
                 ActiveDays = Chore.ActiveDays,
                 WeeklyTargetCount = Chore.WeeklyTargetCount,
@@ -249,20 +325,52 @@
                 EndDate = Chore.EndDate,
                 IsActive = Chore.IsActive,
                 AutoApprove = Chore.AutoApprove,
-                SortOrder = Chore.SortOrder
+                SortOrder = Chore.SortOrder,
+                // Determine chore type from existing values
+                ChoreType = Chore.EarnValue > 0 ? ChoreTypeOption.Earning : ChoreTypeOption.Expectation
             };
         }
         else
         {
             FormModel = new ChoreFormModel
             {
+                ChoreType = ChoreTypeOption.Earning,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 WeeklyTargetCount = 1,
                 IsActive = true,
-                AutoApprove = false,
-                Value = 1.00m
+                AutoApprove = true,
+                EarnValue = 0.25m,
+                PenaltyValue = 0
             };
+        }
+        
+        // Auto-select if there's only one child
+        if (Users.Count == 1 && string.IsNullOrEmpty(FormModel.AssignedUserId))
+        {
+            FormModel.AssignedUserId = Users[0].Id;
+        }
+    }
+
+    private void SetChoreType(ChoreTypeOption choreType)
+    {
+        FormModel.ChoreType = choreType;
+        
+        if (choreType == ChoreTypeOption.Earning)
+        {
+            // Set default earning value if switching to earning
+            if (FormModel.EarnValue <= 0)
+            {
+                FormModel.EarnValue = 0.25m;
+            }
+            FormModel.PenaltyValue = 0;
+        }
+        else
+        {
+            // Expectation chore - no earnings
+            FormModel.EarnValue = 0;
+            FormModel.PenaltyValue = 0;
+            FormModel.AutoApprove = true; // Expectations are always auto-approved
         }
     }
 
@@ -306,15 +414,17 @@
                 Id = FormModel.Id,
                 Name = FormModel.Name,
                 Description = FormModel.Description,
+                Icon = FormModel.Icon,
                 AssignedUserId = string.IsNullOrEmpty(FormModel.AssignedUserId) ? null : FormModel.AssignedUserId,
-                Value = FormModel.Value,
+                EarnValue = FormModel.ChoreType == ChoreTypeOption.Earning ? FormModel.EarnValue : 0,
+                PenaltyValue = FormModel.PenaltyValue,
                 ScheduleType = FormModel.ScheduleType,
                 ActiveDays = FormModel.ActiveDays,
                 WeeklyTargetCount = FormModel.WeeklyTargetCount,
                 StartDate = FormModel.StartDate,
                 EndDate = FormModel.EndDate,
                 IsActive = FormModel.IsActive,
-                AutoApprove = FormModel.AutoApprove,
+                AutoApprove = FormModel.ChoreType == ChoreTypeOption.Expectation ? true : FormModel.AutoApprove,
                 SortOrder = FormModel.SortOrder
             };
 
@@ -334,6 +444,8 @@
     private class ChoreFormModel
     {
         public int Id { get; set; }
+        
+        public ChoreTypeOption ChoreType { get; set; } = ChoreTypeOption.Earning;
 
         [Required(ErrorMessage = "Chore name is required")]
         [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
@@ -341,11 +453,16 @@
 
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string? Description { get; set; }
+        
+        public string? Icon { get; set; }
 
         public string? AssignedUserId { get; set; }
 
-        [Range(0, 1000, ErrorMessage = "Value must be between $0 and $1000")]
-        public decimal Value { get; set; }
+        [Range(0, 10000, ErrorMessage = "Earn value must be between $0 and $10,000")]
+        public decimal EarnValue { get; set; }
+        
+        [Range(0, 10000, ErrorMessage = "Penalty value must be between $0 and $10,000")]
+        public decimal PenaltyValue { get; set; }
 
         public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
 
@@ -360,7 +477,7 @@
 
         public bool IsActive { get; set; } = true;
 
-        public bool AutoApprove { get; set; } = false;
+        public bool AutoApprove { get; set; } = true;
 
         public int SortOrder { get; set; }
     }

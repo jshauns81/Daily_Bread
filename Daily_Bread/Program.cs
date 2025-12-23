@@ -9,6 +9,9 @@ using Daily_Bread.Components.Account;
 using Daily_Bread.Data;
 using Daily_Bread.Services;
 
+// Load .env file for local development
+LoadDotEnv();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -177,22 +180,15 @@ using (var scope = app.Services.CreateScope())
         {
             Console.WriteLine("RECREATE_DATABASE=true - Dropping and recreating database...");
             await db.Database.EnsureDeletedAsync();
-            await db.Database.EnsureCreatedAsync();
-            Console.WriteLine("Database recreated successfully.");
+            await db.Database.MigrateAsync();
+            Console.WriteLine("Database recreated with migrations successfully.");
         }
         else
         {
-            // Always ensure database and schema exist
-            // EnsureCreatedAsync is idempotent - it won't recreate existing tables
-            var created = await db.Database.EnsureCreatedAsync();
-            if (created)
-            {
-                Console.WriteLine("Database schema created successfully.");
-            }
-            else
-            {
-                Console.WriteLine("Database schema already exists.");
-            }
+            // Apply any pending migrations
+            Console.WriteLine("Applying database migrations...");
+            await db.Database.MigrateAsync();
+            Console.WriteLine("Database migrations applied successfully.");
         }
         
         // Seed achievements
@@ -326,9 +322,60 @@ app.MapAdditionalIdentityEndpoints();
 
 app.Run();
 
-// Helper to build PostgreSQL connection string from Railway environment variables
+// ============================================================================
+// Local helper functions (must be after all top-level statements, before types)
+// ============================================================================
+
+// Helper to load .env file for local development
+static void LoadDotEnv()
+{
+    // When running from Visual Studio, current directory is the project folder (Daily_Bread)
+    // The .env file is at the solution root (parent directory)
+    var projectDir = Directory.GetCurrentDirectory();
+    
+    // Check solution root first (parent of project directory)
+    var solutionRoot = Directory.GetParent(projectDir)?.FullName;
+    var envPath = solutionRoot != null ? Path.Combine(solutionRoot, ".env") : null;
+    
+    // If not found at solution root, check project directory
+    if (envPath == null || !File.Exists(envPath))
+    {
+        envPath = Path.Combine(projectDir, ".env");
+    }
+    
+    if (!File.Exists(envPath))
+    {
+        Console.WriteLine("No .env file found - using existing environment variables");
+        return;
+    }
+    
+    Console.WriteLine($"Loading environment from: {envPath}");
+    
+    foreach (var line in File.ReadAllLines(envPath))
+    {
+        // Skip empty lines and comments
+        if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith('#'))
+            continue;
+        
+        var parts = line.Split('=', 2);
+        if (parts.Length != 2)
+            continue;
+        
+        var key = parts[0].Trim();
+        var value = parts[1].Trim();
+        
+        // Only set if not already set (allows overriding via system env vars)
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))
+        {
+            Environment.SetEnvironmentVariable(key, value);
+        }
+    }
+}
+
+// Helper to build PostgreSQL connection string from environment variables
 static string GetPostgresConnectionString(IConfiguration configuration)
 {
+    // Check for DATABASE_URL format (Railway, Heroku, etc.)
     var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
         ?? Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL")
         ?? Environment.GetEnvironmentVariable("POSTGRES_URL");
@@ -338,6 +385,20 @@ static string GetPostgresConnectionString(IConfiguration configuration)
         return ConvertDatabaseUrlToConnectionString(databaseUrl);
     }
 
+    // Check for individual POSTGRES_* env vars (from .env file for local dev)
+    var postgresUser = Environment.GetEnvironmentVariable("POSTGRES_USER");
+    var postgresPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD");
+    var postgresDb = Environment.GetEnvironmentVariable("POSTGRES_DB");
+    var postgresHost = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
+    var postgresPort = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
+
+    if (!string.IsNullOrEmpty(postgresUser) && !string.IsNullOrEmpty(postgresPassword) && !string.IsNullOrEmpty(postgresDb))
+    {
+        Console.WriteLine($"Using POSTGRES_* environment variables (Host={postgresHost}, Database={postgresDb})");
+        return $"Host={postgresHost};Port={postgresPort};Database={postgresDb};Username={postgresUser};Password={postgresPassword}";
+    }
+
+    // Fall back to appsettings connection string
     var configConnection = configuration.GetConnectionString("DefaultConnection");
     if (!string.IsNullOrEmpty(configConnection))
     {
@@ -348,6 +409,7 @@ static string GetPostgresConnectionString(IConfiguration configuration)
         return configConnection;
     }
 
+    // Last resort fallback
     return "Host=localhost;Port=5432;Database=dailybread;Username=postgres;Password=postgres";
 }
 

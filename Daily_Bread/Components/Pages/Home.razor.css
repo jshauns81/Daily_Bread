@@ -25,7 +25,7 @@
 }
 
 /* ===========================================
-   DAILY PROGRESS RING SECTION - NEW
+   DAILY PROGRESS RING SECTION
    =========================================== */
 
 .daily-progress-section {
@@ -100,10 +100,6 @@
     margin-right: var(--space-sm);
 }
 
-.streak-fire .bi-fire {
-    color: var(--nord13);
-}
-
 .streak-count {
     font-weight: var(--font-weight-bold);
     font-size: var(--font-size-lg);
@@ -143,7 +139,7 @@
 }
 
 /* ===========================================
-   CHORE CHECKLIST - ENHANCED
+   CHORE CHECKLIST - INTERACTIVE
    =========================================== */
 
 .chore-checklist {
@@ -155,23 +151,19 @@
 .chore-item {
     display: flex;
     align-items: center;
-    padding: var(--space-md);
     border-radius: var(--radius-lg);
     background: var(--nord2);
-    text-decoration: none;
-    color: var(--nord4);
     transition: all var(--transition-fast);
     min-height: 64px;
+    overflow: hidden;
 }
 
 .chore-item:hover {
     background: var(--nord3);
-    transform: translateX(4px);
-    color: var(--nord6);
 }
 
-.chore-item:active {
-    transform: scale(0.98);
+.chore-item.toggling {
+    opacity: 0.7;
 }
 
 .chore-item.completed {
@@ -186,59 +178,115 @@
     background: rgba(191, 97, 106, 0.2);
 }
 
-/* Enhanced Checkbox Wrapper */
-.chore-checkbox-wrapper {
-    flex-shrink: 0;
-    margin-right: var(--space-md);
-}
+/* ===========================================
+   INTERACTIVE CHECKBOX BUTTON
+   =========================================== */
 
-.chore-check {
-    width: 44px;
-    height: 44px;
+.chore-checkbox-btn {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
     border-radius: 50%;
+    border: 3px solid var(--nord3);
+    background: transparent;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    font-weight: var(--font-weight-bold);
+    font-size: 1.4rem;
+    color: transparent;
+    margin: var(--space-sm);
+    margin-right: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
 }
 
-.chore-check.empty {
+.chore-checkbox-btn:hover:not(:disabled) {
+    border-color: var(--nord8);
+    background: rgba(136, 192, 208, 0.15);
+    transform: scale(1.05);
+}
+
+.chore-checkbox-btn:active:not(:disabled) {
+    transform: scale(0.9);
+}
+
+.chore-checkbox-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Checkbox states */
+.chore-checkbox-btn.empty {
     border: 3px solid var(--nord3);
     background: transparent;
+    color: transparent;
 }
 
-.chore-check.approved {
+.chore-checkbox-btn.empty:hover:not(:disabled) {
+    border-color: var(--nord14);
+    background: rgba(163, 190, 140, 0.1);
+}
+
+.chore-checkbox-btn.checked {
+    border: none;
+    color: var(--nord0);
+    animation: checkbox-pop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.chore-checkbox-btn.checked.approved {
     background: linear-gradient(135deg, var(--nord14) 0%, #8fad7a 100%);
-    color: var(--nord0);
-    border: none;
-    box-shadow: 0 0 12px rgba(163, 190, 140, 0.4);
-    animation: check-pop 0.3s ease-out;
+    box-shadow: 0 0 16px rgba(163, 190, 140, 0.5);
 }
 
-.chore-check.pending {
+.chore-checkbox-btn.checked.pending {
     background: linear-gradient(135deg, var(--nord8) 0%, var(--nord7) 100%);
-    color: var(--nord0);
-    border: none;
-    animation: pending-pulse 2s ease-in-out infinite;
+    animation: checkbox-pop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), pending-glow 2s ease-in-out infinite;
 }
 
-.chore-check.missed {
+.chore-checkbox-btn.missed {
     background: linear-gradient(135deg, var(--nord11) 0%, #a54e56 100%);
     color: var(--nord6);
     border: none;
 }
 
-@keyframes check-pop {
-    0% { transform: scale(0.8); }
-    50% { transform: scale(1.15); }
+.chore-checkbox-btn.skipped {
+    background: var(--nord3);
+    color: var(--nord4);
+    border: none;
+    opacity: 0.6;
+}
+
+@keyframes checkbox-pop {
+    0% { transform: scale(0.7); }
+    50% { transform: scale(1.2); }
     100% { transform: scale(1); }
 }
 
-@keyframes pending-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(136, 192, 208, 0.4); }
-    50% { box-shadow: 0 0 0 8px rgba(136, 192, 208, 0); }
+@keyframes pending-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(136, 192, 208, 0.5); }
+    50% { box-shadow: 0 0 0 10px rgba(136, 192, 208, 0); }
+}
+
+/* ===========================================
+   CHORE DETAILS LINK (Row tap area)
+   =========================================== */
+
+.chore-details-link {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    padding: var(--space-md);
+    padding-left: var(--space-md);
+    text-decoration: none;
+    color: inherit;
+    transition: all var(--transition-fast);
+}
+
+.chore-details-link:hover {
+    color: var(--nord6);
 }
 
 .chore-details {
@@ -253,21 +301,31 @@
     font-size: var(--font-size-md);
 }
 
+.chore-item.approved .chore-name {
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+
+.status-text {
+    display: block;
+    font-size: var(--font-size-xs);
+    margin-top: 2px;
+}
+
 .chore-value {
     font-weight: var(--font-weight-bold);
     color: var(--nord14);
     font-size: var(--font-size-lg);
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    white-space: nowrap;
 }
 
-.pulse-button {
-    animation: pulse-shadow 2s ease-in-out infinite;
-    font-size: var(--font-size-md);
-    padding: var(--space-md) var(--space-lg);
+.chore-item.approved .chore-value {
+    opacity: 0.7;
 }
 
 /* ===========================================
-   ALL DONE CELEBRATION - ENHANCED
+   ALL DONE CELEBRATION
    =========================================== */
 
 .all-done-celebration {
@@ -322,7 +380,8 @@
 
 .badge-icon {
     font-size: var(--font-size-2xl);
-    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+    /* System emoji fonts - always available on every OS */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
 }
 
 .badge-name {
@@ -354,7 +413,8 @@
 
 .achievement-icon {
     font-size: var(--font-size-2xl);
-    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+    /* System emoji fonts - always available on every OS */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
 }
 
 /* Animations */
@@ -380,11 +440,6 @@
     to { box-shadow: 0 0 15px var(--nord13); }
 }
 
-@keyframes pulse-shadow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(94, 129, 172, 0.4); }
-    50% { box-shadow: 0 0 0 15px rgba(94, 129, 172, 0); }
-}
-
 @keyframes celebrate {
     0% { transform: scale(0.8); }
     50% { transform: scale(1.1); }
@@ -392,7 +447,200 @@
 }
 
 /* ===========================================
-   MOBILE RESPONSIVE
+   LABORS GRID - TWO COLUMN LAYOUT
+   =========================================== */
+
+.labors-grid {
+    display: grid;
+    gap: var(--space-md);
+}
+
+/* Desktop: Two columns side-by-side */
+@media (min-width: 768px) {
+    .labors-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Mobile: Single column */
+@media (max-width: 767.98px) {
+    .labors-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===========================================
+   LABOR SECTION (Collapsible Card)
+   =========================================== */
+
+.labor-section {
+    background: var(--nord1);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--nord3);
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+
+.labor-section:hover {
+    border-color: var(--nord4);
+}
+
+/* Earning section has a golden/green accent */
+.labor-section.earning-section {
+    border-left: 4px solid var(--nord14);
+}
+
+.labor-section.earning-section .labor-section-header {
+    background: linear-gradient(90deg, rgba(163, 190, 140, 0.15) 0%, transparent 100%);
+}
+
+/* Expectations section has a blue/gray accent */
+.labor-section.expectation-section {
+    border-left: 4px solid var(--nord9);
+}
+
+.labor-section.expectation-section .labor-section-header {
+    background: linear-gradient(90deg, rgba(129, 161, 193, 0.15) 0%, transparent 100%);
+}
+
+/* ===========================================
+   LABOR SECTION HEADER (Clickable toggle)
+   =========================================== */
+
+.labor-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.labor-section-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.labor-section-header:active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.section-icon {
+    font-size: var(--font-size-xl);
+}
+
+.section-name {
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord6);
+    font-size: var(--font-size-md);
+}
+
+.section-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.section-progress {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--nord3);
+    border-radius: var(--radius-full);
+    color: var(--nord4);
+}
+
+.section-progress.complete {
+    background: rgba(163, 190, 140, 0.3);
+    color: var(--nord14);
+}
+
+.section-potential {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--nord14);
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.toggle-icon {
+    color: var(--nord4);
+    font-size: var(--font-size-lg);
+    transition: transform var(--transition-fast);
+}
+
+.labor-section-header.collapsed .toggle-icon {
+    transform: rotate(0deg);
+}
+
+/* ===========================================
+   LABOR SECTION BODY (Content)
+   =========================================== */
+
+.labor-section-body {
+    padding: var(--space-sm);
+    padding-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    animation: expand-in 0.2s ease-out;
+}
+
+@keyframes expand-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Compact chore items inside sections */
+.labor-section-body .chore-item {
+    min-height: 52px;
+    background: var(--nord2);
+    border-radius: var(--radius-md);
+}
+
+.labor-section-body .chore-checkbox-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 1.1rem;
+}
+
+.labor-section-body .chore-details-link {
+    padding: var(--space-sm) var(--space-md);
+}
+
+.labor-section-body .chore-item .chore-name {
+    font-size: var(--font-size-sm);
+}
+
+.labor-section-body .chore-value {
+    font-size: var(--font-size-md);
+}
+
+/* ===========================================
+   ALL DONE CELEBRATION (centered)
+   =========================================== */
+
+.all-done-celebration {
+    text-align: center;
+    padding: var(--space-lg);
+    animation: celebrate 0.5s ease-out;
+}
+
+/* ===========================================
+   MOBILE RESPONSIVE for labors grid
    =========================================== */
 
 @media (max-width: 575.98px) {
@@ -401,14 +649,18 @@
     }
     
     .chore-item {
-        padding: var(--space-sm) var(--space-md);
-        min-height: 56px;
+        min-height: 60px;
     }
     
-    .chore-check {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1rem;
+    .chore-checkbox-btn {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        font-size: 1.2rem;
+    }
+    
+    .chore-details-link {
+        padding: var(--space-sm) var(--space-md);
     }
     
     .chore-item .chore-name {
@@ -427,34 +679,78 @@
     .achievement-toast {
         padding: var(--space-sm) var(--space-md);
     }
+    
+    .labor-section-header {
+        padding: var(--space-sm) var(--space-md);
+    }
+    
+    .section-name {
+        font-size: var(--font-size-sm);
+    }
+    
+    .section-potential {
+        font-size: var(--font-size-sm);
+    }
+    
+    .labor-section-body .chore-checkbox-btn {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        font-size: 1rem;
+    }
+    
+    .labor-section-body .chore-item {
+        min-height: 48px;
+    }
 }
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
     .chore-item {
-        min-height: 64px;
+        min-height: 68px;
     }
     
-    .chore-check {
-        width: 48px;
-        height: 48px;
+    .chore-checkbox-btn {
+        width: 56px;
+        height: 56px;
+        min-width: 56px;
+        font-size: 1.5rem;
+    }
+    
+    .chore-checkbox-btn:active:not(:disabled) {
+        transform: scale(0.85);
+        background: rgba(163, 190, 140, 0.3);
     }
     
     .chore-item:active {
         background: var(--nord3);
     }
+    
+    .labor-section-header:active {
+        background: rgba(255, 255, 255, 0.12);
+    }
+    
+    .labor-section-body .chore-checkbox-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+    }
+    
+    .labor-section-body .chore-item {
+        min-height: 56px;
+    }
 }
 
-/* Reduced motio n */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-    .chore-check.approved,
-    .chore-check.pending,
-    .celebration-star,
-    .pulse-button {
+    .chore-checkbox-btn.checked,
+    .chore-checkbox-btn.checked.pending,
+    .celebration-star {
         animation: none;
     }
     
-    .chore-item {
+    .chore-item,
+    .chore-checkbox-btn {
         transition: none;
     }
 }

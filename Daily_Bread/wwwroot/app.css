@@ -94,9 +94,66 @@ html, body {
     padding: 0;
 }
 
-/* Emoji-specific styling */
-.emoji, .brand-icon-fallback {
-    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+/* ===========================================
+   EMOJI RENDERING - CRITICAL FIX
+   
+   WHY emojis break:
+   1. Text fonts (Inter, Segoe UI) include glyph slots for some Unicode points
+      but render them as boxes/tofu instead of color emoji
+   2. CSS font-family is checked left-to-right, so text fonts "claim" the emoji
+      before emoji fonts get a chance
+   
+   SOLUTION:
+   Apply emoji-specific font stack ONLY to elements containing emoji.
+   This ensures emoji fonts are checked FIRST for those elements.
+   =========================================== */
+
+/* Global emoji rendering - applied to .emoji class and common emoji containers */
+.emoji,
+.emoji-btn,
+.selected-emoji,
+.badge-icon,
+.achievement-icon,
+.empty-state-icon span,
+.streak-fire,
+.celebration-star,
+[data-emoji] {
+    /* Emoji font stack - Windows, macOS, Linux, Android covered */
+    font-family: 
+        "Segoe UI Emoji",      /* Windows 10/11 - has best coverage */
+        "Apple Color Emoji",   /* macOS, iOS */
+        "Noto Color Emoji",    /* Linux, Android, Chrome OS */
+        "Twemoji Mozilla",     /* Firefox fallback */
+        "Segoe UI Symbol",     /* Windows fallback for symbols */
+        "Android Emoji",       /* Older Android */
+        "EmojiSymbols",        /* Generic fallback */
+        sans-serif;
+    
+    /* Prevent text styling from affecting emoji */
+    font-style: normal;
+    font-weight: normal;
+    text-decoration: none;
+    
+    /* Ensure proper emoji sizing */
+    line-height: 1;
+    
+    /* Force color emoji rendering (not monochrome) */
+    font-variant-emoji: emoji;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Additional specificity for common emoji locations */
+.card-header .emoji,
+.card-body .emoji,
+.btn .emoji,
+.alert .emoji,
+h1 .emoji, h2 .emoji, h3 .emoji, h4 .emoji, h5 .emoji, h6 .emoji {
+    font-family: 
+        "Segoe UI Emoji",
+        "Apple Color Emoji",
+        "Noto Color Emoji",
+        "Twemoji Mozilla",
+        sans-serif;
 }
 
 body {
@@ -212,11 +269,11 @@ code {
 
 /* Success */
 .btn-success {
-    background: linear-gradient(135deg, var(--nord14) 0%, #8fad7a 100%);
+    background: linear-gradient(135deg, var(--nord14) 0%, var(--nord14) 100%);
     color: var(--nord0);
 }
 .btn-success:hover {
-    background: linear-gradient(135deg, #8fad7a 0%, var(--nord14) 100%);
+    background: linear-gradient(135deg, var(--nord14) 0%, var(--nord14) 100%);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md), var(--shadow-glow-green);
     color: var(--nord0);
@@ -224,11 +281,11 @@ code {
 
 /* Danger */
 .btn-danger {
-    background: linear-gradient(135deg, var(--nord11) 0%, #a54e56 100%);
+    background: linear-gradient(135deg, var(--nord11) 0%, var(--nord11) 100%);
     color: var(--nord6);
 }
 .btn-danger:hover {
-    background: linear-gradient(135deg, #a54e56 0%, var(--nord11) 100%);
+    background: linear-gradient(135deg, var(--nord11) 0%, var(--nord11) 100%);
     transform: translateY(-1px);
     color: var(--nord6);
 }
@@ -762,10 +819,10 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     background: linear-gradient(90deg, var(--nord14) 0%, var(--nord7) 100%);
 }
 
-.progress-bar.bg-success { background: linear-gradient(90deg, var(--nord14) 0%, #8fad7a 100%) !important; }
+.progress-bar.bg-success { background: linear-gradient(90deg, var(--nord14) 0%, var(--nord14) 100%) !important; }
 .progress-bar.bg-info { background: linear-gradient(90deg, var(--nord8) 0%, var(--nord7) 100%) !important; }
 .progress-bar.bg-warning { background: linear-gradient(90deg, var(--nord12) 0%, var(--nord13) 100%) !important; }
-.progress-bar.bg-danger { background: linear-gradient(90deg, var(--nord11) 0%, #d08770 100%) !important; }
+.progress-bar.bg-danger { background: linear-gradient(90deg, var(--nord11) 0%, var(--nord12) 100%) !important; }
 
 /* ===========================================
    16. SPINNERS
@@ -926,7 +983,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     border: none;
 }
 .action-btn.approve:hover {
-    background-color: #8fad7a;
+    background-color: var(--nord14);
     transform: translateY(-1px);
 }
 
@@ -955,7 +1012,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
    =========================================== */
 
 .blazor-error-boundary {
-    background: linear-gradient(135deg, var(--nord11) 0%, #a54e56 100%);
+    background: linear-gradient(135deg, var(--nord11) 0%, var(--nord11) 100%);
     padding: var(--space-md);
     color: var(--nord6);
     border-radius: var(--radius-md);
@@ -1098,11 +1155,6 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     .modal-dialog {
         margin: 0;
         max-width: 100%;
-        height: 100%;
-    }
-    
-    .modal-content {
-        border-radius: 0;
         height: 100%;
     }
     

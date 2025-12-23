@@ -92,16 +92,19 @@
             
             // Check if user is Admin-only (not also a Parent) - redirect to user management
             var user = await UserManager.FindByNameAsync(Input.UserName);
+            string redirectUrl = ReturnUrl ?? "/";
+            
             if (user != null)
             {
                 var roles = await UserManager.GetRolesAsync(user);
                 if (roles.Contains("Admin") && !roles.Contains("Parent"))
                 {
-                    RedirectManager.RedirectTo("/admin/users");
+                    redirectUrl = "/admin/users";
                 }
             }
             
-            RedirectManager.RedirectTo(ReturnUrl ?? "/");
+            // Force a full page reload to ensure proper component initialization
+            NavigationManager.NavigateTo(redirectUrl, forceLoad: true);
         }
         else if (result.RequiresTwoFactor)
         {

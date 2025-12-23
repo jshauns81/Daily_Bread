@@ -1,0 +1,187 @@
+﻿@* Emoji Test/Debug Page - validates emoji rendering across the app *@
+@page "/emoji-test"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+
+<PageTitle>Emoji Test - Daily Bread</PageTitle>
+
+<div class="container py-4">
+    <h1>Emoji Rendering Test</h1>
+    <p class="text-muted">This page validates that emojis render correctly. If you see boxes (□) or question marks (??) instead of emojis, there's a rendering issue.</p>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Unicode Escape Verification</h5>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">These emojis come from EmojiConstants using Unicode escape sequences (e.g., \U0001F600). The "Code Points" column shows what the runtime is actually holding.</p>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Rendered</th>
+                            <th>Code Points</th>
+                            <th>Char Length</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var test in TestEmojis)
+                        {
+                            var codePoints = GetCodePoints(test.Value);
+                            var isValid = !string.IsNullOrEmpty(test.Value) && test.Value.Length > 0 && !test.Value.Contains('?');
+                            <tr class="@(isValid ? "" : "table-danger")">
+                                <td>@test.Name</td>
+                                <td class="emoji-cell"><span class="emoji" style="font-size: 1.5rem;">@test.Value</span></td>
+                                <td><code>@codePoints</code></td>
+                                <td>@test.Value.Length</td>
+                                <td>
+                                    @if (isValid)
+                                    {
+                                        <span class="badge bg-success">OK</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">BROKEN</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Font Stack Comparison</h5>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">Same emojis rendered with different font-family settings. All should look the same if browser supports the fonts.</p>
+            
+            <div class="mb-3">
+                <strong>Default (no special font-family):</strong><br/>
+                <span style="font-size: 2rem;">@EmojiConstants.GrinningFace @EmojiConstants.Bed @EmojiConstants.Tooth @EmojiConstants.Sparkles @EmojiConstants.Fire</span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>With .emoji class:</strong><br/>
+                <span class="emoji" style="font-size: 2rem;">@EmojiConstants.GrinningFace @EmojiConstants.Bed @EmojiConstants.Tooth @EmojiConstants.Sparkles @EmojiConstants.Fire</span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Segoe UI Emoji (Windows):</strong><br/>
+                <span style="font-size: 2rem; font-family: 'Segoe UI Emoji', sans-serif;">@EmojiConstants.GrinningFace @EmojiConstants.Bed @EmojiConstants.Tooth @EmojiConstants.Sparkles @EmojiConstants.Fire</span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Apple Color Emoji (macOS/iOS):</strong><br/>
+                <span style="font-size: 2rem; font-family: 'Apple Color Emoji', sans-serif;">@EmojiConstants.GrinningFace @EmojiConstants.Bed @EmojiConstants.Tooth @EmojiConstants.Sparkles @EmojiConstants.Fire</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">HTML Entity Comparison</h5>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">These use HTML numeric character references. If these render but the above don't, the problem is in C# string handling, not CSS.</p>
+            <div class="emoji" style="font-size: 2rem;">
+                &#x1F600; &#x1F6CF; &#x1F9B7; &#x2728; &#x1F525;
+            </div>
+            <small class="text-muted d-block mt-2">Expected: 😀 🛏 🦷 ✨ 🔥</small>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Category Grid (from EmojiPicker)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                @foreach (var category in Categories)
+                {
+                    <div class="col-md-4 col-6 mb-3">
+                        <h6>@category.Key</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var emoji in category.Value.Take(6))
+                            {
+                                <span class="emoji" style="font-size: 1.5rem;">@emoji</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <div class="alert alert-info">
+        <strong>Diagnostic Info:</strong>
+        <ul class="mb-0 mt-2">
+            <li>User Agent: <code id="ua">Loading...</code></li>
+            <li>Platform: <code id="platform">Loading...</code></li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    document.getElementById('ua').textContent = navigator.userAgent;
+    document.getElementById('platform').textContent = navigator.platform;
+</script>
+
+@code {
+    // Test data using EmojiConstants
+    private static readonly (string Name, string Value)[] TestEmojis =
+    [
+        ("Grinning Face", EmojiConstants.GrinningFace),
+        ("Bed", EmojiConstants.Bed),
+        ("Tooth", EmojiConstants.Tooth),
+        ("Sparkles", EmojiConstants.Sparkles),
+        ("Star", EmojiConstants.Star),
+        ("Dog", EmojiConstants.Dog),
+        ("Cat", EmojiConstants.CatFace),
+        ("Broom", EmojiConstants.Broom),
+        ("Books", EmojiConstants.Books),
+        ("Check Mark", EmojiConstants.CheckMark),
+        ("Fire", EmojiConstants.Fire),
+        ("Trophy", EmojiConstants.Trophy),
+        ("Party", EmojiConstants.Party),
+        ("Money Bag", EmojiConstants.MoneyBag),
+        ("Family", EmojiConstants.Family),
+        ("Boy", EmojiConstants.Boy),
+        ("Girl", EmojiConstants.Girl),
+    ];
+    
+    private static readonly Dictionary<string, string[]> Categories = new()
+    {
+        ["Cleaning"] = [EmojiConstants.Broom, EmojiConstants.Soap, EmojiConstants.Shower, EmojiConstants.Sparkles, EmojiConstants.Sponge, EmojiConstants.Trash],
+        ["Home"] = [EmojiConstants.Bed, EmojiConstants.Couch, EmojiConstants.Door, EmojiConstants.LightBulb, EmojiConstants.House, EmojiConstants.Television],
+        ["Kitchen"] = [EmojiConstants.Plate, EmojiConstants.Cooking, EmojiConstants.ForkKnife, EmojiConstants.Coffee, EmojiConstants.Bowl, EmojiConstants.Pot],
+        ["Pets"] = [EmojiConstants.Dog, EmojiConstants.CatFace, EmojiConstants.PawPrints, EmojiConstants.Fish, EmojiConstants.Rabbit, EmojiConstants.Parrot],
+        ["School"] = [EmojiConstants.Books, EmojiConstants.Pencil, EmojiConstants.Backpack, EmojiConstants.Laptop, EmojiConstants.Art, EmojiConstants.Music],
+        ["Fun"] = [EmojiConstants.VideoGame, EmojiConstants.Movie, EmojiConstants.Party, EmojiConstants.Star, EmojiConstants.Balloon, EmojiConstants.Trophy],
+    };
+    
+    private static string GetCodePoints(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return "(empty)";
+        
+        var points = new List<string>();
+        for (int i = 0; i < s.Length; i++)
+        {
+            if (char.IsHighSurrogate(s[i]) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1]))
+            {
+                int codePoint = char.ConvertToUtf32(s[i], s[i + 1]);
+                points.Add($"U+{codePoint:X}");
+                i++; // Skip low surrogate
+            }
+            else
+            {
+                points.Add($"U+{(int)s[i]:X}");
+            }
+        }
+        return string.Join(" ", points);
+    }
+}

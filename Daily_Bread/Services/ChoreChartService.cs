@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +11,9 @@ public class ChoreChartEntry
 {
     public int ChoreDefinitionId { get; init; }
     public required string ChoreName { get; init; }
-    public decimal Value { get; init; }
+    public decimal EarnValue { get; init; }
+    public decimal PenaltyValue { get; init; }
+    public decimal Value => EarnValue > 0 ? EarnValue : PenaltyValue; // Backward compatibility
     public ChoreStatus? Status { get; init; }
     public bool IsScheduled { get; init; }
     public bool IsWeeklyFrequency { get; init; }
@@ -61,7 +63,9 @@ public class WeeklyFrequencyChoreProgress
 {
     public int ChoreDefinitionId { get; init; }
     public required string ChoreName { get; init; }
-    public decimal Value { get; init; }
+    public decimal EarnValue { get; init; }
+    public decimal PenaltyValue { get; init; }
+    public decimal Value => EarnValue > 0 ? EarnValue : PenaltyValue; // Backward compatibility
     public int TargetCount { get; init; }
     public int CompletedCount { get; init; }
     public int ApprovedCount { get; init; }
@@ -217,7 +221,8 @@ public class ChoreChartService : IChoreChartService
                     {
                         ChoreDefinitionId = chore.Id,
                         ChoreName = chore.Name,
-                        Value = chore.Value,
+                        EarnValue = chore.EarnValue,
+                        PenaltyValue = chore.PenaltyValue,
                         Status = log?.Status,
                         IsScheduled = isScheduled,
                         IsWeeklyFrequency = false
@@ -241,7 +246,8 @@ public class ChoreChartService : IChoreChartService
                     {
                         ChoreDefinitionId = chore.Id,
                         ChoreName = chore.Name,
-                        Value = chore.Value,
+                        EarnValue = chore.EarnValue,
+                        PenaltyValue = chore.PenaltyValue,
                         Status = log?.Status,
                         IsScheduled = true,
                         IsWeeklyFrequency = true,
@@ -268,7 +274,8 @@ public class ChoreChartService : IChoreChartService
             {
                 ChoreDefinitionId = chore.Id,
                 ChoreName = chore.Name,
-                Value = chore.Value,
+                EarnValue = chore.EarnValue,
+                PenaltyValue = chore.PenaltyValue,
                 TargetCount = chore.WeeklyTargetCount,
                 CompletedCount = weeklyLogs.Count(l => l.Status == ChoreStatus.Completed || l.Status == ChoreStatus.Approved),
                 ApprovedCount = weeklyLogs.Count(l => l.Status == ChoreStatus.Approved),
@@ -294,16 +301,7 @@ public class ChoreChartService : IChoreChartService
 
     private static string GetAvatarEmoji(string name)
     {
-        // Simple emoji selection based on first letter
-        var firstChar = char.ToUpperInvariant(name.FirstOrDefault());
-        return firstChar switch
-        {
-            >= 'A' and <= 'E' => "??",
-            >= 'F' and <= 'J' => "??",
-            >= 'K' and <= 'O' => "??",
-            >= 'P' and <= 'T' => "??",
-            >= 'U' and <= 'Z' => "??",
-            _ => "??"
-        };
+        // Use centralized EmojiConstants for reliable rendering
+        return EmojiConstants.GetAvatarForName(name);
     }
 }

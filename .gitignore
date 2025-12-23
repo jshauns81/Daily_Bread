@@ -11,6 +11,7 @@ secrets.json
 # Environment files
 .env
 .env.*
+.env.local
 
 # User secrets folder
 **/secrets/

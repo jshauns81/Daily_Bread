@@ -50,6 +50,16 @@ public class ChoreLog
     /// Timestamp when the chore was approved.
     /// </summary>
     public DateTime? ApprovedAt { get; set; }
+    
+    /// <summary>
+    /// Reason provided when child requests help.
+    /// </summary>
+    public string? HelpReason { get; set; }
+    
+    /// <summary>
+    /// Timestamp when help was requested.
+    /// </summary>
+    public DateTime? HelpRequestedAt { get; set; }
 
     /// <summary>
     /// Timestamp when the record was created.
@@ -86,12 +96,20 @@ public enum ChoreStatus
     Approved = 2,
 
     /// <summary>
-    /// Chore was missed/not completed.
+    /// Chore was missed/not completed (penalty applies).
+    /// This happens when a chore is still Pending at end of day.
     /// </summary>
     Missed = 3,
 
     /// <summary>
-    /// Chore was skipped (excused) by a parent.
+    /// Chore was skipped/excused by a parent.
+    /// No penalty, no earning.
     /// </summary>
-    Skipped = 4
+    Skipped = 4,
+    
+    /// <summary>
+    /// Child requested help - waiting for parent response.
+    /// Protected from auto-penalty until parent responds.
+    /// </summary>
+    Help = 5
 }

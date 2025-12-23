@@ -25,7 +25,8 @@ public class PendingApprovalItem
     public required string ChoreName { get; init; }
     public required string ChildName { get; init; }
     public string? ChildUserId { get; init; }
-    public decimal Value { get; init; }
+    public decimal EarnValue { get; init; }
+    public decimal Value => EarnValue; // Backward compatibility
     public DateOnly Date { get; init; }
     public DateTime? CompletedAt { get; init; }
 }
@@ -127,6 +128,15 @@ public interface IDashboardService
     /// Quick approve a chore from the dashboard.
     /// </summary>
     Task<ServiceResult> QuickApproveAsync(int choreLogId, string parentUserId);
+    
+    /// <summary>
+    /// Toggle a chore's completion status from the dashboard.
+    /// Returns the new status and updated chore item.
+    /// </summary>
+    Task<ServiceResult<TrackerChoreItem>> ToggleChoreFromDashboardAsync(
+        int choreDefinitionId, 
+        DateOnly date, 
+        string userId);
 }
 
 /// <summary>
@@ -188,7 +198,7 @@ public class DashboardService : IDashboardService
                     ? cl.ChoreDefinition.AssignedUser.UserName ?? "Unknown"
                     : "Unassigned",
                 ChildUserId = cl.ChoreDefinition.AssignedUserId,
-                Value = cl.ChoreDefinition.Value,
+                EarnValue = cl.ChoreDefinition.EarnValue,
                 Date = cl.Date,
                 CompletedAt = cl.CompletedAt
             })
@@ -327,6 +337,35 @@ public class DashboardService : IDashboardService
         return ServiceResult.Ok();
     }
 
+    public async Task<ServiceResult<TrackerChoreItem>> ToggleChoreFromDashboardAsync(
+        int choreDefinitionId, 
+        DateOnly date, 
+        string userId)
+    {
+        // Toggle the chore using the tracker service
+        var result = await _trackerService.ToggleChoreCompletionAsync(
+            choreDefinitionId,
+            date,
+            userId,
+            isParent: false);
+
+        if (!result.Success)
+        {
+            return ServiceResult<TrackerChoreItem>.Fail(result.ErrorMessage!);
+        }
+
+        // Get the updated chore item to return
+        var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, date);
+        var updatedChore = todayChores.FirstOrDefault(c => c.ChoreDefinitionId == choreDefinitionId);
+
+        if (updatedChore == null)
+        {
+            return ServiceResult<TrackerChoreItem>.Fail("Could not find updated chore.");
+        }
+
+        return ServiceResult<TrackerChoreItem>.Ok(updatedChore);
+    }
+
     private async Task<List<RecentActivityItem>> GetRecentActivityAsync(int count)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -355,7 +394,7 @@ public class DashboardService : IDashboardService
                     Category = "approval",
                     Timestamp = log.ApprovedAt.Value,
                     ChildName = childName,
-                    Amount = log.ChoreDefinition.Value
+                    Amount = log.ChoreDefinition.EarnValue
                 });
             }
             else if (log.Status == ChoreStatus.Completed && log.CompletedAt.HasValue)

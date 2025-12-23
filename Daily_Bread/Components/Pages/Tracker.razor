@@ -1,4 +1,4 @@
-@page "/tracker"
+﻿@page "/tracker"
 @page "/tracker/{DateParam}"
 @attribute [Authorize]
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -11,14 +11,14 @@
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Chore Tracker</PageTitle>
+<PageTitle>Book of Deeds</PageTitle>
 
-@* Confetti celebration when all chores complete *@
+@* Confetti celebration when all labors complete *@
 <Confetti IsActive="_showConfetti" OnComplete="() => _showConfetti = false" ParticleCount="60" />
 
 <div class="tracker-container">
     <div class="tracker-header">
-        <h1>Chore Tracker</h1>
+        <h1>Book of Deeds</h1>
         
         <div class="date-navigation">
             <button class="btn btn-outline-secondary" @onclick="GoToPreviousDay" disabled="@(!IsParent && !IsToday)">
@@ -91,19 +91,19 @@
         @if (IsParent)
         {
             <EmptyState Type="EmptyStateType.NoChores" 
-                        Icon="??"
-                        Title="No Chores Scheduled"
+                        Icon="📜"
+                        Title="No Labors Scheduled"
                         Message="@GetEmptyMessage()">
                 <ActionButton>
-                    <a href="/manage-chores" class="btn btn-primary">Create Chores</a>
+                    <a href="/manage-chores" class="btn btn-primary">Create Labors</a>
                 </ActionButton>
             </EmptyState>
         }
         else
         {
             <EmptyState Type="EmptyStateType.NoChores" 
-                        Icon="??"
-                        Title="No Chores Scheduled"
+                        Icon="📜"
+                        Title="No Labors Scheduled"
                         Message="@GetEmptyMessage()" />
         }
     }
@@ -289,7 +289,7 @@
                 <div class="col-md-3 col-6">
                     <div class="summary-card">
                         <span class="summary-value">@ChoreItems.Count</span>
-                        <span class="summary-label">Total Chores</span>
+                        <span class="summary-label">Total Labors</span>
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
@@ -307,7 +307,7 @@
                 <div class="col-md-3 col-6">
                     <div class="summary-card">
                         <span class="summary-value text-success">$@ChoreItems.Where(c => c.IsCompleted).Sum(c => c.Value).ToString("F2")</span>
-                        <span class="summary-label">Earned Today</span>
+                        <span class="summary-label">Wages Today</span>
                     </div>
                 </div>
             </div>
@@ -317,10 +317,10 @@
         @if (ChoreItems.Count > 0 && ChoreItems.All(c => c.IsCompleted || c.IsMissed || c.Status == ChoreStatus.Skipped))
         {
             <div class="all-done-banner mt-4">
-                <span class="all-done-star">?</span>
+                <span class="all-done-star">⭐</span>
                 <div>
                     <h4 class="mb-0">All Done for Today!</h4>
-                    <p class="mb-0 text-muted">Great work! You earned $@ChoreItems.Where(c => c.IsCompleted).Sum(c => c.Value).ToString("F2") today.</p>
+                    <p class="mb-0 text-muted">Great work! You earned $@ChoreItems.Where(c => c.IsCompleted).Sum(c => c.Value).ToString("F2") in wages today.</p>
                 </div>
             </div>
         }
@@ -415,8 +415,8 @@
     private string GetEmptyMessage()
     {
         if (IsToday)
-            return "There are no chores scheduled for today.";
-        return $"There are no chores scheduled for {SelectedDate:MMMM d}.";
+            return "There are no labors scheduled for today.";
+        return $"There are no labors scheduled for {SelectedDate:MMMM d}.";
     }
 
     private async Task ToggleChore(TrackerChoreItem item)
@@ -452,12 +452,12 @@
 
         if (result.Success)
         {
-            ToastService.ShowSuccess("Approved!", $"'{item.ChoreName}' approved - ${item.Value:F2} earned!");
+            ToastService.ShowSuccess("Blessed!", $"'{item.ChoreName}' blessed - ${item.Value:F2} wages earned!");
             await LoadDataAsync();
         }
         else
         {
-            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to approve chore.");
+            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to bless labor.");
         }
     }
 
