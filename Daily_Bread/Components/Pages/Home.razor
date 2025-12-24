@@ -158,7 +158,7 @@ else if (_isParent && _parentData != null)
                                 {
                                     <a href="/ledger/@child.ProfileId" class="list-group-item list-group-item-action d-flex justify-content-between">
                                         <div>
-                                            <strong>@child.DisplayName</strong>
+                                            <strong class="user-name">@child.DisplayName</strong>
                                             @if (child.CanCashOut) { <span class="badge bg-success ms-2">Cash out ready!</span> }
                                         </div>
                                         <span class="@(child.Balance >= 0 ? "text-success" : "text-danger") fw-bold fs-5">$@child.Balance.ToString("F2")</span>
@@ -192,20 +192,45 @@ else if (_childData != null)
             </div>
         }
 
-        <!-- Compact Header: Name, Streak, Balance -->
-        <div class="child-header">
-            <div class="header-left">
-                <span class="child-name">@_childData.DisplayName</span>
+        <!-- Hero Header - Balance Front & Center -->
+        <div class="hero-header">
+            <a href="/my-balance" class="hero-balance">
+                <AnimatedCounter
+                    Value="@_childData.Balance"
+                    Prefix="$"
+                    CssClass="hero-amount"
+                    Duration="800" />
+                <span class="hero-label">Balance</span>
+            </a>
+
+            <!-- Stats Pill -->
+            <div class="stats-pill">
+                <div class="stat-item">
+                    <CircularProgress
+                        Current="@_childData.TodayCompletedCount"
+                        Total="@Math.Max(_childData.TodayTotalCount, 1)"
+                        Size="xs"
+                        ShowFraction="true"
+                        Animated="true" />
+                    <span class="stat-label">Today</span>
+                </div>
                 @if (_childData.CurrentStreak > 0)
                 {
-                    <span class="streak-badge" title="@_childData.CurrentStreak day streak">
-                        🔥@_childData.CurrentStreak
-                    </span>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-value">🔥 @_childData.CurrentStreak</span>
+                        <span class="stat-label">Streak</span>
+                    </div>
+                }
+                @if (_childData.TodayEarnings > 0)
+                {
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-value earned">+$@_childData.TodayEarnings.ToString("F2")</span>
+                        <span class="stat-label">Earned</span>
+                    </div>
                 }
             </div>
-            <a href="/my-balance" class="balance-display">
-                <span class="balance-amount">$@_childData.Balance.ToString("F2")</span>
-            </a>
         </div>
 
         <!-- TO DO Section - Swipeable Cards -->
@@ -253,6 +278,32 @@ else if (_childData != null)
                 <div class="done-text">
                     <strong>Day Off</strong>
                     <span>No chores scheduled</span>
+                </div>
+            </div>
+        }
+
+        <!-- WEEKLY PROGRESS Section - Simple dots -->
+        @if (_childData.WeeklyProgress?.ChoreProgress.Count > 0)
+        {
+            <div class="weekly-progress-section">
+                <div class="section-header">
+                    <span class="section-title">This Week</span>
+                </div>
+                <div class="weekly-chores-list">
+                    @foreach (var progress in _childData.WeeklyProgress.ChoreProgress)
+                    {
+                        <div class="weekly-chore-row">
+                            <span class="weekly-chore-icon">@(progress.ChoreDefinition.Icon ?? "📋")</span>
+                            <span class="weekly-chore-name">@progress.ChoreDefinition.Name</span>
+                            <div class="weekly-dots">
+                                @for (int i = 0; i < progress.TargetCount; i++)
+                                {
+                                    <span class="weekly-dot @(i < progress.CompletedCount ? "filled" : "empty")"></span>
+                                }
+                            </div>
+                            <span class="weekly-count">@progress.CompletedCount/@progress.TargetCount</span>
+                        </div>
+                    }
                 </div>
             </div>
         }

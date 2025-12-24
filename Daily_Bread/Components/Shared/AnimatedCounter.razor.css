@@ -1,0 +1,66 @@
+/* AnimatedCounter Styles */
+
+.animated-counter {
+    display: inline-flex;
+    align-items: baseline;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.counter-prefix,
+.counter-suffix {
+    opacity: 0.9;
+}
+
+.counter-value {
+    font-weight: 700;
+}
+
+/* Counting animation */
+.animated-counter.counting {
+    transform: scale(1.02);
+}
+
+.animated-counter.counting-up .counter-value {
+    color: var(--nord14); /* Green for increase */
+}
+
+.animated-counter.counting-down .counter-value {
+    color: var(--nord11); /* Red for decrease */
+}
+
+/* Flash on complete */
+.animated-counter.count-complete {
+    animation: counter-flash 0.4s ease-out;
+}
+
+.animated-counter.count-complete.counting-up .counter-value,
+.animated-counter.counting-up.count-complete .counter-value {
+    text-shadow: 0 0 10px rgba(163, 190, 140, 0.6);
+}
+
+@keyframes counter-flash {
+    0% {
+        transform: scale(1.05);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Large balance display variant */
+.animated-counter.balance-lg {
+    font-size: 2rem;
+}
+
+.animated-counter.balance-lg .counter-value {
+    font-size: 2.5rem;
+}
+
+/* Compact inline variant */
+.animated-counter.inline {
+    font-size: inherit;
+}

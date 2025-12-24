@@ -8,8 +8,27 @@ window.SwipeGestures = (function () {
     const SWIPE_THRESHOLD = 80; // Pixels needed to trigger action
     const VELOCITY_THRESHOLD = 0.5; // Pixels per ms for quick swipe
     const MAX_SWIPE_DISTANCE = 150; // Max visual swipe distance
-    
+
     const instances = new WeakMap();
+
+    // Haptic feedback patterns (vibration in ms)
+    const HAPTICS = {
+        thresholdReached: [15],           // Quick tick when threshold crossed
+        complete: [0, 30, 20, 40],         // Success: pause, buzz, pause, stronger buzz
+        help: [20, 30, 20],                // Help: three quick pulses
+        reset: [10]                        // Subtle feedback on reset
+    };
+
+    /**
+     * Trigger haptic feedback if available
+     * @param {string} type - Type of haptic pattern
+     */
+    function haptic(type) {
+        if ('vibrate' in navigator) {
+            const pattern = HAPTICS[type] || [10];
+            navigator.vibrate(pattern);
+        }
+    }
 
     /**
      * Initialize swipe handling on a container element
@@ -17,7 +36,13 @@ window.SwipeGestures = (function () {
      * @param {Object} dotNetRef - DotNet object reference for callbacks
      */
     function init(container, dotNetRef) {
-        if (!container || instances.has(container)) return;
+        // Guard: null container or dotNetRef
+        if (!container || !dotNetRef) return;
+        
+        // Guard: already initialized - destroy first to prevent duplicate handlers
+        if (instances.has(container)) {
+            destroy(container);
+        }
 
         const card = container.querySelector('.swipeable-card');
         if (!card) return;
@@ -29,7 +54,9 @@ window.SwipeGestures = (function () {
             startTime: 0,
             isDragging: false,
             isHorizontal: null,
-            dotNetRef: dotNetRef
+            dotNetRef: dotNetRef,
+            disposed: false,
+            thresholdTriggered: false  // Track if we've already buzzed for threshold
         };
 
         const handlers = {
@@ -46,7 +73,7 @@ window.SwipeGestures = (function () {
         container.addEventListener('touchcancel', handlers.touchCancel, { passive: true });
 
         // Store for cleanup
-        instances.set(container, { handlers, state });
+        instances.set(container, { handlers, state, card });
     }
 
     /**
@@ -54,20 +81,37 @@ window.SwipeGestures = (function () {
      * @param {HTMLElement} container
      */
     function destroy(container) {
+        // Guard: null container or not in WeakMap
+        if (!container) return;
+        
         const instance = instances.get(container);
         if (!instance) return;
 
-        const { handlers } = instance;
-        container.removeEventListener('touchstart', handlers.touchStart);
-        container.removeEventListener('touchmove', handlers.touchMove);
-        container.removeEventListener('touchend', handlers.touchEnd);
-        container.removeEventListener('touchcancel', handlers.touchCancel);
+        const { handlers, state } = instance;
+        
+        // Mark as disposed to prevent any pending callbacks
+        if (state) {
+            state.disposed = true;
+            state.dotNetRef = null;
+        }
+
+        // Remove event listeners (safe even if container is disconnected from DOM)
+        if (handlers) {
+            try {
+                container.removeEventListener('touchstart', handlers.touchStart);
+                container.removeEventListener('touchmove', handlers.touchMove);
+                container.removeEventListener('touchend', handlers.touchEnd);
+                container.removeEventListener('touchcancel', handlers.touchCancel);
+            } catch (e) {
+                // Container may be disconnected, ignore errors
+            }
+        }
 
         instances.delete(container);
     }
 
     function handleTouchStart(e, container, card, state) {
-        if (e.touches.length !== 1) return;
+        if (state.disposed || e.touches.length !== 1) return;
 
         const touch = e.touches[0];
         state.startX = touch.clientX;
@@ -76,10 +120,11 @@ window.SwipeGestures = (function () {
         state.startTime = Date.now();
         state.isDragging = false;
         state.isHorizontal = null;
+        state.thresholdTriggered = false;
     }
 
     function handleTouchMove(e, container, card, state) {
-        if (e.touches.length !== 1) return;
+        if (state.disposed || e.touches.length !== 1) return;
 
         const touch = e.touches[0];
         const deltaX = touch.clientX - state.startX;
@@ -109,13 +154,13 @@ window.SwipeGestures = (function () {
             const resistedX = applyResistance(deltaX);
             card.style.transform = `translateX(${resistedX}px)`;
 
-            // Update visual state
-            updateSwipeVisuals(container, deltaX);
+            // Update visual state and haptics
+            updateSwipeVisuals(container, deltaX, state);
         }
     }
 
     function handleTouchEnd(e, container, card, state) {
-        if (!state.isDragging) return;
+        if (state.disposed || !state.isDragging) return;
 
         const deltaX = state.currentX;
         const deltaTime = Date.now() - state.startTime;
@@ -147,9 +192,12 @@ window.SwipeGestures = (function () {
         return sign * resisted;
     }
 
-    function updateSwipeVisuals(container, deltaX) {
+    function updateSwipeVisuals(container, deltaX, state) {
+        const wasThresholdReached = state.thresholdTriggered;
+        const isNowThresholdReached = Math.abs(deltaX) >= SWIPE_THRESHOLD;
+
         // Clear previous classes
-        container.classList.remove('swiping-left', 'swiping-right', 
+        container.classList.remove('swiping-left', 'swiping-right',
             'threshold-reached-left', 'threshold-reached-right');
 
         if (deltaX > 10) {
@@ -163,33 +211,57 @@ window.SwipeGestures = (function () {
                 container.classList.add('threshold-reached-left');
             }
         }
+
+        // Haptic feedback when crossing threshold (only once per swipe)
+        if (isNowThresholdReached && !wasThresholdReached) {
+            haptic('thresholdReached');
+            state.thresholdTriggered = true;
+        } else if (!isNowThresholdReached && wasThresholdReached) {
+            // User pulled back below threshold - reset so they can feel it again
+            state.thresholdTriggered = false;
+        }
     }
 
     function triggerAction(container, card, state, direction) {
+        // Guard: check if disposed before triggering callback
+        if (state.disposed || !state.dotNetRef) {
+            resetCard(container, card, state);
+            return;
+        }
+        
         // Add completing animation
         const animClass = direction === 'right' ? 'completing' : 'help-requesting';
         container.classList.add(animClass);
-        
-        // Haptic feedback if available
-        if ('vibrate' in navigator) {
-            navigator.vibrate(10);
-        }
+
+        // Satisfying haptic feedback based on action
+        haptic(direction === 'right' ? 'complete' : 'help');
 
         // Clean up visual state
         container.classList.remove('dragging', 'swiping-left', 'swiping-right',
             'threshold-reached-left', 'threshold-reached-right');
 
+        // Capture dotNetRef before async operation in case state changes
+        const dotNetRef = state.dotNetRef;
+        
         // Notify Blazor
-        if (state.dotNetRef) {
-            state.dotNetRef.invokeMethodAsync('HandleSwipeComplete', direction)
-                .catch(err => console.warn('Swipe callback failed:', err));
+        if (dotNetRef) {
+            dotNetRef.invokeMethodAsync('HandleSwipeComplete', direction)
+                .catch(err => {
+                    // Ignore errors from disposed components or disconnected circuits
+                    if (!err.message?.includes('disposed') && 
+                        !err.message?.includes('disconnected')) {
+                        console.warn('Swipe callback failed:', err);
+                    }
+                });
         }
 
         // Reset card position after animation (for help action which doesn't dismiss)
         if (direction === 'left') {
             setTimeout(() => {
-                card.style.transform = '';
-                container.classList.remove(animClass);
+                if (!state.disposed) {
+                    card.style.transform = '';
+                    container.classList.remove(animClass);
+                }
             }, 400);
         }
     }

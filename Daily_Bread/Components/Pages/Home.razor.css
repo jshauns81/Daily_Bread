@@ -1129,9 +1129,273 @@
     .celebration-star {
         animation: none;
     }
-    
+
     .chore-item,
     .chore-checkbox-btn {
         transition: none;
+    }
+}
+
+/* ===========================================
+   HERO HEADER - Balance Front & Center
+   =========================================== */
+
+.hero-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-xl) var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.hero-balance {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    padding: var(--space-md);
+    transition: transform var(--transition-fast);
+}
+
+.hero-balance:hover {
+    transform: scale(1.02);
+}
+
+.hero-balance:active {
+    transform: scale(0.98);
+}
+
+.hero-amount {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--nord14);
+    line-height: 1;
+    text-shadow: 0 0 40px rgba(163, 190, 140, 0.3);
+}
+
+.hero-label {
+    font-size: var(--font-size-sm);
+    color: var(--nord4);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: var(--space-xs);
+}
+
+/* Stats Pill - Frosted Glass Effect */
+.stats-pill {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-lg);
+    margin-top: var(--space-lg);
+    background: rgba(59, 66, 82, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(216, 222, 233, 0.1);
+    border-radius: var(--radius-full);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stat-value {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--nord6);
+}
+
+.stat-value.earned {
+    color: var(--nord14);
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(216, 222, 233, 0.2);
+}
+
+/* Mobile adjustments for hero header */
+@media (max-width: 575.98px) {
+    .hero-header {
+        padding: var(--space-lg) var(--space-sm);
+    }
+
+    .hero-amount {
+        font-size: 2.75rem;
+    }
+
+    .stats-pill {
+        gap: var(--space-sm);
+        padding: var(--space-xs) var(--space-md);
+    }
+
+    .stat-value {
+        font-size: var(--font-size-sm);
+    }
+
+    .stat-label {
+        font-size: 10px;
+    }
+}
+
+/* ===========================================
+   WEEKLY PROGRESS SECTION - Progress Dots
+   =========================================== */
+
+.weekly-progress-section {
+    margin-top: var(--space-lg);
+    padding: var(--space-md);
+    background: var(--nord1);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--nord3);
+}
+
+.weekly-progress-section .section-header {
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--nord3);
+}
+
+.weekly-progress-section .section-title {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--nord4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.weekly-chores-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.weekly-chore-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) 0;
+}
+
+.weekly-chore-icon {
+    font-size: var(--font-size-lg);
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.weekly-chore-name {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--nord6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.weekly-dots {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.weekly-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+}
+
+.weekly-dot.empty {
+    background: var(--nord3);
+    border: 2px solid var(--nord4);
+}
+
+.weekly-dot.filled {
+    background: var(--nord14);
+    border: 2px solid var(--nord14);
+    box-shadow: 0 0 6px rgba(163, 190, 140, 0.4);
+}
+
+.weekly-count {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--nord4);
+    min-width: 28px;
+    text-align: right;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+/* When all dots are filled, highlight the count */
+.weekly-chore-row:has(.weekly-dots:not(:has(.weekly-dot.empty))) .weekly-count {
+    color: var(--nord14);
+}
+
+/* Mobile adjustments for weekly progress */
+@media (max-width: 575.98px) {
+    .weekly-progress-section {
+        padding: var(--space-sm);
+        margin-top: var(--space-md);
+    }
+
+    .weekly-chore-name {
+        font-size: var(--font-size-xs);
+    }
+
+    .weekly-dot {
+        width: 10px;
+        height: 10px;
+    }
+
+    .weekly-dots {
+        gap: 4px;
+    }
+}
+
+/* Mobile adjustments for header v2 */
+@media (max-width: 575.98px) {
+    .child-header-v2 {
+        gap: var(--space-sm);
+        padding: var(--space-sm) 0;
+    }
+
+    .child-name {
+        font-size: var(--font-size-lg);
+    }
+
+    .header-subtitle {
+        gap: var(--space-xs);
+    }
+
+    .streak-badge {
+        font-size: var(--font-size-xs);
+        padding: 2px var(--space-xs);
+    }
+
+    .today-earnings {
+        font-size: var(--font-size-xs);
+    }
+
+    .balance-display-v2 {
+        padding: var(--space-xs) var(--space-sm);
+        min-width: 80px;
+    }
+
+    .balance-amount-animated {
+        font-size: var(--font-size-lg);
     }
 }

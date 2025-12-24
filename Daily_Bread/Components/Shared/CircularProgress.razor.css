@@ -10,6 +10,11 @@
 }
 
 /* Size variants */
+.circular-progress-container.size-xs {
+    width: 36px;
+    height: 36px;
+}
+
 .circular-progress-container.size-sm {
     width: 60px;
     height: 60px;
@@ -99,6 +104,10 @@
     line-height: 1;
 }
 
+.size-xs .progress-percentage {
+    font-size: 0.7rem;
+}
+
 .size-sm .progress-percentage {
     font-size: 1rem;
 }
@@ -129,6 +138,10 @@
     display: flex;
     align-items: baseline;
     gap: 2px;
+}
+
+.size-xs .progress-fraction {
+    font-size: 0.65rem;
 }
 
 .size-sm .progress-fraction {
