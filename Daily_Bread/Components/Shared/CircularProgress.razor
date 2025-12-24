@@ -1,4 +1,4 @@
-@* Circular Progress Ring Component - Apple Activity Ring Style *@
+﻿@* Circular Progress Ring Component - Apple Activity Ring Style *@
 
 <div class="circular-progress-container @SizeClass">
     <svg class="circular-progress" viewBox="0 0 100 100">
@@ -27,6 +27,11 @@
         @if (ChildContent != null)
         {
             @ChildContent
+        }
+        else if (IsNothingToDo)
+        {
+            @* When 0/0, show a checkmark to indicate "all done" *@
+            <span class="progress-checkmark">✓</span>
         }
         else if (ShowPercentage)
         {
@@ -61,7 +66,13 @@
     /// </summary>
     [Parameter] public string Color { get; set; } = "auto";
 
-    private int Percentage => Total > 0 ? (int)Math.Round((double)Current / Total * 100) : 0;
+    // When Total is 0, consider it 100% complete (nothing to do = done)
+    private int Percentage => Total > 0 
+        ? (int)Math.Round((double)Current / Total * 100) 
+        : (Current == 0 ? 100 : 0);
+    
+    // When both are 0, show checkmark instead of "0/0"
+    private bool IsNothingToDo => Total == 0 && Current == 0;
     
     private double Radius => Size switch
     {

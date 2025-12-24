@@ -25,7 +25,7 @@ public class ChoreLog
     public ChoreStatus Status { get; set; } = ChoreStatus.Pending;
 
     /// <summary>
-    /// The user who completed/updated this chore log.
+    /// The user who co9mpleted/updated this chore log.
     /// </summary>
     public string? CompletedByUserId { get; set; }
     public ApplicationUser? CompletedByUser { get; set; }
