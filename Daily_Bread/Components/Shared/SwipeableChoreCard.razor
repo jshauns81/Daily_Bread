@@ -3,22 +3,25 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 
-<div class="swipeable-card-container" @ref="_containerRef">
-    <!-- Help action (revealed on swipe left) -->
-    <div class="swipe-action swipe-action-left">
-        <div class="action-content help-action">
-            <span class="bi bi-exclamation-triangle-fill"></span>
-            <span>Help</span>
+<div class="swipeable-card-container @(IsSwipeDisabled ? "swipe-disabled" : "")" @ref="_containerRef">
+    @if (!IsSwipeDisabled)
+    {
+        <!-- Help action (revealed on swipe left) -->
+        <div class="swipe-action swipe-action-left">
+            <div class="action-content help-action">
+                <span class="bi bi-exclamation-triangle-fill"></span>
+                <span>Help</span>
+            </div>
         </div>
-    </div>
-    
-    <!-- Done action (revealed on swipe right) -->
-    <div class="swipe-action swipe-action-right">
-        <div class="action-content done-action">
-            <span class="bi bi-check-lg"></span>
-            <span>Done</span>
+        
+        <!-- Done action (revealed on swipe right) -->
+        <div class="swipe-action swipe-action-right">
+            <div class="action-content done-action">
+                <span class="bi bi-check-lg"></span>
+                <span>Done</span>
+            </div>
         </div>
-    </div>
+    }
     
     <!-- The card itself -->
     <div class="swipeable-card @GetCardStateClass()" 
@@ -36,6 +39,10 @@
                             <span class="bonus-indicator">• Bonus</span>
                         }
                     </span>
+                }
+                @if (GetStatusText() is var statusText && !string.IsNullOrEmpty(statusText))
+                {
+                    <span class="status-text">@statusText</span>
                 }
             </div>
             <div class="chore-value">
@@ -83,9 +90,14 @@
     private bool _disposed;
     private bool _jsInitialized;
     
+    /// <summary>
+    /// Swipe is disabled for non-pending chores (already completed, approved, missed, etc.)
+    /// </summary>
+    private bool IsSwipeDisabled => !Chore.IsPending && !Chore.IsHelp;
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_disposed)
+        if (firstRender && !_disposed && !IsSwipeDisabled)
         {
             _dotNetRef = DotNetObjectReference.Create(this);
             try
@@ -103,8 +115,8 @@
     [JSInvokable]
     public async Task HandleSwipeComplete(string direction)
     {
-        // Guard against callbacks after disposal
-        if (_disposed || IsProcessing) return;
+        // Guard against callbacks after disposal or when disabled
+        if (_disposed || IsProcessing || IsSwipeDisabled) return;
         
         if (direction == "right")
         {
@@ -122,7 +134,18 @@
         if (Chore.IsCompleted) return "pending-approval";
         if (Chore.IsHelp) return "help-requested";
         if (Chore.IsMissed) return "missed";
+        if (Chore.IsSkipped) return "skipped";
         return "";
+    }
+    
+    private string? GetStatusText()
+    {
+        if (Chore.IsApproved) return "✓ Approved";
+        if (Chore.IsCompleted) return "⏳ Waiting for approval";
+        if (Chore.IsHelp) return "🆘 Help requested";
+        if (Chore.IsMissed) return "✗ Missed";
+        if (Chore.IsSkipped) return "— Skipped";
+        return null;
     }
     
     public async ValueTask DisposeAsync()
