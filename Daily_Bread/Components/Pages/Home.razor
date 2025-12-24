@@ -208,7 +208,7 @@ else if (_childData != null)
                 <div class="stat-item">
                     <CircularProgress
                         Current="@_childData.TodayCompletedCount"
-                        Total="@Math.Max(_childData.TodayTotalCount, 1)"
+                        Total="@_childData.TodayTotalCount"
                         Size="xs"
                         ShowFraction="true"
                         Animated="true" />
