@@ -40,7 +40,7 @@
                                 <option value="">-- Unassigned --</option>
                                 @foreach (var user in Users)
                                 {
-                                    <option value="@user.Id">@user.UserName</option>
+                                    <option value="@user.Id" class="user-name">@user.UserName</option>
                                 }
                             </InputSelect>
                         </div>

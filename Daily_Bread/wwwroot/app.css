@@ -987,6 +987,11 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     transform: translateY(-1px);
 }
 
+/* User name display - auto-capitalize */
+.user-name {
+    text-transform: capitalize;
+}
+
 /* ===========================================
    20. VALIDATION
    =========================================== */

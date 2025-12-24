@@ -135,6 +135,12 @@ public interface IWeeklyProgressService
     Task<WeeklyChoreProgress?> GetChoreProgressAsync(int choreDefinitionId, DateOnly? asOfDate = null);
     
     /// <summary>
+    /// Gets progress for multiple weekly chores in a single query.
+    /// Returns a dictionary keyed by ChoreDefinitionId.
+    /// </summary>
+    Task<Dictionary<int, WeeklyChoreProgress>> GetChoreProgressBatchAsync(IEnumerable<int> choreDefinitionIds, DateOnly? asOfDate = null);
+    
+    /// <summary>
     /// Calculates the earning value for the next completion of a weekly chore.
     /// Handles diminishing returns for repeatable chores.
     /// </summary>
@@ -263,6 +269,75 @@ public class WeeklyProgressService : IWeeklyProgressService
             NextBonusValue = CalculateNextBonusValue(chore, completedCount),
             WeekLogs = choreLogs
         };
+    }
+
+    /// <summary>
+    /// Gets progress for multiple weekly chores in a single database query.
+    /// Eliminates N+1 queries when loading tracker items.
+    /// </summary>
+    public async Task<Dictionary<int, WeeklyChoreProgress>> GetChoreProgressBatchAsync(
+        IEnumerable<int> choreDefinitionIds, 
+        DateOnly? asOfDate = null)
+    {
+        var result = new Dictionary<int, WeeklyChoreProgress>();
+        var choreIdList = choreDefinitionIds.ToList();
+        
+        if (choreIdList.Count == 0)
+        {
+            return result;
+        }
+        
+        var date = asOfDate ?? _dateProvider.Today;
+        var weekStart = await _familySettingsService.GetWeekStartForDateAsync(date);
+        var weekEnd = await _familySettingsService.GetWeekEndForDateAsync(date);
+        
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        // Single query: get all weekly chores from the requested list
+        var weeklyChores = await context.ChoreDefinitions
+            .Where(c => choreIdList.Contains(c.Id))
+            .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            .ToListAsync();
+        
+        if (weeklyChores.Count == 0)
+        {
+            return result;
+        }
+        
+        var validChoreIds = weeklyChores.Select(c => c.Id).ToList();
+        
+        // Single query: get all logs for these chores within the week
+        var weekLogs = await context.ChoreLogs
+            .Where(l => validChoreIds.Contains(l.ChoreDefinitionId))
+            .Where(l => l.Date >= weekStart && l.Date <= weekEnd)
+            .Where(l => l.Status == ChoreStatus.Approved || l.Status == ChoreStatus.Completed)
+            .ToListAsync();
+        
+        // Group logs by chore for efficient lookup
+        var logsByChore = weekLogs.GroupBy(l => l.ChoreDefinitionId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        
+        // Build progress for each chore
+        foreach (var chore in weeklyChores)
+        {
+            var choreLogs = logsByChore.TryGetValue(chore.Id, out var logs) ? logs : [];
+            var completedCount = choreLogs.Count;
+            var (earnedAmount, bonusAmount) = CalculateEarnings(chore, completedCount);
+            
+            result[chore.Id] = new WeeklyChoreProgress
+            {
+                ChoreDefinition = chore,
+                CompletedCount = completedCount,
+                TargetCount = chore.WeeklyTargetCount,
+                EarnedAmount = earnedAmount,
+                BonusAmount = bonusAmount,
+                PotentialEarnings = chore.EarnValue * chore.WeeklyTargetCount,
+                NextBonusValue = CalculateNextBonusValue(chore, completedCount),
+                WeekLogs = choreLogs
+            };
+        }
+        
+        return result;
     }
 
     public async Task<decimal> CalculateNextCompletionValueAsync(int choreDefinitionId, DateOnly? asOfDate = null)

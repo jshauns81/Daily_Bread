@@ -31,7 +31,7 @@
                                 <option value="0">-- Select a Child --</option>
                                 @foreach (var profile in ChildProfiles)
                                 {
-                                    <option value="@profile.ProfileId">@profile.DisplayName ($@profile.TotalBalance.ToString("F2"))</option>
+                                    <option value="@profile.ProfileId" class="user-name">@profile.DisplayName ($@profile.TotalBalance.ToString("F2"))</option>
                                 }
                             </select>
                         </div>

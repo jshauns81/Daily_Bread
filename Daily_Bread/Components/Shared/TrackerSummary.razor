@@ -1,0 +1,56 @@
+@namespace Daily_Bread.Components.Shared
+@using Daily_Bread.Services
+
+<div class="tracker-summary mt-3">
+    <div class="row g-3">
+        <div class="col-md-3 col-6">
+            <div class="summary-card">
+                <span class="summary-value">@TotalCount</span>
+                <span class="summary-label">Total Labors</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="summary-card">
+                <span class="summary-value text-success">@CompletedCount</span>
+                <span class="summary-label">Completed</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="summary-card">
+                <span class="summary-value text-warning">@PendingCount</span>
+                <span class="summary-label">Pending</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="summary-card">
+                <span class="summary-value text-success">$@EarnedToday.ToString("F2")</span>
+                <span class="summary-label">Wages Today</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* All Done Message *@
+@if (IsAllDone)
+{
+    <div class="all-done-banner mt-4">
+        <span class="all-done-star">⭐</span>
+        <div>
+            <h4 class="mb-0">All Done for Today!</h4>
+            <p class="mb-0 text-muted">Great work! You earned $@EarnedToday.ToString("F2") in wages today.</p>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public required List<TrackerChoreItem> Items { get; set; }
+
+    private int TotalCount => Items.Count;
+    private int CompletedCount => Items.Count(c => c.IsCompleted);
+    private int PendingCount => Items.Count(c => c.IsPending);
+    private decimal EarnedToday => Items.Where(c => c.IsCompleted).Sum(c => c.Value);
+
+    private bool IsAllDone => Items.Count > 0 &&
+        Items.All(c => c.IsCompleted || c.IsMissed || c.Status == Data.Models.ChoreStatus.Skipped);
+}

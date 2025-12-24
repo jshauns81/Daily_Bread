@@ -150,47 +150,68 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
         var settings = await _familySettingsService.GetSettingsAsync();
         
         await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
         
-        // Get child profile and account
-        var childProfile = await context.ChildProfiles
-            .Include(p => p.User)
-            .Include(p => p.LedgerAccounts.Where(a => a.IsActive && a.IsDefault))
-            .FirstOrDefaultAsync(p => p.UserId == userId);
-        
-        if (childProfile == null)
+        try
         {
-            return new WeeklyReconciliationResult
+            var childProfile = await context.ChildProfiles
+                .Include(p => p.User)
+                .Include(p => p.LedgerAccounts.Where(a => a.IsActive && a.IsDefault))
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+            
+            if (childProfile == null)
             {
-                UserId = userId,
-                UserName = "Unknown",
-                WeekStart = weekStart,
-                WeekEnd = weekEnd,
-                TotalPenalty = 0
-            };
-        }
-        
-        var defaultAccount = childProfile.LedgerAccounts.FirstOrDefault();
-        
-        // Get weekly progress for this user
-        var weeklyProgress = await _weeklyProgressService.GetWeeklyProgressForUserAsync(userId, weekEndDate);
-        
-        var incompleteChores = new List<IncompleteChoreRecord>();
-        decimal totalPenalty = 0;
-        
-        foreach (var progress in weeklyProgress.ChoreProgress)
-        {
-            // Skip if quota was met
-            if (progress.QuotaMet)
-            {
-                continue;
+                return new WeeklyReconciliationResult
+                {
+                    UserId = userId,
+                    UserName = "Unknown",
+                    WeekStart = weekStart,
+                    WeekEnd = weekEnd,
+                    TotalPenalty = 0
+                };
             }
             
-            // Calculate penalty: (target - completed) * value * penalty percent
-            var missedCount = progress.TargetCount - progress.CompletedCount;
-            var penaltyAmount = missedCount * progress.ChoreDefinition.EarnValue * settings.WeeklyIncompletePenaltyPercent;
+            var defaultAccount = childProfile.LedgerAccounts.FirstOrDefault();
+            var weeklyProgress = await _weeklyProgressService.GetWeeklyProgressForUserAsync(userId, weekEndDate);
             
-            if (penaltyAmount > 0)
+            // IDEMPOTENCY: Check for existing penalties using deterministic key
+            // (UserId, ChoreDefinitionId, WeekEndDate, Type=Penalty)
+            var existingPenaltyChoreIds = await context.LedgerTransactions
+                .Where(t => t.UserId == userId)
+                .Where(t => t.Type == TransactionType.Penalty)
+                .Where(t => t.WeekEndDate == weekEnd)
+                .Where(t => t.ChoreDefinitionId != null)
+                .Select(t => t.ChoreDefinitionId!.Value)
+                .ToListAsync();
+            
+            var incompleteChores = new List<IncompleteChoreRecord>();
+            decimal totalPenalty = 0;
+            var newTransactions = new List<LedgerTransaction>();
+            
+            foreach (var progress in weeklyProgress.ChoreProgress)
             {
+                if (progress.QuotaMet)
+                {
+                    continue;
+                }
+                
+                // IDEMPOTENCY: Skip if penalty already exists for this (user, chore, week)
+                if (existingPenaltyChoreIds.Contains(progress.ChoreDefinition.Id))
+                {
+                    _logger.LogDebug(
+                        "Skipping duplicate penalty: UserId={UserId}, ChoreId={ChoreId}, WeekEnd={WeekEnd}",
+                        userId, progress.ChoreDefinition.Id, weekEnd);
+                    continue;
+                }
+                
+                var missedCount = progress.TargetCount - progress.CompletedCount;
+                var penaltyAmount = missedCount * progress.ChoreDefinition.EarnValue * settings.WeeklyIncompletePenaltyPercent;
+                
+                if (penaltyAmount <= 0)
+                {
+                    continue;
+                }
+                
                 incompleteChores.Add(new IncompleteChoreRecord
                 {
                     ChoreDefinitionId = progress.ChoreDefinition.Id,
@@ -202,13 +223,14 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
                 
                 totalPenalty += penaltyAmount;
                 
-                // Create penalty transaction if we have an account
                 if (defaultAccount != null)
                 {
-                    var transaction = new LedgerTransaction
+                    var penaltyTransaction = new LedgerTransaction
                     {
                         LedgerAccountId = defaultAccount.Id,
                         UserId = userId,
+                        ChoreDefinitionId = progress.ChoreDefinition.Id, // For idempotency
+                        WeekEndDate = weekEnd, // For idempotency
                         Amount = -penaltyAmount,
                         Type = TransactionType.Penalty,
                         Description = $"Incomplete: {progress.ChoreDefinition.Name} ({progress.CompletedCount}/{progress.TargetCount})",
@@ -216,25 +238,38 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
                         CreatedAt = DateTime.UtcNow
                     };
                     
-                    context.LedgerTransactions.Add(transaction);
+                    newTransactions.Add(penaltyTransaction);
+                    
+                    _logger.LogInformation(
+                        "Creating weekly penalty: UserId={UserId}, ChoreId={ChoreId}, WeekEnd={WeekEnd}, Amount=-${Amount:F2}",
+                        userId, progress.ChoreDefinition.Id, weekEnd, penaltyAmount);
                 }
             }
+            
+            if (newTransactions.Count > 0)
+            {
+                context.LedgerTransactions.AddRange(newTransactions);
+                await context.SaveChangesAsync();
+            }
+            
+            await transaction.CommitAsync();
+            
+            return new WeeklyReconciliationResult
+            {
+                UserId = userId,
+                UserName = childProfile.DisplayName,
+                WeekStart = weekStart,
+                WeekEnd = weekEnd,
+                IncompleteChores = incompleteChores,
+                TotalPenalty = totalPenalty
+            };
         }
-        
-        if (totalPenalty > 0)
+        catch (Exception ex)
         {
-            await context.SaveChangesAsync();
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Failed to reconcile week for user {UserId}", userId);
+            throw;
         }
-        
-        return new WeeklyReconciliationResult
-        {
-            UserId = userId,
-            UserName = childProfile.DisplayName,
-            WeekStart = weekStart,
-            WeekEnd = weekEnd,
-            IncompleteChores = incompleteChores,
-            TotalPenalty = totalPenalty
-        };
     }
 
     public async Task<DateOnly?> GetLastReconciliationDateAsync()

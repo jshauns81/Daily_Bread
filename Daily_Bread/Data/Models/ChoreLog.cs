@@ -1,4 +1,4 @@
-namespace Daily_Bread.Data.Models;
+﻿namespace Daily_Bread.Data.Models;
 
 /// <summary>
 /// Records the status of a chore for a specific date.
@@ -70,6 +70,12 @@ public class ChoreLog
     /// Timestamp when the record was last modified.
     /// </summary>
     public DateTime? ModifiedAt { get; set; }
+    
+    /// <summary>
+    /// Concurrency token for optimistic locking.
+    /// Incremented on each update. Cross-database compatible.
+    /// </summary>
+    public int Version { get; set; }
 
     // Navigation property
     public LedgerTransaction? LedgerTransaction { get; set; }

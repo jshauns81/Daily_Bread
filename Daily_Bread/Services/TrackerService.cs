@@ -1,5 +1,6 @@
 ﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Daily_Bread.Services;
@@ -140,6 +141,9 @@ public class TrackerService : ITrackerService
     private readonly IPushNotificationService _pushNotificationService;
     private readonly IWeeklyProgressService _weeklyProgressService;
     private readonly IFamilySettingsService _familySettingsService;
+    private readonly IDateProvider _dateProvider;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ILogger<TrackerService> _logger;
 
     public TrackerService(
         IDbContextFactory<ApplicationDbContext> contextFactory,
@@ -148,7 +152,10 @@ public class TrackerService : ITrackerService
         ILedgerService ledgerService,
         IPushNotificationService pushNotificationService,
         IWeeklyProgressService weeklyProgressService,
-        IFamilySettingsService familySettingsService)
+        IFamilySettingsService familySettingsService,
+        IDateProvider dateProvider,
+        UserManager<ApplicationUser> userManager,
+        ILogger<TrackerService> logger)
     {
         _contextFactory = contextFactory;
         _scheduleService = scheduleService;
@@ -157,6 +164,9 @@ public class TrackerService : ITrackerService
         _pushNotificationService = pushNotificationService;
         _weeklyProgressService = weeklyProgressService;
         _familySettingsService = familySettingsService;
+        _dateProvider = dateProvider;
+        _userManager = userManager;
+        _logger = logger;
     }
 
     public async Task<List<TrackerChoreItem>> GetTrackerItemsForDateAsync(DateOnly date)
@@ -171,36 +181,21 @@ public class TrackerService : ITrackerService
             .Where(c => c.Date == date)
             .ToDictionaryAsync(c => c.ChoreDefinitionId);
 
-        // Get weekly progress for weekly chores
         var weeklyChoreIds = scheduledChores
             .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
             .Select(c => c.Id)
             .ToList();
         
-        var weeklyProgress = new Dictionary<int, Services.WeeklyChoreProgress>();
-        foreach (var choreId in weeklyChoreIds)
-        {
-            var progress = await _weeklyProgressService.GetChoreProgressAsync(choreId, date);
-            if (progress != null)
-            {
-                weeklyProgress[choreId] = progress;
-            }
-        }
+        var weeklyProgress = await _weeklyProgressService.GetChoreProgressBatchAsync(weeklyChoreIds, date);
 
         var items = new List<TrackerChoreItem>();
 
         foreach (var chore in scheduledChores)
         {
             weeklyProgress.TryGetValue(chore.Id, out var progress);
-            
-            if (existingLogs.TryGetValue(chore.Id, out var log))
-            {
-                items.Add(CreateTrackerItem(chore, log, progress));
-            }
-            else
-            {
-                items.Add(CreateTrackerItem(chore, null, progress));
-            }
+            items.Add(existingLogs.TryGetValue(chore.Id, out var log)
+                ? CreateTrackerItem(chore, log, progress)
+                : CreateTrackerItem(chore, null, progress));
         }
 
         return items.OrderBy(i => i.ChoreName).ToList();
@@ -219,34 +214,158 @@ public class TrackerService : ITrackerService
             .Where(c => c.ChoreDefinition.AssignedUserId == userId)
             .ToDictionaryAsync(c => c.ChoreDefinitionId);
 
-        // Get weekly progress for this user
-        var weeklyProgressSummary = await _weeklyProgressService.GetWeeklyProgressForUserAsync(userId, date);
-        var weeklyProgress = weeklyProgressSummary.ChoreProgress.ToDictionary(p => p.ChoreDefinition.Id);
+        var weeklyChoreIds = scheduledChores
+            .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            .Select(c => c.Id)
+            .ToList();
+        
+        var weeklyProgress = await _weeklyProgressService.GetChoreProgressBatchAsync(weeklyChoreIds, date);
 
         var items = new List<TrackerChoreItem>();
 
         foreach (var chore in scheduledChores)
         {
             weeklyProgress.TryGetValue(chore.Id, out var progress);
-            
-            if (existingLogs.TryGetValue(chore.Id, out var log))
-            {
-                items.Add(CreateTrackerItem(chore, log, progress));
-            }
-            else
-            {
-                items.Add(CreateTrackerItem(chore, null, progress));
-            }
+            items.Add(existingLogs.TryGetValue(chore.Id, out var log)
+                ? CreateTrackerItem(chore, log, progress)
+                : CreateTrackerItem(chore, null, progress));
         }
 
         return items.OrderBy(i => i.ChoreName).ToList();
+    }
+
+    /// <summary>
+    /// Atomically updates chore status and reconciles ledger.
+    /// All status changes that affect money go through this method.
+    /// </summary>
+    private async Task<ServiceResult<ChoreStatus>> UpdateStatusAtomicallyAsync(
+        int choreLogId,
+        ChoreStatus newStatus,
+        string actingUserId,
+        bool requiresParent,
+        string? notes = null)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        
+        try
+        {
+            // Load chore log with related data
+            var choreLog = await context.ChoreLogs
+                .Include(c => c.ChoreDefinition)
+                .Include(c => c.LedgerTransaction)
+                .FirstOrDefaultAsync(c => c.Id == choreLogId);
+
+            if (choreLog == null)
+            {
+                return ServiceResult<ChoreStatus>.Fail("Chore log not found.");
+            }
+            
+            // SERVER-SIDE AUTHORIZATION: verify role from database
+            if (requiresParent)
+            {
+                var isParent = await IsUserInRoleAsync(actingUserId, "Parent");
+                if (!isParent)
+                {
+                    _logger.LogWarning(
+                        "Authorization failed: User {UserId} attempted parent-only action on ChoreLog {ChoreLogId}",
+                        actingUserId, choreLogId);
+                    return ServiceResult<ChoreStatus>.Fail("Only parents can perform this action.");
+                }
+            }
+            
+            var oldStatus = choreLog.Status;
+            var choreDefinition = choreLog.ChoreDefinition;
+            
+            // Validate date restriction for children (non-parents can only modify today)
+            var isParentUser = await IsUserInRoleAsync(actingUserId, "Parent");
+            if (!isParentUser && choreLog.Date != _dateProvider.Today)
+            {
+                return ServiceResult<ChoreStatus>.Fail("Children can only modify today's chores.");
+            }
+
+            // Update status
+            choreLog.Status = newStatus;
+            choreLog.ModifiedAt = DateTime.UtcNow;
+            choreLog.Version++; // Manual concurrency increment
+            
+            if (!string.IsNullOrWhiteSpace(notes))
+            {
+                choreLog.Notes = notes;
+            }
+
+            // Set completion/approval metadata
+            if (newStatus == ChoreStatus.Completed)
+            {
+                choreLog.CompletedByUserId = actingUserId;
+                choreLog.CompletedAt = DateTime.UtcNow;
+            }
+            else if (newStatus == ChoreStatus.Approved)
+            {
+                choreLog.ApprovedByUserId = actingUserId;
+                choreLog.ApprovedAt = DateTime.UtcNow;
+                if (choreLog.CompletedAt == null)
+                {
+                    choreLog.CompletedByUserId = actingUserId;
+                    choreLog.CompletedAt = DateTime.UtcNow;
+                }
+            }
+            
+            // Reconcile ledger using same context (atomic)
+            var reconcileResult = await _ledgerService.ReconcileChoreLogTransactionAsync(context, choreLog);
+            
+            if (!reconcileResult.Success)
+            {
+                await transaction.RollbackAsync();
+                return ServiceResult<ChoreStatus>.Fail(reconcileResult.ErrorMessage!);
+            }
+
+            // Save all changes atomically
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            
+            // Audit log
+            _logger.LogInformation(
+                "ChoreLog status changed: Id={ChoreLogId}, Chore={ChoreName}, Date={Date}, " +
+                "OldStatus={OldStatus}, NewStatus={NewStatus}, ActingUser={ActingUserId}, " +
+                "TransactionId={TransactionId}, Amount={Amount}",
+                choreLogId, choreDefinition.Name, choreLog.Date,
+                oldStatus, newStatus, actingUserId,
+                reconcileResult.Transaction?.Id, reconcileResult.Amount);
+
+            return ServiceResult<ChoreStatus>.Ok(newStatus);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogWarning(ex,
+                "Concurrency conflict updating ChoreLog {ChoreLogId}",
+                choreLogId);
+            return ServiceResult<ChoreStatus>.Fail("This chore was modified by someone else. Please refresh and try again.");
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Failed to update ChoreLog {ChoreLogId} status", choreLogId);
+            return ServiceResult<ChoreStatus>.Fail($"Failed to update chore: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Server-side role check using UserManager.
+    /// </summary>
+    private async Task<bool> IsUserInRoleAsync(string userId, string roleName)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return false;
+        return await _userManager.IsInRoleAsync(user, roleName);
     }
 
     public async Task<ServiceResult<ChoreStatus>> ToggleChoreCompletionAsync(
         int choreDefinitionId,
         DateOnly date,
         string userId,
-        bool isParent)
+        bool isParent) // Note: this parameter is now only a hint, actual role is verified server-side
     {
         var logResult = await _choreLogService.GetOrCreateChoreLogAsync(choreDefinitionId, date);
         if (!logResult.Success)
@@ -259,72 +378,65 @@ public class TrackerService : ITrackerService
         await using var context = await _contextFactory.CreateDbContextAsync();
         var choreDefinition = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
         var autoApprove = choreDefinition?.AutoApprove ?? true;
+        
+        // Verify actual role from server
+        var actualIsParent = await IsUserInRoleAsync(userId, "Parent");
 
         ChoreStatus newStatus;
+        bool requiresParent = false;
 
         // Determine new status based on current status
         if (choreLog.Status == ChoreStatus.Pending)
         {
-            // Mark as completed - auto-approve if configured
             newStatus = autoApprove ? ChoreStatus.Approved : ChoreStatus.Completed;
+            // Auto-approve doesn't require parent role
         }
-        else if (choreLog.Status == ChoreStatus.Completed && !isParent)
+        else if (choreLog.Status == ChoreStatus.Completed && !actualIsParent)
         {
-            // Child can toggle back to pending
             newStatus = ChoreStatus.Pending;
         }
-        else if (choreLog.Status == ChoreStatus.Completed && isParent)
+        else if (choreLog.Status == ChoreStatus.Completed && actualIsParent)
         {
-            // Parent can approve
             newStatus = ChoreStatus.Approved;
+            requiresParent = true;
         }
         else if (choreLog.Status == ChoreStatus.Approved)
         {
-            // Toggle back: auto-approve chores go to pending, manual ones go to completed
-            if (isParent)
+            if (actualIsParent)
             {
                 newStatus = autoApprove ? ChoreStatus.Pending : ChoreStatus.Completed;
+                requiresParent = !autoApprove; // Un-approving requires parent unless auto-approve
             }
             else
             {
-                // Child can toggle auto-approved chores back to pending
-                newStatus = autoApprove ? ChoreStatus.Pending : ChoreStatus.Approved;
+                // Child can only toggle auto-approved chores
+                if (!autoApprove)
+                {
+                    return ServiceResult<ChoreStatus>.Fail("Only parents can modify approved chores.");
+                }
+                newStatus = ChoreStatus.Pending;
             }
         }
         else if (choreLog.Status == ChoreStatus.Help)
         {
-            // From Help status, only parent can change
-            if (!isParent)
+            if (!actualIsParent)
             {
                 return ServiceResult<ChoreStatus>.Fail("Waiting for parent response to your help request.");
             }
-            // Parent toggling a help request marks it as completed
             newStatus = ChoreStatus.Approved;
+            requiresParent = true;
         }
-        else
+        else // Missed or Skipped
         {
-            // For Missed/Skipped, only parent can change
-            if (!isParent)
+            if (!actualIsParent)
             {
                 return ServiceResult<ChoreStatus>.Fail("Only parents can modify missed or skipped chores.");
             }
             newStatus = ChoreStatus.Pending;
+            requiresParent = true;
         }
 
-        var updateResult = await _choreLogService.UpdateChoreLogStatusAsync(
-            choreLog.Id,
-            newStatus,
-            userId,
-            isParent || autoApprove);
-
-        if (!updateResult.Success)
-        {
-            return ServiceResult<ChoreStatus>.Fail(updateResult.ErrorMessage!);
-        }
-
-        await _ledgerService.ReconcileChoreLogTransactionAsync(choreLog.Id);
-
-        return ServiceResult<ChoreStatus>.Ok(newStatus);
+        return await UpdateStatusAtomicallyAsync(choreLog.Id, newStatus, userId, requiresParent);
     }
 
     public async Task<ServiceResult> SetChoreStatusAsync(
@@ -339,38 +451,24 @@ public class TrackerService : ITrackerService
             return ServiceResult.Fail(logResult.ErrorMessage!);
         }
 
-        var choreLog = logResult.Data!;
-
-        var updateResult = await _choreLogService.UpdateChoreLogStatusAsync(
-            choreLog.Id,
+        // SetChoreStatusAsync is always a parent-only method
+        var result = await UpdateStatusAtomicallyAsync(
+            logResult.Data!.Id,
             status,
             userId,
-            isParent: true);
+            requiresParent: true);
 
-        if (!updateResult.Success)
-        {
-            return updateResult;
-        }
-
-        await _ledgerService.ReconcileChoreLogTransactionAsync(choreLog.Id);
-
-        return ServiceResult.Ok();
+        return result.Success ? ServiceResult.Ok() : ServiceResult.Fail(result.ErrorMessage!);
     }
 
     public async Task<ServiceResult> MarkChoreMissedAsync(int choreDefinitionId, DateOnly date, string userId)
-    {
-        return await SetChoreStatusAsync(choreDefinitionId, date, ChoreStatus.Missed, userId);
-    }
+        => await SetChoreStatusAsync(choreDefinitionId, date, ChoreStatus.Missed, userId);
 
     public async Task<ServiceResult> MarkChoreSkippedAsync(int choreDefinitionId, DateOnly date, string userId)
-    {
-        return await SetChoreStatusAsync(choreDefinitionId, date, ChoreStatus.Skipped, userId);
-    }
+        => await SetChoreStatusAsync(choreDefinitionId, date, ChoreStatus.Skipped, userId);
 
     public async Task<ServiceResult> ResetChoreToPendingAsync(int choreDefinitionId, DateOnly date, string userId)
-    {
-        return await SetChoreStatusAsync(choreDefinitionId, date, ChoreStatus.Pending, userId);
-    }
+        => await SetChoreStatusAsync(choreDefinitionId, date, ChoreStatus.Pending, userId);
     
     public async Task<ServiceResult> RequestHelpAsync(int choreDefinitionId, DateOnly date, string userId, string reason)
     {
@@ -382,7 +480,6 @@ public class TrackerService : ITrackerService
 
         var choreLog = logResult.Data!;
         
-        // Can only request help on pending chores
         if (choreLog.Status != ChoreStatus.Pending)
         {
             return ServiceResult.Fail("Can only request help on pending chores.");
@@ -390,7 +487,6 @@ public class TrackerService : ITrackerService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
         
-        // Get chore details and child name for notification
         var choreDefinition = await context.ChoreDefinitions
             .Include(c => c.AssignedUser)
             .FirstOrDefaultAsync(c => c.Id == choreDefinitionId);
@@ -406,14 +502,17 @@ public class TrackerService : ITrackerService
         logToUpdate.HelpReason = reason;
         logToUpdate.HelpRequestedAt = DateTime.UtcNow;
         logToUpdate.ModifiedAt = DateTime.UtcNow;
+        logToUpdate.Version++;
         
         await context.SaveChangesAsync();
         
-        // Send push notification to parents
+        _logger.LogInformation(
+            "Help requested: ChoreLogId={ChoreLogId}, UserId={UserId}",
+            choreLog.Id, userId);
+        
         var childName = choreDefinition?.AssignedUser?.UserName ?? "Your child";
         var choreName = choreDefinition?.Name ?? "a chore";
         
-        // Fire and forget - don't block on notification
         _ = _pushNotificationService.SendHelpRequestNotificationAsync(childName, choreName, reason);
         
         return ServiceResult.Ok();
@@ -436,45 +535,47 @@ public class TrackerService : ITrackerService
             return ServiceResult.Fail("This chore is not waiting for help.");
         }
 
-        switch (response)
+        ChoreStatus newStatus = response switch
         {
-            case HelpResponse.CompletedByParent:
-                // Parent did it for them - mark as approved, child gets credit
-                choreLog.Status = ChoreStatus.Approved;
-                choreLog.ApprovedByUserId = parentUserId;
-                choreLog.ApprovedAt = DateTime.UtcNow;
-                choreLog.CompletedByUserId = parentUserId;
-                choreLog.CompletedAt = DateTime.UtcNow;
-                break;
-                
-            case HelpResponse.Excused:
-                // Excused - no penalty, no earning
-                choreLog.Status = ChoreStatus.Skipped;
-                choreLog.ApprovedByUserId = parentUserId;
-                choreLog.ApprovedAt = DateTime.UtcNow;
-                break;
-                
-            case HelpResponse.Denied:
-                // Denied - back to pending, child must do it
-                choreLog.Status = ChoreStatus.Pending;
-                choreLog.HelpReason = null;
-                choreLog.HelpRequestedAt = null;
-                break;
+            HelpResponse.CompletedByParent => ChoreStatus.Approved,
+            HelpResponse.Excused => ChoreStatus.Skipped,
+            HelpResponse.Denied => ChoreStatus.Pending,
+            _ => throw new ArgumentException("Invalid response type")
+        };
+
+        // Parent-only action, verified server-side
+        var result = await UpdateStatusAtomicallyAsync(
+            choreLogId,
+            newStatus,
+            parentUserId,
+            requiresParent: true);
+
+        if (!result.Success)
+        {
+            return ServiceResult.Fail(result.ErrorMessage!);
         }
         
-        choreLog.ModifiedAt = DateTime.UtcNow;
-        await context.SaveChangesAsync();
+        // Clear help-specific fields for denied requests
+        if (response == HelpResponse.Denied)
+        {
+            var logToUpdate = await context.ChoreLogs.FindAsync(choreLogId);
+            if (logToUpdate != null)
+            {
+                logToUpdate.HelpReason = null;
+                logToUpdate.HelpRequestedAt = null;
+                await context.SaveChangesAsync();
+            }
+        }
         
-        // Reconcile ledger
-        await _ledgerService.ReconcileChoreLogTransactionAsync(choreLogId);
+        _logger.LogInformation(
+            "Help response: ChoreLogId={ChoreLogId}, Response={Response}, NewStatus={NewStatus}",
+            choreLogId, response, newStatus);
         
         return ServiceResult.Ok();
     }
 
     private static TrackerChoreItem CreateTrackerItem(
-        ChoreDefinition chore, 
-        ChoreLog? log, 
-        Services.WeeklyChoreProgress? weeklyProgress = null)
+        ChoreDefinition chore, ChoreLog? log, WeeklyChoreProgress? weeklyProgress = null)
     {
         return new TrackerChoreItem
         {
@@ -492,11 +593,7 @@ public class TrackerService : ITrackerService
             ApprovedAt = log?.ApprovedAt,
             HelpReason = log?.HelpReason,
             HelpRequestedAt = log?.HelpRequestedAt,
-            
-            // Schedule type
             ScheduleType = chore.ScheduleType,
-            
-            // Weekly chore properties
             WeeklyTargetCount = chore.WeeklyTargetCount,
             WeeklyCompletedCount = weeklyProgress?.CompletedCount ?? 0,
             IsRepeatable = chore.IsRepeatable,

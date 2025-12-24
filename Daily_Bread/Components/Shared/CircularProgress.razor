@@ -52,7 +52,7 @@
     [Parameter] public RenderFragment? ChildContent { get; set; }
     
     /// <summary>
-    /// Size: sm (60px), md (100px), lg (140px), xl (180px)
+    /// Size: xs (36px), sm (60px), md (100px), lg (140px), xl (180px)
     /// </summary>
     [Parameter] public string Size { get; set; } = "md";
     
@@ -65,14 +65,16 @@
     
     private double Radius => Size switch
     {
+        "xs" => 42,
         "sm" => 42,
         "lg" => 40,
         "xl" => 38,
         _ => 42 // md
     };
-    
+
     private double StrokeWidth => Size switch
     {
+        "xs" => 5,
         "sm" => 6,
         "lg" => 10,
         "xl" => 12,

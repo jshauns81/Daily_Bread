@@ -26,7 +26,7 @@
                     <option value="">All Children</option>
                     @foreach (var child in _childProfiles)
                     {
-                        <option value="@child.UserId">@child.DisplayName</option>
+                        <option value="@child.UserId" class="user-name">@child.DisplayName</option>
                     }
                 </select>
             </div>
@@ -413,6 +413,6 @@
             return $"{day.TotalChores} chores scheduled";
 
         var done = day.CompletedChores + day.ApprovedChores;
-        return $"{done}/{day.TotalChores} completed • ${day.EarnedAmount:F2} earned";
+        return $"{done}/{day.TotalChores} completed ï¿½ ${day.EarnedAmount:F2} earned";
     }
 }

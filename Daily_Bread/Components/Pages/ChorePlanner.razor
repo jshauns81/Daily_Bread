@@ -44,7 +44,7 @@
                             <option value="">All Children</option>
                             @foreach (var child in _childProfiles)
                             {
-                                <option value="@child.UserId">@child.DisplayName</option>
+                                <option value="@child.UserId" class="user-name">@child.DisplayName</option>
                             }
                         </select>
                     </div>
@@ -260,7 +260,7 @@ else
                                 }
                                 @if (string.IsNullOrEmpty(_selectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
                                 {
-                                    <span class="assigned-user">@chore.AssignedUserName</span>
+                                    <span class="assigned-user user-name">@chore.AssignedUserName</span>
                                 }
                             </div>
 
@@ -421,7 +421,7 @@ else
                                 <span class="override-date">@ovr.Date.ToString("ddd, MMM d")</span>
                                 @if (!string.IsNullOrEmpty(ovr.CreatedByUserName))
                                 {
-                                    <span class="override-by text-muted">by @ovr.CreatedByUserName</span>
+                                    <span class="override-by text-muted">by <span class="user-name">@ovr.CreatedByUserName</span></span>
                                 }
                             </div>
                         }

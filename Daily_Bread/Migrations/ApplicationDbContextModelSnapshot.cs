@@ -333,6 +333,10 @@ namespace Daily_Bread.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ApprovedByUserId");
@@ -502,6 +506,9 @@ namespace Daily_Bread.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
 
+                    b.Property<int?>("ChoreDefinitionId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("ChoreLogId")
                         .HasColumnType("integer");
 
@@ -531,7 +538,16 @@ namespace Daily_Bread.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly?>("WeekEndDate")
+                        .HasColumnType("date");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ChoreDefinitionId");
 
                     b.HasIndex("ChoreLogId")
                         .IsUnique();
@@ -545,6 +561,8 @@ namespace Daily_Bread.Migrations
                     b.HasIndex("Type");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "ChoreDefinitionId", "WeekEndDate", "Type");
 
                     b.ToTable("LedgerTransactions");
                 });
@@ -951,6 +969,11 @@ namespace Daily_Bread.Migrations
 
             modelBuilder.Entity("Daily_Bread.Data.Models.LedgerTransaction", b =>
                 {
+                    b.HasOne("Daily_Bread.Data.Models.ChoreDefinition", "ChoreDefinition")
+                        .WithMany()
+                        .HasForeignKey("ChoreDefinitionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Daily_Bread.Data.Models.ChoreLog", "ChoreLog")
                         .WithOne("LedgerTransaction")
                         .HasForeignKey("Daily_Bread.Data.Models.LedgerTransaction", "ChoreLogId")
@@ -967,6 +990,8 @@ namespace Daily_Bread.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ChoreDefinition");
 
                     b.Navigation("ChoreLog");
 

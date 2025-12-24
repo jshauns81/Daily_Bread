@@ -1,5 +1,6 @@
 ﻿@namespace Daily_Bread.Components.Shared
 @using Daily_Bread.Services
+@implements IAsyncDisposable
 @inject IJSRuntime JS
 
 <div class="swipeable-card-container" @ref="_containerRef">
@@ -79,20 +80,31 @@
     private ElementReference _containerRef;
     private ElementReference _cardRef;
     private DotNetObjectReference<SwipeableChoreCard>? _dotNetRef;
+    private bool _disposed;
+    private bool _jsInitialized;
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !_disposed)
         {
             _dotNetRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("SwipeGestures.init", _containerRef, _dotNetRef);
+            try
+            {
+                await JS.InvokeVoidAsync("SwipeGestures.init", _containerRef, _dotNetRef);
+                _jsInitialized = true;
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit disconnected, component will be disposed
+            }
         }
     }
     
     [JSInvokable]
     public async Task HandleSwipeComplete(string direction)
     {
-        if (IsProcessing) return;
+        // Guard against callbacks after disposal
+        if (_disposed || IsProcessing) return;
         
         if (direction == "right")
         {
@@ -115,14 +127,31 @@
     
     public async ValueTask DisposeAsync()
     {
-        if (_dotNetRef != null)
+        if (_disposed) return;
+        _disposed = true;
+        
+        // Only attempt JS cleanup if we successfully initialized
+        if (_jsInitialized)
         {
             try
             {
                 await JS.InvokeVoidAsync("SwipeGestures.destroy", _containerRef);
             }
-            catch { /* Ignore disposal errors */ }
-            _dotNetRef.Dispose();
+            catch (JSDisconnectedException)
+            {
+                // Circuit already disconnected, JS cleanup not needed
+            }
+            catch (ObjectDisposedException)
+            {
+                // JS runtime disposed
+            }
+            catch (InvalidOperationException)
+            {
+                // Prerendering or other invalid state
+            }
         }
+        
+        _dotNetRef?.Dispose();
+        _dotNetRef = null;
     }
 }

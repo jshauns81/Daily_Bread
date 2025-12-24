@@ -58,6 +58,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Notes).HasMaxLength(500);
             entity.Property(e => e.HelpReason).HasMaxLength(500);
+            
+            // Concurrency token - use int Version for cross-database compatibility
+            entity.Property(e => e.Version)
+                .IsConcurrencyToken();
 
             // Unique constraint: one log per chore per date
             entity.HasIndex(e => new { e.ChoreDefinitionId, e.Date }).IsUnique();
@@ -146,33 +150,43 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Amount).HasPrecision(10, 2);
             entity.Property(e => e.Description).HasMaxLength(200);
+            
+            // Concurrency token - use int Version for cross-database compatibility
+            entity.Property(e => e.Version)
+                .IsConcurrencyToken();
 
-            // Note: ChoreLogId is not unique-indexed because:
-            // 1. Filtering partial unique indexes have DB-specific syntax (SQLite: [col], PostgreSQL: "col")
-            // 2. Most transactions don't have a ChoreLogId (manual adjustments, payouts, etc.)
-            // The one-to-one relationship is enforced by the FK configuration below
             entity.HasIndex(e => e.ChoreLogId);
+            entity.HasIndex(e => e.ChoreDefinitionId);
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.LedgerAccountId);
             entity.HasIndex(e => e.TransactionDate);
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => e.TransferGroupId);
+            
+            // Index for weekly penalty idempotency checks
+            entity.HasIndex(e => new { e.UserId, e.ChoreDefinitionId, e.WeekEndDate, e.Type });
 
             entity.HasOne(e => e.LedgerAccount)
                 .WithMany(a => a.LedgerTransactions)
                 .HasForeignKey(e => e.LedgerAccountId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete of transactions
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.ChoreLog)
                 .WithOne(c => c.LedgerTransaction)
                 .HasForeignKey<LedgerTransaction>(e => e.ChoreLogId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired(false);
+            
+            entity.HasOne(e => e.ChoreDefinition)
+                .WithMany()
+                .HasForeignKey(e => e.ChoreDefinitionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
 
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // SavingsGoal configuration

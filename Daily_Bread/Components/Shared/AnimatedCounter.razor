@@ -1,0 +1,116 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<span class="animated-counter @CssClass" @ref="_element">
+    @if (Prefix != null)
+    {
+        <span class="counter-prefix">@Prefix</span>
+    }
+    <span class="counter-value">@DisplayValue</span>
+    @if (Suffix != null)
+    {
+        <span class="counter-suffix">@Suffix</span>
+    }
+</span>
+
+@code {
+    private ElementReference _element;
+    private decimal _previousValue;
+    private decimal _displayValue;
+    private IJSObjectReference? _module;
+    private bool _isFirstRender = true;
+
+    [Parameter, EditorRequired]
+    public decimal Value { get; set; }
+
+    [Parameter]
+    public string? Prefix { get; set; }
+
+    [Parameter]
+    public string? Suffix { get; set; }
+
+    [Parameter]
+    public string Format { get; set; } = "F2";
+
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Duration of animation in milliseconds
+    /// </summary>
+    [Parameter]
+    public int Duration { get; set; } = 600;
+
+    private string DisplayValue => _displayValue.ToString(Format);
+
+    protected override void OnInitialized()
+    {
+        _displayValue = Value;
+        _previousValue = Value;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/animated-counter.js");
+            _isFirstRender = false;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!_isFirstRender && Value != _previousValue && _module != null)
+        {
+            // Animate from previous to new value
+            await AnimateValue(_previousValue, Value);
+            _previousValue = Value;
+        }
+        else
+        {
+            _displayValue = Value;
+            _previousValue = Value;
+        }
+    }
+
+    private async Task AnimateValue(decimal from, decimal to)
+    {
+        try
+        {
+            // Use JS for smooth animation
+            var dotNetRef = DotNetObjectReference.Create(this);
+            await _module!.InvokeVoidAsync("animate", _element, (double)from, (double)to, Duration, Format, dotNetRef);
+        }
+        catch
+        {
+            // Fallback: just set the value
+            _displayValue = to;
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void UpdateDisplayValue(string value)
+    {
+        if (decimal.TryParse(value, out var parsed))
+        {
+            _displayValue = parsed;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    [JSInvokable]
+    public void AnimationComplete()
+    {
+        _displayValue = Value;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module != null)
+        {
+            await _module.DisposeAsync();
+        }
+    }
+}

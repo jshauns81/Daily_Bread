@@ -1,0 +1,80 @@
+@namespace Daily_Bread.Components.Shared
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Helpers
+@using Daily_Bread.Services
+
+<div class="chore-card @ChoreDisplayHelper.GetCardClass(Item.Status)">
+    <div class="chore-card-checkbox-wrapper">
+        <button class="chore-card-checkbox @ChoreDisplayHelper.GetCheckboxClass(Item.Status, Item.IsCompleted)"
+                disabled="@IsDisabled"
+                @onclick="OnToggleClicked">
+            @if (Item.IsCompleted)
+            {
+                <span class="bi bi-check-lg"></span>
+            }
+        </button>
+    </div>
+    <div class="chore-card-content">
+        <span class="chore-card-name @(Item.IsCompleted ? "completed" : "")">
+            @Item.ChoreName
+        </span>
+        <div class="chore-card-meta">
+            @if (ShowAssignee && !string.IsNullOrEmpty(Item.AssignedUserName))
+            {
+                <span class="user-name">@Item.AssignedUserName</span>
+            }
+            <span class="badge @ChoreDisplayHelper.GetStatusBadgeClass(Item.Status) badge-sm">
+                @ChoreDisplayHelper.GetStatusDisplay(Item.Status)
+            </span>
+        </div>
+    </div>
+    <div class="chore-card-right">
+        <span class="chore-card-value @(Item.IsMissed ? "text-danger" : "")">
+            @(Item.IsMissed ? "-" : "")$@Item.Value.ToString("F2")
+        </span>
+        @if (ShowActions)
+        {
+            <div class="chore-card-actions">
+                @if (Item.Status == ChoreStatus.Completed)
+                {
+                    <button class="btn btn-success btn-sm" @onclick="OnApproveClicked">
+                        ✓
+                    </button>
+                }
+                @if (Item.Status == ChoreStatus.Pending)
+                {
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="OnSkipClicked">
+                        Skip
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public required TrackerChoreItem Item { get; set; }
+
+    [Parameter]
+    public bool IsDisabled { get; set; }
+
+    [Parameter]
+    public bool ShowAssignee { get; set; }
+
+    [Parameter]
+    public bool ShowActions { get; set; }
+
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnToggle { get; set; }
+
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnApprove { get; set; }
+
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnSkip { get; set; }
+
+    private async Task OnToggleClicked() => await OnToggle.InvokeAsync(Item);
+    private async Task OnApproveClicked() => await OnApprove.InvokeAsync(Item);
+    private async Task OnSkipClicked() => await OnSkip.InvokeAsync(Item);
+}
