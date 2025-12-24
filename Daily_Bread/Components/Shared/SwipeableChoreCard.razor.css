@@ -12,6 +12,11 @@
     user-select: none;
 }
 
+/* Disable swipe visual cues when swipe is disabled */
+.swipeable-card-container.swipe-disabled {
+    touch-action: auto;
+}
+
 /* ===========================================
    SWIPE ACTION BACKGROUNDS
    =========================================== */
@@ -115,6 +120,12 @@
     opacity: 0.7;
 }
 
+.swipeable-card.skipped {
+    background: rgba(76, 86, 106, 0.15);
+    border-color: var(--nord3);
+    opacity: 0.6;
+}
+
 /* ===========================================
    CARD CONTENT
    =========================================== */
@@ -143,6 +154,13 @@
     text-overflow: ellipsis;
 }
 
+/* Strikethrough for completed/approved chores */
+.swipeable-card.completed .chore-name,
+.swipeable-card.pending-approval .chore-name {
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+
 .weekly-progress {
     font-size: var(--font-size-xs);
     color: var(--nord4);
@@ -151,6 +169,28 @@
 .bonus-indicator {
     color: var(--nord13);
     font-weight: var(--font-weight-bold);
+}
+
+.status-text {
+    font-size: var(--font-size-xs);
+    color: var(--nord4);
+    margin-top: 2px;
+}
+
+.swipeable-card.completed .status-text {
+    color: var(--nord14);
+}
+
+.swipeable-card.pending-approval .status-text {
+    color: var(--nord8);
+}
+
+.swipeable-card.help-requested .status-text {
+    color: var(--nord13);
+}
+
+.swipeable-card.missed .status-text {
+    color: var(--nord11);
 }
 
 .chore-value {
@@ -166,6 +206,14 @@
 
 .value-amount.bonus {
     color: var(--nord13);
+}
+
+/* Dim value for completed/non-pending chores */
+.swipeable-card.completed .value-amount,
+.swipeable-card.pending-approval .value-amount,
+.swipeable-card.missed .value-amount,
+.swipeable-card.skipped .value-amount {
+    opacity: 0.6;
 }
 
 /* ===========================================
