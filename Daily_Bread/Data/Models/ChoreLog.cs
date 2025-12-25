@@ -20,7 +20,7 @@ public class ChoreLog
     public DateOnly Date { get; set; }
 
     /// <summary>
-    /// Current status of the chore for this date.
+    /// Current status of the chore for this date.  
     /// </summary>
     public ChoreStatus Status { get; set; } = ChoreStatus.Pending;
 
