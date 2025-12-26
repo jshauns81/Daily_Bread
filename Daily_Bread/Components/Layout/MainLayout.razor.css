@@ -1,6 +1,6 @@
 /* ============================================
    MAINLAYOUT - RESPONSIVE DESIGN
-   Mobile-first approach
+   Mobile-first approach with PWA safe area support
    ============================================ */
 
 /* ===========================================
@@ -11,26 +11,37 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    /* Use dynamic viewport height that works on all mobile browsers */
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    min-height: var(--app-height, 100vh);
     background-color: var(--nord0);
     overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+    /* Safe area insets for notched devices - handled by padding */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    /* Bottom safe area handled by content/footer to avoid double padding */
 }
 
 main {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    min-height: 0; /* Allow flex shrinking */
     background-color: var(--nord0);
     /* Ensure main content doesn't overlap mobile header */
     position: relative;
     z-index: 1;
+    /* Main area scrolls */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 .content {
     flex: 1;
     padding: 1rem;
+    /* Bottom padding accounts for safe area AND any fixed bottom elements */
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
     overflow-x: hidden; /* Prevent horizontal scroll */
@@ -39,6 +50,12 @@ main {
     /* Prevent content from extending beyond viewport */
     max-width: 100vw;
     box-sizing: border-box;
+}
+
+/* When page has a fixed bottom nav (child dashboard), add extra padding */
+.page.has-fixed-footer .content,
+.content.has-fixed-footer {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ===========================================
@@ -56,13 +73,17 @@ main {
     position: sticky;
     top: 0;
     z-index: 100; /* Below sidebar overlay and sidebar */
-    /* Safe area for notched devices */
-    padding-top: env(safe-area-inset-top, 0px);
-    height: calc(56px + env(safe-area-inset-top, 0px));
-    /* Prevent layout shift */
+    /* Safe area already handled by .page padding-top, so no extra needed here */
+    /* But if page padding-top is 0, header should handle it */
     flex-shrink: 0;
     /* Ensure it's visible */
     min-height: 56px;
+}
+
+/* When NOT inside a page with safe padding, header handles it */
+body.pwa-standalone .mobile-header,
+body.ios-device .mobile-header {
+    padding-top: 0; /* .page handles the safe area */
 }
 
 .hamburger-btn {
@@ -173,10 +194,10 @@ main {
     z-index: 1050; /* Above everything except sidebar */
     opacity: 1;
     animation: fadeIn 0.25s ease-out;
-    /* Ensure it covers everything */
+    /* Use dynamic height for full coverage */
     width: 100vw;
     height: 100vh;
-    height: 100dvh;
+    height: var(--app-height, 100vh);
 }
 
 @keyframes fadeIn {
@@ -206,16 +227,16 @@ main {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    /* Safe area padding */
+    /* Safe area padding for sidebar - full height */
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     /* Ensure proper rendering */
     will-change: transform;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    /* Full viewport height */
+    /* Dynamic viewport height */
     height: 100vh;
-    height: 100dvh;
+    height: var(--app-height, 100vh);
     overflow: hidden;
 }
 
@@ -237,6 +258,10 @@ main {
     .page {
         flex-direction: row;
         overflow-x: visible;
+        /* Desktop doesn't need safe area padding */
+        padding-top: 0;
+        padding-left: 0;
+        padding-right: 0;
     }
     
     .mobile-header {
@@ -255,6 +280,9 @@ main {
         flex-shrink: 0;
         max-width: none;
         will-change: auto;
+        /* No safe area needed on desktop */
+        padding-top: 0;
+        padding-bottom: 0;
     }
     
     .sidebar-overlay {
@@ -264,6 +292,8 @@ main {
     main {
         flex: 1;
         min-width: 0;
+        /* Desktop main area can scroll normally */
+        overflow-y: auto;
     }
     
     .content {
@@ -273,6 +303,14 @@ main {
         width: 100%;
         max-width: none;
         overflow-x: visible;
+        /* No safe area padding needed on desktop */
+        padding-bottom: 1.5rem;
+    }
+    
+    /* Desktop doesn't need fixed footer handling */
+    .page.has-fixed-footer .content,
+    .content.has-fixed-footer {
+        padding-bottom: 1.5rem;
     }
 }
 

@@ -6,10 +6,12 @@
     max-width: 500px;
     margin: 0 auto;
     padding: var(--space-md);
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); /* Space for fixed footer */
+    /* Space for fixed footer - use CSS var for bottom nav height */
+    padding-bottom: calc(var(--bottom-nav-height, 70px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 120px);
+    /* Use dynamic viewport height minus header */
+    min-height: calc(var(--app-height, 100vh) - 56px - env(safe-area-inset-top, 0px));
 }
 
 /* ===========================================
@@ -254,6 +256,7 @@
 
 /* ===========================================
    QUICK LINKS FOOTER - FIXED AT BOTTOM
+   PWA-safe with proper safe area handling
    =========================================== */
 
 .quick-links {
@@ -263,15 +266,22 @@
     right: 0;
     display: flex;
     justify-content: space-around;
+    /* Top padding for content, bottom padding includes safe area */
     padding: var(--space-sm) var(--space-md);
-    padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(var(--space-sm), env(safe-area-inset-bottom, 0px));
+    /* Respect left/right safe areas too */
+    padding-left: max(var(--space-md), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--space-md), env(safe-area-inset-right, 0px));
     background: var(--nord1);
     border-top: 1px solid var(--nord3);
     z-index: 100;
     /* Frosted glass effect */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(59, 66, 82, 0.9);
     box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.2);
+    /* Minimum height for touch targets + safe area */
+    min-height: calc(var(--ds-touch-target, 44px) + var(--space-sm, 8px) * 2);
 }
 
 .quick-link {
@@ -286,6 +296,8 @@
     transition: all var(--transition-fast);
     -webkit-tap-highlight-color: transparent;
     min-width: 70px;
+    /* Ensure touch target size */
+    min-height: var(--ds-touch-target, 44px);
 }
 
 .quick-link:hover,
@@ -353,7 +365,8 @@
 @media (max-width: 575.98px) {
     .child-dashboard {
         padding: var(--space-sm);
-        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+        /* Mobile: extra space for fixed footer + safe area */
+        padding-bottom: calc(var(--bottom-nav-height, 70px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
     }
     
     .child-header {
@@ -375,7 +388,9 @@
     
     .quick-links {
         padding: var(--space-xs) var(--space-sm);
-        padding-bottom: calc(var(--space-xs) + env(safe-area-inset-bottom, 0px));
+        padding-bottom: max(var(--space-xs), env(safe-area-inset-bottom, 0px));
+        padding-left: max(var(--space-sm), env(safe-area-inset-left, 0px));
+        padding-right: max(var(--space-sm), env(safe-area-inset-right, 0px));
     }
     
     .quick-link {
@@ -393,6 +408,8 @@
     .quick-link {
         padding: var(--space-md) var(--space-lg);
         min-width: 80px;
+        /* Larger touch targets on touch devices */
+        min-height: 48px;
     }
     
     .quick-link .bi {
@@ -410,10 +427,14 @@
 
 @media (min-width: 768px) {
     .child-dashboard {
+        /* Desktop: no fixed footer, so no extra bottom padding needed */
         padding-bottom: var(--space-md);
+        /* Use full available height on desktop */
+        min-height: auto;
     }
     
     .quick-links {
+        /* Desktop: inline footer, not fixed */
         position: relative;
         bottom: auto;
         left: auto;
@@ -421,11 +442,19 @@
         margin-top: auto;
         border-top: 1px solid var(--nord3);
         padding-top: var(--space-md);
+        padding-bottom: var(--space-md);
+        padding-left: var(--space-md);
+        padding-right: var(--space-md);
         background: transparent;
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
         box-shadow: none;
         z-index: auto;
+        min-height: auto;
+    }
+    
+    .quick-link {
+        min-height: auto;
     }
 }
 
