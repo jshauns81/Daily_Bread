@@ -25,13 +25,13 @@ public class ChoreLog
     public ChoreStatus Status { get; set; } = ChoreStatus.Pending;
 
     /// <summary>
-    /// The user test who completed/updated this chore log. 
+    /// The user  who completed/updated this chore log. 
     /// </summary>
     public string? CompletedByUserId { get; set; }
     public ApplicationUser? CompletedByUser { get; set; }
 
     /// <summary>
-    /// Timestamp when the chore was marked as completed.
+    /// Timestamp when the chore test was marked as completed.
     /// </summary>
     public DateTime? CompletedAt { get; set; }
 
