@@ -22,37 +22,136 @@
     
     <!-- Critical CSS to prevent flash - must be inline and comprehensive -->
     <style>
+        /* ===========================================
+           CRITICAL CSS - Prevents FOUC
+           Loaded inline for immediate application
+           =========================================== */
+        
+        /* CSS Custom Properties for viewport - set by JS below */
+        :root {
+            --vh: 1vh;
+            --app-height: 100vh;
+            --safe-top: 0px;
+            --safe-bottom: 0px;
+            --safe-left: 0px;
+            --safe-right: 0px;
+            /* Bottom nav height for content padding */
+            --bottom-nav-height: 60px;
+        }
+        
         html, body {
             background-color: #2E3440;
             color: #ECEFF4;
             margin: 0;
             padding: 0;
+            /* Use dynamic app height instead of 100vh */
             min-height: 100vh;
-            /* Prevent pull-to-refresh on mobile */
+            min-height: var(--app-height);
+            /* Allow content scrolling but prevent overscroll bounce */
+            overflow-x: hidden;
             overscroll-behavior-y: contain;
         }
+        
         /* Prevent layout shift during hydration */
         .page {
             display: flex;
             flex-direction: column;
+            /* Dynamic height that works on all mobile browsers */
             min-height: 100vh;
+            min-height: var(--app-height);
             background-color: #2E3440;
+            /* Safe area insets for notched devices */
+            padding-top: var(--safe-top);
+            padding-left: var(--safe-left);
+            padding-right: var(--safe-right);
+            /* Bottom safe area handled by content/footer */
         }
+        
         .sidebar {
             background-color: #3B4252;
         }
+        
         main {
             background-color: #2E3440;
             flex: 1;
+            /* Ensure main can scroll */
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
-        /* Safe area insets for notched devices */
-        .page {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
+        
+        /* PWA standalone mode adjustments */
+        body.pwa-standalone .page {
+            /* In PWA mode, safe areas are critical */
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+        
+        /* iOS device adjustments */
+        body.ios-device {
+            /* iOS-specific touch handling */
+            -webkit-touch-callout: none;
         }
     </style>
+    
+    <!-- Viewport Height Calculation Script - Must run early -->
+    <script>
+        (function() {
+            // Calculate and set viewport height variables
+            function setViewportHeight() {
+                // Get the actual viewport height
+                var vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', vh + 'px');
+                document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+                
+                // Get safe area insets from CSS env() or fallback to 0
+                // These are read from a temporary element
+                var testEl = document.createElement('div');
+                testEl.style.cssText = 'position:fixed;top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px);left:env(safe-area-inset-left,0px);right:env(safe-area-inset-right,0px);pointer-events:none;visibility:hidden;';
+                document.body.appendChild(testEl);
+                
+                var computedStyle = getComputedStyle(testEl);
+                var safeTop = computedStyle.top || '0px';
+                var safeBottom = computedStyle.bottom || '0px';
+                var safeLeft = computedStyle.left || '0px';
+                var safeRight = computedStyle.right || '0px';
+                
+                // Use env() values directly if available (more reliable)
+                document.documentElement.style.setProperty('--safe-top', 'env(safe-area-inset-top, 0px)');
+                document.documentElement.style.setProperty('--safe-bottom', 'env(safe-area-inset-bottom, 0px)');
+                document.documentElement.style.setProperty('--safe-left', 'env(safe-area-inset-left, 0px)');
+                document.documentElement.style.setProperty('--safe-right', 'env(safe-area-inset-right, 0px)');
+                
+                document.body.removeChild(testEl);
+            }
+            
+            // Run immediately
+            setViewportHeight();
+            
+            // Update on resize (handles orientation change, keyboard open, etc.)
+            var resizeTimeout;
+            window.addEventListener('resize', function() {
+                // Debounce to avoid performance issues
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(setViewportHeight, 100);
+            });
+            
+            // Update on orientation change
+            window.addEventListener('orientationchange', function() {
+                // Delay slightly for iOS to complete orientation animation
+                setTimeout(setViewportHeight, 200);
+            });
+            
+            // Update when page becomes visible (handles iOS tab switching)
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    setViewportHeight();
+                }
+            });
+            
+            // Store for later access
+            window.updateViewportHeight = setViewportHeight;
+        })();
+    </script>
     
     <!-- Google Fonts - Inter for modern typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,6 +163,7 @@
     
     <!-- Stylesheets -->
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="/css/design-system.css" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["Daily_Bread.styles.css"]" />
     <ImportMap />
@@ -145,6 +245,20 @@
         // Handle iOS status bar
         if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
             document.body.classList.add('ios-device');
+        }
+        
+        // Handle Android Chrome
+        if (/Android/.test(navigator.userAgent)) {
+            document.body.classList.add('android-device');
+        }
+        
+        // Re-calculate viewport on Blazor page changes
+        if (window.Blazor) {
+            window.Blazor.addEventListener('enhancedload', function() {
+                if (window.updateViewportHeight) {
+                    window.updateViewportHeight();
+                }
+            });
         }
     </script>
 </body>

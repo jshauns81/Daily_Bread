@@ -1167,7 +1167,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     .table-responsive-mobile {
         display: block;
         width: 100%;
-        overflow-x: auto;
+        overflow: auto;
         -webkit-overflow-scrolling: touch;
     }
     
@@ -1214,16 +1214,20 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 /* Prevent horizontal overflow globally */
 html {
     overflow-x: hidden;
-    /* Fix for 100vh on mobile browsers */
+    /* Fix for 100vh on mobile browsers - use dynamic height */
+    height: var(--app-height, 100vh);
     height: -webkit-fill-available;
 }
 
 body {
     overflow-x: hidden;
+    /* Use dynamic viewport height */
     min-height: 100vh;
+    min-height: var(--app-height, 100vh);
     min-height: -webkit-fill-available;
     /* Prevent iOS bounce/rubber-banding causing layout issues */
-    overscroll-behavior-y: none;
+    /* Only contain y-axis overscroll, don't break normal scrolling */
+    overscroll-behavior-y: contain;
 }
 
 /* Fix for iOS input zoom */
@@ -1258,234 +1262,98 @@ article {
 }
 
 /* ===========================================
-   44. MOBILE NAV TABS FIX
+   50. PWA SAFE AREA UTILITIES
    =========================================== */
 
-@media (max-width: 575.98px) {
-    .nav-tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        padding-bottom: 2px;
-    }
-    
-    .nav-tabs::-webkit-scrollbar {
-        display: none;
-    }
-    
-    .nav-tabs .nav-item {
-        flex-shrink: 0;
-    }
-    
-    .nav-tabs .nav-link {
-        white-space: nowrap;
-        padding: var(--space-sm);
-        font-size: var(--font-size-sm);
-    }
+/* Safe area padding utilities */
+.pb-safe {
+    padding-bottom: max(var(--space-md, 16px), env(safe-area-inset-bottom, 0px));
+}
+
+.pt-safe {
+    padding-top: max(var(--space-md, 16px), env(safe-area-inset-top, 0px));
+}
+
+/* Content with bottom fixed element */
+.has-bottom-nav {
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-md, 16px));
+}
+
+/* Fixed bottom element with safe area */
+.fixed-bottom-safe {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-bottom: max(var(--space-sm, 8px), env(safe-area-inset-bottom, 0px));
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Sticky bottom with safe area */
+.sticky-bottom-safe {
+    position: sticky;
+    bottom: 0;
+    padding-bottom: max(var(--space-sm, 8px), env(safe-area-inset-bottom, 0px));
 }
 
 /* ===========================================
-   45. MOBILE BUTTON FIXES
+   51. PWA STANDALONE MODE FIXES
    =========================================== */
 
-@media (max-width: 575.98px) {
-    /* Make buttons more tappable */
-    .btn {
-        min-height: 44px;
-        padding: var(--space-sm) var(--space-md);
-    }
-    
-    .btn-sm {
-        min-height: 36px;
-        padding: var(--space-xs) var(--space-sm);
-    }
-    
-    .btn-lg {
-        min-height: 52px;
-        padding: var(--space-md) var(--space-lg);
-    }
-    
-    /* Full-width buttons on mobile when in a row */
-    .btn-row-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-sm);
-    }
-    
-    .btn-row-mobile .btn {
-        width: 100%;
-    }
+/* PWA Standalone mode - content area respects safe areas */
+body.pwa-standalone main,
+body.pwa-standalone .content {
+    /* Main content area scrolls naturally */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* PWA Standalone - fixed elements respect safe areas */
+body.pwa-standalone .mobile-header {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* iOS device specific fixes */
+body.ios-device {
+    /* Prevent elastic scrolling on body */
+    position: fixed;
+    width: 100%;
+    height: var(--app-height, 100vh);
+}
+
+body.ios-device #page-container,
+body.ios-device .page {
+    /* Allow scrolling within the page container instead */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: var(--app-height, 100vh);
+}
+
+/* Android specific */
+body.android-device {
+    /* Android handles viewport better, but ensure safe areas work */
 }
 
 /* ===========================================
-   46. MOBILE CARD FIXES
+   52. SCROLLABLE CONTENT AREA
    =========================================== */
 
-@media (max-width: 575.98px) {
-    /* Reduce card padding on mobile */
-    .card {
-        border-radius: var(--radius-md);
-    }
-    
-    .card-body {
-        padding: var(--space-sm);
-    }
-    
-    .card-header {
-        padding: var(--space-sm);
-    }
-    
-    .card-header h5 {
-        font-size: var(--font-size-md);
-    }
-    
-    .card-footer {
-        padding: var(--space-sm);
-    }
-    
-    /* Fix card grids */
-    .row.g-3,
-    .row.g-4 {
-        --bs-gutter-x: 0.75rem;
-        --bs-gutter-y: 0.75rem;
-    }
-}
-
-/* ===========================================
-   47. MOBILE TABLE FIXES  
-   =========================================== */
-
-@media (max-width: 767px) {
-    /* Make tables scrollable horizontally */
-    .table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .table thead,
-    .table tbody,
-    .table tr,
-    .table th,
-    .table td {
-        display: revert;
-    }
-    
-    .table th,
-    .table td {
-        white-space: nowrap;
-        padding: var(--space-sm);
-    }
-    
-    /* Alternative: Stack table cells on mobile */
-    .table-stack-mobile {
-        display: block;
-    }
-    
-    .table-stack-mobile thead {
-        display: none;
-    }
-    
-    .table-stack-mobile tbody {
-        display: block;
-    }
-    
-    .table-stack-mobile tr {
-        display: block;
-        margin-bottom: var(--space-md);
-        border: 1px solid var(--nord3);
-        border-radius: var(--radius-md);
-        padding: var(--space-sm);
-    }
-    
-    .table-stack-mobile td {
-        display: flex;
-        justify-content: space-between;
-        padding: var(--space-xs) 0;
-        border: none;
-        white-space: normal;
-    }
-    
-    .table-stack-mobile td::before {
-        content: attr(data-label);
-        font-weight: var(--font-weight-semibold);
-        color: var(--nord4);
-        margin-right: var(--space-sm);
-    }
-}
-
-/* ===========================================
-   48. MOBILE MODAL IMPROVEMENTS
-   =========================================== */
-
-@media (max-width: 575.98px) {
-    .modal {
-        padding: 0 !important;
-    }
-    
-    .modal-dialog {
-        margin: 0;
-        max-width: 100%;
-        min-height: 100vh;
-        min-height: 100dvh;
-    }
-    
-    .modal-content {
-        border-radius: 0;
-        min-height: 100vh;
-        min-height: 100dvh;
-        border: none;
-    }
-    
-    .modal-header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        border-radius: 0;
-    }
-    
-    .modal-body {
-        flex: 1;
-        overflow-y: auto;
-    }
-    
-    .modal-footer {
-        position: sticky;
-        bottom: 0;
-        z-index: 10;
-        border-radius: 0;
-        padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
-    }
-}
-
-/* ===========================================
-   49. MANAGE CHORES PAGE MOBILE FIXES
-   =========================================== */
-
-.manage-chores-container {
-    max-width: 100%;
+/* Scrollable main content that respects fixed headers/footers */
+.scrollable-content {
+    flex: 1;
+    overflow-y: auto;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent overscroll only on this element */
+    overscroll-behavior-y: contain;
 }
 
-@media (max-width: 575.98px) {
-    .manage-chores-container h1 {
-        font-size: 1.5rem;
-    }
-    
-    .manage-chores-container .d-flex.justify-content-between {
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: var(--space-sm);
-    }
-    
-    .manage-chores-container .d-flex.gap-2 {
-        flex-direction: column;
-    }
-    
-    .manage-chores-container .btn {
-        width: 100%;
-    }
+/* Scrollable area with bottom padding for fixed footer */
+.scrollable-with-footer {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 16px);
 }
