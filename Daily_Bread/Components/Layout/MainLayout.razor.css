@@ -17,11 +17,10 @@
     height: var(--app-height, 100vh);
     background-color: var(--nord0);
     overflow: hidden; /* Prevent page-level scrolling */
-    /* Safe area insets for notched devices - handled by padding */
-    padding-top: env(safe-area-inset-top, 0px);
+    /* Safe area insets for notched devices - LEFT and RIGHT only */
+    /* Top is handled by mobile-header, bottom by content/footer */
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
-    /* Bottom safe area handled by content/footer to avoid double padding */
 }
 
 main {
@@ -37,8 +36,8 @@ main {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    /* Add top padding for fixed mobile header */
-    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    /* Add top padding for fixed mobile header + safe area */
+    padding-top: calc(56px + max(0.5rem, env(safe-area-inset-top, 0px)));
 }
 
 .content {
@@ -78,11 +77,11 @@ main {
     left: 0;
     right: 0;
     z-index: 100; /* Below sidebar overlay and sidebar */
-    /* Safe area padding */
-    padding-top: env(safe-area-inset-top, 0px);
+    /* Safe area padding - header sits BELOW system status bar */
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
     padding-left: calc(1rem + env(safe-area-inset-left, 0px));
     padding-right: calc(1rem + env(safe-area-inset-right, 0px));
-    /* Total height includes safe area */
+    /* Total height includes safe area so it doesn't overlap status bar */
     min-height: calc(56px + env(safe-area-inset-top, 0px));
     flex-shrink: 0;
 }
