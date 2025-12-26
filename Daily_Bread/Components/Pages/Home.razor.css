@@ -7,11 +7,10 @@
     margin: 0 auto;
     padding: var(--space-md);
     /* Space for fixed footer - use CSS var for bottom nav height */
-    padding-bottom: calc(var(--bottom-nav-height, 70px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
+    /* No need for min-height since main handles scrolling */
+    padding-bottom: calc(var(--bottom-nav-height, 70px) + env(safe-area-inset-bottom, 0px) + var(--space-md, 16px));
     display: flex;
     flex-direction: column;
-    /* Use dynamic viewport height minus header */
-    min-height: calc(var(--app-height, 100vh) - 56px - env(safe-area-inset-top, 0px));
 }
 
 /* ===========================================
