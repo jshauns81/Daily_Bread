@@ -12,21 +12,9 @@
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject ILogger<Home> Logger
 
 <PageTitle>Daily Bread - Home</PageTitle>
-
-@* DEBUG: Show current state *@
-<div style="position: fixed; top: 10px; right: 10px; background: red; color: white; padding: 10px; z-index: 9999; font-size: 12px;">
-    DEBUG:<br/>
-    Loading: @_isLoading<br/>
-    Auth: @_isAuthenticated<br/>
-    Parent: @_isParent<br/>
-    Admin: @_isAdmin<br/>
-    AdminOnly: @_isAdminOnly<br/>
-    UserId: @(_userId ?? "null")<br/>
-    ParentData: @(_parentData != null ? "yes" : "null")<br/>
-    ChildData: @(_childData != null ? "yes" : "null")
-</div>
 
 @* Confetti celebration when all chores complete *@
 <Confetti IsActive="_showConfetti" OnComplete="() => _showConfetti = false" ParticleCount="60" />
@@ -76,7 +64,7 @@ else if (_isAdminOnly)
         </ActionButton>
     </EmptyState>
 }
-else if (_isParent && _parentData != null)
+else if ((_isParent || _isAdmin) && _parentData != null)
 {
     <!-- Parent Dashboard -->
     <div class="dashboard-container">
@@ -195,7 +183,7 @@ else if (_isParent && _parentData != null)
         </div>
     </div>
 }
-else if (_isParent && _parentData == null)
+else if ((_isParent || _isAdmin) && _parentData == null)
 {
     @* Parent user but data failed to load *@
     <EmptyState Type="EmptyStateType.Error" 
@@ -206,7 +194,7 @@ else if (_isParent && _parentData == null)
         </ActionButton>
     </EmptyState>
 }
-else if (!_isParent && !_isAdmin && _childData != null)
+else if (_childData != null)
 {
     <!-- Child Dashboard - Streamlined Action-First View -->
     <div class="child-dashboard">
@@ -401,7 +389,7 @@ else if (!_isParent && !_isAdmin && _childData != null)
 }
 else
 {
-    @* Authenticated user (child) but data failed to load *@
+    @* Fallback: Authenticated user but no data loaded *@
     <EmptyState Type="EmptyStateType.Error" 
                 Title="Unable to Load Dashboard"
                 Message="We couldn't load your dashboard data. Please try refreshing the page.">
@@ -449,6 +437,7 @@ else
 
             if (!_isAuthenticated)
             {
+                Logger.LogInformation("User is not authenticated");
                 _isLoading = false;
                 return;
             }
@@ -458,7 +447,13 @@ else
             _isAdmin = user.IsInRole("Admin");
             _isAdminOnly = user.IsInRole("Admin") && !user.IsInRole("Parent") && !user.IsInRole("Child");
 
+            Logger.LogInformation("User authenticated: UserId={UserId}, IsParent={IsParent}, IsAdmin={IsAdmin}, IsAdminOnly={IsAdminOnly}", 
+                _userId, _isParent, _isAdmin, _isAdminOnly);
+
             await LoadDashboardAsync();
+
+            Logger.LogInformation("Dashboard loaded: ParentData={ParentData}, ChildData={ChildData}", 
+                _parentData != null, _childData != null);
 
             if (_childData?.NewAchievements.Count > 0 && !string.IsNullOrEmpty(_userId))
             {
@@ -483,6 +478,7 @@ else
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Failed to initialize dashboard");
             ToastService.ShowError("Error", $"Failed to initialize dashboard: {ex.Message}");
         }
         finally
