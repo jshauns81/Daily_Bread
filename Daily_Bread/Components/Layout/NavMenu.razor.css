@@ -72,6 +72,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.15em;
+    color: var(--nord4); /* Fallback for browsers without background-clip support */
     background: linear-gradient(90deg, var(--nord4) 0%, var(--nord8) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -188,6 +189,7 @@
     border-radius: 11px;
     flex-shrink: 0;
     animation: badge-pulse 2s ease-in-out infinite;
+    will-change: transform; /* Performance optimization for animation */
 }
 
 @keyframes badge-pulse {
@@ -339,6 +341,7 @@
     
     .nav-badge {
         animation: none;
+        will-change: auto; /* Reset will-change when animations are disabled */
     }
     
     .nav-brand-icon {
