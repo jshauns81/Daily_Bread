@@ -4,7 +4,6 @@
    ============================================ */
 
 .kid-login-container {
-    min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     align-items: center;
@@ -207,7 +206,6 @@
     
     .kid-login-card {
         max-width: none;
-        min-height: 100vh;
         min-height: 100dvh;
         border-radius: 0;
         border: none;
