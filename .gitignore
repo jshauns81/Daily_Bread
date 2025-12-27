@@ -29,6 +29,7 @@ file.txt
 *token*
 *.key
 *.pem
+*.pfx
 
 # SSH keys
 id_rsa
