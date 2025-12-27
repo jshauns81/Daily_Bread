@@ -36,7 +36,36 @@ git clone https://github.com/jshauns81/Daily_Bread.git
 cd Daily_Bread
 ```
 
-### 2. Environment Configuration
+### 2. Security Configuration
+
+#### Initial Setup
+1. Copy the example configuration:
+   ```bash
+   cp Daily_Bread/appsettings.json.example Daily_Bread/appsettings.json
+   ```
+
+2. Edit `appsettings.json` with your actual credentials:
+   - **Never commit this file to version control**
+   - Use strong, unique passwords
+   - The file is already in `.gitignore` to prevent accidental commits
+
+3. For production deployments, use environment variables instead of `appsettings.json`:
+   - `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+   - `ADMIN_USERNAME`, `ADMIN_PASSWORD`
+
+#### Important Security Notes
+⚠️ **Never commit files containing:**
+- Database passwords or connection strings
+- API keys or tokens
+- Private keys or certificates
+- User credentials
+
+✅ **Always use:**
+- Environment variables for sensitive configuration
+- `.env` files (already in `.gitignore`) for local development
+- Secure secret management for production (Azure Key Vault, AWS Secrets Manager, etc.)
+
+### 3. Environment Configuration
 Create a `.env` file in the root directory (or set these as system environment variables) to configure your local environment:
 
 ```env
@@ -56,7 +85,7 @@ ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=YourSecurePassword123!
 ```
 
-### 3. Database Setup
+### 4. Database Setup
 If you are running the application for the first time, ensure your PostgreSQL server is active. The application will automatically attempt to apply migrations on startup.
 
 To manually update the database via CLI:
@@ -64,7 +93,7 @@ To manually update the database via CLI:
 dotnet ef database update --project Daily_Bread
 ```
 
-### 4. Running the Application
+### 5. Running the Application
 
 #### Using the .NET CLI:
 ```bash
