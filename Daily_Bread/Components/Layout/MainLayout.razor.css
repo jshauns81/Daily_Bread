@@ -12,9 +12,8 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    /* Use dynamic viewport height that works on all mobile browsers */
-    height: 100vh;
-    height: var(--app-height, 100vh);
+    /* Use dynamic viewport height that responds to browser chrome */
+    height: 100dvh;
     background-color: var(--nord0);
     overflow: hidden; /* Prevent page-level scrolling */
     /* Safe area insets for notched devices - LEFT and RIGHT only */
@@ -32,10 +31,12 @@ main {
     /* Ensure main content doesn't overlap mobile header */
     position: relative;
     z-index: 1;
-    /* Main area is a scroll container */
+    /* Main area is the scroll container */
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    /* Prevent overscroll bounce */
+    overscroll-behavior-y: contain;
     /* Add top padding for fixed mobile header + safe area */
     padding-top: calc(56px + env(safe-area-inset-top, 0px));
 }
@@ -202,10 +203,9 @@ body.ios-device .mobile-header {
     z-index: 1050; /* Above everything except sidebar */
     opacity: 1;
     animation: fadeIn 0.25s ease-out;
-    /* Use dynamic height for full coverage */
+    /* Use dynamic viewport dimensions for full coverage */
     width: 100vw;
-    height: 100vh;
-    height: var(--app-height, 100vh);
+    height: 100dvh;
 }
 
 @keyframes fadeIn {
@@ -242,9 +242,8 @@ body.ios-device .mobile-header {
     will-change: transform;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    /* Dynamic viewport height */
-    height: 100vh;
-    height: var(--app-height, 100vh);
+    /* Use dynamic viewport height */
+    height: 100dvh;
     overflow: hidden;
 }
 
