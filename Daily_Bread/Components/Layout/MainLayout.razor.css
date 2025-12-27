@@ -13,6 +13,7 @@
     display: flex;
     flex-direction: column;
     /* Use dynamic viewport height that responds to browser chrome */
+    height: 100vh; /* Fallback for older browsers */
     height: 100dvh;
     background-color: var(--nord0);
     overflow: hidden; /* Prevent page-level scrolling */
@@ -205,6 +206,7 @@ body.ios-device .mobile-header {
     animation: fadeIn 0.25s ease-out;
     /* Use dynamic viewport dimensions for full coverage */
     width: 100vw;
+    height: 100vh; /* Fallback for older browsers */
     height: 100dvh;
 }
 
@@ -243,6 +245,7 @@ body.ios-device .mobile-header {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     /* Use dynamic viewport height */
+    height: 100vh; /* Fallback for older browsers */
     height: 100dvh;
     overflow: hidden;
 }
@@ -282,6 +285,7 @@ body.ios-device .mobile-header {
     .sidebar {
         position: sticky;
         top: 0;
+        height: 100vh; /* Fallback for older browsers */
         height: 100dvh;
         transform: translateX(0);
         flex-shrink: 0;

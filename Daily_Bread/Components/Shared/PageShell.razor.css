@@ -7,6 +7,7 @@
     display: flex;
     flex-direction: column;
     /* Use dynamic viewport height accounting for mobile header */
+    min-height: calc(100vh - 56px - env(safe-area-inset-top, 0px)); /* Fallback for older browsers */
     min-height: calc(100dvh - 56px - env(safe-area-inset-top, 0px));
     max-width: 100%;
     overflow-x: hidden;
