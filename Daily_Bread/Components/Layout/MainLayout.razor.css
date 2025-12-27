@@ -282,7 +282,7 @@ body.ios-device .mobile-header {
     .sidebar {
         position: sticky;
         top: 0;
-        height: 100vh;
+        height: 100dvh;
         transform: translateX(0);
         flex-shrink: 0;
         max-width: none;
