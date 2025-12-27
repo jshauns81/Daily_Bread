@@ -7,7 +7,7 @@
   },
   "AllowedHosts": "*",
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=dailybread;Username=dailybread;Password=M4xd0g01!!"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=dailybread;Username=your_username;Password=YOUR_SECURE_PASSWORD_HERE"
   },
   "Seed": {
     "Run": true

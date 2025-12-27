@@ -1,6 +1,10 @@
 # =====================================
-# SECRETS AND SENSITIVE FILES
+# CRITICAL SECURITY - PREVENT CREDENTIAL EXPOSURE
 # =====================================
+
+# appsettings.json with real credentials should NOT be committed
+# Only commit appsettings.json.example with placeholder values
+appsettings.json
 
 # Development settings with passwords/secrets
 appsettings.Development.json
@@ -15,6 +19,31 @@ secrets.json
 
 # User secrets folder
 **/secrets/
+
+# Directory listing files
+file.txt
+*.txt.bak
+
+# Any files containing credentials or tokens
+*credentials*
+*token*
+*.key
+*.pem
+
+# SSH keys
+id_rsa
+id_dsa
+*.ppk
+
+# Certificate files (unless specifically needed)
+*.cer
+*.crt
+*.der
+
+# Backup files that might contain secrets
+*.backup
+*.bak
+*-backup
 
 # =====================================
 # DATABASE FILES
