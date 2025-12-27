@@ -202,6 +202,17 @@ a {
 
 a:hover { color: var(--nord9); }
 
+/* Focus visible for accessibility */
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--nord10);
+    outline-offset: 2px;
+}
+
 small, .small { 
     font-size: var(--font-size-sm);
     color: var(--nord4); 
@@ -414,6 +425,7 @@ code {
     border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
     transition: all var(--transition-fast);
+    min-height: var(--touch-target-min);
 }
 
 /* UNIFIED: Form focus uses --nord10 (blue) */
