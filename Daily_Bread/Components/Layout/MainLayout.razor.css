@@ -39,6 +39,7 @@ main {
     /* Prevent overscroll bounce */
     overscroll-behavior-y: contain;
     /* Add top padding for fixed mobile header + safe area */
+    /* Header is positioned BELOW safe area, so we add both header height AND safe area */
     padding-top: calc(56px + env(safe-area-inset-top, 0px));
 }
 
@@ -73,27 +74,28 @@ main {
     padding: 0 1rem;
     background-color: var(--nord1);
     border-bottom: 1px solid var(--nord3);
-    /* FIXED POSITION - stays at top */
     position: fixed;
-    top: 0;
+    /* KEY FIX: Position header BELOW the safe area, not at top: 0 */
+    top: env(safe-area-inset-top, 0px);
     left: 0;
     right: 0;
-    z-index: 100; /* Below sidebar overlay and sidebar */
-    /* Safe area padding - header sits WITHIN system safe area */
-    padding-top: env(safe-area-inset-top, 0px);
+    z-index: 100;
     padding-left: max(1rem, env(safe-area-inset-left, 0px));
     padding-right: max(1rem, env(safe-area-inset-right, 0px));
-    /* Total height includes safe area so it doesn't overlap status bar */
-    min-height: calc(56px + env(safe-area-inset-top, 0px));
     flex-shrink: 0;
-    /* Improve touch responsiveness */
     -webkit-tap-highlight-color: transparent;
 }
 
-/* When NOT inside a page with safe padding, header handles it */
-body.pwa-standalone .mobile-header,
-body.ios-device .mobile-header {
-    padding-top: 0; /* .page handles the safe area */
+/* Extend background color INTO the safe area (behind Dynamic Island) */
+.mobile-header::before {
+    content: '';
+    position: absolute;
+    top: calc(-1 * env(safe-area-inset-top, 0px));
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background-color: inherit;
+    z-index: -1;
 }
 
 .hamburger-btn {
