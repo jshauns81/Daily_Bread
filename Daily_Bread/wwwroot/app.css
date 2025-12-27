@@ -165,7 +165,7 @@ h1 .emoji, h2 .emoji, h3 .emoji, h4 .emoji, h5 .emoji, h6 .emoji {
 
 body {
     background-color: var(--nord0);
-    min-height: 100vh;
+    min-height: 100dvh;
     margin: 0;
     padding: 0;
 }
@@ -1240,17 +1240,14 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 /* Prevent horizontal overflow globally */
 html {
     overflow-x: hidden;
-    /* Fix for 100vh on mobile browsers - use dynamic height */
-    height: var(--app-height, 100vh);
-    height: -webkit-fill-available;
+    /* Use dynamic viewport height that responds to browser chrome */
+    height: 100dvh;
 }
 
 body {
     overflow-x: hidden;
     /* Use dynamic viewport height */
-    min-height: 100vh;
-    min-height: var(--app-height, 100vh);
-    min-height: -webkit-fill-available;
+    min-height: 100dvh;
     /* Prevent iOS bounce/rubber-banding causing layout issues */
     /* Only contain y-axis overscroll, don't break normal scrolling */
     overscroll-behavior-y: contain;
@@ -1345,7 +1342,7 @@ body.ios-device {
     /* Prevent elastic scrolling on body */
     position: fixed;
     width: 100%;
-    height: var(--app-height, 100vh);
+    height: 100dvh;
 }
 
 body.ios-device #page-container,
@@ -1353,7 +1350,7 @@ body.ios-device .page {
     /* Allow scrolling within the page container instead */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    height: var(--app-height, 100vh);
+    height: 100dvh;
 }
 
 /* Android specific */
