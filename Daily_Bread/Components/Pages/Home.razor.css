@@ -8,7 +8,7 @@
     padding: var(--space-md);
     /* Space for fixed footer - use CSS var for bottom nav height */
     /* No need for min-height since main handles scrolling */
-    padding-bottom: calc(var(--bottom-nav-height, 70px) + env(safe-area-inset-bottom, 0px) + var(--space-md, 16px));
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
     display: flex;
     flex-direction: column;
 }
@@ -267,20 +267,20 @@
     justify-content: space-around;
     /* Top padding for content, bottom padding includes safe area */
     padding: var(--space-sm) var(--space-md);
-    padding-bottom: max(var(--space-sm), env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom, 0px));
     /* Respect left/right safe areas too */
     padding-left: max(var(--space-md), env(safe-area-inset-left, 0px));
     padding-right: max(var(--space-md), env(safe-area-inset-right, 0px));
     background: var(--nord1);
     border-top: 1px solid var(--nord3);
     z-index: 100;
-    /* Frosted glass effect */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background-color: rgba(59, 66, 82, 0.9);
-    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.2);
+    /* Frosted glass effect - improved */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background-color: rgba(59, 66, 82, 0.95);
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.3);
     /* Minimum height for touch targets + safe area */
-    min-height: calc(var(--ds-touch-target, 44px) + var(--space-sm, 8px) * 2);
+    min-height: calc(var(--touch-target-min, 48px) + var(--space-sm, 8px) * 2);
 }
 
 .quick-link {
@@ -296,7 +296,7 @@
     -webkit-tap-highlight-color: transparent;
     min-width: 70px;
     /* Ensure touch target size */
-    min-height: var(--ds-touch-target, 44px);
+    min-height: 48px;
 }
 
 .quick-link:hover,
@@ -365,7 +365,7 @@
     .child-dashboard {
         padding: var(--space-sm);
         /* Mobile: extra space for fixed footer + safe area */
-        padding-bottom: calc(var(--bottom-nav-height, 70px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
+        padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-2xl, 48px));
     }
     
     .child-header {
