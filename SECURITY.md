@@ -101,7 +101,7 @@ Before deploying to production:
 
 ### Previous Security Issues
 
-**Database Credentials Exposure (Fixed in [commit/PR]):**
+**Database Credentials Exposure (Fixed):**
 - Previous versions of this repository had exposed database credentials in `appsettings.json`
 - The password `M4xd0g01!!` was publicly committed
 - **Action Required**: If you deployed before this fix, change your database password immediately
@@ -135,9 +135,9 @@ We will:
 ## 🔗 Additional Resources
 
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [ASP.NET Core Security Best Practices](https://docs.microsoft.com/en-us/aspnet/core/security/)
+- [ASP.NET Core Security Best Practices](https://learn.microsoft.com/en-us/aspnet/core/security/)
 - [GitHub Security Best Practices](https://docs.github.com/en/code-security)
-- [Entity Framework Core Security](https://docs.microsoft.com/en-us/ef/core/miscellaneous/security)
+- [Entity Framework Core Security](https://learn.microsoft.com/en-us/ef/core/miscellaneous/security)
 
 ## 📜 License
 
