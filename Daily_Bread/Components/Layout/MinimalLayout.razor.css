@@ -1,5 +1,6 @@
 /* Minimal Layout - No header, no sidebar */
 .minimal-layout {
+    min-height: 100vh; /* Fallback for older browsers */
     min-height: 100dvh;
     background: linear-gradient(135deg, var(--nord0) 0%, var(--nord1) 50%, var(--nord2) 100%);
     display: flex;

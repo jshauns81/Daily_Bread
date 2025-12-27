@@ -45,6 +45,7 @@
             margin: 0;
             padding: 0;
             /* Use dynamic viewport height that responds to browser chrome */
+            min-height: 100vh; /* Fallback for older browsers */
             min-height: 100dvh;
             /* Allow content scrolling but prevent overscroll bounce */
             overflow-x: hidden;
@@ -56,6 +57,7 @@
             display: flex;
             flex-direction: column;
             /* Use dynamic viewport height that responds to browser chrome */
+            height: 100vh; /* Fallback for older browsers */
             height: 100dvh;
             background-color: #2E3440;
             /* Safe area insets applied via padding on left/right only */
