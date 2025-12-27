@@ -7,12 +7,14 @@
     right: 0;
     background-color: var(--nord1);
     border-top: 1px solid var(--nord3);
-    padding: 1rem;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-md);
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom, 0px));
+    padding-left: max(var(--space-md), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--space-md), env(safe-area-inset-right, 0px));
     z-index: 2000;
     transform: translateY(100%);
-    transition: transform 0.3s ease;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform var(--transition-slow);
+    box-shadow: var(--shadow-lg);
 }
 
 .pwa-install-prompt.visible {
@@ -22,38 +24,38 @@
 .pwa-install-content {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
 }
 
 .pwa-install-icon {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     object-fit: contain;
     background-color: var(--nord2);
-    padding: 4px;
+    padding: var(--space-xs);
 }
 
 .pwa-install-text {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: var(--space-xs);
 }
 
 .pwa-install-text strong {
     color: var(--nord6);
-    font-size: 1rem;
+    font-size: var(--font-size-md);
 }
 
 .pwa-install-text span {
     color: var(--nord4);
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
 }
 
 .pwa-install-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--space-md);
     justify-content: flex-end;
 }
 
@@ -61,12 +63,13 @@
     background: transparent;
     border: none;
     color: var(--nord4);
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
-    border-radius: 8px;
-    transition: background-color 0.2s;
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast);
+    min-height: var(--touch-target-min);
 }
 
 .pwa-install-dismiss:hover {
@@ -78,17 +81,18 @@
     background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%);
     border: none;
     color: var(--nord6);
-    padding: 0.75rem 1.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
+    padding: var(--space-sm) var(--space-lg);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
-    border-radius: 8px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: var(--radius-md);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    min-height: var(--touch-target-min);
 }
 
 .pwa-install-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(94, 129, 172, 0.4);
+    box-shadow: var(--shadow-md), var(--shadow-glow-blue);
 }
 
 .pwa-install-btn:active {
@@ -99,12 +103,12 @@
 @media (min-width: 768px) {
     .pwa-install-prompt {
         left: auto;
-        right: 1rem;
-        bottom: 1rem;
+        right: var(--space-md);
+        bottom: var(--space-md);
         width: 380px;
-        border-radius: 12px;
+        border-radius: var(--radius-lg);
         border: 1px solid var(--nord3);
-        padding-bottom: 1rem;
+        padding-bottom: var(--space-md);
     }
 }
 
