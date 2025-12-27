@@ -44,9 +44,9 @@
             color: #ECEFF4;
             margin: 0;
             padding: 0;
-            /* Use dynamic app height instead of 100vh */
-            min-height: 100vh;
-            min-height: var(--app-height);
+            /* Use dynamic viewport height that responds to browser chrome */
+            min-height: 100vh; /* Fallback for older browsers */
+            min-height: 100dvh;
             /* Allow content scrolling but prevent overscroll bounce */
             overflow-x: hidden;
             overscroll-behavior-y: contain;
@@ -56,15 +56,14 @@
         .page {
             display: flex;
             flex-direction: column;
-            /* Dynamic height that works on all mobile browsers */
-            min-height: 100vh;
-            min-height: var(--app-height);
+            /* Use dynamic viewport height that responds to browser chrome */
+            height: 100vh; /* Fallback for older browsers */
+            height: 100dvh;
             background-color: #2E3440;
-            /* Safe area insets for notched devices */
-            padding-top: var(--safe-top);
-            padding-left: var(--safe-left);
-            padding-right: var(--safe-right);
-            /* Bottom safe area handled by content/footer */
+            /* Safe area insets applied via padding on left/right only */
+            /* Top is handled by mobile-header, bottom by content area */
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
         }
         
         .sidebar {
@@ -74,16 +73,18 @@
         main {
             background-color: #2E3440;
             flex: 1;
-            /* Ensure main can scroll */
+            /* Main content is the scroll container */
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
+            /* Prevent overscroll on main element */
+            overscroll-behavior-y: contain;
         }
         
         /* PWA standalone mode adjustments */
         body.pwa-standalone .page {
             /* In PWA mode, safe areas are critical */
-            padding-top: env(safe-area-inset-top, 0px);
+            padding-top: 0;
         }
         
         /* iOS device adjustments */
