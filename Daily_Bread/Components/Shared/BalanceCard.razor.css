@@ -9,34 +9,36 @@
 
 .balance-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: var(--font-size-xs);
     text-transform: uppercase;
-    color: var(--bs-secondary);
-    margin-bottom: 0.25rem;
+    color: var(--nord4);
+    margin-bottom: var(--space-xs);
+    letter-spacing: 0.5px;
 }
 
 .balance-amount {
     display: block;
     font-size: 2.5rem;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     line-height: 1;
+    color: var(--nord14);
 }
 
 .balance-user {
     display: block;
-    font-size: 1rem;
-    color: var(--bs-secondary);
-    margin-top: 0.25rem;
+    font-size: var(--font-size-md);
+    color: var(--nord4);
+    margin-top: var(--space-xs);
 }
 
 .balance-info {
-    padding: 0 1rem;
+    padding: 0 var(--space-md);
 }
 
 .info-row {
     display: flex;
     justify-content: space-between;
-    padding: 0.25rem 0;
+    padding: var(--space-xs) 0;
     border-bottom: 1px solid rgba(76, 86, 106, 0.2);
 }
 
@@ -45,24 +47,26 @@
     }
 
 .info-label {
-    color: var(--bs-secondary);
+    color: var(--nord4);
+    font-size: var(--font-size-sm);
 }
 
 .info-value {
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
+    color: var(--nord6);
 }
 
 .balance-actions {
-    padding: 0 1rem;
+    padding: 0 var(--space-md);
 }
 
 @media (max-width: 768px) {
     .balance-main {
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-md);
     }
 
     .balance-info {
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-md);
         padding: 0;
     }
 

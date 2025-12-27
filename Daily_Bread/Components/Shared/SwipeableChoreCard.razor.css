@@ -88,6 +88,8 @@
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     will-change: transform;
     z-index: 1;
+    /* Ensure proper touch target */
+    min-height: 64px;
 }
 
 .swipeable-card-container.dragging .swipeable-card {

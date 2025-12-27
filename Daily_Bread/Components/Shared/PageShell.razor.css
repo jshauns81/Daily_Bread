@@ -59,7 +59,7 @@
 
 /* Content padding when bottom nav is present */
 .page-shell--has-bottom-nav .page-shell__content {
-    padding-bottom: calc(var(--bottom-nav-height, 70px) + env(safe-area-inset-bottom, 0px) + var(--space-md, 16px));
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
 }
 
 /* ===========================================
@@ -161,7 +161,7 @@
     }
 
     .page-shell--has-bottom-nav .page-shell__content {
-        padding-bottom: calc(var(--bottom-nav-height, 70px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
+        padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
     }
 }
 

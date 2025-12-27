@@ -82,14 +82,14 @@
     margin: 0.125rem 0.5rem;
     color: var(--nord4);
     text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
     font-size: 0.95rem;
     font-weight: 500;
     position: relative;
     -webkit-tap-highlight-color: transparent;
     /* Ensure minimum touch target */
-    min-height: 44px;
+    min-height: 48px;
     box-sizing: border-box;
     /* Prevent text overflow */
     overflow: hidden;
