@@ -16,6 +16,7 @@
     min-height: var(--bottom-nav-height, 60px);
     /* Padding with safe area for iPhone home indicator */
     padding: var(--space-sm, 8px) var(--space-md, 16px);
+    /* Content sits ABOVE the safe area */
     padding-bottom: max(var(--space-md, 16px), env(safe-area-inset-bottom, 0px));
     padding-left: max(var(--space-md, 16px), env(safe-area-inset-left, 0px));
     padding-right: max(var(--space-md, 16px), env(safe-area-inset-right, 0px));
@@ -25,6 +26,18 @@
     -webkit-backdrop-filter: blur(16px);
     border-top: 1px solid rgba(216, 222, 233, 0.1);
     box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Extend background INTO the safe area (behind home indicator) */
+.bottom-nav::after {
+    content: '';
+    position: absolute;
+    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background-color: inherit;
+    z-index: -1;
 }
 
 /* ===========================================
