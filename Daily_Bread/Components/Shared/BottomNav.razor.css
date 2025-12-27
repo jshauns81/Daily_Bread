@@ -16,15 +16,15 @@
     min-height: var(--bottom-nav-height, 60px);
     /* Padding with safe area for iPhone home indicator */
     padding: var(--space-sm, 8px) var(--space-md, 16px);
-    padding-bottom: max(var(--space-sm, 8px), env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(var(--space-md, 16px), env(safe-area-inset-bottom, 0px));
     padding-left: max(var(--space-md, 16px), env(safe-area-inset-left, 0px));
     padding-right: max(var(--space-md, 16px), env(safe-area-inset-right, 0px));
-    /* Frosted glass effect */
-    background-color: rgba(59, 66, 82, 0.9);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(216, 222, 233, 0.15);
-    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.2);
+    /* Frosted glass effect - improved */
+    background-color: rgba(59, 66, 82, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(216, 222, 233, 0.1);
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.3);
 }
 
 /* ===========================================
@@ -39,11 +39,11 @@
     gap: var(--space-xs, 4px);
     padding: var(--space-sm, 8px) var(--space-md, 16px);
     min-width: 64px;
-    min-height: var(--ds-touch-target, 44px);
+    min-height: 48px;
     color: var(--nord4);
     text-decoration: none;
     border-radius: var(--radius-md, 10px);
-    transition: all 150ms ease;
+    transition: all var(--transition-fast);
     -webkit-tap-highlight-color: transparent;
     position: relative;
 }

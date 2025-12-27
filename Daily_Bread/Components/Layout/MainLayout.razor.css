@@ -37,7 +37,7 @@ main {
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     /* Add top padding for fixed mobile header + safe area */
-    padding-top: calc(56px + max(0.5rem, env(safe-area-inset-top, 0px)));
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
 }
 
 .content {
@@ -77,13 +77,15 @@ main {
     left: 0;
     right: 0;
     z-index: 100; /* Below sidebar overlay and sidebar */
-    /* Safe area padding - header sits BELOW system status bar */
-    padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
-    padding-left: calc(1rem + env(safe-area-inset-left, 0px));
-    padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+    /* Safe area padding - header sits WITHIN system safe area */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
     /* Total height includes safe area so it doesn't overlap status bar */
     min-height: calc(56px + env(safe-area-inset-top, 0px));
     flex-shrink: 0;
+    /* Improve touch responsiveness */
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* When NOT inside a page with safe padding, header handles it */
@@ -96,18 +98,18 @@ body.ios-device .mobile-header {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     padding: 0;
     background: transparent;
     border: none;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     /* Ensure touch target is properly sized */
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 8px;
-    transition: background-color 0.15s ease;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-fast);
 }
 
 .hamburger-btn:hover,
