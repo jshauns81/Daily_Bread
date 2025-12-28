@@ -158,7 +158,34 @@
 }
 
 /* ===========================================
-   3. CARD COMPONENT
+   3. SHARED INPUT COMPONENT
+   =========================================== */
+
+.nord-input {
+    height: 50px;
+    background: var(--ds-bg-base);
+    border: 2px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    color: var(--ds-text-primary);
+    font-size: var(--ds-text-base);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    transition: all var(--ds-duration-fast);
+    width: 100%;
+}
+
+.nord-input:focus {
+    border-color: var(--ds-accent-cyan);
+    background: var(--ds-bg-base);
+    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
+    outline: none;
+}
+
+.nord-input::placeholder {
+    color: var(--ds-text-muted);
+}
+
+/* ===========================================
+   4. CARD COMPONENT
    =========================================== */
 
 .ds-card {
@@ -206,7 +233,7 @@
 }
 
 /* ===========================================
-   4. CHIP / BADGE COMPONENT
+   5. CHIP / BADGE COMPONENT
    =========================================== */
 
 .ds-chip {
@@ -246,7 +273,7 @@
 }
 
 /* ===========================================
-   5. BUTTON UTILITIES
+   6. BUTTON UTILITIES
    =========================================== */
 
 .ds-btn {
@@ -326,7 +353,7 @@
 }
 
 /* ===========================================
-   6. TYPOGRAPHY UTILITIES
+   7. TYPOGRAPHY UTILITIES
    =========================================== */
 
 .ds-heading {
@@ -347,7 +374,7 @@
 .ds-text--mono { font-family: var(--ds-font-mono); }
 
 /* ===========================================
-   7. LAYOUT UTILITIES
+   8. LAYOUT UTILITIES
    =========================================== */
 
 .ds-stack {
@@ -376,7 +403,7 @@
 .ds-center { justify-content: center; }
 
 /* ===========================================
-   8. BOTTOM NAV / FIXED FOOTER UTILITIES
+   9. BOTTOM NAV / FIXED FOOTER UTILITIES
    =========================================== */
 
 .ds-bottom-bar {
@@ -401,7 +428,7 @@
 }
 
 /* ===========================================
-   9. GLASSMORPHISM UTILITIES
+   10. GLASSMORPHISM UTILITIES
    =========================================== */
 
 .ds-glass {
@@ -418,7 +445,7 @@
 }
 
 /* ===========================================
-   10. TOUCH OPTIMIZATIONS
+   11. TOUCH OPTIMIZATIONS
    =========================================== */
 
 @media (hover: none) and (pointer: coarse) {
@@ -434,7 +461,7 @@
 }
 
 /* ===========================================
-   11. REDUCED MOTION
+   12. REDUCED MOTION
    =========================================== */
 
 @media (prefers-reduced-motion: reduce) {
@@ -448,7 +475,7 @@
 }
 
 /* ===========================================
-   12. PRINT STYLES
+   13. PRINT STYLES
    =========================================== */
 
 @media print {

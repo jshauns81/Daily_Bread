@@ -1,4 +1,4 @@
-@page "/Account/Login"
+﻿@page "/Account/Login"
 @attribute [AllowAnonymous]
 @layout Daily_Bread.Components.Layout.MinimalLayout
 @using System.ComponentModel.DataAnnotations
@@ -28,14 +28,13 @@
 
         <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
             
             <div class="mb-4">
                 <label for="username" class="form-label">Username</label>
                 @* Prevent automatic capitalization on all platforms, especially iOS *@
                 <InputText @bind-Value="Input.UserName" 
                            id="username" 
-                           class="form-control" 
+                           class="nord-input" 
                            autocomplete="username" 
                            autocapitalize="off"
                            autocorrect="off"
