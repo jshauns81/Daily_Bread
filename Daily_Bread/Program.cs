@@ -158,6 +158,7 @@ builder.Services.AddScoped<IFamilySettingsService, FamilySettingsService>();
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IWeeklyProgressService, WeeklyProgressService>();
 builder.Services.AddScoped<IWeeklyReconciliationService, WeeklyReconciliationService>();
+builder.Services.AddScoped<IBiometricAuthService, BiometricAuthService>();
 
 // Add health checks
 builder.Services.AddHealthChecks()

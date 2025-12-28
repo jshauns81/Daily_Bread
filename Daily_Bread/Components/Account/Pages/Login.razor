@@ -32,13 +32,26 @@
             
             <div class="mb-4">
                 <label for="username" class="form-label">Username</label>
-                <InputText @bind-Value="Input.UserName" id="username" class="form-control" autocomplete="username" aria-required="true" placeholder="Enter your username" />
+                @* Prevent automatic capitalization on all platforms, especially iOS *@
+                <InputText @bind-Value="Input.UserName" 
+                           id="username" 
+                           class="form-control" 
+                           autocomplete="username" 
+                           autocapitalize="off"
+                           autocorrect="off"
+                           spellcheck="false"
+                           aria-required="true" 
+                           placeholder="Enter your username" />
                 <ValidationMessage For="() => Input.UserName" class="text-danger" />
             </div>
             
             <div class="mb-4">
                 <label for="password" class="form-label">Password</label>
-                <InputText type="password" @bind-Value="Input.Password" id="password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Enter your password" />
+                <PasswordInput @bind-Value="Input.Password" 
+                              InputId="password" 
+                              Autocomplete="current-password" 
+                              Required="true"
+                              Placeholder="Enter your password" />
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
             </div>
             
