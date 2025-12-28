@@ -103,8 +103,8 @@
                 }
             }
             
-            // Force a full page reload to ensure proper component initialization
-            NavigationManager.NavigateTo(redirectUrl, forceLoad: true);
+            // Use enhanced navigation to maintain Blazor circuit and authentication state
+            NavigationManager.NavigateTo(redirectUrl, forceLoad: false);
         }
         else if (result.RequiresTwoFactor)
         {
