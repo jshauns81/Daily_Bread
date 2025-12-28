@@ -50,48 +50,6 @@
     font-size: var(--font-size-sm);
 }
 
-.login-card .form-control {
-    height: 50px;
-    background: var(--nord0);
-    border: 2px solid var(--nord3);
-    border-radius: var(--radius-lg);
-    color: var(--nord6);
-    font-size: var(--font-size-md);
-    padding: var(--space-sm) var(--space-md);
-    transition: all var(--transition-fast);
-}
-
-/* Ensure password input has same styling */
-.login-card .password-input-wrapper .form-control {
-    height: 50px;
-    background: var(--nord0);
-    border: 2px solid var(--nord3);
-    border-radius: var(--radius-lg);
-    color: var(--nord6);
-    font-size: var(--font-size-md);
-    padding: var(--space-sm) var(--space-md);
-    transition: all var(--transition-fast);
-}
-
-.login-card .form-control:focus {
-    border-color: var(--nord8);
-    background: var(--nord0);
-    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
-    outline: none;
-}
-
-/* Ensure password input has same focus styling */
-.login-card .password-input-wrapper .form-control:focus {
-    border-color: var(--nord8);
-    background: var(--nord0);
-    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
-    outline: none;
-}
-
-.login-card .form-control::placeholder {
-    color: var(--nord4);
-}
-
 .login-card .form-check-label {
     color: var(--nord4);
     font-size: var(--font-size-sm);
