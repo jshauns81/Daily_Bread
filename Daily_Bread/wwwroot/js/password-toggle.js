@@ -12,6 +12,9 @@
         const toggleButtons = document.querySelectorAll('.password-toggle');
 
         toggleButtons.forEach(button => {
+            // Skip if already initialized to avoid duplicate listeners
+            if (button.dataset.toggleInitialized === 'true') return;
+            
             // Find the associated input field (previous sibling in the input-group)
             const inputGroup = button.closest('.input-group');
             if (!inputGroup) return;
@@ -19,9 +22,13 @@
             const passwordInput = inputGroup.querySelector('input[type="password"], input[type="text"]');
             if (!passwordInput) return;
 
+            // Mark as initialized
+            button.dataset.toggleInitialized = 'true';
+
             // Handle click event
             button.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
 
                 // Toggle input type
                 const isPassword = passwordInput.type === 'password';
@@ -43,6 +50,9 @@
                         icon.classList.add('bi-eye');
                     }
                 }
+                
+                // Return focus to input after toggle
+                passwordInput.focus();
             });
         });
     }
