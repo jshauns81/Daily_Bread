@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -9,7 +9,7 @@ using Daily_Bread.Components.Account;
 using Daily_Bread.Data;
 using Daily_Bread.Services;
 
-// Load .env file for local development
+// Load .env file for local development test
 LoadDotEnv();
 
 var builder = WebApplication.CreateBuilder(args);
