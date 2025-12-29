@@ -56,10 +56,10 @@ main {
     box-sizing: border-box;
 }
 
-/* When page has a fixed bottom nav (child dashboard), add extra padding */
-.page.has-fixed-footer .content,
-.content.has-fixed-footer {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+/* When page has a fixed bottom nav, add extra padding */
+.page.has-bottom-nav .content,
+.content.has-bottom-nav {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 /* ===========================================
@@ -178,6 +178,110 @@ main {
     display: flex;
     align-items: center;
     flex-shrink: 0;
+}
+
+/* ===========================================
+   MOBILE BOTTOM NAVIGATION
+   =========================================== */
+
+.mobile-bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    background: rgba(59, 66, 82, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(216, 222, 233, 0.1);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    color: var(--nord4);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    min-height: 60px;
+}
+
+.bottom-nav-item .bi {
+    font-size: 1.35rem;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.bottom-nav-item span:last-child {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.bottom-nav-item:hover,
+.bottom-nav-item:focus {
+    color: var(--nord6);
+    outline: none;
+}
+
+.bottom-nav-item.active {
+    color: var(--nord8);
+}
+
+.bottom-nav-item.active .bi {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(136, 192, 208, 0.5));
+}
+
+/* Active indicator dot */
+.bottom-nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: var(--nord8);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(136, 192, 208, 0.6);
+}
+
+/* Touch feedback */
+@media (hover: none) and (pointer: coarse) {
+    .bottom-nav-item:active {
+        background: rgba(136, 192, 208, 0.1);
+        transform: scale(0.95);
+    }
+    
+    .bottom-nav-item:active .bi {
+        transform: scale(0.9);
+    }
+}
+
+/* Hide on desktop */
+@media (min-width: 768px) {
+    .mobile-bottom-nav {
+        display: none;
+    }
+    
+    .page.has-bottom-nav .content,
+    .content.has-bottom-nav {
+        padding-bottom: 1.5rem;
+    }
 }
 
 /* ===========================================
@@ -322,8 +426,8 @@ main {
     }
     
     /* Desktop doesn't need fixed footer handling */
-    .page.has-fixed-footer .content,
-    .content.has-fixed-footer {
+    .page.has-bottom-nav .content,
+    .content.has-bottom-nav {
         padding-bottom: 1.5rem;
     }
 }
@@ -367,6 +471,14 @@ main {
     .sidebar {
         width: 280px;
         max-width: 90vw;
+    }
+    
+    .bottom-nav-item .bi {
+        font-size: 1.25rem;
+    }
+    
+    .bottom-nav-item span:last-child {
+        font-size: 0.65rem;
     }
 }
 
@@ -419,6 +531,11 @@ main {
     .sidebar-overlay {
         animation: none;
     }
+    
+    .bottom-nav-item,
+    .bottom-nav-item .bi {
+        transition: none;
+    }
 }
 
 /* ===========================================
@@ -436,6 +553,14 @@ main {
     
     .content {
         padding: 0.75rem;
+    }
+    
+    .mobile-bottom-nav {
+        height: calc(50px + env(safe-area-inset-bottom, 0px));
+    }
+    
+    .bottom-nav-item {
+        min-height: 50px;
     }
 }
 
@@ -475,6 +600,7 @@ main {
     .desktop-header,
     .sidebar,
     .sidebar-overlay,
+    .mobile-bottom-nav,
     #blazor-error-ui {
         display: none !important;
     }

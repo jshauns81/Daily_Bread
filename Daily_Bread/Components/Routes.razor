@@ -1,11 +1,30 @@
 ﻿@using Daily_Bread.Components.Account
 @using Daily_Bread.Components.Pages
+@using Daily_Bread.Components.Shared
 
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
             <Authorizing>
-                @* Show nothing during authorization check to prevent flash *@
+                @* Show loading skeleton during authorization check to prevent blank page *@
+                <div class="skeleton-dashboard">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <Skeleton Type="SkeletonType.Text" Width="200px" Height="32px" />
+                        <Skeleton Type="SkeletonType.Text" Width="180px" Height="20px" />
+                    </div>
+                    
+                    <div class="skeleton-dashboard-stats mb-4">
+                        <Skeleton Type="SkeletonType.StatCard" />
+                        <Skeleton Type="SkeletonType.StatCard" />
+                        <Skeleton Type="SkeletonType.StatCard" />
+                        <Skeleton Type="SkeletonType.StatCard" />
+                    </div>
+                    
+                    <div class="skeleton-dashboard-main">
+                        <Skeleton Type="SkeletonType.Card" />
+                        <Skeleton Type="SkeletonType.Card" />
+                    </div>
+                </div>
             </Authorizing>
             <NotAuthorized>
                 @if (context.User.Identity?.IsAuthenticated != true)

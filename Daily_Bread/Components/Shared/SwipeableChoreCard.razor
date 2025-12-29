@@ -109,6 +109,14 @@
             {
                 // Circuit disconnected, component will be disposed
             }
+            catch (TaskCanceledException)
+            {
+                // Operation cancelled
+            }
+            catch (ObjectDisposedException)
+            {
+                // Object disposed
+            }
         }
     }
     
@@ -160,17 +168,9 @@
             {
                 await JS.InvokeVoidAsync("SwipeGestures.destroy", _containerRef);
             }
-            catch (JSDisconnectedException)
+            catch
             {
-                // Circuit already disconnected, JS cleanup not needed
-            }
-            catch (ObjectDisposedException)
-            {
-                // JS runtime disposed
-            }
-            catch (InvalidOperationException)
-            {
-                // Prerendering or other invalid state
+                // Swallow all exceptions during disposal - circuit may already be disconnected
             }
         }
         

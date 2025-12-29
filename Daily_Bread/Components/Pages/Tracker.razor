@@ -1,13 +1,14 @@
-@page "/tracker"
+﻿@page "/tracker"
 @page "/tracker/{DateParam}"
 @attribute [Authorize]
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@rendermode InteractiveServer
 @implements IDisposable
 
 @using System.Security.Claims
 @using Daily_Bread.Components.Shared
 @using Daily_Bread.Data.Models
 
+@inject IAppStateService AppState
 @inject ITrackerService TrackerService
 @inject IDateProvider DateProvider
 @inject ILedgerService LedgerService
