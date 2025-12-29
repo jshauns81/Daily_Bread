@@ -424,3 +424,25 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# =====================================
+# DEVELOPMENT/INTERNAL DOCUMENTATION (keep out of public repo)
+# =====================================
+
+# Internal development summaries and investigation notes
+*_SUMMARY.md
+*_INVESTIGATION.md
+*_REPORT.md
+*FIX_SUMMARY.md
+
+# Railway deployment (removed from project)
+railway.toml
+
+# Archive files (should not be committed)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Git backup folders
+.git-rebase-backup/
