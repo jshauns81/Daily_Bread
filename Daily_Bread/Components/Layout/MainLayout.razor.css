@@ -385,12 +385,41 @@ main {
         padding-right: 0;
     }
     
+    /* Hide the mobile header structure but keep LoginDisplay accessible */
     .mobile-header {
+        /* Position mobile header content into desktop header area */
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: auto;
+        height: auto;
+        width: auto;
+        background: transparent;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        z-index: 50;
+        justify-content: flex-end;
+    }
+    
+    /* Hide hamburger and brand on desktop - LoginDisplay stays visible */
+    .mobile-header .hamburger-btn,
+    .mobile-header .mobile-brand {
         display: none;
     }
     
+    /* LoginDisplay container adapts for desktop */
+    .mobile-header .mobile-header-actions {
+        position: relative;
+    }
+    
     .desktop-header {
+        /* Desktop header is now just a spacer/background */
         display: flex;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--nord1);
+        border-bottom: none;
+        justify-content: flex-end;
+        min-height: 56px;
     }
     
     .sidebar {

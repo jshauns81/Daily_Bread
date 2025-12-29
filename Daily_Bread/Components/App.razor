@@ -98,36 +98,45 @@
     <!-- Viewport Height Calculation Script - Must run early -->
     <script>
         (function() {
-            // Calculate and set viewport height variables
-            function setViewportHeight() {
-                // Get the actual viewport height
+            // Set viewport height variables (doesn't need document.body)
+            function setViewportVars() {
                 var vh = window.innerHeight * 0.01;
                 document.documentElement.style.setProperty('--vh', vh + 'px');
                 document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-                
-                // Get safe area insets from CSS env() or fallback to 0
-                // These are read from a temporary element
-                var testEl = document.createElement('div');
-                testEl.style.cssText = 'position:fixed;top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px);left:env(safe-area-inset-left,0px);right:env(safe-area-inset-right,0px);pointer-events:none;visibility:hidden;';
-                document.body.appendChild(testEl);
-                
-                var computedStyle = getComputedStyle(testEl);
-                var safeTop = computedStyle.top || '0px';
-                var safeBottom = computedStyle.bottom || '0px';
-                var safeLeft = computedStyle.left || '0px';
-                var safeRight = computedStyle.right || '0px';
-                
-                // Use env() values directly if available (more reliable)
+            }
+            
+            // Set safe area insets (needs document.body for test element)
+            function setSafeAreaInsets() {
+                // Use env() values directly - more reliable and doesn't require DOM measurement
                 document.documentElement.style.setProperty('--safe-top', 'env(safe-area-inset-top, 0px)');
                 document.documentElement.style.setProperty('--safe-bottom', 'env(safe-area-inset-bottom, 0px)');
                 document.documentElement.style.setProperty('--safe-left', 'env(safe-area-inset-left, 0px)');
                 document.documentElement.style.setProperty('--safe-right', 'env(safe-area-inset-right, 0px)');
-                
-                document.body.removeChild(testEl);
             }
             
-            // Run immediately
-            setViewportHeight();
+            // Combined function for resize/orientation handlers
+            function setViewportHeight() {
+                setViewportVars();
+                setSafeAreaInsets();
+            }
+            
+            // Set viewport vars immediately (safe - only uses documentElement)
+            setViewportVars();
+            
+            // Set safe area insets - wait for body if needed
+            if (document.body) {
+                setSafeAreaInsets();
+            } else {
+                // Wait for body to be available using requestAnimationFrame
+                function waitForBody() {
+                    if (document.body) {
+                        setSafeAreaInsets();
+                    } else {
+                        requestAnimationFrame(waitForBody);
+                    }
+                }
+                requestAnimationFrame(waitForBody);
+            }
             
             // Update on resize (handles orientation change, keyboard open, etc.)
             var resizeTimeout;
@@ -218,18 +227,23 @@
     <!-- Service Worker Registration -->
     <script>
         // User dropdown toggle - pure JS implementation
-        // Uses inline styles to guarantee they override any CSS
+        // Uses event delegation for Blazor dynamic content compatibility
         (function() {
-            function initUserDropdown() {
-                console.log('User dropdown JS initialized');
+            var clickHandlerAttached = false;
+            
+            function setupClickHandler() {
+                if (clickHandlerAttached) return;
+                clickHandlerAttached = true;
                 
-                // Use event delegation on document body for dynamic Blazor content
-                document.body.addEventListener('click', function(e) {
+                console.log('User dropdown click handler attached');
+                
+                // Use event delegation on document for dynamic Blazor content
+                document.addEventListener('click', function(e) {
                     var btn = e.target.closest('#user-menu-btn');
                     var menu = document.getElementById('user-dropdown-menu');
                     
                     if (btn && menu) {
-                        console.log('Button clicked, toggling menu');
+                        console.log('User menu button clicked');
                         e.preventDefault();
                         e.stopPropagation();
                         
@@ -241,17 +255,15 @@
                             // Hide
                             menu.style.display = 'none';
                             menu.classList.remove('show');
+                            btn.setAttribute('aria-expanded', 'false');
                         } else {
                             // Show
                             menu.style.display = 'block';
                             menu.style.opacity = '1';
                             menu.style.transform = 'translateY(0)';
                             menu.classList.add('show');
+                            btn.setAttribute('aria-expanded', 'true');
                         }
-                        
-                        // Update aria-expanded
-                        btn.setAttribute('aria-expanded', (!isCurrentlyShown).toString());
-                        console.log('Menu visible:', !isCurrentlyShown);
                         return;
                     }
                     
@@ -259,9 +271,8 @@
                     if (menu) {
                         var computedDisplay = window.getComputedStyle(menu).display;
                         if (computedDisplay !== 'none') {
-                            var container = document.querySelector('.user-dropdown');
-                            if (!container || !container.contains(e.target)) {
-                                console.log('Clicking outside, closing menu');
+                            var container = e.target.closest('.user-dropdown');
+                            if (!container) {
                                 menu.style.display = 'none';
                                 menu.classList.remove('show');
                                 var menuBtn = document.getElementById('user-menu-btn');
@@ -271,7 +282,12 @@
                             }
                         }
                     }
-                });
+                }, true); // Use capture phase to ensure we get the event first
+            }
+            
+            function initUserDropdown() {
+                console.log('User dropdown JS initialized');
+                setupClickHandler();
             }
             
             // Initialize immediately if DOM is ready, otherwise wait
@@ -280,6 +296,31 @@
             } else {
                 initUserDropdown();
             }
+            
+            // Re-initialize after Blazor enhanced navigation
+            document.addEventListener('DOMContentLoaded', function() {
+                // Wait for Blazor to be available
+                var checkBlazor = setInterval(function() {
+                    if (window.Blazor) {
+                        clearInterval(checkBlazor);
+                        window.Blazor.addEventListener('enhancedload', function() {
+                            // Close any open dropdown after navigation
+                            var menu = document.getElementById('user-dropdown-menu');
+                            if (menu) {
+                                menu.style.display = 'none';
+                                menu.classList.remove('show');
+                            }
+                            var btn = document.getElementById('user-menu-btn');
+                            if (btn) {
+                                btn.setAttribute('aria-expanded', 'false');
+                            }
+                        });
+                    }
+                }, 100);
+                
+                // Stop checking after 10 seconds
+                setTimeout(function() { clearInterval(checkBlazor); }, 10000);
+            });
         })();
         
         // Register service worker for PWA functionality
