@@ -27,10 +27,30 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<FamilySettings> FamilySettings => Set<FamilySettings>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+    public DbSet<Household> Households => Set<Household>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        // ApplicationUser - Household relationship
+        builder.Entity<ApplicationUser>(entity =>
+        {
+            entity.HasOne(u => u.Household)
+                .WithMany()
+                .HasForeignKey(u => u.HouseholdId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevent accidental household deletion
+            
+            entity.HasIndex(u => u.HouseholdId);
+        });
+
+        // Household configuration
+        builder.Entity<Household>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.HasIndex(e => e.IsActive);
+        });
 
         // ChoreDefinition configuration
         builder.Entity<ChoreDefinition>(entity =>
