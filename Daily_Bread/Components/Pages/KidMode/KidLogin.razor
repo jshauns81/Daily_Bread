@@ -7,98 +7,193 @@
 @using Microsoft.AspNetCore.Identity
 @using Daily_Bread.Services
 
-@inject Daily_Bread.Services.IAuthenticationService AuthService
+@inject IJSRuntime JS
 @inject NavigationManager Navigation
 @inject ILogger<KidLogin> Logger
 
 <PageTitle>Quick Login - Daily Bread</PageTitle>
 
-<div class="kid-login-container">
-    <div class="kid-login-card">
-        <div class="kid-login-header">
-            <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon" />
-            <h2>Daily Bread</h2>
-            <p class="kid-tagline">Enter your PIN</p>
-        </div>
-
-        <div class="pin-entry">
-            <!-- PIN Display -->
-            <div class="pin-display">
-                @for (int i = 0; i < 4; i++)
-                {
-                    var index = i;
-                    <div class="pin-dot @(index < _pin.Length ? "filled" : "")">
-                        @if (index < _pin.Length)
-                        {
-                            <span>@EmojiConstants.FilledCircle</span>
-                        }
-                    </div>
-                }
+@if (!_checkedStandalone)
+{
+    <!-- Show loading state while checking PWA mode -->
+    <div class="kid-login-container">
+        <div class="kid-login-card">
+            <div class="kid-login-header">
+                <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon" />
+                <h2>Daily Bread</h2>
+                <p class="kid-tagline">Loading...</p>
             </div>
-
-            @if (!string.IsNullOrEmpty(_errorMessage))
-            {
-                <div class="pin-error">
-                    @_errorMessage
-                </div>
-            }
-
-            <!-- Number Pad -->
-            <div class="numpad">
-                @for (int row = 0; row < 4; row++)
-                {
-                    var currentRow = row;
-                    <div class="numpad-row">
-                        @if (currentRow < 3)
-                        {
-                            @for (int col = 0; col < 3; col++)
-                            {
-                                var num = (currentRow * 3 + col + 1).ToString();
-                                <button type="button" class="numpad-btn" @onclick="() => AddDigit(num)" disabled="@_isValidating">
-                                    @num
-                                </button>
-                            }
-                        }
-                        else
-                        {
-                            <!-- Bottom row: Clear, 0, Backspace -->
-                            <button type="button" class="numpad-btn numpad-action" @onclick="Clear" disabled="@_isValidating">
-                                <span class="bi bi-x-lg"></span>
-                            </button>
-                            <button type="button" class="numpad-btn" @onclick='() => AddDigit("0")' disabled="@_isValidating">
-                                0
-                            </button>
-                            <button type="button" class="numpad-btn numpad-action" @onclick="Backspace" disabled="@_isValidating">
-                                <span class="bi bi-backspace"></span>
-                            </button>
-                        }
-                    </div>
-                }
-            </div>
-
-            @if (_isValidating)
-            {
-                <div class="pin-loading">
-                    <div class="spinner-border spinner-border-sm" role="status">
-                        <span class="visually-hidden">Checking...</span>
-                    </div>
-                    <span>Signing in...</span>
-                </div>
-            }
-        </div>
-
-        <div class="kid-login-footer">
-            <a href="/Account/Login" class="back-link">
-                <span class="bi bi-arrow-left"></span> Sign in with password
-            </a>
         </div>
     </div>
-</div>
+}
+else if (!_isStandalone)
+{
+    <!-- Not in PWA mode - show message -->
+    <div class="kid-login-container">
+        <div class="kid-login-card">
+            <div class="kid-login-header">
+                <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon" />
+                <h2>Daily Bread</h2>
+                <p class="kid-tagline">Kid Mode</p>
+            </div>
+            
+            <div class="pwa-required-message">
+                <span class="bi bi-phone-fill pwa-icon"></span>
+                <h3>Install the App</h3>
+                <p>Kid Mode is available in the installed app.</p>
+                <p class="pwa-hint">Install Daily Bread on your device to use Quick PIN Login.</p>
+            </div>
+            
+            <div class="kid-login-footer">
+                <a href="/Account/Login" class="back-link">
+                    <span class="bi bi-arrow-left"></span> Sign in with password
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- PWA mode - show PIN entry -->
+    <div class="kid-login-container">
+        <div class="kid-login-card">
+            <div class="kid-login-header">
+                <img src="/images/bread-icon.png" alt="Daily Bread" class="kid-brand-icon" />
+                <h2>Daily Bread</h2>
+                <p class="kid-tagline">Enter your PIN</p>
+            </div>
+
+            <div class="pin-entry">
+                <!-- PIN Display -->
+                <div class="pin-display">
+                    @for (int i = 0; i < 4; i++)
+                    {
+                        var index = i;
+                        <div class="pin-dot @(index < _pin.Length ? "filled" : "")">
+                            @if (index < _pin.Length)
+                            {
+                                <span>@EmojiConstants.FilledCircle</span>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="pin-error">
+                        @_errorMessage
+                    </div>
+                }
+
+                <!-- Number Pad -->
+                <div class="numpad">
+                    @for (int row = 0; row < 4; row++)
+                    {
+                        var currentRow = row;
+                        <div class="numpad-row">
+                            @if (currentRow < 3)
+                            {
+                                @for (int col = 0; col < 3; col++)
+                                {
+                                    var num = (currentRow * 3 + col + 1).ToString();
+                                    <button type="button" class="numpad-btn" @onclick="() => AddDigit(num)" disabled="@_isValidating">
+                                        @num
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <!-- Bottom row: Clear, 0, Backspace -->
+                                <button type="button" class="numpad-btn numpad-action" @onclick="Clear" disabled="@_isValidating">
+                                    <span class="bi bi-x-lg"></span>
+                                </button>
+                                <button type="button" class="numpad-btn" @onclick='() => AddDigit("0")' disabled="@_isValidating">
+                                    0
+                                </button>
+                                <button type="button" class="numpad-btn numpad-action" @onclick="Backspace" disabled="@_isValidating">
+                                    <span class="bi bi-backspace"></span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @if (_isValidating)
+                {
+                    <div class="pin-loading">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Checking...</span>
+                        </div>
+                        <span>Signing in...</span>
+                    </div>
+                }
+            </div>
+
+            <div class="kid-login-footer">
+                <a href="/Account/Login" class="back-link">
+                    <span class="bi bi-arrow-left"></span> Sign in with password
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .pwa-required-message {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: var(--nord4);
+    }
+    
+    .pwa-icon {
+        font-size: 3rem;
+        color: var(--nord8);
+        margin-bottom: 1rem;
+        display: block;
+    }
+    
+    .pwa-required-message h3 {
+        color: var(--nord6);
+        margin-bottom: 0.5rem;
+        font-size: 1.25rem;
+    }
+    
+    .pwa-required-message p {
+        margin-bottom: 0.5rem;
+    }
+    
+    .pwa-hint {
+        font-size: 0.875rem;
+        color: var(--nord4);
+        opacity: 0.8;
+    }
+</style>
 
 @code {
     private string _pin = "";
     private string? _errorMessage;
     private bool _isValidating;
+    private bool _isStandalone;
+    private bool _checkedStandalone;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _isStandalone = await JS.InvokeAsync<bool>("dailyBread.isStandalone");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to check standalone mode, defaulting to false");
+                _isStandalone = false;
+            }
+            
+            _checkedStandalone = true;
+            StateHasChanged();
+        }
+    }
 
     private async Task AddDigit(string digit)
     {
@@ -139,37 +234,38 @@
 
         try
         {
-            // Use centralized AuthenticationService
-            var credential = new PinCredential
-            {
-                Pin = _pin,
-                RememberDevice = true
-            };
-
-            var result = await AuthService.SignInAsync(credential);
+            // Use JavaScript to make HTTP POST request for PIN sign-in
+            // This ensures the auth cookie is set properly via HTTP response
+            var result = await JS.InvokeAsync<PinSignInResult>("dailyBread.pinSignIn", _pin);
 
             if (result.Success)
             {
-                Logger.LogInformation("PIN login successful for user {UserId}", result.User?.UserId);
-                Navigation.NavigateTo("/", forceLoad: true);
+                Logger.LogInformation("PIN login successful, browser will redirect");
+                // The JS function will redirect to "/" on success
+                // No need to do anything here as the page will reload
             }
             else
             {
-                _errorMessage = result.UserFacingMessage ?? "Invalid PIN. Try again!";
-                Logger.LogWarning("PIN login failed: {ErrorCode}", result.ErrorCode);
+                _errorMessage = result.Error ?? "Invalid PIN. Try again!";
+                Logger.LogWarning("PIN login failed: {Error}", result.Error);
+                _pin = "";
+                _isValidating = false;
+                StateHasChanged();
             }
-
-            _pin = "";
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Exception during PIN login");
             _errorMessage = "An error occurred. Please try again.";
             _pin = "";
-        }
-        finally
-        {
             _isValidating = false;
+            StateHasChanged();
         }
+    }
+
+    private class PinSignInResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
     }
 }

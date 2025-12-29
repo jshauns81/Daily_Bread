@@ -813,6 +813,91 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 }
 
 .dropdown-divider { border-color: var(--nord2); }
+/* ===========================================
+   13a. USER DROPDOWN (Global - for JS toggle)
+   These styles MUST be global because JS adds .show class
+   and scoped CSS won't match it
+   =========================================== */
+
+#user-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background-color: var(--nord1);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    min-width: 200px;
+    /* CRITICAL: z-index must be higher than mobile-header (100) and sidebar (1100) */
+    z-index: 9999 !important;
+    overflow: visible;
+    /* Hidden by default - JS sets inline style to show */
+    display: none;
+}
+
+#user-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--nord6);
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+#user-dropdown-menu .dropdown-item:hover {
+    background-color: var(--nord2);
+}
+
+#user-dropdown-menu .dropdown-item .bi {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+#user-dropdown-menu .dropdown-item-danger {
+    color: var(--nord11);
+}
+
+#user-dropdown-menu .dropdown-item-danger:hover {
+    background-color: rgba(191, 97, 106, 0.15);
+}
+
+#user-dropdown-menu .dropdown-divider {
+    border-color: var(--nord3);
+    margin: 0.25rem 0;
+    opacity: 0.5;
+}
+
+#user-dropdown-menu form {
+    margin: 0;
+    padding: 0;
+}
+
+/* Mobile responsive for user dropdown */
+@media (max-width: 480px) {
+    #user-dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        border-radius: 16px 16px 0 0;
+        min-width: 100%;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        z-index: 9999 !important;
+    }
+    
+    #user-dropdown-menu .dropdown-item {
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+    }
+}
 
 /* ===========================================
    14. LIST GROUPS

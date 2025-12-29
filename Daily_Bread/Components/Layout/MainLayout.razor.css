@@ -84,6 +84,8 @@ main {
     padding-right: max(1rem, env(safe-area-inset-right, 0px));
     flex-shrink: 0;
     -webkit-tap-highlight-color: transparent;
+    /* CRITICAL: Allow dropdown to overflow */
+    overflow: visible;
 }
 
 /* Extend background color INTO the safe area (behind Dynamic Island) */
@@ -178,6 +180,9 @@ main {
     display: flex;
     align-items: center;
     flex-shrink: 0;
+    /* CRITICAL: Allow dropdown to overflow */
+    overflow: visible;
+    position: relative;
 }
 
 /* ===========================================
