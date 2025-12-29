@@ -1,6 +1,7 @@
 ﻿@using Daily_Bread.Services
 @inject IDashboardService DashboardService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
 
 <div class="nav-header">
     <a class="nav-brand" href="">
@@ -90,12 +91,15 @@
     </AuthorizeView>
 </nav>
 
-<div class="nav-footer">
-    <a href="/kid" class="kid-mode-link" @onclick="HandleNavigation">
-        <span class="bi bi-phone" aria-hidden="true"></span>
-        <span>Quick PIN Login</span>
-    </a>
-</div>
+@if (_isStandalone)
+{
+    <div class="nav-footer">
+        <a href="/kid" class="kid-mode-link" @onclick="HandleNavigation">
+            <span class="bi bi-phone" aria-hidden="true"></span>
+            <span>Quick PIN Login</span>
+        </a>
+    </div>
+}
 
 @code {
     [Parameter]
@@ -104,6 +108,7 @@
     private int _pendingCount;
     private bool _isAdminOnly;
     private bool _isParentOnly;
+    private bool _isStandalone;
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,6 +127,23 @@
             catch
             {
                 _pendingCount = 0;
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _isStandalone = await JS.InvokeAsync<bool>("dailyBread.isStandalone");
+                StateHasChanged();
+            }
+            catch
+            {
+                // JS interop not available (e.g., prerendering), default to false
+                _isStandalone = false;
             }
         }
     }
