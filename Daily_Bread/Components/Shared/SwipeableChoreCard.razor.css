@@ -1,5 +1,6 @@
 /* ===========================================
    SWIPEABLE CHORE CARD - Nord Theme
+   Enhanced swipe feedback and animations
    =========================================== */
 
 .swipeable-card-container {
@@ -60,10 +61,18 @@
     font-size: var(--font-size-sm);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    transition: transform 0.2s ease;
 }
 
 .action-content .bi {
     font-size: 1.5rem;
+    transition: transform 0.2s ease;
+}
+
+/* Scale up icons when threshold is reached */
+.swipeable-card-container.threshold-reached-right .swipe-action-right .action-content .bi,
+.swipeable-card-container.threshold-reached-left .swipe-action-left .action-content .bi {
+    transform: scale(1.3);
 }
 
 .help-action {
@@ -85,7 +94,9 @@
     border-radius: var(--radius-lg);
     padding: var(--space-md) var(--space-lg);
     transform: translateX(0);
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                box-shadow 0.2s ease,
+                border-color 0.2s ease;
     will-change: transform;
     z-index: 1;
     /* Ensure proper touch target */
@@ -239,20 +250,23 @@
 
 /* ===========================================
    SWIPE THRESHOLD INDICATORS
+   Enhanced visual feedback
    =========================================== */
 
 .swipeable-card-container.threshold-reached-right .swipeable-card {
     border-color: var(--nord14);
-    box-shadow: 0 0 0 2px rgba(163, 190, 140, 0.3);
+    box-shadow: 0 0 0 2px rgba(163, 190, 140, 0.3),
+                0 4px 16px rgba(163, 190, 140, 0.2);
 }
 
 .swipeable-card-container.threshold-reached-left .swipeable-card {
     border-color: var(--nord11);
-    box-shadow: 0 0 0 2px rgba(191, 97, 106, 0.3);
+    box-shadow: 0 0 0 2px rgba(191, 97, 106, 0.3),
+                0 4px 16px rgba(191, 97, 106, 0.2);
 }
 
 /* ===========================================
-   COMPLETION ANIMATION
+   COMPLETION ANIMATION - Enhanced
    =========================================== */
 
 .swipeable-card-container.completing {
@@ -261,12 +275,26 @@
 
 .swipeable-card-container.completing .swipeable-card {
     background: var(--nord14);
+    border-color: var(--nord14);
+}
+
+.swipeable-card-container.completing .chore-name,
+.swipeable-card-container.completing .value-amount,
+.swipeable-card-container.completing .status-text,
+.swipeable-card-container.completing .weekly-progress {
+    color: var(--nord0);
+    text-decoration: none;
+    opacity: 1;
 }
 
 @keyframes complete-slide {
     0% { 
         opacity: 1;
         transform: translateX(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(20%);
     }
     100% { 
         opacity: 0;
@@ -278,19 +306,31 @@
 }
 
 .swipeable-card-container.help-requesting {
-    animation: help-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: help-pulse 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes help-slide {
+.swipeable-card-container.help-requesting .swipeable-card {
+    background: rgba(235, 203, 139, 0.2);
+    border-color: var(--nord13);
+}
+
+@keyframes help-pulse {
     0% { 
-        opacity: 1;
         transform: translateX(0);
     }
-    50% {
+    20% {
+        transform: translateX(-30%);
+    }
+    40% {
+        transform: translateX(-10%);
+    }
+    60% {
         transform: translateX(-20%);
     }
+    80% {
+        transform: translateX(-5%);
+    }
     100% { 
-        opacity: 1;
         transform: translateX(0);
     }
 }
@@ -316,6 +356,11 @@
     .action-content .bi {
         font-size: 2rem;
     }
+    
+    /* Larger touch feedback area */
+    .swipeable-card:active {
+        transform: scale(0.99);
+    }
 }
 
 /* ===========================================
@@ -330,5 +375,14 @@
     .swipeable-card-container.completing,
     .swipeable-card-container.help-requesting {
         animation: none;
+    }
+    
+    .swipeable-card-container.completing {
+        opacity: 0;
+    }
+    
+    .action-content,
+    .action-content .bi {
+        transition: none;
     }
 }

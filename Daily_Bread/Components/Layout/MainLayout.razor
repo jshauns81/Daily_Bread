@@ -1,9 +1,10 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 @implements IDisposable
 
-<div class="page @(_sidebarOpen ? "sidebar-open" : "")" id="page-container">
+<div class="page @(_sidebarOpen ? "sidebar-open" : "") @(_showBottomNav ? "has-bottom-nav" : "")" id="page-container">
     <!-- Mobile Header -->
     <header class="mobile-header">
         <button class="hamburger-btn" onclick="window.toggleSidebar()" aria-label="Toggle navigation">
@@ -37,10 +38,33 @@
             <LoginDisplay />
         </div>
 
-        <article class="content">
+        <article class="content @(_showBottomNav ? "has-bottom-nav" : "")">
             @Body
         </article>
     </main>
+    
+    <!-- Mobile Bottom Navigation (for Child users) -->
+    @if (_showBottomNav)
+    {
+        <nav class="mobile-bottom-nav" aria-label="Main navigation">
+            <a href="/" class="bottom-nav-item @(IsCurrentPage("/") ? "active" : "")">
+                <span class="bi bi-house-fill"></span>
+                <span>Home</span>
+            </a>
+            <a href="/my-balance" class="bottom-nav-item @(IsCurrentPage("/my-balance") ? "active" : "")">
+                <span class="bi bi-wallet2"></span>
+                <span>Balance</span>
+            </a>
+            <a href="/tracker" class="bottom-nav-item @(IsCurrentPage("/tracker") ? "active" : "")">
+                <span class="bi bi-list-check"></span>
+                <span>All Chores</span>
+            </a>
+            <a href="/goals" class="bottom-nav-item @(IsCurrentPage("/goals") ? "active" : "")">
+                <span class="bi bi-bullseye"></span>
+                <span>Goals</span>
+            </a>
+        </nav>
+    }
 </div>
 
 <ToastContainer />
@@ -83,10 +107,52 @@
 
 @code {
     private bool _sidebarOpen = false;
+    private bool _showBottomNav = false;
+    private bool _isChild = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
+        await CheckUserRoleAsync();
+    }
+
+    private async Task CheckUserRoleAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                // Show bottom nav for child users (not parent-only, not admin-only)
+                var isParent = user.IsInRole("Parent");
+                var isAdmin = user.IsInRole("Admin");
+                var isChild = user.IsInRole("Child");
+                
+                // Child users (including those who are also parents/admins) get bottom nav
+                // Pure admin-only or parent-only don't get bottom nav
+                _isChild = isChild && !(!isChild && (isParent || isAdmin));
+                _showBottomNav = _isChild;
+            }
+        }
+        catch
+        {
+            // Ignore auth errors during initialization
+        }
+    }
+
+    private bool IsCurrentPage(string href)
+    {
+        var currentPath = new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/');
+        var targetPath = href.TrimStart('/').TrimEnd('/');
+        
+        if (string.IsNullOrEmpty(targetPath))
+        {
+            return currentPath == "/" || currentPath == "";
+        }
+        
+        return currentPath.Equals("/" + targetPath, StringComparison.OrdinalIgnoreCase);
     }
 
     private void CloseSidebar()

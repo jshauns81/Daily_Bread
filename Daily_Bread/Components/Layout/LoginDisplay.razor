@@ -1,3 +1,4 @@
+﻿
 @rendermode InteractiveServer
 @inject NavigationManager Navigation
 
@@ -19,7 +20,7 @@
                             <span>Change Password</span>
                         </a>
                         <hr class="dropdown-divider" />
-                        <form method="post" action="/Account/Logout" @formname="logout-form">
+                        <form method="post" action="/Account/Logout">
                             <AntiforgeryToken />
                             <button type="submit" class="dropdown-item dropdown-item-danger" role="menuitem">
                                 <span class="bi bi-box-arrow-right" aria-hidden="true"></span>

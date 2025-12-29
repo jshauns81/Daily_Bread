@@ -1,10 +1,11 @@
 ﻿@page "/"
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@rendermode InteractiveServer
 @implements IDisposable
 
 @using System.Security.Claims
 @using Daily_Bread.Components.Shared
 
+@inject IAppStateService AppState
 @inject IDashboardService DashboardService
 @inject IAchievementService AchievementService
 @inject ITrackerService TrackerService
@@ -190,13 +191,13 @@ else if ((_isParent || _isAdmin) && _parentData == null)
                 Title="Unable to Load Dashboard"
                 Message="We couldn't load your parent dashboard data. Please try refreshing the page.">
         <ActionButton>
-            <button class="btn btn-primary" @onclick="LoadDashboardAsync">Try Again</button>
+            <button class="btn btn-primary" @onclick="@(() => LoadDashboardAsync())">Try Again</button>
         </ActionButton>
     </EmptyState>
 }
 else if (_childData != null)
 {
-    <!-- Child Dashboard - Streamlined Action-First View -->
+    <!-- Child Dashboard - Restructured Action-First Layout -->
     <div class="child-dashboard">
         @if (_childData.NewAchievements.Count > 0)
         {
@@ -214,72 +215,112 @@ else if (_childData != null)
             </div>
         }
 
-        <!-- Hero Header - Balance Front & Center -->
-        <div class="hero-header">
-            <a href="/my-balance" class="hero-balance">
-                <AnimatedCounter
-                    Value="@_childData.Balance"
-                    Prefix="$"
-                    CssClass="hero-amount"
-                    Duration="800" />
-                <span class="hero-label">Balance</span>
-            </a>
-
-            <!-- Stats Pill -->
-            <div class="stats-pill">
-                <div class="stat-item">
+        <!-- STATUS CARD: Compact summary at top -->
+        <div class="status-card">
+            <div class="status-row">
+                <div class="status-item">
                     <CircularProgress
                         Current="@_childData.TodayCompletedCount"
                         Total="@_childData.TodayTotalCount"
-                        Size="xs"
+                        Size="sm"
                         ShowFraction="true"
                         Animated="true" />
-                    <span class="stat-label">Today</span>
-                </div>
-                @if (_childData.CurrentStreak > 0)
-                {
-                    <div class="stat-divider"></div>
-                    <div class="stat-item">
-                        <span class="stat-value">🔥 @_childData.CurrentStreak</span>
-                        <span class="stat-label">Streak</span>
+                    <div class="status-text-group">
+                        <span class="status-label">Today</span>
+                        @if (_childData.TodayTotalCount > 0 && _childData.TodayCompletedCount == _childData.TodayTotalCount)
+                        {
+                            <span class="status-done">All Done!</span>
+                        }
                     </div>
-                }
-                @if (_childData.TodayEarnings > 0)
-                {
-                    <div class="stat-divider"></div>
-                    <div class="stat-item">
-                        <span class="stat-value earned">+$@_childData.TodayEarnings.ToString("F2")</span>
-                        <span class="stat-label">Earned</span>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <!-- TO DO Section - Swipeable Cards -->
-        @if (_childData.PendingChores.Count > 0)
-        {
-            <div class="chores-section">
-                <div class="section-header">
-                    <span class="section-title">To Do</span>
-                    <span class="section-count">@_childData.PendingChores.Count left</span>
                 </div>
                 
-                <div class="swipeable-list">
-                    @foreach (var chore in _childData.PendingChores)
+                <div class="status-divider"></div>
+                
+                <div class="status-item">
+                    <span class="status-stat">@GetWeeklyCompletedCount()/@GetWeeklyTotalCount()</span>
+                    <span class="status-label">This Week</span>
+                </div>
+                
+                <div class="status-divider"></div>
+                
+                <a href="/my-balance" class="status-item status-balance">
+                    <AnimatedCounter
+                        Value="@_childData.Balance"
+                        Prefix="$"
+                        CssClass="balance-value"
+                        Duration="600" />
+                    <span class="status-label">Balance</span>
+                </a>
+            </div>
+            
+            @if (_childData.CurrentStreak > 0 || _childData.TodayEarnings > 0)
+            {
+                <div class="status-badges">
+                    @if (_childData.CurrentStreak > 0)
                     {
-                        <SwipeableChoreCard 
-                            Chore="@chore"
-                            OnComplete="HandleChoreComplete"
-                            OnRequestHelp="HandleHelpRequest"
-                            IsProcessing="@(_processingChoreId == chore.ChoreDefinitionId)" />
+                        <span class="streak-pill">🔥 @_childData.CurrentStreak day streak</span>
+                    }
+                    @if (_childData.TodayEarnings > 0)
+                    {
+                        <span class="earnings-pill">+$@_childData.TodayEarnings.ToString("F2") today</span>
                     }
                 </div>
+            }
+        </div>
+
+        <!-- NEXT CHORE: Primary action card (most prominent) -->
+        @if (_childData.PendingChores.Count > 0)
+        {
+            var nextChore = _childData.PendingChores.First();
+            var remainingChores = _childData.PendingChores.Skip(1).ToList();
+            
+            <div class="next-chore-section">
+                <div class="section-header">
+                    <span class="section-title">Next Up</span>
+                </div>
                 
-                <div class="swipe-hint">
-                    <span class="bi bi-arrow-left-right"></span>
-                    Swipe right to complete • Swipe left for help
+                <div class="next-chore-card">
+                    <SwipeableChoreCard 
+                        Chore="@nextChore"
+                        OnComplete="HandleChoreComplete"
+                        OnRequestHelp="HandleHelpRequest"
+                        IsProcessing="@(_processingChoreId == nextChore.ChoreDefinitionId)" />
+                </div>
+                
+                <div class="swipe-affordance">
+                    <div class="swipe-hint-visual">
+                        <span class="swipe-arrow left">←</span>
+                        <span class="swipe-label">Help</span>
+                    </div>
+                    <span class="swipe-center-text">Swipe</span>
+                    <div class="swipe-hint-visual">
+                        <span class="swipe-label">Done</span>
+                        <span class="swipe-arrow right">→</span>
+                    </div>
                 </div>
             </div>
+            
+            <!-- REMAINING TODAY: Secondary list -->
+            @if (remainingChores.Count > 0)
+            {
+                <div class="chores-section remaining-section">
+                    <div class="section-header">
+                        <span class="section-title">Also Today</span>
+                        <span class="section-count">@remainingChores.Count more</span>
+                    </div>
+                    
+                    <div class="chore-list">
+                        @foreach (var chore in remainingChores)
+                        {
+                            <SwipeableChoreCard 
+                                Chore="@chore"
+                                OnComplete="HandleChoreComplete"
+                                OnRequestHelp="HandleHelpRequest"
+                                IsProcessing="@(_processingChoreId == chore.ChoreDefinitionId)" />
+                        }
+                    </div>
+                </div>
+            }
         }
         else if (_childData.TodayTotalCount > 0)
         {
@@ -304,7 +345,7 @@ else if (_childData != null)
             </div>
         }
 
-        <!-- WEEKLY PROGRESS Section - Simple dots -->
+        <!-- WEEKLY PROGRESS Section -->
         @if (_childData.WeeklyProgress?.ChoreProgress.Count > 0)
         {
             <div class="weekly-progress-section">
@@ -330,7 +371,7 @@ else if (_childData != null)
             </div>
         }
 
-        <!-- DONE Section - Collapsed -->
+        <!-- DONE Section - Collapsed by default -->
         @if (_childData.CompletedChores.Count > 0)
         {
             <div class="done-section">
@@ -369,22 +410,6 @@ else if (_childData != null)
                 }
             </div>
         }
-
-        <!-- Quick Links Footer -->
-        <div class="quick-links">
-            <a href="/my-balance" class="quick-link">
-                <span class="bi bi-wallet2"></span>
-                <span>Balance</span>
-            </a>
-            <a href="/tracker" class="quick-link">
-                <span class="bi bi-list-check"></span>
-                <span>All Chores</span>
-            </a>
-            <a href="/goals" class="quick-link">
-                <span class="bi bi-bullseye"></span>
-                <span>Goals</span>
-            </a>
-        </div>
     </div>
 }
 else
@@ -394,7 +419,7 @@ else
                 Title="Unable to Load Dashboard"
                 Message="We couldn't load your dashboard data. Please try refreshing the page.">
         <ActionButton>
-            <button class="btn btn-primary" @onclick="LoadDashboardAsync">Try Again</button>
+            <button class="btn btn-primary" @onclick="@(() => LoadDashboardAsync())">Try Again</button>
         </ActionButton>
     </EmptyState>
 }
@@ -409,6 +434,7 @@ else
     private bool _showConfetti;
     private bool _hasTriggeredConfetti;
     private int? _togglingChoreId;
+    private bool _initializationComplete;
     
     // Child dashboard state
     private bool _doneExpanded = false;
@@ -426,6 +452,18 @@ else
     
     private CancellationTokenSource? _achievementCts;
 
+    private int GetWeeklyCompletedCount()
+    {
+        if (_childData?.WeeklyProgress?.ChoreProgress == null) return 0;
+        return _childData.WeeklyProgress.ChoreProgress.Sum(p => p.CompletedCount);
+    }
+
+    private int GetWeeklyTotalCount()
+    {
+        if (_childData?.WeeklyProgress?.ChoreProgress == null) return 0;
+        return _childData.WeeklyProgress.ChoreProgress.Sum(p => p.TargetCount);
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -439,6 +477,7 @@ else
             {
                 Logger.LogInformation("User is not authenticated");
                 _isLoading = false;
+                _initializationComplete = true;
                 return;
             }
 
@@ -450,6 +489,7 @@ else
             Logger.LogInformation("User authenticated: UserId={UserId}, IsParent={IsParent}, IsAdmin={IsAdmin}, IsAdminOnly={IsAdminOnly}", 
                 _userId, _isParent, _isAdmin, _isAdminOnly);
 
+            // Use AppState for cached data loading - prevents duplicate queries on prerender → interactive
             await LoadDashboardAsync();
 
             Logger.LogInformation("Dashboard loaded: ParentData={ParentData}, ChildData={ChildData}", 
@@ -479,11 +519,29 @@ else
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to initialize dashboard");
-            ToastService.ShowError("Error", $"Failed to initialize dashboard: {ex.Message}");
+            // Don't show toast during initial load as it may not be available
         }
         finally
         {
             _isLoading = false;
+            _initializationComplete = true;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // If initialization didn't complete but we're in interactive mode, retry loading
+        if (firstRender && !_initializationComplete && _isAuthenticated)
+        {
+            try
+            {
+                await LoadDashboardAsync();
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load dashboard in OnAfterRenderAsync");
+            }
         }
     }
     
@@ -527,24 +585,24 @@ else
         }, token);
     }
 
-    private async Task LoadDashboardAsync()
+    private async Task LoadDashboardAsync(bool forceRefresh = false)
     {
         try
         {
             if (_isParent || _isAdmin)
             {
-                _parentData = await DashboardService.GetParentDashboardAsync();
+                // Use cached state if available - prevents duplicate queries
+                _parentData = await AppState.GetParentDashboardAsync(forceRefresh);
             }
             else if (!string.IsNullOrEmpty(_userId))
             {
-                _childData = await DashboardService.GetChildDashboardAsync(_userId);
+                // Use cached state if available
+                _childData = await AppState.GetChildDashboardAsync(_userId, forceRefresh);
             }
-            
-            // Force a re-render after data loads
-            StateHasChanged();
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Failed to load dashboard");
             ToastService.ShowError("Error", $"Failed to load dashboard: {ex.Message}");
         }
     }
@@ -581,7 +639,9 @@ else
                     ToastService.ShowInfo("Marked!", "Waiting for approval");
                 }
                 
-                await LoadDashboardAsync();
+                // Invalidate cache and reload fresh data after mutation
+                AppState.InvalidateChildDashboard(_userId);
+                await LoadDashboardAsync(forceRefresh: true);
                 
                 if (!_hasTriggeredConfetti)
                 {
@@ -623,7 +683,9 @@ else
             if (result.Success)
             {
                 ToastService.ShowInfo("Help Requested", "Your parents have been notified");
-                await LoadDashboardAsync();
+                // Invalidate cache and reload fresh data after mutation
+                AppState.InvalidateChildDashboard(_userId);
+                await LoadDashboardAsync(forceRefresh: true);
             }
             else
             {
@@ -653,7 +715,10 @@ else
             if (result.Success)
             {
                 ToastService.ShowSuccess("Blessed!", "Labor has been blessed and wages processed.");
-                await LoadDashboardAsync();
+                // Invalidate both parent and child caches since approval affects both
+                AppState.InvalidateParentDashboard();
+                AppState.InvalidateChildDashboard();
+                await LoadDashboardAsync(forceRefresh: true);
             }
             else
             {

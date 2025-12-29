@@ -1,9 +1,147 @@
-/* Removing specific styles for login card form controls
-   as these will be handled globally for consistency
-   and to reduce redundancy in styling.
-*/
+/* ===========================================
+   BOTTOM NAV COMPONENT STYLES
+   Reusable bottom navigation for PWA/mobile
+   =========================================== */
 
-.login-card .form-check-label {
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    background: rgba(59, 66, 82, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(216, 222, 233, 0.1);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.bottom-nav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
     color: var(--nord4);
-    font-size: var(--font-size-sm);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    min-height: 60px;
+}
+
+.bottom-nav__icon {
+    font-size: 1.35rem;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.bottom-nav__label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.bottom-nav__item:hover,
+.bottom-nav__item:focus {
+    color: var(--nord6);
+    outline: none;
+}
+
+.bottom-nav__item--active {
+    color: var(--nord8);
+}
+
+.bottom-nav__item--active .bottom-nav__icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(136, 192, 208, 0.5));
+}
+
+/* Active indicator dot */
+.bottom-nav__item--active::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: var(--nord8);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(136, 192, 208, 0.6);
+}
+
+/* Badge for notification counts */
+.bottom-nav__badge {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 20px);
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: var(--nord11);
+    color: var(--nord6);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Touch feedback */
+@media (hover: none) and (pointer: coarse) {
+    .bottom-nav__item:active {
+        background: rgba(136, 192, 208, 0.1);
+        transform: scale(0.95);
+    }
+    
+    .bottom-nav__item:active .bottom-nav__icon {
+        transform: scale(0.9);
+    }
+}
+
+/* Hide on desktop */
+@media (min-width: 768px) {
+    .bottom-nav {
+        display: none;
+    }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+    .bottom-nav__icon {
+        font-size: 1.25rem;
+    }
+    
+    .bottom-nav__label {
+        font-size: 0.65rem;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+    .bottom-nav {
+        height: calc(50px + env(safe-area-inset-bottom, 0px));
+    }
+    
+    .bottom-nav__item {
+        min-height: 50px;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .bottom-nav__item,
+    .bottom-nav__icon {
+        transition: none;
+    }
 }

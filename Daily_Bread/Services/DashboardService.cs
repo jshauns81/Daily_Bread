@@ -478,6 +478,21 @@ public class DashboardService : IDashboardService
         await using var context = await _contextFactory.CreateDbContextAsync();
         
         var today = _dateProvider.Today;
+        var startDate = today.AddDays(-365);
+        
+        // OPTIMIZED: Single query to get all chore logs for the user in the last 365 days
+        // This eliminates the N+1 pattern (was 365 queries, now 1)
+        var allChoresInRange = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
+            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
+            .Where(cl => cl.Date >= startDate && cl.Date <= today)
+            .ToListAsync();
+
+        // Group by date for efficient lookup
+        var choresByDate = allChoresInRange
+            .GroupBy(cl => cl.Date)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        
         var currentStreak = 0;
         var bestStreak = 0;
         var runningStreak = 0;
@@ -487,22 +502,10 @@ public class DashboardService : IDashboardService
         // Look back up to 365 days
         for (int i = 0; i < 365; i++)
         {
-            // Get chores for this date
-            var choresForDate = await context.ChoreLogs
-                .Include(cl => cl.ChoreDefinition)
-                .Where(cl => cl.Date == currentDate && cl.ChoreDefinition.AssignedUserId == userId)
-                .ToListAsync();
-
-            // If no chores scheduled for this date, continue checking previous days
-            if (choresForDate.Count == 0)
+            // Get chores for this date from the pre-loaded dictionary
+            if (!choresByDate.TryGetValue(currentDate, out var choresForDate) || choresForDate.Count == 0)
             {
-                // For today, no chores means we continue
-                // For past days, no scheduled chores doesn't break streak
-                if (currentDate == today)
-                {
-                    currentDate = currentDate.AddDays(-1);
-                    continue;
-                }
+                // No chores scheduled for this date, continue checking
                 currentDate = currentDate.AddDays(-1);
                 continue;
             }

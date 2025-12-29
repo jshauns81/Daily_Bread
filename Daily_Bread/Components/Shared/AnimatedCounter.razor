@@ -1,4 +1,4 @@
-@implements IAsyncDisposable
+﻿@implements IAsyncDisposable
 @inject IJSRuntime JS
 
 <span class="animated-counter @CssClass" @ref="_element">
@@ -19,6 +19,7 @@
     private decimal _displayValue;
     private IJSObjectReference? _module;
     private bool _isFirstRender = true;
+    private bool _disposed;
 
     [Parameter, EditorRequired]
     public decimal Value { get; set; }
@@ -51,16 +52,31 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !_disposed)
         {
-            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/animated-counter.js");
-            _isFirstRender = false;
+            try
+            {
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/animated-counter.js");
+                _isFirstRender = false;
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit disconnected, ignore
+            }
+            catch (TaskCanceledException)
+            {
+                // Operation cancelled, ignore
+            }
+            catch (ObjectDisposedException)
+            {
+                // Object disposed, ignore
+            }
         }
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        if (!_isFirstRender && Value != _previousValue && _module != null)
+        if (!_isFirstRender && Value != _previousValue && _module != null && !_disposed)
         {
             // Animate from previous to new value
             await AnimateValue(_previousValue, Value);
@@ -75,42 +91,71 @@
 
     private async Task AnimateValue(decimal from, decimal to)
     {
+        if (_disposed) return;
+        
         try
         {
             // Use JS for smooth animation
             var dotNetRef = DotNetObjectReference.Create(this);
             await _module!.InvokeVoidAsync("animate", _element, (double)from, (double)to, Duration, Format, dotNetRef);
         }
+        catch (JSDisconnectedException)
+        {
+            // Circuit disconnected, just set the value
+            _displayValue = to;
+        }
+        catch (TaskCanceledException)
+        {
+            // Operation cancelled, just set the value
+            _displayValue = to;
+        }
+        catch (ObjectDisposedException)
+        {
+            // Object disposed, just set the value
+            _displayValue = to;
+        }
         catch
         {
             // Fallback: just set the value
             _displayValue = to;
-            StateHasChanged();
         }
     }
 
     [JSInvokable]
     public void UpdateDisplayValue(string value)
     {
+        if (_disposed) return;
+        
         if (decimal.TryParse(value, out var parsed))
         {
             _displayValue = parsed;
-            InvokeAsync(StateHasChanged);
+            _ = InvokeAsync(StateHasChanged);
         }
     }
 
     [JSInvokable]
     public void AnimationComplete()
     {
+        if (_disposed) return;
+        
         _displayValue = Value;
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
     }
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
+        
         if (_module != null)
         {
-            await _module.DisposeAsync();
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch
+            {
+                // Swallow all exceptions during disposal - circuit may already be disconnected
+            }
         }
     }
 }
