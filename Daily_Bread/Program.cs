@@ -361,6 +361,121 @@ app.MapRazorComponents<App>()
 // Map additional Identity endpoints
 app.MapAdditionalIdentityEndpoints();
 
+// ============================================================================
+// ENDPOINT DEBUGGING: Print ALL endpoints related to Account/Identity/Login
+// ============================================================================
+Console.WriteLine("\n========================================");
+Console.WriteLine("ENDPOINT ROUTE ANALYSIS (COMPREHENSIVE)");
+Console.WriteLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+Console.WriteLine("========================================\n");
+
+var endpointDataSource = app.Services.GetRequiredService<EndpointDataSource>();
+
+// Get ALL endpoints that might be related to authentication
+var relevantEndpoints = endpointDataSource.Endpoints
+    .Where(e => 
+    {
+        var displayName = e.DisplayName ?? "";
+        var routePattern = (e as RouteEndpoint)?.RoutePattern.RawText ?? "";
+        
+        return displayName.Contains("Account", StringComparison.OrdinalIgnoreCase) ||
+               displayName.Contains("Identity", StringComparison.OrdinalIgnoreCase) ||
+               displayName.Contains("Login", StringComparison.OrdinalIgnoreCase) ||
+               displayName.Contains("Logout", StringComparison.OrdinalIgnoreCase) ||
+               routePattern.Contains("Account", StringComparison.OrdinalIgnoreCase) ||
+               routePattern.Contains("Login", StringComparison.OrdinalIgnoreCase);
+    })
+    .ToList();
+
+Console.WriteLine($"Found {relevantEndpoints.Count} endpoint(s) matching Account/Identity/Login patterns:\n");
+
+var loginEndpoints = new List<(string Pattern, string HttpMethods, string Type)>();
+
+foreach (var endpoint in relevantEndpoints)
+{
+    Console.WriteLine($"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    Console.WriteLine($"Display Name: {endpoint.DisplayName}");
+    
+    // Try to get route pattern
+    var routeEndpoint = endpoint as RouteEndpoint;
+    var pattern = routeEndpoint?.RoutePattern.RawText ?? "(no pattern)";
+    Console.WriteLine($"  Route Pattern: {pattern}");
+    Console.WriteLine($"  Order: {routeEndpoint?.Order ?? -1}");
+    
+    // Get HTTP methods
+    var httpMethodMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Routing.HttpMethodMetadata>();
+    var methods = httpMethodMetadata?.HttpMethods != null 
+        ? string.Join(", ", httpMethodMetadata.HttpMethods)
+        : "ALL (no restriction)";
+    Console.WriteLine($"  HTTP Methods: {methods}");
+    
+    // Check for component metadata (Blazor)
+    var componentMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Components.Endpoints.ComponentTypeMetadata>();
+    if (componentMetadata != null)
+    {
+        Console.WriteLine($"  ✓ Blazor Component: {componentMetadata.Type.FullName}");
+    }
+    
+    // Check for Razor Pages
+    var pageMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.RazorPages.PageActionDescriptor>();
+    if (pageMetadata != null)
+    {
+        Console.WriteLine($"  ⚠ Razor Page: {pageMetadata.RelativePath}");
+        Console.WriteLine($"  ⚠ Page Route: {pageMetadata.RouteValues["page"]}");
+    }
+    
+    // Check for antiforgery
+    var antiforgeryMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Antiforgery.IAntiforgeryMetadata>();
+    if (antiforgeryMetadata != null)
+    {
+        Console.WriteLine($"  Antiforgery Required: {antiforgeryMetadata.RequiresValidation}");
+    }
+    
+    // Check for authorization
+    var authMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Authorization.IAllowAnonymous>();
+    if (authMetadata != null)
+    {
+        Console.WriteLine($"  Authorization: [AllowAnonymous]");
+    }
+    
+    // Track /Account/Login endpoints specifically
+    if (pattern.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase))
+    {
+        var type = componentMetadata != null ? "Blazor" : (pageMetadata != null ? "RazorPages" : "MinimalAPI");
+        loginEndpoints.Add((pattern, methods, type));
+    }
+    
+    Console.WriteLine();
+}
+
+// Summary for /Account/Login
+Console.WriteLine("========================================");
+Console.WriteLine("ROUTE COLLISION CHECK: /Account/Login");
+Console.WriteLine("========================================");
+
+if (loginEndpoints.Count == 0)
+{
+    Console.WriteLine("⚠ WARNING: No endpoint found for /Account/Login!");
+    Console.WriteLine("  Login will be handled by the Blazor catch-all route via MapRazorComponents.");
+}
+else if (loginEndpoints.Count == 1)
+{
+    var ep = loginEndpoints[0];
+    Console.WriteLine($"✓ Single handler found: {ep.Type}");
+    Console.WriteLine($"  Pattern: {ep.Pattern}");
+    Console.WriteLine($"  Methods: {ep.HttpMethods}");
+}
+else
+{
+    Console.WriteLine($"⚠ COLLISION DETECTED: {loginEndpoints.Count} handlers for /Account/Login!");
+    foreach (var ep in loginEndpoints)
+    {
+        Console.WriteLine($"  - {ep.Type}: {ep.Pattern} [{ep.HttpMethods}]");
+    }
+}
+
+Console.WriteLine("\n========================================\n");
+
 app.Run();
 
 // ============================================================================
@@ -480,11 +595,62 @@ internal static class IdentityEndpointsExtensions
     {
         var group = endpoints.MapGroup("/Account");
 
+        // Login POST endpoint - handles form submission from Blazor Login.razor
+        // Uses /PerformLogin to avoid collision with the /Login Blazor page route
+        group.MapPost("/PerformLogin", async (
+            HttpContext context,
+            SignInManager<ApplicationUser> signInManager,
+            UserManager<ApplicationUser> userManager,
+            ILogger<Program> logger) =>
+        {
+            var form = await context.Request.ReadFormAsync();
+            var userName = form["Input.UserName"].ToString();
+            var password = form["Input.Password"].ToString();
+            var rememberMe = form["Input.RememberMe"].ToString().Equals("true", StringComparison.OrdinalIgnoreCase);
+            var returnUrl = context.Request.Query["ReturnUrl"].FirstOrDefault() ?? "/";
+
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
+            {
+                logger.LogWarning("Login attempt with empty username or password");
+                return Results.LocalRedirect($"~/Account/Login?ReturnUrl={Uri.EscapeDataString(returnUrl)}&error=invalid");
+            }
+
+            var result = await signInManager.PasswordSignInAsync(userName, password, rememberMe, lockoutOnFailure: true);
+
+            if (result.Succeeded)
+            {
+                var user = await userManager.FindByNameAsync(userName);
+                logger.LogInformation("User {UserName} logged in successfully", userName);
+
+                // Check if admin-only user
+                if (user != null)
+                {
+                    var roles = await userManager.GetRolesAsync(user);
+                    if (roles.Contains("Admin") && !roles.Contains("Parent"))
+                    {
+                        return Results.LocalRedirect("~/admin/users");
+                    }
+                }
+
+                return Results.LocalRedirect($"~{returnUrl}");
+            }
+
+            if (result.IsLockedOut)
+            {
+                logger.LogWarning("User {UserName} account locked out", userName);
+                return Results.LocalRedirect($"~/Account/Login?ReturnUrl={Uri.EscapeDataString(returnUrl)}&error=lockout");
+            }
+
+            logger.LogWarning("Failed login attempt for {UserName}", userName);
+            return Results.LocalRedirect($"~/Account/Login?ReturnUrl={Uri.EscapeDataString(returnUrl)}&error=invalid");
+        }).DisableAntiforgery().AllowAnonymous();
+
+        // Logout POST endpoint
         group.MapPost("/Logout", async (SignInManager<ApplicationUser> signInManager) =>
         {
             await signInManager.SignOutAsync();
             return Results.LocalRedirect("~/Account/Login");
-        });
+        }).DisableAntiforgery();
 
         return group;
     }
