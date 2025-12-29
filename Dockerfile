@@ -18,10 +18,10 @@ WORKDIR /app
 # Copy published app   
 COPY --from=build /app/publish .
 
-# Railway uses PORT env var, default to 8080
+# Configure environment
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV PORT=8080
 EXPOSE 8080
 
-# Use shell form to expand PORT variable
+# Use PORT environment variable for flexibility with different hosting providers
 ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT} dotnet Daily_Bread.dll"]

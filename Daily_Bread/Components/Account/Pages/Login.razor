@@ -8,11 +8,9 @@
 @using Daily_Bread.Data
 @using Daily_Bread.Components.Account
 
-@inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
-@inject ILogger<Login> Logger
+@inject Daily_Bread.Services.IAuthenticationService AuthService
 @inject NavigationManager NavigationManager
-@inject IdentityRedirectManager RedirectManager
+@inject ILogger<Login> Logger
 
 <PageTitle>Login - Daily Bread</PageTitle>
 
@@ -27,6 +25,7 @@
         <StatusMessage Message="@errorMessage" />
 
         <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <AntiforgeryToken />
             <DataAnnotationsValidator />
             
             <div class="mb-4">
@@ -61,7 +60,7 @@
             
             <button type="submit" class="btn btn-primary btn-login">
                 <span class="bi bi-box-arrow-in-right me-2"></span>
-                Sign In
+                <span>Sign In</span>
             </button>
         </EditForm>
         
@@ -96,40 +95,46 @@
 
     public async Task LoginUser()
     {
-        var result = await SignInManager.PasswordSignInAsync(Input.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-        
-        if (result.Succeeded)
+        errorMessage = null;
+
+        try
         {
-            Logger.LogInformation("User logged in.");
-            
-            // Check if user is Admin-only (not also a Parent) - redirect to user management
-            var user = await UserManager.FindByNameAsync(Input.UserName);
-            string redirectUrl = ReturnUrl ?? "/";
-            
-            if (user != null)
+            // Use centralized AuthenticationService
+            var credential = new PasswordCredential
             {
-                var roles = await UserManager.GetRolesAsync(user);
-                if (roles.Contains("Admin") && !roles.Contains("Parent"))
+                UserName = Input.UserName,
+                Password = Input.Password,
+                RememberDevice = Input.RememberMe
+            };
+
+            var result = await AuthService.SignInAsync(credential);
+
+            if (result.Success && result.User != null)
+            {
+                Logger.LogInformation("User {UserName} logged in successfully", Input.UserName);
+
+                // Determine redirect based on role
+                string redirectUrl = ReturnUrl ?? "/";
+
+                // Admin-only users go to user management
+                if (result.User.Roles.Contains("Admin") && !result.User.Roles.Contains("Parent"))
                 {
                     redirectUrl = "/admin/users";
                 }
+
+                NavigationManager.NavigateTo(redirectUrl, forceLoad: true);
             }
-            
-            // Use enhanced navigation to maintain Blazor circuit and authentication state
-            NavigationManager.NavigateTo(redirectUrl, forceLoad: false);
+            else
+            {
+                // Display user-facing error message
+                errorMessage = result.UserFacingMessage ?? "An error occurred during sign-in.";
+                Logger.LogWarning("Login failed for {UserName}: {ErrorCode}", Input.UserName, result.ErrorCode);
+            }
         }
-        else if (result.RequiresTwoFactor)
+        catch (Exception ex)
         {
-            errorMessage = "Two-factor authentication is not configured.";
-        }
-        else if (result.IsLockedOut)
-        {
-            Logger.LogWarning("User account locked out.");
-            errorMessage = "This account has been locked out. Please try again later.";
-        }
-        else
-        {
-            errorMessage = "Error: Invalid username or password.";
+            Logger.LogError(ex, "Exception during login for {UserName}", Input.UserName);
+            errorMessage = "An unexpected error occurred. Please try again.";
         }
     }
 

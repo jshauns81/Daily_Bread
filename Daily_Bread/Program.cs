@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components.Authorization;
+﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -78,11 +78,17 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     options.Password.RequiredLength = 8;
     options.SignIn.RequireConfirmedAccount = false;
     options.SignIn.RequireConfirmedEmail = false;
+    
+    // ✅ LOCKOUT PROTECTION ENABLED
+    options.Lockout.AllowedForNewUsers = true;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddSignInManager()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>(); // Add custom claims factory
 
 // Configure authentication cookie with hardened security settings
 builder.Services.ConfigureApplicationCookie(options =>
@@ -134,11 +140,30 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
+    
+    // ✅ ROLE-BASED POLICIES
+    options.AddPolicy("RequireParent", policy =>
+        policy.RequireRole("Parent", "Admin"));
+    
+    options.AddPolicy("RequireChild", policy =>
+        policy.RequireRole("Child"));
+    
+    options.AddPolicy("RequireAdmin", policy =>
+        policy.RequireRole("Admin"));
+    
+    // ✅ HOUSEHOLD ISOLATION POLICY
+    // This can be used on endpoints that need to verify household context
+    options.AddPolicy("RequireHousehold", policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim(c => c.Type == "HouseholdId")));
 });
 
 // Add application services
 builder.Services.AddScoped<IDateProvider, SystemDateProvider>();
 builder.Services.AddScoped<IToastService, ToastService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
+builder.Services.AddSingleton<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IChoreScheduleService, ChoreScheduleService>();
 builder.Services.AddScoped<IChoreLogService, ChoreLogService>();
 builder.Services.AddScoped<ILedgerService, LedgerService>();
@@ -265,6 +290,7 @@ app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 
 // Redirect unauthenticated document requests to login
 // Static files are already served above, so this only affects page requests
@@ -321,8 +347,6 @@ app.Use(async (context, next) =>
     // Redirect to login
     context.Response.Redirect("/Account/Login");
 });
-
-app.UseAntiforgery();
 
 // Map endpoints - these run AFTER the middleware above
 app.MapHealthChecks("/health").AllowAnonymous();
@@ -392,7 +416,7 @@ static void LoadDotEnv()
 // Helper to build PostgreSQL connection string from environment variables
 static string GetPostgresConnectionString(IConfiguration configuration)
 {
-    // Check for DATABASE_URL format (Railway, Heroku, etc.)
+    // Check for DATABASE_URL format (common in cloud providers: Heroku, Render, etc.)
     var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
         ?? Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL")
         ?? Environment.GetEnvironmentVariable("POSTGRES_URL");
