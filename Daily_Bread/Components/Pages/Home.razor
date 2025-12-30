@@ -197,7 +197,7 @@ else if ((_isParent || _isAdmin) && _parentData == null)
 }
 else if (_childData != null)
 {
-    <!-- Child Dashboard - Restructured Action-First Layout -->
+    <!-- Child Dashboard - Redesigned for 13-year-old UX -->
     <div class="child-dashboard">
         @if (_childData.NewAchievements.Count > 0)
         {
@@ -215,71 +215,77 @@ else if (_childData != null)
             </div>
         }
 
-        <!-- STATUS CARD: Compact summary at top -->
-        <div class="status-card">
-            <div class="status-row">
-                <div class="status-item">
+        <!-- TODAY HERO: Single dominant card showing today's progress -->
+        <div class="today-hero">
+            <div class="today-hero-main">
+                <div class="today-progress-ring">
                     <CircularProgress
                         Current="@_childData.TodayCompletedCount"
                         Total="@_childData.TodayTotalCount"
-                        Size="sm"
+                        Size="lg"
                         ShowFraction="true"
                         Animated="true" />
-                    <div class="status-text-group">
-                        <span class="status-label">Today</span>
-                        @if (_childData.TodayTotalCount > 0 && _childData.TodayCompletedCount == _childData.TodayTotalCount)
-                        {
-                            <span class="status-done">All Done!</span>
-                        }
+                </div>
+                <div class="today-info">
+                    <span class="today-label">Today</span>
+                    @if (_childData.TodayTotalCount > 0 && _childData.TodayCompletedCount == _childData.TodayTotalCount)
+                    {
+                        <span class="today-status complete">🎉 All Done!</span>
+                    }
+                    else if (_childData.TodayTotalCount > 0)
+                    {
+                        <span class="today-status">@(_childData.TodayTotalCount - _childData.TodayCompletedCount) left to do</span>
+                    }
+                    else
+                    {
+                        <span class="today-status">Day off!</span>
+                    }
+                </div>
+            </div>
+            
+            <div class="today-hero-stats">
+                @if (_childData.CurrentStreak > 0)
+                {
+                    <div class="hero-stat streak">
+                        <span class="hero-stat-icon">🔥</span>
+                        <span class="hero-stat-value">@_childData.CurrentStreak</span>
+                        <span class="hero-stat-label">day streak</span>
                     </div>
-                </div>
+                }
                 
-                <div class="status-divider"></div>
-                
-                <div class="status-item">
-                    <span class="status-stat">@GetWeeklyCompletedCount()/@GetWeeklyTotalCount()</span>
-                    <span class="status-label">This Week</span>
-                </div>
-                
-                <div class="status-divider"></div>
-                
-                <a href="/my-balance" class="status-item status-balance">
+                <a href="/my-balance" class="hero-stat balance">
+                    <span class="hero-stat-icon">💰</span>
                     <AnimatedCounter
                         Value="@_childData.Balance"
                         Prefix="$"
-                        CssClass="balance-value"
+                        CssClass="hero-stat-value"
                         Duration="600" />
-                    <span class="status-label">Balance</span>
+                    <span class="hero-stat-label">balance</span>
                 </a>
+                
+                @if (_childData.TodayEarnings > 0)
+                {
+                    <div class="hero-stat earnings">
+                        <span class="hero-stat-icon">✨</span>
+                        <span class="hero-stat-value">+$@_childData.TodayEarnings.ToString("F2")</span>
+                        <span class="hero-stat-label">earned today</span>
+                    </div>
+                }
             </div>
-            
-            @if (_childData.CurrentStreak > 0 || _childData.TodayEarnings > 0)
-            {
-                <div class="status-badges">
-                    @if (_childData.CurrentStreak > 0)
-                    {
-                        <span class="streak-pill">🔥 @_childData.CurrentStreak day streak</span>
-                    }
-                    @if (_childData.TodayEarnings > 0)
-                    {
-                        <span class="earnings-pill">+$@_childData.TodayEarnings.ToString("F2") today</span>
-                    }
-                </div>
-            }
         </div>
 
-        <!-- NEXT CHORE: Primary action card (most prominent) -->
+        <!-- NEXT UP: Primary action card (most prominent) -->
         @if (_childData.PendingChores.Count > 0)
         {
             var nextChore = _childData.PendingChores.First();
             var remainingChores = _childData.PendingChores.Skip(1).ToList();
             
-            <div class="next-chore-section">
-                <div class="section-header">
-                    <span class="section-title">Next Up</span>
+            <div class="next-up-section">
+                <div class="next-up-header">
+                    <span class="next-up-badge">NEXT UP</span>
                 </div>
                 
-                <div class="next-chore-card">
+                <div class="next-up-card">
                     <SwipeableChoreCard 
                         Chore="@nextChore"
                         OnComplete="HandleChoreComplete"
@@ -287,29 +293,29 @@ else if (_childData != null)
                         IsProcessing="@(_processingChoreId == nextChore.ChoreDefinitionId)" />
                 </div>
                 
-                <div class="swipe-affordance">
-                    <div class="swipe-hint-visual">
-                        <span class="swipe-arrow left">←</span>
-                        <span class="swipe-label">Help</span>
+                <div class="swipe-hint">
+                    <div class="swipe-hint-item help">
+                        <span class="swipe-hint-arrow">←</span>
+                        <span class="swipe-hint-text">Help</span>
                     </div>
-                    <span class="swipe-center-text">Swipe</span>
-                    <div class="swipe-hint-visual">
-                        <span class="swipe-label">Done</span>
-                        <span class="swipe-arrow right">→</span>
+                    <span class="swipe-hint-divider">swipe</span>
+                    <div class="swipe-hint-item done">
+                        <span class="swipe-hint-text">Done</span>
+                        <span class="swipe-hint-arrow">→</span>
                     </div>
                 </div>
             </div>
             
-            <!-- REMAINING TODAY: Secondary list -->
+            <!-- MORE TODAY: Secondary list of remaining chores -->
             @if (remainingChores.Count > 0)
             {
-                <div class="chores-section remaining-section">
-                    <div class="section-header">
-                        <span class="section-title">Also Today</span>
-                        <span class="section-count">@remainingChores.Count more</span>
+                <div class="more-today-section">
+                    <div class="section-header-bar">
+                        <span class="section-header-title">More Today</span>
+                        <span class="section-header-count">@remainingChores.Count</span>
                     </div>
                     
-                    <div class="chore-list">
+                    <div class="chore-stack">
                         @foreach (var chore in remainingChores)
                         {
                             <SwipeableChoreCard 
@@ -325,69 +331,80 @@ else if (_childData != null)
         else if (_childData.TodayTotalCount > 0)
         {
             <!-- All Done State -->
-            <div class="all-done-banner">
-                <span class="done-icon">⭐</span>
-                <div class="done-text">
-                    <strong>All Done!</strong>
-                    <span>Great work today</span>
+            <div class="celebration-banner">
+                <div class="celebration-icon">⭐</div>
+                <div class="celebration-text">
+                    <strong>Amazing work!</strong>
+                    <span>You finished all your chores today</span>
                 </div>
             </div>
         }
         else
         {
             <!-- No Chores Today -->
-            <div class="no-chores-banner">
-                <span class="done-icon">😎</span>
-                <div class="done-text">
-                    <strong>Day Off</strong>
-                    <span>No chores scheduled</span>
+            <div class="day-off-banner">
+                <div class="day-off-icon">😎</div>
+                <div class="day-off-text">
+                    <strong>Day Off!</strong>
+                    <span>No chores scheduled for today</span>
                 </div>
             </div>
         }
 
-        <!-- WEEKLY PROGRESS Section -->
+        <!-- WEEKLY PROGRESS: Shows flexible chores progress -->
         @if (_childData.WeeklyProgress?.ChoreProgress.Count > 0)
         {
-            <div class="weekly-progress-section">
-                <div class="section-header">
-                    <span class="section-title">This Week</span>
+            <div class="weekly-section">
+                <div class="section-header-bar">
+                    <span class="section-header-title">This Week</span>
+                    <span class="section-header-subtitle">@GetWeeklyCompletedCount() of @GetWeeklyTotalCount()</span>
                 </div>
-                <div class="weekly-chores-list">
+                <div class="weekly-grid">
                     @foreach (var progress in _childData.WeeklyProgress.ChoreProgress)
                     {
-                        <div class="weekly-chore-row">
-                            <span class="weekly-chore-icon">@(progress.ChoreDefinition.Icon ?? "📋")</span>
-                            <span class="weekly-chore-name">@progress.ChoreDefinition.Name</span>
-                            <div class="weekly-dots">
-                                @for (int i = 0; i < progress.TargetCount; i++)
-                                {
-                                    <span class="weekly-dot @(i < progress.CompletedCount ? "filled" : "empty")"></span>
-                                }
+                        var progressPercent = progress.TargetCount > 0 
+                            ? Math.Min(100, (progress.CompletedCount * 100 / progress.TargetCount)) 
+                            : 0;
+                        var isComplete = progress.CompletedCount >= progress.TargetCount;
+                        
+                        <div class="weekly-item @(isComplete ? "complete" : "")">
+                            <span class="weekly-item-icon">@(progress.ChoreDefinition.Icon ?? "📋")</span>
+                            <div class="weekly-item-info">
+                                <span class="weekly-item-name">@progress.ChoreDefinition.Name</span>
+                                <div class="weekly-item-progress">
+                                    <div class="weekly-progress-bar">
+                                        <div class="weekly-progress-fill" style="width: @progressPercent%"></div>
+                                    </div>
+                                    <span class="weekly-item-count">@progress.CompletedCount/@progress.TargetCount</span>
+                                </div>
                             </div>
-                            <span class="weekly-count">@progress.CompletedCount/@progress.TargetCount</span>
+                            @if (isComplete)
+                            {
+                                <span class="weekly-item-check">✓</span>
+                            }
                         </div>
                     }
                 </div>
             </div>
         }
 
-        <!-- DONE Section - Collapsed by default -->
+        <!-- COMPLETED: Collapsed section showing finished chores -->
         @if (_childData.CompletedChores.Count > 0)
         {
-            <div class="done-section">
-                <button class="done-section-toggle" @onclick="ToggleDoneSection">
-                    <span class="section-title">Done</span>
-                    <span class="section-count">@_childData.CompletedChores.Count</span>
-                    <span class="bi @(_doneExpanded ? "bi-chevron-up" : "bi-chevron-down")"></span>
+            <div class="completed-section">
+                <button class="completed-toggle" @onclick="ToggleDoneSection">
+                    <span class="completed-toggle-title">Completed</span>
+                    <span class="completed-toggle-count">@_childData.CompletedChores.Count</span>
+                    <span class="completed-toggle-icon bi @(_doneExpanded ? "bi-chevron-up" : "bi-chevron-down")"></span>
                 </button>
                 
                 @if (_doneExpanded)
                 {
-                    <div class="done-list">
+                    <div class="completed-list">
                         @foreach (var chore in _childData.CompletedChores)
                         {
-                            <div class="done-item @(chore.IsApproved ? "approved" : "pending")">
-                                <span class="done-check">
+                            <div class="completed-item @(chore.IsApproved ? "approved" : "pending")">
+                                <span class="completed-item-status">
                                     @if (chore.IsApproved)
                                     {
                                         <span class="bi bi-check-circle-fill"></span>
@@ -397,10 +414,10 @@ else if (_childData != null)
                                         <span class="bi bi-hourglass-split"></span>
                                     }
                                 </span>
-                                <span class="done-name">@chore.ChoreName</span>
+                                <span class="completed-item-name">@chore.ChoreName</span>
                                 @if (chore.EarnValue > 0)
                                 {
-                                    <span class="done-value @(chore.IsApproved ? "earned" : "")">
+                                    <span class="completed-item-value @(chore.IsApproved ? "earned" : "")">
                                         @(chore.IsApproved ? "+" : "")$@chore.EarnValue.ToString("F2")
                                     </span>
                                 }
