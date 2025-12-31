@@ -6,7 +6,7 @@
 .child-dashboard {
     max-width: 600px;
     margin: 0 auto;
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-xs) var(--space-md); /* Reduced top padding from space-sm */
     padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-xl));
     display: flex;
     flex-direction: column;
