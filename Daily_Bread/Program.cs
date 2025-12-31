@@ -535,7 +535,7 @@ Console.WriteLine("\n========================================\n");
 app.Run();
 
 // ============================================================================
-// Local helper functions (must be after all top-level statements, before types)
+// Local helper functions (must be after all top-level statements, before types )
 // ============================================================================
 
 // Helper to load .env file for local development
