@@ -1,135 +1,469 @@
 /* ============================================
-   TRACKER PAGE - CHORE TRACKING
-   Mobile-first responsive design
+   BOOK OF DEEDS - Calm Ledger Redesign
+   Design: Quiet default, loud exceptions
    ============================================ */
 
 .tracker-container {
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
+    padding: 0 var(--space-md);
 }
+
+/* ===========================================
+   HEADER - Clean, integrated
+   =========================================== */
 
 .tracker-header {
     margin-bottom: var(--space-lg);
 }
 
 .tracker-header h1 {
-    margin-bottom: var(--space-md);
+    font-size: 1.5rem;
+    font-weight: 600;
     color: var(--nord6);
-    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-sm);
 }
 
-/* Date Navigation */
+/* Date Navigation - Inline horizontal */
 .date-navigation {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    flex-wrap: wrap;
+    margin-bottom: var(--space-sm);
 }
 
-.current-date {
+.date-navigation .nav-btn {
+    background: transparent;
+    border: 1px solid var(--nord3);
+    color: var(--nord4);
+    padding: 0.35rem 0.5rem;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    flex: 1;
-    justify-content: center;
-    min-width: 200px;
 }
 
-.date-display {
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-medium);
+.date-navigation .nav-btn:hover:not(:disabled) {
     color: var(--nord6);
-    text-align: center;
+    background: var(--nord2);
+    border-color: var(--nord4);
 }
 
+.date-navigation .nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.date-navigation .date-display {
+    font-size: 0.95rem;
+    color: var(--nord5);
+    font-weight: 500;
+}
+
+.date-navigation .today-badge {
+    background: var(--nord10);
+    color: var(--nord6);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.date-navigation .today-btn {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--nord8);
+    background: transparent;
+    border: 1px solid var(--nord3);
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.date-navigation .today-btn:hover {
+    background: var(--nord2);
+    border-color: var(--nord8);
+}
+
+/* Balance - Subtle integration */
 .balance-display {
-    padding: var(--space-sm) var(--space-md);
-    background-color: var(--nord2);
-    border-radius: var(--radius-md);
     display: inline-flex;
     align-items: center;
-    gap: var(--space-sm);
-    color: var(--nord6);
-    border: 1px solid var(--nord3);
+    gap: var(--space-xs);
+    font-size: 0.85rem;
+    color: var(--nord4);
+}
+
+.balance-display .balance-label {
+    font-weight: 500;
+}
+
+.balance-display .balance-amount {
+    font-weight: 600;
+    font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.balance-display .balance-amount.positive {
+    color: var(--nord14);
 }
 
 /* ===========================================
-   ENHANCED CHECKBOX BUTTON - Desktop
+   TABLE - The Ledger
    =========================================== */
 
-.chore-checkbox-btn {
-    width: 36px;
-    height: 36px;
+.chore-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 2px;
+    margin-top: var(--space-md);
+}
+
+.chore-table thead th {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--nord4);
+    padding: var(--space-sm) var(--space-sm);
+    text-align: left;
+    border-bottom: 1px solid var(--nord2);
+}
+
+.chore-table thead th:first-child {
+    width: 48px;
+    text-align: center;
+}
+
+.chore-table thead th:last-child {
+    text-align: right;
+}
+
+/* ===========================================
+   ROW STATES - The Heart of the Redesign
+   =========================================== */
+
+.chore-row {
+    transition: background 0.15s, transform 0.1s;
+}
+
+.chore-row td {
+    padding: var(--space-sm) var(--space-sm);
+    vertical-align: middle;
+    border-bottom: 1px solid transparent;
+}
+
+/* Default Row - Calm, quiet */
+.chore-row.row-default {
+    background: transparent;
+}
+
+.chore-row.row-default:hover {
+    background: rgba(136, 192, 208, 0.05);
+}
+
+/* Done Row - Subtle success, faded */
+.chore-row.row-done {
+    background: rgba(163, 190, 140, 0.08);
+}
+
+.chore-row.row-done .chore-name {
+    color: var(--nord4);
+}
+
+/* Muted Rows - Missed/Skipped, nearly invisible */
+.chore-row.row-muted {
+    opacity: 0.5;
+}
+
+.chore-row.row-muted:hover {
+    opacity: 0.8;
+}
+
+/* ===========================================
+   EXCEPTION ROWS - These demand attention
+   =========================================== */
+
+.chore-row.row-exception {
+    background: var(--nord1);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.chore-row.row-exception td:first-child {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.chore-row.row-exception td:last-child {
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+/* Help Request - LOUD amber/yellow */
+.chore-row.row-help {
+    background: linear-gradient(90deg, rgba(235, 203, 139, 0.15) 0%, rgba(235, 203, 139, 0.08) 100%);
+    border-left: 3px solid var(--nord13);
+}
+
+.chore-row.row-help td:first-child {
+    border-radius: 0;
+}
+
+/* Awaiting Blessing - Soft blue highlight */
+.chore-row.row-awaiting {
+    background: linear-gradient(90deg, rgba(136, 192, 208, 0.12) 0%, rgba(136, 192, 208, 0.06) 100%);
+    border-left: 3px solid var(--nord8);
+}
+
+.chore-row.row-awaiting td:first-child {
+    border-radius: 0;
+}
+
+/* ===========================================
+   STATUS INDICATOR - The Checkbox Reimagined
+   =========================================== */
+
+.status-cell {
+    width: 48px;
+    text-align: center;
+}
+
+.status-indicator {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    border: 3px solid var(--nord3);
+    border: 2px solid var(--nord3);
     background: transparent;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    color: transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-tap-highlight-color: transparent;
+    font-size: 0.9rem;
+    color: var(--nord4);
+    transition: all 0.15s ease;
 }
 
-.chore-checkbox-btn:hover:not(:disabled) {
+.status-indicator:hover:not(:disabled) {
     border-color: var(--nord8);
+    color: var(--nord8);
     background: rgba(136, 192, 208, 0.1);
 }
 
-.chore-checkbox-btn:active:not(:disabled) {
-    transform: scale(0.9);
-}
-
-.chore-checkbox-btn:disabled {
-    opacity: 0.5;
+.status-indicator:disabled {
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
-/* Checked states */
-.chore-checkbox-btn.checked {
-    color: var(--nord0);
-    border: none;
-    animation: checkbox-pop 0.3s ease-out;
-}
-
-.chore-checkbox-btn.checked.approved {
-    background: linear-gradient(135deg, var(--nord14) 0%, #8fad7a 100%);
-    box-shadow: 0 0 12px rgba(163, 190, 140, 0.4);
-}
-
-.chore-checkbox-btn.checked.pending {
-    background: linear-gradient(135deg, var(--nord8) 0%, var(--nord7) 100%);
-    animation: checkbox-pop 0.3s ease-out, pending-glow 2s ease-in-out infinite;
-}
-
-.chore-checkbox-btn.missed {
-    background: linear-gradient(135deg, var(--nord11) 0%, #a54e56 100%);
-    color: var(--nord6);
-    border: none;
-}
-
-.chore-checkbox-btn.skipped {
-    background: var(--nord3);
+/* Indicator States */
+.status-indicator.indicator-pending {
+    border-color: var(--nord3);
     color: var(--nord4);
-    border: none;
-    opacity: 0.6;
 }
 
-@keyframes checkbox-pop {
-    0% { transform: scale(0.8); }
-    50% { transform: scale(1.15); }
-    100% { transform: scale(1); }
+.status-indicator.indicator-awaiting {
+    border-color: var(--nord8);
+    background: rgba(136, 192, 208, 0.15);
+    color: var(--nord8);
 }
 
-@keyframes pending-glow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(136, 192, 208, 0.4); }
-    50% { box-shadow: 0 0 0 8px rgba(136, 192, 208, 0); }
+.status-indicator.indicator-done {
+    border-color: var(--nord14);
+    background: var(--nord14);
+    color: var(--nord0);
+}
+
+.status-indicator.indicator-help {
+    border-color: var(--nord13);
+    background: var(--nord13);
+    color: var(--nord0);
+    animation: pulse-help 2s ease-in-out infinite;
+}
+
+.status-indicator.indicator-missed {
+    border-color: var(--nord11);
+    background: rgba(191, 97, 106, 0.15);
+    color: var(--nord11);
+}
+
+.status-indicator.indicator-skipped {
+    border-color: var(--nord3);
+    background: var(--nord2);
+    color: var(--nord4);
+}
+
+@keyframes pulse-help {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(235, 203, 139, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(235, 203, 139, 0); }
 }
 
 /* ===========================================
-   MOBILE CARD VIEW
+   CHORE CELL - Name and Details
+   =========================================== */
+
+.chore-cell {
+    min-width: 200px;
+}
+
+.chore-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.chore-name {
+    font-weight: 500;
+    color: var(--nord6);
+    font-size: 0.9rem;
+    display: block;
+}
+
+.chore-name.done {
+    color: var(--nord4);
+    text-decoration: line-through;
+    text-decoration-color: var(--nord3);
+}
+
+.chore-description {
+    font-size: 0.75rem;
+    color: var(--nord4);
+    display: block;
+}
+
+.help-reason {
+    font-size: 0.75rem;
+    color: var(--nord13);
+    font-style: italic;
+    display: block;
+}
+
+/* ===========================================
+   ASSIGNEE CELL
+   =========================================== */
+
+.assignee-cell {
+    width: 120px;
+}
+
+.assignee {
+    font-size: 0.8rem;
+    color: var(--nord4);
+}
+
+/* ===========================================
+   VALUE CELL
+   =========================================== */
+
+.value-cell {
+    width: 80px;
+    text-align: right;
+}
+
+.value {
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 0.85rem;
+    color: var(--nord5);
+    font-weight: 500;
+}
+
+.value.earned {
+    color: var(--nord14);
+}
+
+.value.muted {
+    color: var(--nord3);
+}
+
+/* ===========================================
+   ACTION CELL - Single Primary, Subtle Secondary
+   =========================================== */
+
+.action-cell {
+    width: 160px;
+    text-align: right;
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.375rem;
+}
+
+.action-group.subtle {
+    opacity: 0.4;
+    transition: opacity 0.15s;
+}
+
+.chore-row:hover .action-group.subtle {
+    opacity: 1;
+}
+
+.action-btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.action-btn.primary {
+    background: var(--nord14);
+    color: var(--nord0);
+}
+
+.action-btn.primary:hover {
+    background: #8fbc8f;
+}
+
+.action-btn.secondary {
+    background: var(--nord2);
+    color: var(--nord5);
+    border: 1px solid var(--nord3);
+}
+
+.action-btn.secondary:hover {
+    background: var(--nord3);
+    color: var(--nord6);
+}
+
+.action-btn.muted {
+    background: transparent;
+    color: var(--nord4);
+    border: 1px solid var(--nord3);
+}
+
+.action-btn.muted:hover {
+    background: var(--nord2);
+    color: var(--nord6);
+}
+
+.action-btn.small {
+    padding: 0.25rem 0.4rem;
+}
+
+/* ===========================================
+   SUMMARY SECTION
+   =========================================== */
+
+.tracker-summary {
+    margin-top: var(--space-lg);
+    padding: var(--space-md);
+    background: var(--nord1);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--nord2);
+}
+
+/* ===========================================
+   MOBILE CARD VIEW (< 768px)
    =========================================== */
 
 .chore-cards {
@@ -138,388 +472,75 @@
     gap: var(--space-sm);
 }
 
-.chore-card {
-    background-color: var(--nord1);
-    border: 1px solid var(--nord3);
-    border-radius: var(--radius-lg);
-    padding: var(--space-md);
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-    transition: all 0.2s ease;
-    min-height: 72px;
-}
-
-.chore-card:active {
-    transform: scale(0.98);
-    background: var(--nord2);
-}
-
-.chore-card.approved {
-    background: linear-gradient(135deg, rgba(163, 190, 140, 0.15) 0%, rgba(163, 190, 140, 0.1) 100%);
-    border-color: var(--nord14);
-}
-
-.chore-card.completed {
-    background: linear-gradient(135deg, rgba(136, 192, 208, 0.15) 0%, rgba(136, 192, 208, 0.1) 100%);
-    border-color: var(--nord8);
-}
-
-.chore-card.missed {
-    background: linear-gradient(135deg, rgba(191, 97, 106, 0.15) 0%, rgba(191, 97, 106, 0.1) 100%);
-    border-color: var(--nord11);
-}
-
-.chore-card.skipped {
-    background: rgba(76, 86, 106, 0.2);
-    border-color: var(--nord3);
-    opacity: 0.7;
-}
-
-/* Mobile Card Checkbox */
-.chore-card-checkbox-wrapper {
-    flex-shrink: 0;
-}
-
-.chore-card-checkbox {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 3px solid var(--nord3);
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-tap-highlight-color: transparent;
-}
-
-.chore-card-checkbox:active:not(:disabled) {
-    transform: scale(0.85);
-}
-
-.chore-card-checkbox:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.chore-card-checkbox.checked {
-    color: var(--nord0);
-    border: none;
-    animation: checkbox-pop 0.3s ease-out;
-}
-
-.chore-card-checkbox.checked.approved {
-    background: linear-gradient(135deg, var(--nord14) 0%, #8fad7a 100%);
-    box-shadow: 0 0 16px rgba(163, 190, 140, 0.5);
-}
-
-.chore-card-checkbox.checked.pending {
-    background: linear-gradient(135deg, var(--nord8) 0%, var(--nord7) 100%);
-    animation: checkbox-pop 0.3s ease-out, pending-glow 2s ease-in-out infinite;
-}
-
-.chore-card-checkbox.missed {
-    background: linear-gradient(135deg, var(--nord11) 0%, #a54e56 100%);
-    color: var(--nord6);
-    border: none;
-}
-
-.chore-card-checkbox.skipped {
-    background: var(--nord3);
-    color: var(--nord4);
-    border: none;
-    opacity: 0.6;
-}
-
-/* Mobile Card Content */
-.chore-card-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.chore-card-name {
-    font-weight: var(--font-weight-semibold);
-    color: var(--nord6);
-    display: block;
-    margin-bottom: 4px;
-    font-size: var(--font-size-md);
-}
-
-.chore-card-name.completed {
-    text-decoration: line-through;
-    color: var(--nord4);
-}
-
-.chore-card-meta {
-    font-size: var(--font-size-xs);
-    color: var(--nord4);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-sm);
-    align-items: center;
-}
-
-.chore-card-meta .badge-sm {
-    font-size: 0.65rem;
-    padding: 2px 6px;
-}
-
-/* Mobile Card Right Section */
-.chore-card-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--space-xs);
-    flex-shrink: 0;
-}
-
-.chore-card-value {
-    font-weight: var(--font-weight-bold);
-    color: var(--nord14);
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    font-size: var(--font-size-lg);
-}
-
-.chore-card-actions {
-    display: flex;
-    gap: var(--space-xs);
-}
-
-.chore-card-actions .btn {
-    padding: 4px 8px;
-    font-size: var(--font-size-xs);
-}
-
 /* ===========================================
-   ALL DONE BANNER
+   RESPONSIVE
    =========================================== */
 
-.all-done-banner {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-lg);
-    background: linear-gradient(135deg, rgba(163, 190, 140, 0.2) 0%, rgba(163, 190, 140, 0.1) 100%);
-    border: 1px solid var(--nord14);
-    border-radius: var(--radius-lg);
-    animation: banner-appear 0.5s ease-out;
-}
-
-.all-done-star {
-    font-size: 3rem;
-    animation: star-bounce 1s ease-out, star-glow 2s ease-in-out infinite alternate;
-}
-
-@keyframes banner-appear {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
+@media (max-width: 767.98px) {
+    .tracker-container {
+        padding: 0 var(--space-sm);
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes star-bounce {
-    0% { transform: scale(0) rotate(0deg); }
-    50% { transform: scale(1.2) rotate(180deg); }
-    100% { transform: scale(1) rotate(360deg); }
-}
-
-@keyframes star-glow {
-    from { filter: drop-shadow(0 0 8px rgba(235, 203, 139, 0.6)); }
-    to { filter: drop-shadow(0 0 20px rgba(235, 203, 139, 0.9)); }
-}
-
-/* ===========================================
-   TABLE STYLING (Desktop)
-   =========================================== */
-
-.chore-table {
-    margin-top: var(--space-md);
-}
-
-.chore-table thead th {
-    color: var(--nord6) !important;
-    font-size: var(--font-size-xs);
-    white-space: nowrap;
-}
-
-.chore-table tbody td {
-    color: var(--nord4) !important;
-    vertical-align: middle;
-}
-
-.chore-table td small,
-.chore-table td .text-muted {
-    color: var(--nord4) !important;
-}
-
-.chore-name {
-    font-weight: var(--font-weight-medium);
-    color: var(--nord6) !important;
-}
-
-.chore-name.completed {
-    text-decoration: line-through;
-    color: var(--nord4) !important;
-}
-
-/* Value Badge */
-.value-badge {
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    font-weight: var(--font-weight-semibold);
-}
-
-/* Summary section */
-.tracker-summary {
-    padding: var(--space-md);
-    background-color: var(--nord1);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--nord3);
-    margin-top: var(--space-lg);
-}
-
-/* Action buttons */
-.action-buttons {
-    display: flex;
-    gap: 0.375rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.action-buttons .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: var(--font-size-xs);
-}
-
-.action-buttons .btn-outline-danger {
-    color: var(--nord11) !important;
-    border-color: var(--nord11) !important;
-    background-color: transparent !important;
-}
-
-.action-buttons .btn-outline-danger:hover {
-    color: var(--nord6) !important;
-    background-color: var(--nord11) !important;
-}
-
-.action-buttons .btn-outline-info {
-    color: var(--nord8) !important;
-    border-color: var(--nord8) !important;
-    background-color: transparent !important;
-}
-
-.action-buttons .btn-outline-info:hover {
-    color: var(--nord0) !important;
-    background-color: var(--nord8) !important;
-}
-
-.action-buttons .btn-success {
-    background-color: var(--nord14) !important;
-    border-color: var(--nord14) !important;
-    color: var(--nord0) !important;
-}
-
-/* ===========================================
-   MOBILE RESPONSIVE
-   =========================================== */
-
-@media (max-width: 767px) {
+    
     .tracker-header h1 {
-        font-size: var(--font-size-lg);
+        font-size: 1.25rem;
         text-align: center;
     }
     
     .date-navigation {
-        flex-direction: column;
-        gap: var(--space-sm);
+        justify-content: center;
+        flex-wrap: wrap;
     }
     
-    .date-navigation .btn {
-        flex: 1;
-        min-width: 100px;
-    }
-    
-    .current-date {
-        order: -1;
+    .date-navigation .today-btn {
+        margin-left: 0;
+        margin-top: var(--space-xs);
         width: 100%;
-        margin-bottom: var(--space-xs);
-    }
-    
-    .date-display {
-        font-size: var(--font-size-sm);
+        text-align: center;
     }
     
     .balance-display {
-        width: 100%;
+        display: flex;
         justify-content: center;
-        margin-top: var(--space-sm);
-    }
-    
-    /* Summary cards */
-    .tracker-summary .row {
-        gap: var(--space-sm);
-    }
-    
-    .tracker-summary .summary-card {
+        width: 100%;
         padding: var(--space-sm);
-    }
-    
-    .tracker-summary .summary-value {
-        font-size: var(--font-size-lg);
-    }
-    
-    .tracker-summary .summary-label {
-        font-size: 0.65rem;
-    }
-    
-    /* All done banner mobile */
-    .all-done-banner {
-        flex-direction: column;
-        text-align: center;
-        padding: var(--space-md);
-    }
-    
-    .all-done-star {
-        font-size: 2.5rem;
+        background: var(--nord1);
+        border-radius: var(--radius-sm);
+        margin-top: var(--space-sm);
     }
 }
 
-/* Touch device optimizations */
+/* Touch optimizations */
 @media (hover: none) and (pointer: coarse) {
-    .chore-checkbox-btn {
+    .status-indicator {
         width: 40px;
         height: 40px;
     }
     
-    .chore-card-checkbox {
-        width: 52px;
-        height: 52px;
-    }
-    
-    .chore-card {
-        min-height: 76px;
-    }
-    
-    .action-buttons .btn {
+    .action-btn {
         min-height: 36px;
-        padding: 0.375rem 0.75rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .action-group.subtle {
+        opacity: 1;
     }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-    .chore-checkbox-btn,
-    .chore-card-checkbox,
-    .chore-card,
-    .all-done-star {
+    .status-indicator,
+    .chore-row,
+    .action-btn {
         animation: none;
         transition: none;
     }
+}
+
+/* ===========================================
+   EMPTY STATE
+   =========================================== */
+
+.empty-state-container {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
 }

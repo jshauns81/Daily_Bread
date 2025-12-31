@@ -32,9 +32,9 @@
 
         @if (!string.IsNullOrEmpty(UserId))
         {
-            <div class="balance-display mt-2">
-                <span class="fw-bold">Balance:</span>
-                <span class="@(Balance >= 0 ? "text-success" : "text-danger") fs-5">
+            <div class="balance-display">
+                <span class="balance-label">Balance:</span>
+                <span class="balance-amount @(Balance >= 0 ? "positive" : "")">
                     $@Balance.ToString("F2")
                 </span>
             </div>
@@ -43,32 +43,11 @@
 
     @if (IsLoading)
     {
-        @* Skeleton loader for table *@
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th><Skeleton Type="SkeletonType.Text" Width="40px" /></th>
-                        <th><Skeleton Type="SkeletonType.Text" Width="120px" /></th>
-                        @if (IsParent)
-                        {
-                            <th><Skeleton Type="SkeletonType.Text" Width="100px" /></th>
-                        }
-                        <th><Skeleton Type="SkeletonType.Text" Width="60px" /></th>
-                        <th><Skeleton Type="SkeletonType.Text" Width="80px" /></th>
-                        @if (IsParent)
-                        {
-                            <th><Skeleton Type="SkeletonType.Text" Width="120px" /></th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (int i = 0; i < 5; i++)
-                    {
-                        <Skeleton Type="SkeletonType.TableRow" Columns="@(IsParent ? 6 : 4)" />
-                    }
-                </tbody>
-            </table>
+        @* Skeleton loader *@
+        <div class="loading-placeholder">
+            <div class="skeleton-row"></div>
+            <div class="skeleton-row"></div>
+            <div class="skeleton-row"></div>
         </div>
     }
     else if (ChoreItems.Count == 0)
@@ -104,26 +83,25 @@
                                   ShowActions="IsParent"
                                   OnToggle="ToggleChore"
                                   OnApprove="ApproveChore"
-                                  OnSkip="MarkSkipped" />
+                                  OnSkip="ShowSkipConfirmation" />
             }
         </div>
 
-        @* Desktop Table View *@
-        <div class="table-responsive d-none d-md-block">
-            <table class="table table-hover chore-table">
-                <thead class="table-light">
+        @* Desktop Table View - Redesigned Ledger *@
+        <div class="d-none d-md-block">
+            <table class="chore-table">
+                <thead>
                     <tr>
-                        <th style="width: 60px;">Done</th>
+                        <th></th>
                         <th>Chore</th>
                         @if (IsParent)
                         {
-                            <th>Assigned To</th>
+                            <th>Assigned</th>
                         }
-                        <th style="width: 100px;" class="text-center">Value</th>
-                        <th style="width: 180px;" class="text-center">Status</th>
+                        <th>Value</th>
                         @if (IsParent)
                         {
-                            <th style="width: 200px;" class="text-center">Actions</th>
+                            <th></th>
                         }
                     </tr>
                 </thead>
@@ -136,9 +114,10 @@
                                          ShowActions="IsParent"
                                          OnToggle="ToggleChore"
                                          OnApprove="ApproveChore"
-                                         OnMiss="MarkMissed"
-                                         OnSkip="MarkSkipped"
-                                         OnReset="ResetToPending" />
+                                         OnMiss="ShowMissConfirmation"
+                                         OnSkip="ShowSkipConfirmation"
+                                         OnReset="ResetToPending"
+                                         OnRespondToHelp="ShowHelpResponseModal" />
                     }
                 </tbody>
             </table>
@@ -147,6 +126,50 @@
         <TrackerSummary Items="ChoreItems" />
     }
 </div>
+
+@* Confirmation Modal for "Mark Undone" *@
+@if (_showMissConfirmation && _confirmingItem != null)
+{
+    <ConfirmationModal 
+        Title="Mark Labor as Not Completed"
+        Icon="❌"
+        Message="@($"Mark '{_confirmingItem.ChoreName}' as not completed?")"
+        Consequences="@GetMissConsequences()"
+        ConfirmText="Mark Undone"
+        Variant="warning"
+        IsProcessing="_isProcessingAction"
+        OnConfirm="ConfirmMarkMissed"
+        OnCancel="CloseConfirmationModals" />
+}
+
+@* Confirmation Modal for "Excuse/Skip" *@
+@if (_showSkipConfirmation && _confirmingItem != null)
+{
+    <ConfirmationModal 
+        Title="Excuse Labor for Today"
+        Icon="🙏"
+        Message="@($"Grant dispensation for '{_confirmingItem.ChoreName}'?")"
+        Consequences="@(["No penalty will be applied", "No earning for this chore today", "This can be undone later"])"
+        ConfirmText="Grant Dispensation"
+        Variant="default"
+        IsProcessing="_isProcessingAction"
+        OnConfirm="ConfirmMarkSkipped"
+        OnCancel="CloseConfirmationModals" />
+}
+
+@* Help Response Modal *@
+@if (_showHelpResponseModal && _helpRequestItem != null)
+{
+    <HelpResponseModal 
+        ChildName="@(_helpRequestItem.AssignedUserName ?? "Child")"
+        ChoreName="@_helpRequestItem.ChoreName"
+        Reason="@_helpRequestItem.HelpReason"
+        RequestedAt="@_helpRequestItem.HelpRequestedAt"
+        EarnValue="@_helpRequestItem.EarnValue"
+        IsProcessing="_isProcessingAction"
+        OnSubmit="HandleHelpResponse"
+        OnCancel="CloseConfirmationModals" />
+}
 
 @code {
     [Parameter]
@@ -164,6 +187,14 @@
 
     private bool _showConfetti;
     private int _previousCompletedCount;
+    
+    // Confirmation modal state
+    private bool _showMissConfirmation;
+    private bool _showSkipConfirmation;
+    private bool _showHelpResponseModal;
+    private TrackerChoreItem? _confirmingItem;
+    private TrackerChoreItem? _helpRequestItem;
+    private bool _isProcessingAction;
 
     // Cancellation support for async date navigation
     private CancellationTokenSource? _loadCts;
@@ -347,43 +378,150 @@
         }
     }
 
-    private async Task MarkMissed(TrackerChoreItem item)
+    // Show confirmation before marking as missed
+    private void ShowMissConfirmation(TrackerChoreItem item)
     {
-        if (string.IsNullOrEmpty(UserId) || !IsParent) return;
-
-        var result = await TrackerService.MarkChoreMissedAsync(
-            item.ChoreDefinitionId,
-            SelectedDate,
-            UserId);
-
-        if (result.Success)
+        _confirmingItem = item;
+        _showMissConfirmation = true;
+    }
+    
+    private List<string> GetMissConsequences()
+    {
+        var consequences = new List<string>
         {
-            ToastService.ShowWarning("Missed", $"'{item.ChoreName}' marked as missed.");
-            await LoadDataAsync();
+            "Labor will be recorded as not completed"
+        };
+        
+        if (_confirmingItem?.PenaltyValue > 0)
+        {
+            consequences.Add($"A ${_confirmingItem.PenaltyValue:F2} penalty may apply");
         }
-        else
+        
+        consequences.Add("This can be undone later");
+        
+        return consequences;
+    }
+
+    private async Task ConfirmMarkMissed()
+    {
+        if (string.IsNullOrEmpty(UserId) || !IsParent || _confirmingItem == null) return;
+
+        _isProcessingAction = true;
+        
+        try
         {
-            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
+            var result = await TrackerService.MarkChoreMissedAsync(
+                _confirmingItem.ChoreDefinitionId,
+                SelectedDate,
+                UserId);
+
+            if (result.Success)
+            {
+                ToastService.ShowWarning("Marked Undone", $"'{_confirmingItem.ChoreName}' marked as not completed.");
+                CloseConfirmationModals();
+                await LoadDataAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
+            }
+        }
+        finally
+        {
+            _isProcessingAction = false;
         }
     }
 
-    private async Task MarkSkipped(TrackerChoreItem item)
+    // Show confirmation before skipping
+    private void ShowSkipConfirmation(TrackerChoreItem item)
     {
-        if (string.IsNullOrEmpty(UserId) || !IsParent) return;
+        _confirmingItem = item;
+        _showSkipConfirmation = true;
+    }
 
-        var result = await TrackerService.MarkChoreSkippedAsync(
-            item.ChoreDefinitionId,
-            SelectedDate,
-            UserId);
+    private async Task ConfirmMarkSkipped()
+    {
+        if (string.IsNullOrEmpty(UserId) || !IsParent || _confirmingItem == null) return;
 
-        if (result.Success)
+        _isProcessingAction = true;
+        
+        try
         {
-            ToastService.ShowInfo("Skipped", $"'{item.ChoreName}' skipped for today.");
-            await LoadDataAsync();
+            var result = await TrackerService.MarkChoreSkippedAsync(
+                _confirmingItem.ChoreDefinitionId,
+                SelectedDate,
+                UserId);
+
+            if (result.Success)
+            {
+                ToastService.ShowInfo("Excused", $"'{_confirmingItem.ChoreName}' excused for today.");
+                CloseConfirmationModals();
+                await LoadDataAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
+            }
         }
-        else
+        finally
         {
-            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
+            _isProcessingAction = false;
+        }
+    }
+
+    // Show help response modal
+    private void ShowHelpResponseModal(TrackerChoreItem item)
+    {
+        _helpRequestItem = item;
+        _showHelpResponseModal = true;
+    }
+
+    private async Task HandleHelpResponse((HelpResponse Response, string? Note) args)
+    {
+        if (string.IsNullOrEmpty(UserId) || !IsParent || _helpRequestItem?.ChoreLogId == null) return;
+
+        _isProcessingAction = true;
+        
+        try
+        {
+            var result = await TrackerService.RespondToHelpRequestAsync(
+                _helpRequestItem.ChoreLogId.Value,
+                UserId,
+                args.Response);
+
+            if (result.Success)
+            {
+                var message = args.Response switch
+                {
+                    HelpResponse.CompletedByParent => $"'{_helpRequestItem.ChoreName}' fulfilled and blessed!",
+                    HelpResponse.Excused => $"'{_helpRequestItem.ChoreName}' excused for today.",
+                    HelpResponse.Denied => $"'{_helpRequestItem.ChoreName}' reset - they'll need to try again.",
+                    _ => "Help request resolved."
+                };
+                
+                var toastType = args.Response switch
+                {
+                    HelpResponse.CompletedByParent => "success",
+                    HelpResponse.Excused => "info",
+                    _ => "info"
+                };
+                
+                if (toastType == "success")
+                    ToastService.ShowSuccess("Resolved!", message);
+                else
+                    ToastService.ShowInfo("Resolved", message);
+                    
+                CloseConfirmationModals();
+                await LoadDataAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to respond to help request.");
+            }
+        }
+        finally
+        {
+            _isProcessingAction = false;
         }
     }
 
@@ -398,13 +536,22 @@
 
         if (result.Success)
         {
-            ToastService.ShowInfo("Reset", $"'{item.ChoreName}' reset to pending.");
+            ToastService.ShowInfo("Restored", $"'{item.ChoreName}' restored to pending.");
             await LoadDataAsync();
         }
         else
         {
             ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to reset chore.");
         }
+    }
+    
+    private void CloseConfirmationModals()
+    {
+        _showMissConfirmation = false;
+        _showSkipConfirmation = false;
+        _showHelpResponseModal = false;
+        _confirmingItem = null;
+        _helpRequestItem = null;
     }
 
     private bool IsCheckboxDisabled(TrackerChoreItem item)

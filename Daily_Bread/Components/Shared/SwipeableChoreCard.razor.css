@@ -11,6 +11,8 @@
     touch-action: pan-y;
     -webkit-user-select: none;
     user-select: none;
+    /* Ensure the container has a background to prevent bleed-through */
+    background: var(--nord0);
 }
 
 /* Disable swipe visual cues when swipe is disabled */
@@ -20,6 +22,8 @@
 
 /* ===========================================
    SWIPE ACTION BACKGROUNDS
+   These should be hidden by default (opacity: 0)
+   and only shown when actively swiping
    =========================================== */
 
 .swipe-action {
@@ -29,8 +33,11 @@
     width: 100%;
     display: flex;
     align-items: center;
+    /* CRITICAL: opacity 0 hides these by default */
     opacity: 0;
     transition: opacity 0.15s ease;
+    /* Ensure they're behind the card */
+    z-index: 0;
 }
 
 .swipe-action-left {
@@ -45,6 +52,7 @@
     background: linear-gradient(90deg, var(--nord14) 0%, #8fbc8f 70%, transparent 100%);
 }
 
+/* Only show swipe backgrounds when actively swiping */
 .swipeable-card-container.swiping-left .swipe-action-left,
 .swipeable-card-container.swiping-right .swipe-action-right {
     opacity: 1;
@@ -111,6 +119,111 @@
 
 .swipeable-card:active {
     background: var(--nord2);
+}
+
+/* ===========================================
+   CLICK ACTION BUTTONS (Desktop/Web)
+   Visible on hover, positioned on right side
+   =========================================== */
+
+.click-actions {
+    position: absolute;
+    right: var(--space-md);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: var(--space-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 3;
+}
+
+/* Show on hover (desktop only) */
+@media (hover: hover) and (pointer: fine) {
+    .swipeable-card:hover .click-actions {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* Fade the value when buttons are shown */
+    .swipeable-card:hover .chore-value {
+        opacity: 0.3;
+    }
+}
+
+/* Always show buttons on non-touch devices without hover support */
+@media (hover: none) and (pointer: fine) {
+    .click-actions {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+.click-action-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.click-action-btn .bi {
+    font-size: 1.1rem;
+}
+
+.click-action-btn .btn-label {
+    display: none;
+}
+
+/* Show labels on larger screens */
+@media (min-width: 480px) {
+    .click-action-btn .btn-label {
+        display: inline;
+    }
+}
+
+/* Done button - Green */
+.click-action-btn.done-btn {
+    background: var(--nord14);
+    color: var(--nord0);
+}
+
+.click-action-btn.done-btn:hover {
+    background: #9fc896;
+    transform: scale(1.05);
+}
+
+.click-action-btn.done-btn:active {
+    transform: scale(0.98);
+}
+
+/* Help button - Yellow/Orange */
+.click-action-btn.help-btn {
+    background: var(--nord13);
+    color: var(--nord0);
+}
+
+.click-action-btn.help-btn:hover {
+    background: #e6c173;
+    transform: scale(1.05);
+}
+
+.click-action-btn.help-btn:active {
+    transform: scale(0.98);
+}
+
+/* Hide click buttons on touch devices (they use swipe) */
+@media (hover: none) and (pointer: coarse) {
+    .click-actions {
+        display: none;
+    }
 }
 
 /* ===========================================
@@ -235,6 +348,7 @@
 
 .chore-value {
     flex-shrink: 0;
+    transition: opacity 0.2s ease;
 }
 
 .value-amount {
@@ -435,6 +549,10 @@
     
     .action-content,
     .action-content .bi {
+        transition: none;
+    }
+    
+    .click-action-btn {
         transition: none;
     }
 }

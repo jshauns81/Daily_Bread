@@ -4,6 +4,7 @@
 
 @using System.Security.Claims
 @using Daily_Bread.Components.Shared
+@using Daily_Bread.Data.Models
 
 @inject IAppStateService AppState
 @inject IDashboardService DashboardService
@@ -124,27 +125,48 @@ else if ((_isParent || _isAdmin) && _parentData != null)
                             <div class="list-group list-group-flush">
                                 @foreach (var item in _parentData.PendingApprovals.Take(5))
                                 {
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong>@item.ChoreName</strong><br />
-                                            <small>@item.ChildName • @item.Date.ToString("MMM d")</small>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="text-success fw-bold">$@item.Value.ToString("F2")</span>
-                                            <button class="btn btn-success btn-sm" @onclick="() => QuickApprove(item.ChoreLogId)" disabled="@_isApproving" title="Bless">
-                                                @if (_approvingId == item.ChoreLogId) 
-                                                { 
-                                                    <span class="spinner-border spinner-border-sm"></span> 
-                                                } 
-                                                else 
-                                                { 
-                                                    <text>✝</text> 
-                                                }
-                                            </button>
+                                    <div class="list-group-item d-flex justify-content-between align-items-start px-0">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <strong>@item.ChoreName</strong>
+                                                <span class="text-success fw-bold">$@item.Value.ToString("F2")</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                                <small class="text-muted">
+                                                    <span class="user-name">@item.ChildName</span> • @item.Date.ToString("MMM d")
+                                                    @if (item.CompletedAt.HasValue)
+                                                    {
+                                                        <span class="ms-1">• @GetTimeAgo(item.CompletedAt.Value)</span>
+                                                    }
+                                                </small>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-success btn-sm" @onclick="() => QuickApprove(item.ChoreLogId)" disabled="@_isApproving" title="Bless this labor">
+                                                        @if (_approvingId == item.ChoreLogId) 
+                                                        { 
+                                                            <span class="spinner-border spinner-border-sm"></span> 
+                                                        } 
+                                                        else 
+                                                        { 
+                                                            <text>✓ Bless</text> 
+                                                        }
+                                                    </button>
+                                                    <a href="/tracker/@item.Date.ToString("yyyy-MM-dd")" class="btn btn-outline-secondary btn-sm" title="Review in Book of Deeds">
+                                                        <span class="bi bi-eye"></span>
+                                                    </a>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 }
                             </div>
+                            @if (_parentData.PendingApprovals.Count > 5)
+                            {
+                                <div class="text-center mt-3">
+                                    <a href="/tracker" class="btn btn-outline-primary btn-sm">
+                                        View All (@_parentData.PendingApprovals.Count)
+                                    </a>
+                                </div>
+                            }
                         }
                     </div>
                 </div>
@@ -206,71 +228,195 @@ else if (_childData != null)
                 {
                     <div class="achievement-toast animate-bounce">
                         <span class="achievement-icon">@achievement.Icon</span>
-                        <div>
-                            <strong>Unlocked!</strong><br />
-                            <span>@achievement.Name</span>
+                        <div class="achievement-toast-content">
+                            <strong>🎉 Unlocked!</strong>
+                            <span class="achievement-toast-name">@achievement.Name</span>
                         </div>
                     </div>
                 }
             </div>
         }
 
-        <!-- TODAY HERO: Single dominant card showing today's progress -->
-        <div class="today-hero">
-            <div class="today-hero-main">
-                <div class="today-progress-ring">
-                    <CircularProgress
-                        Current="@_childData.TodayCompletedCount"
-                        Total="@_childData.TodayTotalCount"
-                        Size="lg"
-                        ShowFraction="true"
-                        Animated="true" />
+        <!-- TODAY HERO: Gamified Level-Up Theme -->
+        <div class="today-hero gamified">
+            @* Animated background particles *@
+            <div class="hero-particles">
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+            </div>
+            
+            @* Level Badge *@
+            <div class="level-badge-container">
+                <div class="level-badge @GetLevelClass()">
+                    <span class="level-icon">@GetLevelIcon()</span>
+                    <span class="level-number">LVL @GetTodayLevel()</span>
                 </div>
-                <div class="today-info">
-                    <span class="today-label">Today</span>
+                <span class="level-title">@GetLevelTitle()</span>
+            </div>
+            
+            @* XP Progress Bar *@
+            <div class="xp-section">
+                <div class="xp-header">
+                    <span class="xp-label">TODAY'S PROGRESS</span>
+                    <span class="xp-value">@_childData.TodayCompletedCount / @_childData.TodayTotalCount XP</span>
+                </div>
+                <div class="xp-bar-container">
+                    <div class="xp-bar">
+                        <div class="xp-fill @(GetProgressPercent() == 100 ? "complete" : "")" style="width: @GetProgressPercent()%">
+                            <div class="xp-glow"></div>
+                        </div>
+                    </div>
+                    @* Milestone markers *@
+                    <div class="xp-milestones">
+                        <div class="milestone @(GetProgressPercent() >= 25 ? "achieved" : "")" style="left: 25%">
+                            <span class="milestone-icon">⚡</span>
+                        </div>
+                        <div class="milestone @(GetProgressPercent() >= 50 ? "achieved" : "")" style="left: 50%">
+                            <span class="milestone-icon">🔥</span>
+                        </div>
+                        <div class="milestone @(GetProgressPercent() >= 75 ? "achieved" : "")" style="left: 75%">
+                            <span class="milestone-icon">💎</span>
+                        </div>
+                        <div class="milestone @(GetProgressPercent() >= 100 ? "achieved" : "")" style="left: 100%">
+                            <span class="milestone-icon">👑</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="xp-status">
                     @if (_childData.TodayTotalCount > 0 && _childData.TodayCompletedCount == _childData.TodayTotalCount)
                     {
-                        <span class="today-status complete">🎉 All Done!</span>
+                        <span class="status-complete">🎉 QUEST COMPLETE!</span>
                     }
                     else if (_childData.TodayTotalCount > 0)
                     {
-                        <span class="today-status">@(_childData.TodayTotalCount - _childData.TodayCompletedCount) left to do</span>
+                        <span class="status-progress">@(_childData.TodayTotalCount - _childData.TodayCompletedCount) quests remaining</span>
                     }
                     else
                     {
-                        <span class="today-status">Day off!</span>
+                        <span class="status-rest">😎 Rest Day - No Quests</span>
                     }
                 </div>
             </div>
             
-            <div class="today-hero-stats">
-                @if (_childData.CurrentStreak > 0)
+            @* Stats Row - Enhanced with Goals & Achievements *@
+            <div class="hero-widgets">
+                @* Row 1: Balance and Streak *@
+                <div class="widget-row primary">
+                    <a href="/my-balance" class="hero-stat balance">
+                        <span class="hero-stat-icon">💰</span>
+                        <AnimatedCounter
+                            Value="@_childData.Balance"
+                            Prefix="$"
+                            CssClass="hero-stat-value"
+                            Duration="600" />
+                        <span class="hero-stat-label">balance</span>
+                    </a>
+                    
+                    @if (_childData.CurrentStreak > 0)
+                    {
+                        <div class="hero-stat streak">
+                            <span class="hero-stat-icon">🔥</span>
+                            <span class="hero-stat-value">@_childData.CurrentStreak</span>
+                            <span class="hero-stat-label">day streak</span>
+                        </div>
+                    }
+                    
+                    @if (_childData.TodayEarnings > 0)
+                    {
+                        <div class="hero-stat earnings">
+                            <span class="hero-stat-icon">✨</span>
+                            <span class="hero-stat-value">+$@_childData.TodayEarnings.ToString("F2")</span>
+                            <span class="hero-stat-label">today</span>
+                        </div>
+                    }
+                </div>
+                
+                @* Row 2: Goal Progress *@
+                @if (_childData.PrimaryGoal != null)
                 {
-                    <div class="hero-stat streak">
-                        <span class="hero-stat-icon">🔥</span>
-                        <span class="hero-stat-value">@_childData.CurrentStreak</span>
-                        <span class="hero-stat-label">day streak</span>
-                    </div>
+                    <a href="/goals" class="widget-card goal-widget">
+                        <div class="widget-header">
+                            <span class="widget-icon">🎯</span>
+                            <span class="widget-title">SAVING FOR</span>
+                        </div>
+                        <div class="goal-content">
+                            <span class="goal-name">@_childData.PrimaryGoal.Name</span>
+                            <div class="goal-progress-bar">
+                                <div class="goal-progress-fill" style="width: @_childData.PrimaryGoal.ProgressPercent%"></div>
+                            </div>
+                            <div class="goal-stats">
+                                <span class="goal-current">$@_childData.Balance.ToString("F2")</span>
+                                <span class="goal-separator">/</span>
+                                <span class="goal-target">$@_childData.PrimaryGoal.TargetAmount.ToString("F2")</span>
+                            </div>
+                        </div>
+                        @if (_childData.PrimaryGoal.CanComplete)
+                        {
+                            <div class="goal-ready-badge">🎉 Ready!</div>
+                        }
+                    </a>
+                }
+                else
+                {
+                    <a href="/goals" class="widget-card goal-widget empty">
+                        <div class="widget-header">
+                            <span class="widget-icon">🎯</span>
+                            <span class="widget-title">GOALS</span>
+                        </div>
+                        <div class="goal-empty">
+                            <span>Set a savings goal!</span>
+                            <span class="goal-cta">Tap to create →</span>
+                        </div>
+                    </a>
                 }
                 
-                <a href="/my-balance" class="hero-stat balance">
-                    <span class="hero-stat-icon">💰</span>
-                    <AnimatedCounter
-                        Value="@_childData.Balance"
-                        Prefix="$"
-                        CssClass="hero-stat-value"
-                        Duration="600" />
-                    <span class="hero-stat-label">balance</span>
-                </a>
-                
-                @if (_childData.TodayEarnings > 0)
-                {
-                    <div class="hero-stat earnings">
-                        <span class="hero-stat-icon">✨</span>
-                        <span class="hero-stat-value">+$@_childData.TodayEarnings.ToString("F2")</span>
-                        <span class="hero-stat-label">earned today</span>
-                    </div>
-                }
+                @* Row 3: Achievements *@
+                <div class="widget-row achievements">
+                    @* Recent Achievement *@
+                    @if (_childData.RecentAchievements.Count > 0)
+                    {
+                        var recent = _childData.RecentAchievements.First();
+                        <a href="/achievements" class="widget-card achievement-widget recent">
+                            <div class="widget-header">
+                                <span class="widget-icon">🏆</span>
+                                <span class="widget-title">LATEST</span>
+                            </div>
+                            <div class="achievement-content">
+                                <span class="achievement-badge-icon @GetRarityClass(recent.Rarity)">@recent.Icon</span>
+                                <span class="achievement-badge-name">@recent.Name</span>
+                            </div>
+                            <div class="achievement-points">+@recent.Points pts</div>
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="/achievements" class="widget-card achievement-widget recent empty">
+                            <div class="widget-header">
+                                <span class="widget-icon">🏆</span>
+                                <span class="widget-title">ACHIEVEMENTS</span>
+                            </div>
+                            <div class="achievement-empty">
+                                <span>Complete quests to unlock!</span>
+                            </div>
+                        </a>
+                    }
+                    
+                    @* Achievement Progress *@
+                    <a href="/achievements" class="widget-card achievement-widget progress">
+                        <div class="achievement-score">
+                            <span class="score-value">@_childData.AchievementsEarned</span>
+                            <span class="score-separator">/</span>
+                            <span class="score-total">@_childData.TotalAchievements</span>
+                        </div>
+                        <span class="achievement-label">BADGES</span>
+                        <div class="achievement-mini-bar">
+                            <div class="achievement-mini-fill" style="width: @GetAchievementPercent()%"></div>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -469,6 +615,84 @@ else
     
     private CancellationTokenSource? _achievementCts;
 
+    // Gamified theme helper methods
+    private int GetProgressPercent()
+    {
+        if (_childData == null || _childData.TodayTotalCount == 0) return 0;
+        return (int)Math.Round((_childData.TodayCompletedCount * 100.0) / _childData.TodayTotalCount);
+    }
+    
+    private int GetAchievementPercent()
+    {
+        if (_childData == null || _childData.TotalAchievements == 0) return 0;
+        return (int)Math.Round((_childData.AchievementsEarned * 100.0) / _childData.TotalAchievements);
+    }
+    
+    private static string GetRarityClass(AchievementRarity rarity)
+    {
+        return rarity switch
+        {
+            AchievementRarity.Legendary => "rarity-legendary",
+            AchievementRarity.Epic => "rarity-epic",
+            AchievementRarity.Rare => "rarity-rare",
+            AchievementRarity.Uncommon => "rarity-uncommon",
+            _ => "rarity-common"
+        };
+    }
+    
+    private int GetTodayLevel()
+    {
+        var percent = GetProgressPercent();
+        return percent switch
+        {
+            100 => 5,
+            >= 75 => 4,
+            >= 50 => 3,
+            >= 25 => 2,
+            > 0 => 1,
+            _ => 0
+        };
+    }
+    
+    private string GetLevelClass()
+    {
+        return GetTodayLevel() switch
+        {
+            5 => "level-legendary",
+            4 => "level-epic",
+            3 => "level-rare",
+            2 => "level-uncommon",
+            1 => "level-common",
+            _ => "level-starter"
+        };
+    }
+    
+    private string GetLevelIcon()
+    {
+        return GetTodayLevel() switch
+        {
+            5 => "👑",
+            4 => "💎",
+            3 => "🔥",
+            2 => "⚡",
+            1 => "⭐",
+            _ => "🌱"
+        };
+    }
+    
+    private string GetLevelTitle()
+    {
+        return GetTodayLevel() switch
+        {
+            5 => "LEGENDARY",
+            4 => "EPIC",
+            3 => "RARE",
+            2 => "UNCOMMON",
+            1 => "COMMON",
+            _ => "STARTER"
+        };
+    }
+
     private int GetWeeklyCompletedCount()
     {
         if (_childData?.WeeklyProgress?.ChoreProgress == null) return 0;
@@ -479,6 +703,15 @@ else
     {
         if (_childData?.WeeklyProgress?.ChoreProgress == null) return 0;
         return _childData.WeeklyProgress.ChoreProgress.Sum(p => p.TargetCount);
+    }
+    
+    private static string GetTimeAgo(DateTime time)
+    {
+        var diff = DateTime.UtcNow - time;
+        if (diff.TotalMinutes < 1) return "just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        return $"{(int)diff.TotalDays}d ago";
     }
 
     protected override async Task OnInitializedAsync()
@@ -506,7 +739,6 @@ else
             Logger.LogInformation("User authenticated: UserId={UserId}, IsParent={IsParent}, IsAdmin={IsAdmin}, IsAdminOnly={IsAdminOnly}", 
                 _userId, _isParent, _isAdmin, _isAdminOnly);
 
-            // Use AppState for cached data loading - prevents duplicate queries on prerender → interactive
             await LoadDashboardAsync();
 
             Logger.LogInformation("Dashboard loaded: ParentData={ParentData}, ChildData={ChildData}", 
@@ -536,7 +768,6 @@ else
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to initialize dashboard");
-            // Don't show toast during initial load as it may not be available
         }
         finally
         {
@@ -547,7 +778,6 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // If initialization didn't complete but we're in interactive mode, retry loading
         if (firstRender && !_initializationComplete && _isAuthenticated)
         {
             try
@@ -608,12 +838,10 @@ else
         {
             if (_isParent || _isAdmin)
             {
-                // Use cached state if available - prevents duplicate queries
                 _parentData = await AppState.GetParentDashboardAsync(forceRefresh);
             }
             else if (!string.IsNullOrEmpty(_userId))
             {
-                // Use cached state if available
                 _childData = await AppState.GetChildDashboardAsync(_userId, forceRefresh);
             }
         }
@@ -656,7 +884,6 @@ else
                     ToastService.ShowInfo("Marked!", "Waiting for approval");
                 }
                 
-                // Invalidate cache and reload fresh data after mutation
                 AppState.InvalidateChildDashboard(_userId);
                 await LoadDashboardAsync(forceRefresh: true);
                 
@@ -700,7 +927,6 @@ else
             if (result.Success)
             {
                 ToastService.ShowInfo("Help Requested", "Your parents have been notified");
-                // Invalidate cache and reload fresh data after mutation
                 AppState.InvalidateChildDashboard(_userId);
                 await LoadDashboardAsync(forceRefresh: true);
             }
@@ -732,7 +958,6 @@ else
             if (result.Success)
             {
                 ToastService.ShowSuccess("Blessed!", "Labor has been blessed and wages processed.");
-                // Invalidate both parent and child caches since approval affects both
                 AppState.InvalidateParentDashboard();
                 AppState.InvalidateChildDashboard();
                 await LoadDashboardAsync(forceRefresh: true);

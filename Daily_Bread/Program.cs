@@ -186,6 +186,10 @@ builder.Services.AddScoped<IWeeklyReconciliationService, WeeklyReconciliationSer
 builder.Services.AddScoped<IBiometricAuthService, BiometricAuthService>();
 builder.Services.AddScoped<IAppStateService, AppStateService>();
 
+// Achievement system services (order matters - dependencies first)
+builder.Services.AddScoped<IAchievementConditionEvaluator, AchievementConditionEvaluator>();
+builder.Services.AddScoped<IAchievementBonusService, AchievementBonusService>();
+
 // Add health checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>();

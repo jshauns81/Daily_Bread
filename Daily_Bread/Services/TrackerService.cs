@@ -141,6 +141,7 @@ public class TrackerService : ITrackerService
     private readonly IPushNotificationService _pushNotificationService;
     private readonly IWeeklyProgressService _weeklyProgressService;
     private readonly IFamilySettingsService _familySettingsService;
+    private readonly IAchievementService _achievementService;
     private readonly IDateProvider _dateProvider;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<TrackerService> _logger;
@@ -153,6 +154,7 @@ public class TrackerService : ITrackerService
         IPushNotificationService pushNotificationService,
         IWeeklyProgressService weeklyProgressService,
         IFamilySettingsService familySettingsService,
+        IAchievementService achievementService,
         IDateProvider dateProvider,
         UserManager<ApplicationUser> userManager,
         ILogger<TrackerService> logger)
@@ -164,6 +166,7 @@ public class TrackerService : ITrackerService
         _pushNotificationService = pushNotificationService;
         _weeklyProgressService = weeklyProgressService;
         _familySettingsService = familySettingsService;
+        _achievementService = achievementService;
         _dateProvider = dateProvider;
         _userManager = userManager;
         _logger = logger;
@@ -237,6 +240,7 @@ public class TrackerService : ITrackerService
     /// <summary>
     /// Atomically updates chore status and reconciles ledger.
     /// All status changes that affect money go through this method.
+    /// Also triggers achievement checks after successful completion/approval.
     /// </summary>
     private async Task<ServiceResult<ChoreStatus>> UpdateStatusAtomicallyAsync(
         int choreLogId,
@@ -246,109 +250,159 @@ public class TrackerService : ITrackerService
         string? notes = null)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        await using var transaction = await context.Database.BeginTransactionAsync();
         
-        try
+        // Use execution strategy to handle retries with transactions
+        var strategy = context.Database.CreateExecutionStrategy();
+        
+        var result = await strategy.ExecuteAsync(async () =>
         {
-            // Load chore log with related data
-            var choreLog = await context.ChoreLogs
-                .Include(c => c.ChoreDefinition)
-                .Include(c => c.LedgerTransaction)
-                .FirstOrDefaultAsync(c => c.Id == choreLogId);
-
-            if (choreLog == null)
-            {
-                return ServiceResult<ChoreStatus>.Fail("Chore log not found.");
-            }
+            await using var transaction = await context.Database.BeginTransactionAsync();
             
-            // SERVER-SIDE AUTHORIZATION: verify role from database
-            if (requiresParent)
+            try
             {
-                var isParent = await IsUserInRoleAsync(actingUserId, "Parent");
-                if (!isParent)
+                // Load chore log with related data
+                var choreLog = await context.ChoreLogs
+                    .Include(c => c.ChoreDefinition)
+                    .Include(c => c.LedgerTransaction)
+                    .FirstOrDefaultAsync(c => c.Id == choreLogId);
+
+                if (choreLog == null)
                 {
-                    _logger.LogWarning(
-                        "Authorization failed: User {UserId} attempted parent-only action on ChoreLog {ChoreLogId}",
-                        actingUserId, choreLogId);
-                    return ServiceResult<ChoreStatus>.Fail("Only parents can perform this action.");
+                    return ServiceResult<ChoreStatus>.Fail("Chore log not found.");
                 }
-            }
-            
-            var oldStatus = choreLog.Status;
-            var choreDefinition = choreLog.ChoreDefinition;
-            
-            // Validate date restriction for children (non-parents can only modify today)
-            var isParentUser = await IsUserInRoleAsync(actingUserId, "Parent");
-            if (!isParentUser && choreLog.Date != _dateProvider.Today)
-            {
-                return ServiceResult<ChoreStatus>.Fail("Children can only modify today's chores.");
-            }
+                
+                // SERVER-SIDE AUTHORIZATION: verify role from database
+                if (requiresParent)
+                {
+                    var isParent = await IsUserInRoleAsync(actingUserId, "Parent");
+                    if (!isParent)
+                    {
+                        _logger.LogWarning(
+                            "Authorization failed: User {UserId} attempted parent-only action on ChoreLog {ChoreLogId}",
+                            actingUserId, choreLogId);
+                        return ServiceResult<ChoreStatus>.Fail("Only parents can perform this action.");
+                    }
+                }
+                
+                var oldStatus = choreLog.Status;
+                var choreDefinition = choreLog.ChoreDefinition;
+                
+                // Validate date restriction for children (non-parents can only modify today)
+                var isParentUser = await IsUserInRoleAsync(actingUserId, "Parent");
+                if (!isParentUser && choreLog.Date != _dateProvider.Today)
+                {
+                    return ServiceResult<ChoreStatus>.Fail("Children can only modify today's chores.");
+                }
 
-            // Update status
-            choreLog.Status = newStatus;
-            choreLog.ModifiedAt = DateTime.UtcNow;
-            choreLog.Version++; // Manual concurrency increment
-            
-            if (!string.IsNullOrWhiteSpace(notes))
-            {
-                choreLog.Notes = notes;
-            }
+                // Update status
+                choreLog.Status = newStatus;
+                choreLog.ModifiedAt = DateTime.UtcNow;
+                choreLog.Version++; // Manual concurrency increment
+                
+                // Handle special notes marker for clearing help fields
+                if (notes == "__CLEAR_HELP_FIELDS__")
+                {
+                    choreLog.HelpReason = null;
+                    choreLog.HelpRequestedAt = null;
+                    // Don't set notes for this special case
+                }
+                else if (!string.IsNullOrWhiteSpace(notes))
+                {
+                    choreLog.Notes = notes;
+                }
 
-            // Set completion/approval metadata
-            if (newStatus == ChoreStatus.Completed)
-            {
-                choreLog.CompletedByUserId = actingUserId;
-                choreLog.CompletedAt = DateTime.UtcNow;
-            }
-            else if (newStatus == ChoreStatus.Approved)
-            {
-                choreLog.ApprovedByUserId = actingUserId;
-                choreLog.ApprovedAt = DateTime.UtcNow;
-                if (choreLog.CompletedAt == null)
+                // Set completion/approval metadata
+                if (newStatus == ChoreStatus.Completed)
                 {
                     choreLog.CompletedByUserId = actingUserId;
                     choreLog.CompletedAt = DateTime.UtcNow;
                 }
+                else if (newStatus == ChoreStatus.Approved)
+                {
+                    choreLog.ApprovedByUserId = actingUserId;
+                    choreLog.ApprovedAt = DateTime.UtcNow;
+                    if (choreLog.CompletedAt == null)
+                    {
+                        choreLog.CompletedByUserId = actingUserId;
+                        choreLog.CompletedAt = DateTime.UtcNow;
+                    }
+                }
+                
+                // Reconcile ledger using same context (atomic)
+                var reconcileResult = await _ledgerService.ReconcileChoreLogTransactionAsync(context, choreLog);
+                
+                if (!reconcileResult.Success)
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResult<ChoreStatus>.Fail(reconcileResult.ErrorMessage!);
+                }
+
+                // Save all changes atomically
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                
+                // Audit log
+                _logger.LogInformation(
+                    "ChoreLog status changed: Id={ChoreLogId}, Chore={ChoreName}, Date={Date}, " +
+                    "OldStatus={OldStatus}, NewStatus={NewStatus}, ActingUser={ActingUserId}, " +
+                    "TransactionId={TransactionId}, Amount={Amount}",
+                    choreLogId, choreDefinition.Name, choreLog.Date,
+                    oldStatus, newStatus, actingUserId,
+                    reconcileResult.Transaction?.Id, reconcileResult.Amount);
+
+                return ServiceResult<ChoreStatus>.Ok(newStatus);
             }
-            
-            // Reconcile ledger using same context (atomic)
-            var reconcileResult = await _ledgerService.ReconcileChoreLogTransactionAsync(context, choreLog);
-            
-            if (!reconcileResult.Success)
+            catch (DbUpdateConcurrencyException ex)
             {
                 await transaction.RollbackAsync();
-                return ServiceResult<ChoreStatus>.Fail(reconcileResult.ErrorMessage!);
+                _logger.LogWarning(ex,
+                    "Concurrency conflict updating ChoreLog {ChoreLogId}",
+                    choreLogId);
+                return ServiceResult<ChoreStatus>.Fail("This chore was modified by someone else. Please refresh and try again.");
             }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to update ChoreLog {ChoreLogId} status", choreLogId);
+                return ServiceResult<ChoreStatus>.Fail($"Failed to update chore: {ex.Message}");
+            }
+        });
 
-            // Save all changes atomically
-            await context.SaveChangesAsync();
-            await transaction.CommitAsync();
+        // After successful status change, check for achievement unlocks (fire-and-forget)
+        // This runs outside the transaction so achievement failures don't affect chore updates
+        if (result.Success && (newStatus == ChoreStatus.Completed || newStatus == ChoreStatus.Approved))
+        {
+            // Get the assigned user ID for achievement check
+            await using var ctx = await _contextFactory.CreateDbContextAsync();
+            var log = await ctx.ChoreLogs
+                .Include(c => c.ChoreDefinition)
+                .FirstOrDefaultAsync(c => c.Id == choreLogId);
             
-            // Audit log
-            _logger.LogInformation(
-                "ChoreLog status changed: Id={ChoreLogId}, Chore={ChoreName}, Date={Date}, " +
-                "OldStatus={OldStatus}, NewStatus={NewStatus}, ActingUser={ActingUserId}, " +
-                "TransactionId={TransactionId}, Amount={Amount}",
-                choreLogId, choreDefinition.Name, choreLog.Date,
-                oldStatus, newStatus, actingUserId,
-                reconcileResult.Transaction?.Id, reconcileResult.Amount);
+            var assignedUserId = log?.ChoreDefinition?.AssignedUserId;
+            if (!string.IsNullOrEmpty(assignedUserId))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var newlyAwarded = await _achievementService.CheckAndAwardAchievementsAsync(assignedUserId);
+                        if (newlyAwarded.Count > 0)
+                        {
+                            _logger.LogInformation(
+                                "User {UserId} earned {Count} achievement(s) after chore completion: {Codes}",
+                                assignedUserId, newlyAwarded.Count, 
+                                string.Join(", ", newlyAwarded.Select(a => a.Code)));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error checking achievements for user {UserId}", assignedUserId);
+                    }
+                });
+            }
+        }
 
-            return ServiceResult<ChoreStatus>.Ok(newStatus);
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogWarning(ex,
-                "Concurrency conflict updating ChoreLog {ChoreLogId}",
-                choreLogId);
-            return ServiceResult<ChoreStatus>.Fail("This chore was modified by someone else. Please refresh and try again.");
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Failed to update ChoreLog {ChoreLogId} status", choreLogId);
-            return ServiceResult<ChoreStatus>.Fail($"Failed to update chore: {ex.Message}");
-        }
+        return result;
     }
     
     /// <summary>
@@ -543,28 +597,21 @@ public class TrackerService : ITrackerService
             _ => throw new ArgumentException("Invalid response type")
         };
 
+        // For denied requests, we need to clear help fields as part of the update
+        // Pass notes to signal this (hacky but avoids refactoring UpdateStatusAtomicallyAsync)
+        string? notes = response == HelpResponse.Denied ? "__CLEAR_HELP_FIELDS__" : null;
+
         // Parent-only action, verified server-side
         var result = await UpdateStatusAtomicallyAsync(
             choreLogId,
             newStatus,
             parentUserId,
-            requiresParent: true);
+            requiresParent: true,
+            notes: notes);
 
         if (!result.Success)
         {
             return ServiceResult.Fail(result.ErrorMessage!);
-        }
-        
-        // Clear help-specific fields for denied requests
-        if (response == HelpResponse.Denied)
-        {
-            var logToUpdate = await context.ChoreLogs.FindAsync(choreLogId);
-            if (logToUpdate != null)
-            {
-                logToUpdate.HelpReason = null;
-                logToUpdate.HelpRequestedAt = null;
-                await context.SaveChangesAsync();
-            }
         }
         
         _logger.LogInformation(

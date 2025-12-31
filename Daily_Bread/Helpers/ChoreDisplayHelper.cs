@@ -1,4 +1,4 @@
-using Daily_Bread.Data.Models;
+﻿using Daily_Bread.Data.Models;
 
 namespace Daily_Bread.Helpers;
 
@@ -16,6 +16,7 @@ public static class ChoreDisplayHelper
         ChoreStatus.Completed => "table-info",
         ChoreStatus.Missed => "table-danger",
         ChoreStatus.Skipped => "table-secondary",
+        ChoreStatus.Help => "table-warning",
         _ => ""
     };
 
@@ -28,6 +29,7 @@ public static class ChoreDisplayHelper
         ChoreStatus.Completed => "completed",
         ChoreStatus.Missed => "missed",
         ChoreStatus.Skipped => "skipped",
+        ChoreStatus.Help => "help",
         _ => ""
     };
 
@@ -40,6 +42,7 @@ public static class ChoreDisplayHelper
         if (isCompleted) return "checked pending";
         if (status == ChoreStatus.Missed) return "missed";
         if (status == ChoreStatus.Skipped) return "skipped";
+        if (status == ChoreStatus.Help) return "help";
         return "";
     }
 
@@ -53,6 +56,7 @@ public static class ChoreDisplayHelper
         ChoreStatus.Approved => "bg-success",
         ChoreStatus.Missed => "bg-danger",
         ChoreStatus.Skipped => "bg-secondary",
+        ChoreStatus.Help => "bg-warning",
         _ => "bg-secondary"
     };
 
@@ -66,6 +70,7 @@ public static class ChoreDisplayHelper
         ChoreStatus.Approved => "Approved",
         ChoreStatus.Missed => "Missed",
         ChoreStatus.Skipped => "Skipped",
+        ChoreStatus.Help => "Help",
         _ => status.ToString()
     };
 
