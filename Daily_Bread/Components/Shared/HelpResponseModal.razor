@@ -1,0 +1,181 @@
+﻿@namespace Daily_Bread.Components.Shared
+@using Daily_Bread.Services
+
+<div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">
+                    <span class="me-2">🆘</span>
+                    Respond to Help Request
+                </h5>
+                <button type="button" class="btn-close" @onclick="HandleCancel" disabled="@IsProcessing"></button>
+            </div>
+            <div class="modal-body">
+                <div class="help-request-context mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <strong class="fs-5">@ChildName</strong>
+                        <span class="text-muted">needs help with</span>
+                    </div>
+                    <div class="fs-4 fw-bold text-primary mb-2">@ChoreName</div>
+                    @if (!string.IsNullOrEmpty(Reason))
+                    {
+                        <div class="alert alert-light border py-2">
+                            <span class="bi bi-chat-quote me-2"></span>
+                            <em>"@Reason"</em>
+                        </div>
+                    }
+                    @if (RequestedAt.HasValue)
+                    {
+                        <small class="text-muted">
+                            <span class="bi bi-clock me-1"></span>
+                            Requested @GetTimeAgo(RequestedAt.Value)
+                        </small>
+                    }
+                </div>
+
+                <div class="response-options">
+                    <label class="form-label fw-bold">How would you like to respond?</label>
+                    
+                    <div class="form-check response-option mb-3 p-3 border rounded @(_selectedResponse == HelpResponse.CompletedByParent ? "border-success bg-success bg-opacity-10" : "")">
+                        <input class="form-check-input" type="radio" name="helpResponse" id="responseComplete"
+                               checked="@(_selectedResponse == HelpResponse.CompletedByParent)"
+                               @onchange="() => _selectedResponse = HelpResponse.CompletedByParent" />
+                        <label class="form-check-label w-100" for="responseComplete">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong class="text-success">✓ Fulfill for them</strong>
+                                    <div class="small text-muted">
+                                        I completed this chore for @ChildName. They receive full credit.
+                                    </div>
+                                </div>
+                                @if (EarnValue > 0)
+                                {
+                                    <span class="badge bg-success">+$@EarnValue.ToString("F2")</span>
+                                }
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-check response-option mb-3 p-3 border rounded @(_selectedResponse == HelpResponse.Excused ? "border-secondary bg-secondary bg-opacity-10" : "")">
+                        <input class="form-check-input" type="radio" name="helpResponse" id="responseExcuse"
+                               checked="@(_selectedResponse == HelpResponse.Excused)"
+                               @onchange="() => _selectedResponse = HelpResponse.Excused" />
+                        <label class="form-check-label w-100" for="responseExcuse">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>— Grant dispensation</strong>
+                                    <div class="small text-muted">
+                                        Excuse this chore for today. No penalty, no earning.
+                                    </div>
+                                </div>
+                                <span class="badge bg-secondary">$0.00</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-check response-option mb-3 p-3 border rounded @(_selectedResponse == HelpResponse.Denied ? "border-warning bg-warning bg-opacity-10" : "")">
+                        <input class="form-check-input" type="radio" name="helpResponse" id="responseDeny"
+                               checked="@(_selectedResponse == HelpResponse.Denied)"
+                               @onchange="() => _selectedResponse = HelpResponse.Denied" />
+                        <label class="form-check-label w-100" for="responseDeny">
+                            <div>
+                                <strong class="text-warning">↺ They must try again</strong>
+                                <div class="small text-muted">
+                                    Reset to pending. @ChildName needs to complete this themselves.
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label">
+                        <span class="bi bi-chat-left-text me-1"></span>
+                        Note for @ChildName <span class="text-muted">(optional)</span>
+                    </label>
+                    <input type="text" class="form-control" @bind="_noteToChild" 
+                           placeholder="e.g., 'Great job asking for help!' or 'Try using the step stool'" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="HandleCancel" disabled="@IsProcessing">
+                    Cancel
+                </button>
+                <button type="button" class="btn @GetSubmitButtonClass()" @onclick="HandleSubmit" 
+                        disabled="@(_selectedResponse == null || IsProcessing)">
+                    @if (IsProcessing)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    @GetSubmitButtonText()
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public required string ChildName { get; set; }
+
+    [Parameter, EditorRequired]
+    public required string ChoreName { get; set; }
+
+    [Parameter]
+    public string? Reason { get; set; }
+
+    [Parameter]
+    public DateTime? RequestedAt { get; set; }
+
+    [Parameter]
+    public decimal EarnValue { get; set; }
+
+    [Parameter]
+    public bool IsProcessing { get; set; }
+
+    [Parameter]
+    public EventCallback<(HelpResponse Response, string? Note)> OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private HelpResponse? _selectedResponse = HelpResponse.CompletedByParent;
+    private string _noteToChild = string.Empty;
+
+    private string GetSubmitButtonClass() => _selectedResponse switch
+    {
+        HelpResponse.CompletedByParent => "btn-success",
+        HelpResponse.Excused => "btn-secondary",
+        HelpResponse.Denied => "btn-warning",
+        _ => "btn-primary"
+    };
+
+    private string GetSubmitButtonText() => _selectedResponse switch
+    {
+        HelpResponse.CompletedByParent => "Fulfill & Bless",
+        HelpResponse.Excused => "Grant Dispensation",
+        HelpResponse.Denied => "Reset to Pending",
+        _ => "Respond"
+    };
+
+    private string GetTimeAgo(DateTime time)
+    {
+        var diff = DateTime.UtcNow - time;
+        if (diff.TotalMinutes < 1) return "just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} minutes ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} hours ago";
+        return $"{(int)diff.TotalDays} days ago";
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (_selectedResponse.HasValue)
+        {
+            var note = string.IsNullOrWhiteSpace(_noteToChild) ? null : _noteToChild.Trim();
+            await OnSubmit.InvokeAsync((_selectedResponse.Value, note));
+        }
+    }
+
+    private async Task HandleCancel() => await OnCancel.InvokeAsync();
+}

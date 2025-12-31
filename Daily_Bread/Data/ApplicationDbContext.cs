@@ -25,6 +25,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<SavingsGoal> SavingsGoals => Set<SavingsGoal>();
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    public DbSet<AchievementProgress> AchievementProgress => Set<AchievementProgress>();
+    public DbSet<UserAchievementBonus> UserAchievementBonuses => Set<UserAchievementBonus>();
     public DbSet<FamilySettings> FamilySettings => Set<FamilySettings>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<Household> Households => Set<Household>();
@@ -39,7 +41,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasOne(u => u.Household)
                 .WithMany()
                 .HasForeignKey(u => u.HouseholdId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevent accidental household deletion
+                .OnDelete(DeleteBehavior.Restrict);
             
             entity.HasIndex(u => u.HouseholdId);
         });
@@ -61,7 +63,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Icon).HasMaxLength(50);
             entity.Property(e => e.EarnValue).HasPrecision(10, 2);
             entity.Property(e => e.PenaltyValue).HasPrecision(10, 2);
-            // Note: Value property is obsolete - it's a computed property, not stored in DB
             entity.Ignore(e => e.Value);
             entity.HasIndex(e => e.AssignedUserId);
             entity.HasIndex(e => e.IsActive);
@@ -79,11 +80,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Notes).HasMaxLength(500);
             entity.Property(e => e.HelpReason).HasMaxLength(500);
             
-            // Concurrency token - use int Version for cross-database compatibility
             entity.Property(e => e.Version)
                 .IsConcurrencyToken();
 
-            // Unique constraint: one log per chore per date
             entity.HasIndex(e => new { e.ChoreDefinitionId, e.Date }).IsUnique();
             entity.HasIndex(e => e.Date);
             entity.HasIndex(e => e.Status);
@@ -110,7 +109,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.OverrideValue).HasPrecision(10, 2);
 
-            // Unique: one override per chore per date
             entity.HasIndex(e => new { e.ChoreDefinitionId, e.Date }).IsUnique();
             entity.HasIndex(e => e.Date);
             entity.HasIndex(e => e.Type);
@@ -137,7 +135,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DisplayName).HasMaxLength(100).IsRequired();
             
-            // One user can have one child profile
             entity.HasIndex(e => e.UserId).IsUnique();
             entity.HasIndex(e => e.IsActive);
 
@@ -155,13 +152,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             
             entity.HasIndex(e => e.ChildProfileId);
             entity.HasIndex(e => e.IsActive);
-            // Unique account name per child profile
             entity.HasIndex(e => new { e.ChildProfileId, e.Name }).IsUnique();
 
             entity.HasOne(e => e.ChildProfile)
                 .WithMany(c => c.LedgerAccounts)
                 .HasForeignKey(e => e.ChildProfileId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete of accounts with transactions
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // LedgerTransaction configuration
@@ -171,7 +167,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Amount).HasPrecision(10, 2);
             entity.Property(e => e.Description).HasMaxLength(200);
             
-            // Concurrency token - use int Version for cross-database compatibility
             entity.Property(e => e.Version)
                 .IsConcurrencyToken();
 
@@ -182,8 +177,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.TransactionDate);
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => e.TransferGroupId);
-            
-            // Index for weekly penalty idempotency checks
             entity.HasIndex(e => new { e.UserId, e.ChoreDefinitionId, e.WeekEndDate, e.Type });
 
             entity.HasOne(e => e.LedgerAccount)
@@ -228,28 +221,82 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Achievement configuration
+        // Achievement configuration (enhanced)
         builder.Entity<Achievement>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Code).HasMaxLength(50).IsRequired();
             entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.HiddenHint).HasMaxLength(200);
             entity.Property(e => e.Icon).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.LockedIcon).HasMaxLength(50);
+            entity.Property(e => e.UnlockConditionValue).HasMaxLength(1000);
+            entity.Property(e => e.BonusValue).HasMaxLength(1000);
+            entity.Property(e => e.BonusDescription).HasMaxLength(200);
 
             entity.HasIndex(e => e.Code).IsUnique();
             entity.HasIndex(e => e.Category);
             entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.IsHidden);
+            entity.HasIndex(e => e.IsLegendary);
+            entity.HasIndex(e => e.Rarity);
+            entity.HasIndex(e => e.UnlockConditionType);
         });
 
         // UserAchievement configuration
         builder.Entity<UserAchievement>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.Notes).HasMaxLength(500);
 
-            // Unique: one user can earn each achievement only once
             entity.HasIndex(e => new { e.UserId, e.AchievementId }).IsUnique();
             entity.HasIndex(e => e.EarnedAt);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Achievement)
+                .WithMany()
+                .HasForeignKey(e => e.AchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AchievementProgress configuration
+        builder.Entity<AchievementProgress>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Metadata).HasMaxLength(2000);
+
+            entity.HasIndex(e => new { e.UserId, e.AchievementId }).IsUnique();
+            entity.HasIndex(e => e.LastUpdatedAt);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Achievement)
+                .WithMany()
+                .HasForeignKey(e => e.AchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserAchievementBonus configuration
+        builder.Entity<UserAchievementBonus>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BonusValue).HasMaxLength(1000);
+            entity.Property(e => e.AppliedAmount).HasPrecision(10, 2);
+            entity.Property(e => e.MaxAmount).HasPrecision(10, 2);
+
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.BonusType);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.ExpiresAt);
+            entity.HasIndex(e => new { e.UserId, e.IsActive, e.BonusType });
 
             entity.HasOne(e => e.User)
                 .WithMany()
@@ -279,7 +326,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Key).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Value).HasMaxLength(1000).IsRequired();
 
-            // Unique constraint: one preference per user per key
             entity.HasIndex(e => new { e.UserId, e.Key }).IsUnique();
 
             entity.HasOne(e => e.User)
@@ -312,7 +358,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.IsActive);
-            // Unique endpoint per user (same device can't subscribe twice)
             entity.HasIndex(e => new { e.UserId, e.Endpoint }).IsUnique();
 
             entity.HasOne(e => e.User)

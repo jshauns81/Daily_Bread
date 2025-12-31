@@ -1,0 +1,393 @@
+﻿@page "/achievements"
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using System.Security.Claims
+@using Daily_Bread.Services
+@using Daily_Bread.Data.Models
+
+@inject IAchievementService AchievementService
+@inject IAchievementBonusService BonusService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Achievements</PageTitle>
+
+<div class="achievements-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>@EmojiConstants.Trophy Achievements</h1>
+            @if (_stats != null)
+            {
+                <p class="text-muted mb-0">
+                    @_stats.EarnedAchievements of @_stats.TotalAchievements unlocked • @_stats.EarnedPoints points
+                </p>
+            }
+        </div>
+        @if (_activeBonuses != null && _activeBonuses.ActiveBonuses.Count > 0)
+        {
+            <button class="btn btn-outline-primary position-relative" @onclick="() => _showBonusPanel = !_showBonusPanel">
+                @EmojiConstants.Sparkles Bonuses
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">
+                    @_activeBonuses.ActiveBonuses.Count
+                </span>
+            </button>
+        }
+    </div>
+
+    @if (_showBonusPanel && _activeBonuses != null)
+    {
+        <div class="card mb-4 border-success">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <span>@EmojiConstants.Star Active Bonuses</span>
+                <button class="btn-close btn-close-white" @onclick="() => _showBonusPanel = false"></button>
+            </div>
+            <div class="card-body">
+                @if (_activeBonuses.PointMultiplier > 1)
+                {
+                    <div class="bonus-item">
+                        <span class="bonus-icon">@EmojiConstants.MoneyBag</span>
+                        <span>Point Multiplier: <strong>@_activeBonuses.PointMultiplier.ToString("P0")</strong></span>
+                    </div>
+                }
+                @if (_activeBonuses.PenaltyReduction > 0)
+                {
+                    <div class="bonus-item">
+                        <span class="bonus-icon">@EmojiConstants.CheckMark</span>
+                        <span>Penalty Reduction: <strong>@_activeBonuses.PenaltyReduction.ToString("P0")</strong></span>
+                    </div>
+                }
+                @if (_activeBonuses.ForgivenessUsesAvailable > 0)
+                {
+                    <div class="bonus-item">
+                        <span class="bonus-icon">@EmojiConstants.Heart</span>
+                        <span>Forgiveness: <strong>@_activeBonuses.ForgivenessUsesAvailable use(s)</strong></span>
+                    </div>
+                }
+                @if (_activeBonuses.StreakProtectionAvailable > 0)
+                {
+                    <div class="bonus-item">
+                        <span class="bonus-icon">@EmojiConstants.Fire</span>
+                        <span>Streak Protection: <strong>@_activeBonuses.StreakProtectionAvailable use(s)</strong></span>
+                    </div>
+                }
+                @if (_activeBonuses.DoublePointDaysAvailable > 0)
+                {
+                    <div class="bonus-item">
+                        <span class="bonus-icon">@EmojiConstants.Star</span>
+                        <span>Double Point Days: <strong>@_activeBonuses.DoublePointDaysAvailable day(s)</strong></span>
+                    </div>
+                }
+                @if (_activeBonuses.ProfileBadges.Count > 0)
+                {
+                    <div class="bonus-item">
+                        <span class="bonus-icon">@EmojiConstants.GoldMedal</span>
+                        <span>Badges: <strong>@string.Join(", ", _activeBonuses.ProfileBadges)</strong></span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (_unseenAchievements.Count > 0)
+    {
+        <!-- New Achievements Celebration -->
+        <div class="new-achievements-banner mb-4">
+            <div class="text-center">
+                <h3>@EmojiConstants.Party New Achievement@(_unseenAchievements.Count > 1 ? "s" : "") Unlocked!</h3>
+                <div class="d-flex flex-wrap justify-content-center gap-3 mt-3">
+                    @foreach (var achievement in _unseenAchievements)
+                    {
+                        <div class="new-achievement-card @GetRarityClass(achievement.Rarity)">
+                            <span class="achievement-icon">@achievement.Icon</span>
+                            <h5>@achievement.Name</h5>
+                            <p class="small mb-1">@achievement.Description</p>
+                            <span class="badge @GetRarityBadgeClass(achievement.Rarity)">+@achievement.Points pts</span>
+                            @if (achievement.HasBonus)
+                            {
+                                <div class="bonus-tag mt-1">@EmojiConstants.Gift @achievement.BonusDescription</div>
+                            }
+                        </div>
+                    }
+                </div>
+                <button class="btn btn-success mt-3" @onclick="MarkAllSeen">
+                    @EmojiConstants.CheckMark Awesome!
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Category Tabs -->
+    <ul class="nav nav-pills mb-4 flex-nowrap overflow-auto">
+        <li class="nav-item">
+            <button class="nav-link @(_selectedCategory == null ? "active" : "")" 
+                    @onclick="() => _selectedCategory = null">
+                All (@_achievements.Count)
+            </button>
+        </li>
+        @foreach (var category in GetCategories())
+        {
+            var count = _achievements.Count(a => a.Category == category);
+            var earned = _achievements.Count(a => a.Category == category && a.IsEarned);
+            <li class="nav-item">
+                <button class="nav-link @(_selectedCategory == category ? "active" : "")" 
+                        @onclick="() => _selectedCategory = category">
+                    @GetCategoryName(category) (@earned/@count)
+                </button>
+            </li>
+        }
+    </ul>
+
+    <!-- Achievement Grid -->
+    <div class="achievement-grid">
+        @foreach (var achievement in GetFilteredAchievements())
+        {
+            <div class="achievement-card @(achievement.IsEarned ? "earned" : "locked") @(achievement.IsLegendary ? "legendary" : "") @GetRarityClass(achievement.Rarity)"
+                 @onclick="() => ShowAchievementDetail(achievement)">
+                <div class="achievement-icon-wrapper">
+                    <span class="achievement-icon @(achievement.IsEarned ? "" : "locked-icon")">
+                        @achievement.Icon
+                    </span>
+                    @if (achievement.IsLegendary && achievement.IsEarned)
+                    {
+                        <span class="legendary-badge">@EmojiConstants.GlowingStar</span>
+                    }
+                    @if (achievement.HasBonus && !achievement.IsEarned)
+                    {
+                        <span class="bonus-indicator">@EmojiConstants.Gift</span>
+                    }
+                </div>
+                <div class="achievement-info">
+                    <h6 class="achievement-name">@achievement.Name</h6>
+                    @if (achievement.IsEarned)
+                    {
+                        <small class="text-success">@EmojiConstants.CheckMark Unlocked</small>
+                    }
+                    else if (achievement.ShowProgress)
+                    {
+                        <div class="progress progress-sm">
+                            <div class="progress-bar" style="width: @achievement.ProgressPercent%"></div>
+                        </div>
+                        <small class="text-muted">@achievement.CurrentProgress / @achievement.TargetProgress</small>
+                    }
+                    else if (achievement.IsHidden)
+                    {
+                        <small class="text-muted">@EmojiConstants.QuestionMark Secret</small>
+                    }
+                </div>
+                <span class="achievement-points badge @GetRarityBadgeClass(achievement.Rarity)">
+                    @achievement.Points pts
+                </span>
+            </div>
+        }
+    </div>
+
+    @if (_stats != null && _stats.HiddenRemaining > 0)
+    {
+        <div class="text-center mt-4">
+            <p class="text-muted">
+                @EmojiConstants.QuestionMark @_stats.HiddenRemaining hidden achievement@(_stats.HiddenRemaining > 1 ? "s" : "") remaining
+            </p>
+        </div>
+    }
+</div>
+
+<!-- Achievement Detail Modal -->
+@if (_selectedAchievement != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.7);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content @GetRarityClass(_selectedAchievement.Rarity)">
+                <div class="modal-header border-0">
+                    <span class="badge @GetRarityBadgeClass(_selectedAchievement.Rarity)">
+                        @GetRarityName(_selectedAchievement.Rarity)
+                    </span>
+                    <button type="button" class="btn-close" @onclick="() => _selectedAchievement = null"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="achievement-detail-icon @(_selectedAchievement.IsEarned ? "" : "locked")">
+                        @_selectedAchievement.Icon
+                    </div>
+                    <h4 class="mt-3">@_selectedAchievement.Name</h4>
+                    <p class="text-muted">@_selectedAchievement.Description</p>
+                    
+                    @if (_selectedAchievement.IsEarned)
+                    {
+                        <div class="alert alert-success">
+                            @EmojiConstants.CheckMark Unlocked on @_selectedAchievement.EarnedAt?.ToString("MMM d, yyyy")
+                        </div>
+                    }
+                    else if (_selectedAchievement.ShowProgress)
+                    {
+                        <div class="modal-progress-container">
+                            <div class="progress mb-2" style="height: 24px;">
+                                <div class="progress-bar progress-bar-striped" style="width: @_selectedAchievement.ProgressPercent%;"></div>
+                            </div>
+                            <span class="modal-progress-text">@_selectedAchievement.ProgressPercent%</span>
+                        </div>
+                        <p>@_selectedAchievement.CurrentProgress / @_selectedAchievement.TargetProgress completed</p>
+                    }
+                    
+                    @if (_selectedAchievement.HasBonus)
+                    {
+                        <div class="bonus-section mt-3">
+                            <h6>@EmojiConstants.Gift Bonus Reward</h6>
+                            <p class="mb-0">@_selectedAchievement.BonusDescription</p>
+                        </div>
+                    }
+                    
+                    <div class="mt-3">
+                        <span class="badge bg-primary fs-6">+@_selectedAchievement.Points points</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button class="btn btn-secondary" @onclick="() => _selectedAchievement = null">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string? _userId;
+    private List<AchievementDisplay> _achievements = new();
+    private List<AchievementDisplay> _unseenAchievements = new();
+    private AchievementStats? _stats;
+    private ActiveBonusSummary? _activeBonuses;
+    private AchievementDisplay? _selectedAchievement;
+    private AchievementCategory? _selectedCategory;
+    private bool _isLoading = true;
+    private bool _showBonusPanel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        if (string.IsNullOrEmpty(_userId)) return;
+
+        _isLoading = true;
+
+        try
+        {
+            // Check for newly earned achievements first
+            await AchievementService.CheckAndAwardAchievementsAsync(_userId);
+            
+            _achievements = await AchievementService.GetAllAchievementsAsync(_userId);
+            _unseenAchievements = _achievements.Where(a => a.IsNew).ToList();
+            _stats = await AchievementService.GetStatsAsync(_userId);
+            _activeBonuses = await BonusService.GetActiveBonusesAsync(_userId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading achievements: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task MarkAllSeen()
+    {
+        if (string.IsNullOrEmpty(_userId)) return;
+
+        await AchievementService.MarkAchievementsAsSeenAsync(_userId);
+        _unseenAchievements.Clear();
+        
+        // Refresh to update the IsNew flags
+        _achievements = await AchievementService.GetAllAchievementsAsync(_userId);
+    }
+
+    private void ShowAchievementDetail(AchievementDisplay achievement)
+    {
+        _selectedAchievement = achievement;
+    }
+
+    private IEnumerable<AchievementCategory> GetCategories()
+    {
+        return _achievements
+            .Select(a => a.Category)
+            .Distinct()
+            .OrderBy(c => c);
+    }
+
+    private IEnumerable<AchievementDisplay> GetFilteredAchievements()
+    {
+        var filtered = _selectedCategory.HasValue
+            ? _achievements.Where(a => a.Category == _selectedCategory.Value)
+            : _achievements;
+
+        return filtered.OrderBy(a => !a.IsEarned).ThenBy(a => a.SortOrder);
+    }
+
+    private string GetCategoryName(AchievementCategory category)
+    {
+        return category switch
+        {
+            AchievementCategory.GettingStarted => "Getting Started",
+            AchievementCategory.Streaks => "Streaks",
+            AchievementCategory.Earnings => "Earnings",
+            AchievementCategory.Consistency => "Consistency",
+            AchievementCategory.Special => "Special",
+            AchievementCategory.Secret => "Secret",
+            AchievementCategory.Legendary => "Legendary",
+            AchievementCategory.TimeBased => "Time",
+            AchievementCategory.Social => "Social",
+            AchievementCategory.Savings => "Savings",
+            AchievementCategory.Mastery => "Mastery",
+            _ => category.ToString()
+        };
+    }
+
+    private string GetRarityClass(AchievementRarity rarity)
+    {
+        return rarity switch
+        {
+            AchievementRarity.Common => "rarity-common",
+            AchievementRarity.Uncommon => "rarity-uncommon",
+            AchievementRarity.Rare => "rarity-rare",
+            AchievementRarity.Epic => "rarity-epic",
+            AchievementRarity.Legendary => "rarity-legendary",
+            _ => ""
+        };
+    }
+
+    private string GetRarityBadgeClass(AchievementRarity rarity)
+    {
+        return rarity switch
+        {
+            AchievementRarity.Common => "bg-secondary",
+            AchievementRarity.Uncommon => "bg-success",
+            AchievementRarity.Rare => "bg-primary",
+            AchievementRarity.Epic => "bg-purple",
+            AchievementRarity.Legendary => "bg-warning text-dark",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetRarityName(AchievementRarity rarity)
+    {
+        return rarity switch
+        {
+            AchievementRarity.Common => "Common",
+            AchievementRarity.Uncommon => "Uncommon",
+            AchievementRarity.Rare => "Rare",
+            AchievementRarity.Epic => "Epic",
+            AchievementRarity.Legendary => "LEGENDARY",
+            _ => ""
+        };
+    }
+}

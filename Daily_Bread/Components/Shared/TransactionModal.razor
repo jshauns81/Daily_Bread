@@ -1,3 +1,5 @@
+﻿@namespace Daily_Bread.Components.Shared
+
 <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -6,6 +8,18 @@
                 <button type="button" class="btn-close" @onclick="OnCancel"></button>
             </div>
             <div class="modal-body">
+                @if (CurrentBalance.HasValue)
+                {
+                    <div class="alert alert-light border mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Current Balance:</span>
+                            <strong class="@(CurrentBalance >= 0 ? "text-success" : "text-danger")">
+                                $@CurrentBalance.Value.ToString("F2")
+                            </strong>
+                        </div>
+                    </div>
+                }
+                
                 <div class="mb-3">
                     <label class="form-label">@AmountLabel</label>
                     <div class="input-group">
@@ -36,6 +50,22 @@
                         <small class="text-danger">Description is required.</small>
                     }
                 </div>
+                
+                @if (CurrentBalance.HasValue && Amount != 0)
+                {
+                    <div class="alert @GetResultAlertClass() py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Resulting Balance:</span>
+                            <strong class="fs-5">$@GetResultingBalance().ToString("F2")</strong>
+                        </div>
+                        @if (!IsPositive && !AllowNegative && GetResultingBalance() < 0)
+                        {
+                            <div class="mt-2 text-danger">
+                                <small><span class="bi bi-exclamation-triangle me-1"></span>This will result in a negative balance.</small>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" @onclick="OnCancel">Cancel</button>
@@ -61,6 +91,12 @@
 
     [Parameter]
     public bool AllowNegative { get; set; } = false;
+    
+    /// <summary>
+    /// Current balance to show preview. If null, no preview is shown.
+    /// </summary>
+    [Parameter]
+    public decimal? CurrentBalance { get; set; }
 
     [Parameter]
     public EventCallback<(decimal Amount, string Description)> OnConfirm { get; set; }
@@ -74,6 +110,22 @@
     private bool IsValid => 
         (AllowNegative ? Amount != 0 : Amount > 0) && 
         !string.IsNullOrWhiteSpace(Description);
+    
+    private decimal GetResultingBalance()
+    {
+        if (!CurrentBalance.HasValue) return 0;
+        
+        var effectiveAmount = AllowNegative ? Amount : (IsPositive ? Amount : -Amount);
+        return CurrentBalance.Value + effectiveAmount;
+    }
+    
+    private string GetResultAlertClass()
+    {
+        var result = GetResultingBalance();
+        if (result < 0) return "alert-danger";
+        if (IsPositive) return "alert-success";
+        return "alert-warning";
+    }
 
     private async Task HandleConfirm()
     {

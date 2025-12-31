@@ -16,6 +16,43 @@ public class ChildBalanceSummary
 }
 
 /// <summary>
+/// A help request from a child requiring parent attention.
+/// </summary>
+public class HelpRequestItem
+{
+    public int ChoreLogId { get; init; }
+    public int ChoreDefinitionId { get; init; }
+    public required string ChoreName { get; init; }
+    public required string ChildName { get; init; }
+    public string? ChildUserId { get; init; }
+    public string? Reason { get; init; }
+    public DateOnly Date { get; init; }
+    public DateTime? RequestedAt { get; init; }
+}
+
+/// <summary>
+/// Summary of a child's today progress for parent overview.
+/// </summary>
+public class ChildTodayProgress
+{
+    public int ProfileId { get; init; }
+    public required string DisplayName { get; init; }
+    public string? UserId { get; init; }
+    public int TotalChores { get; init; }
+    public int CompletedChores { get; init; }
+    public int ApprovedChores { get; init; }
+    public int PendingChores { get; init; }
+    public int HelpRequests { get; init; }
+    
+    public int ProgressPercent => TotalChores > 0 
+        ? (int)Math.Round((CompletedChores + ApprovedChores) * 100.0 / TotalChores) 
+        : 0;
+    
+    public bool IsComplete => TotalChores > 0 && (CompletedChores + ApprovedChores) >= TotalChores;
+    public bool HasHelpRequests => HelpRequests > 0;
+}
+
+/// <summary>
 /// A pending chore awaiting approval.
 /// </summary>
 public class PendingApprovalItem
@@ -70,9 +107,13 @@ public class ParentDashboardData
     public List<PendingApprovalItem> PendingApprovals { get; init; } = [];
     public List<ChildBalanceSummary> ChildrenBalances { get; init; } = [];
     public List<RecentActivityItem> RecentActivity { get; init; } = [];
+    public List<HelpRequestItem> HelpRequests { get; init; } = [];
+    public List<ChildTodayProgress> ChildrenProgress { get; init; } = [];
     public int TodayCompletedCount { get; init; }
     public int TodayPendingCount { get; init; }
     public int TodayApprovedCount { get; init; }
+    public int TodayHelpCount { get; init; }
+    public int TodayTotalChores { get; init; }
 }
 
 /// <summary>
@@ -226,6 +267,27 @@ public class DashboardService : IDashboardService
             })
             .ToListAsync();
 
+        // Get help requests (chores with Help status)
+        var helpRequests = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
+                .ThenInclude(cd => cd.AssignedUser)
+            .Where(cl => cl.Status == ChoreStatus.Help)
+            .OrderByDescending(cl => cl.HelpRequestedAt)
+            .Select(cl => new HelpRequestItem
+            {
+                ChoreLogId = cl.Id,
+                ChoreDefinitionId = cl.ChoreDefinitionId,
+                ChoreName = cl.ChoreDefinition.Name,
+                ChildName = cl.ChoreDefinition.AssignedUser != null 
+                    ? cl.ChoreDefinition.AssignedUser.UserName ?? "Unknown"
+                    : "Unassigned",
+                ChildUserId = cl.ChoreDefinition.AssignedUserId,
+                Reason = cl.HelpReason,
+                Date = cl.Date,
+                RequestedAt = cl.HelpRequestedAt
+            })
+            .ToListAsync();
+
         // Get children balances
         var childProfiles = await _profileService.GetAllChildProfilesAsync();
         var childrenBalances = childProfiles.Select(p => new ChildBalanceSummary
@@ -239,19 +301,44 @@ public class DashboardService : IDashboardService
         // Get recent activity (last 10 items)
         var recentActivity = await GetRecentActivityAsync(10);
 
-        // Get today's stats
+        // Get today's stats from chore logs
         var todayLogs = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
             .Where(cl => cl.Date == today)
             .ToListAsync();
+
+        // Build per-child progress for today
+        var childrenProgress = new List<ChildTodayProgress>();
+        foreach (var profile in childProfiles)
+        {
+            var childTodayLogs = todayLogs.Where(l => l.ChoreDefinition.AssignedUserId == profile.UserId).ToList();
+            var childHelpCount = helpRequests.Count(hr => hr.ChildUserId == profile.UserId);
+            
+            childrenProgress.Add(new ChildTodayProgress
+            {
+                ProfileId = profile.ProfileId,
+                DisplayName = profile.DisplayName,
+                UserId = profile.UserId,
+                TotalChores = childTodayLogs.Count,
+                CompletedChores = childTodayLogs.Count(l => l.Status == ChoreStatus.Completed),
+                ApprovedChores = childTodayLogs.Count(l => l.Status == ChoreStatus.Approved),
+                PendingChores = childTodayLogs.Count(l => l.Status == ChoreStatus.Pending),
+                HelpRequests = childHelpCount
+            });
+        }
 
         return new ParentDashboardData
         {
             PendingApprovals = pendingApprovals,
             ChildrenBalances = childrenBalances,
             RecentActivity = recentActivity,
+            HelpRequests = helpRequests,
+            ChildrenProgress = childrenProgress,
             TodayCompletedCount = todayLogs.Count(l => l.Status == ChoreStatus.Completed),
             TodayPendingCount = todayLogs.Count(l => l.Status == ChoreStatus.Pending),
-            TodayApprovedCount = todayLogs.Count(l => l.Status == ChoreStatus.Approved)
+            TodayApprovedCount = todayLogs.Count(l => l.Status == ChoreStatus.Approved),
+            TodayHelpCount = todayLogs.Count(l => l.Status == ChoreStatus.Help),
+            TodayTotalChores = todayLogs.Count
         };
     }
 

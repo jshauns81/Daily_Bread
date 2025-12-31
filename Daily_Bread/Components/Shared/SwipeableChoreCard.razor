@@ -60,6 +60,29 @@
             </div>
         </div>
         
+        @* Click action buttons for desktop/web - visible on hover *@
+        @if (!IsSwipeDisabled && !IsProcessing)
+        {
+            <div class="click-actions">
+                <button type="button" 
+                        class="click-action-btn help-btn" 
+                        @onclick="HandleHelpClick"
+                        @onclick:stopPropagation="true"
+                        title="Request Help">
+                    <span class="bi bi-question-circle"></span>
+                    <span class="btn-label">Help</span>
+                </button>
+                <button type="button" 
+                        class="click-action-btn done-btn" 
+                        @onclick="HandleDoneClick"
+                        @onclick:stopPropagation="true"
+                        title="Mark as Done">
+                    <span class="bi bi-check-circle"></span>
+                    <span class="btn-label">Done</span>
+                </button>
+            </div>
+        }
+        
         @if (IsProcessing)
         {
             <div class="processing-overlay">
@@ -134,6 +157,24 @@
         {
             await OnRequestHelp.InvokeAsync(Chore);
         }
+    }
+    
+    /// <summary>
+    /// Handle click on Done button (for desktop/web users)
+    /// </summary>
+    private async Task HandleDoneClick()
+    {
+        if (_disposed || IsProcessing || IsSwipeDisabled) return;
+        await OnComplete.InvokeAsync(Chore);
+    }
+    
+    /// <summary>
+    /// Handle click on Help button (for desktop/web users)
+    /// </summary>
+    private async Task HandleHelpClick()
+    {
+        if (_disposed || IsProcessing || IsSwipeDisabled) return;
+        await OnRequestHelp.InvokeAsync(Chore);
     }
     
     private string GetCardStateClass()

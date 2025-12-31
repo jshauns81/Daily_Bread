@@ -233,31 +233,34 @@
 }
 
 <!-- Bonus Modal -->
-@if (ShowBonus)
+@if (ShowBonus && SelectedBalance != null)
 {
     <TransactionModal Title="Add Bonus"
                       AmountLabel="Bonus Amount"
                       IsPositive="true"
+                      CurrentBalance="@SelectedBalance.CurrentBalance"
                       OnConfirm="ProcessBonus"
                       OnCancel="() => ShowBonus = false" />
 }
 
 <!-- Penance Modal -->
-@if (ShowPenalty)
+@if (ShowPenalty && SelectedBalance != null)
 {
     <TransactionModal Title="Add Penance"
                       AmountLabel="Penance Amount"
                       IsPositive="false"
+                      CurrentBalance="@SelectedBalance.CurrentBalance"
                       OnConfirm="ProcessPenalty"
                       OnCancel="() => ShowPenalty = false" />
 }
 
 <!-- Adjustment Modal -->
-@if (ShowAdjustment)
+@if (ShowAdjustment && SelectedBalance != null)
 {
     <TransactionModal Title="Add Adjustment"
                       AmountLabel="Adjustment Amount"
                       AllowNegative="true"
+                      CurrentBalance="@SelectedBalance.CurrentBalance"
                       OnConfirm="ProcessAdjustment"
                       OnCancel="() => ShowAdjustment = false" />
 }
