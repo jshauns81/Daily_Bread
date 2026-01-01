@@ -1,31 +1,19 @@
-@namespace Daily_Bread.Components.Shared
+﻿@namespace Daily_Bread.Components.Shared
 @using Daily_Bread.Services
 
 <div class="tracker-summary mt-3">
     <div class="row g-3">
         <div class="col-md-3 col-6">
-            <div class="summary-card">
-                <span class="summary-value">@TotalCount</span>
-                <span class="summary-label">Total Labors</span>
-            </div>
+            <StatCard Value="@TotalCount" Label="Total Labors" />
         </div>
         <div class="col-md-3 col-6">
-            <div class="summary-card">
-                <span class="summary-value text-success">@CompletedCount</span>
-                <span class="summary-label">Completed</span>
-            </div>
+            <StatCard Value="@CompletedCount" Label="Completed" Color="StatColor.Success" />
         </div>
         <div class="col-md-3 col-6">
-            <div class="summary-card">
-                <span class="summary-value text-warning">@PendingCount</span>
-                <span class="summary-label">Pending</span>
-            </div>
+            <StatCard Value="@PendingCount" Label="Pending" Color="StatColor.Warning" />
         </div>
         <div class="col-md-3 col-6">
-            <div class="summary-card">
-                <span class="summary-value text-success">$@EarnedToday.ToString("F2")</span>
-                <span class="summary-label">Wages Today</span>
-            </div>
+            <StatCard Value="@EarnedToday.ToString("F2")" Label="Wages Today" Prefix="$" Color="StatColor.Success" />
         </div>
     </div>
 </div>

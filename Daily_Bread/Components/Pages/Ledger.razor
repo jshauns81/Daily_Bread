@@ -4,6 +4,7 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using System.Security.Claims
+@using Daily_Bread.Components.Shared
 
 @inject ILedgerService LedgerService
 @inject IPayoutService PayoutService
@@ -91,30 +92,12 @@
         @if (Stats != null)
         {
             <div class="stats-grid">
-                <div class="stat-card bg-success-subtle">
-                    <span class="stat-value text-success">$@Stats.TotalEarnings.ToString("F2")</span>
-                    <span class="stat-label">Wages</span>
-                </div>
-                <div class="stat-card bg-danger-subtle">
-                    <span class="stat-value text-danger">$@Stats.TotalDeductions.ToString("F2")</span>
-                    <span class="stat-label">Deductions</span>
-                </div>
-                <div class="stat-card bg-info-subtle">
-                    <span class="stat-value text-info">$@Stats.TotalBonuses.ToString("F2")</span>
-                    <span class="stat-label">Bonuses</span>
-                </div>
-                <div class="stat-card bg-warning-subtle">
-                    <span class="stat-value text-warning">$@Stats.TotalPenalties.ToString("F2")</span>
-                    <span class="stat-label">Penance</span>
-                </div>
-                <div class="stat-card bg-secondary-subtle">
-                    <span class="stat-value">$@Stats.TotalPayouts.ToString("F2")</span>
-                    <span class="stat-label">Paid Out</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-value">@Stats.TransactionCount</span>
-                    <span class="stat-label">Transactions</span>
-                </div>
+                <StatCard Value="@Stats.TotalEarnings.ToString("F2")" Label="Wages" Prefix="$" Color="StatColor.Success" Background="StatBackground.SuccessSubtle" />
+                <StatCard Value="@Stats.TotalDeductions.ToString("F2")" Label="Deductions" Prefix="$" Color="StatColor.Danger" Background="StatBackground.DangerSubtle" />
+                <StatCard Value="@Stats.TotalBonuses.ToString("F2")" Label="Bonuses" Prefix="$" Color="StatColor.Info" Background="StatBackground.InfoSubtle" />
+                <StatCard Value="@Stats.TotalPenalties.ToString("F2")" Label="Penance" Prefix="$" Color="StatColor.Warning" Background="StatBackground.WarningSubtle" />
+                <StatCard Value="@Stats.TotalPayouts.ToString("F2")" Label="Paid Out" Prefix="$" Background="StatBackground.SecondarySubtle" />
+                <StatCard Value="@Stats.TransactionCount" Label="Transactions" />
             </div>
         }
     }
