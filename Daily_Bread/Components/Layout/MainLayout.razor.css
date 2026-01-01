@@ -5,6 +5,27 @@
    ============================================ */
 
 /* ===========================================
+   CSS CUSTOM PROPERTIES FOR HEADER
+   These ensure consistent calculations across breakpoints
+   =========================================== */
+
+:root {
+    --header-height: 52px;
+}
+
+@media (max-width: 480px) {
+    :root {
+        --header-height: 48px;
+    }
+}
+
+@media (max-width: 767px) and (orientation: landscape) {
+    :root {
+        --header-height: 44px;
+    }
+}
+
+/* ===========================================
    BASE LAYOUT
    =========================================== */
 
@@ -38,9 +59,12 @@ main {
     -webkit-overflow-scrolling: touch;
     /* Prevent overscroll bounce */
     overscroll-behavior-y: contain;
-    /* Add top padding for fixed mobile header + safe area */
-    /* Reduced to match new header height */
-    padding-top: calc(52px + env(safe-area-inset-top, 0px));
+    /* 
+     * CRITICAL: Total offset = header height + safe area inset
+     * The header sits BELOW the safe area, so we need both values
+     * to push content below the header
+     */
+    padding-top: calc(var(--header-height, 52px) + env(safe-area-inset-top, 0px));
 }
 
 .content {
@@ -63,23 +87,36 @@ main {
 }
 
 /* ===========================================
-   MOBILE HEADER (sticky at top)
+   MOBILE HEADER (fixed at top)
+   
+   iOS Safe Area Strategy:
+   - The header is positioned BELOW the safe area (top: env(safe-area-inset-top))
+   - A ::before pseudo-element extends the background color INTO the safe area
+   - This creates a seamless visual where the status bar/Dynamic Island
+     has the same background color as the header
+   - The header CONTENT (hamburger, brand, actions) remains below the safe area
+     and is never obscured by the notch or Dynamic Island
    =========================================== */
 
 .mobile-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 52px; /* Reduced from 56px */
+    height: var(--header-height, 52px);
     padding: 0 1rem;
     background-color: var(--nord1);
     border-bottom: 1px solid var(--nord3);
     position: fixed;
-    /* KEY FIX: Position header BELOW the safe area, not at top: 0 */
+    /* 
+     * KEY: Position header BELOW the safe area inset
+     * On devices with notch/Dynamic Island, this pushes the header down
+     * On devices without, env() returns 0px and header is at top
+     */
     top: env(safe-area-inset-top, 0px);
     left: 0;
     right: 0;
     z-index: 100;
+    /* Ensure side padding respects safe areas (for landscape or iPad) */
     padding-left: max(1rem, env(safe-area-inset-left, 0px));
     padding-right: max(1rem, env(safe-area-inset-right, 0px));
     flex-shrink: 0;
@@ -88,15 +125,23 @@ main {
     overflow: visible;
 }
 
-/* Extend background color INTO the safe area (behind Dynamic Island) */
+/* 
+ * Extend background color INTO the safe area (behind Dynamic Island/notch)
+ * This creates a seamless colored area from the top of the screen
+ * through the status bar area and into the header
+ */
 .mobile-header::before {
     content: '';
     position: absolute;
+    /* Extend upward INTO the safe area */
     top: calc(-1 * env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
+    /* Height matches the safe area inset */
     height: env(safe-area-inset-top, 0px);
+    /* Inherit the header's background color */
     background-color: inherit;
+    /* Place behind header content */
     z-index: -1;
 }
 
@@ -401,6 +446,11 @@ main {
         justify-content: flex-end;
     }
     
+    /* Hide the ::before pseudo-element on desktop */
+    .mobile-header::before {
+        display: none;
+    }
+    
     /* Hide hamburger and brand on desktop - LoginDisplay stays visible */
     .mobile-header .hamburger-btn,
     .mobile-header .mobile-brand {
@@ -487,7 +537,7 @@ main {
 @media (max-width: 480px) {
     .mobile-header {
         padding: 0 0.75rem;
-        height: 48px; /* Even more compact on small screens */
+        /* Height controlled by CSS custom property at top of file */
     }
     
     .mobile-brand {
@@ -516,22 +566,38 @@ main {
         font-size: 0.65rem;
     }
     
-    /* Update main padding for smaller header */
-    main {
-        padding-top: calc(48px + env(safe-area-inset-top, 0px));
-    }
+    /* main padding-top is calculated from CSS custom property automatically */
 }
 
 /* ===========================================
    PWA STANDALONE MODE ADJUSTMENTS
+   
+   When running as installed PWA (standalone mode):
+   - iOS hides the browser chrome
+   - The safe area insets become critical
+   - black-translucent status bar style means content
+     renders behind the status bar
    =========================================== */
 
 :global(body.pwa-standalone) .mobile-header {
-    /* Additional padding for standalone mode if needed */
+    /* Ensure the header stays below the safe area in PWA mode */
+    /* The positioning is already correct via env(safe-area-inset-top) */
+}
+
+:global(body.pwa-standalone) main {
+    /* Ensure scrolling works properly in standalone mode */
+    -webkit-overflow-scrolling: touch;
 }
 
 :global(body.ios-device) .mobile-header {
-    /* iOS-specific adjustments if needed */
+    /* iOS-specific: ensure the header background extends fully */
+    /* The ::before pseudo-element handles this */
+}
+
+/* iOS PWA in standalone mode needs extra care */
+:global(body.ios-device.pwa-standalone) .page {
+    /* iOS standalone mode: the page container needs proper handling */
+    /* height: 100dvh handles the dynamic viewport correctly */
 }
 
 /* ===========================================
@@ -584,12 +650,10 @@ main {
 
 @media (max-width: 767px) and (orientation: landscape) {
     .mobile-header {
-        height: 44px; /* Compact header in landscape */
+        /* Height controlled by CSS custom property at top of file */
     }
     
-    main {
-        padding-top: calc(44px + env(safe-area-inset-top, 0px));
-    }
+    /* main padding-top is calculated from CSS custom property automatically */
     
     .sidebar {
         width: 260px;
@@ -655,6 +719,7 @@ main {
     
     main {
         display: block;
+        padding-top: 0;
     }
     
     .content {

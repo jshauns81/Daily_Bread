@@ -1420,14 +1420,16 @@ body.pwa-standalone .content {
     -webkit-overflow-scrolling: touch;
 }
 
-/* PWA Standalone - fixed elements respect safe areas */
+/* PWA Standalone - the header background extends into safe area via ::before */
+/* No additional padding needed on header itself - it's positioned below safe area */
 body.pwa-standalone .mobile-header {
-    padding-top: env(safe-area-inset-top, 0px);
+    /* Position is already: top: env(safe-area-inset-top) */
+    /* The ::before extends background into safe area */
 }
 
 /* iOS device specific fixes */
 body.ios-device {
-    /* Prevent elastic scrolling on body */
+    /* Prevent elastic scrolling on body - scroll happens in main */
     position: fixed;
     width: 100%;
     height: 100vh; /* Fallback for older browsers */
@@ -1443,30 +1445,23 @@ body.ios-device .page {
     height: 100dvh;
 }
 
+/* iOS PWA Standalone: Most critical combination */
+body.ios-device.pwa-standalone {
+    /* When iOS PWA with black-translucent status bar:
+     * - Content renders behind status bar
+     * - env(safe-area-inset-top) gives notch/Dynamic Island height
+     * - Header uses top: env() to position below it
+     * - Header ::before fills the safe area with background color
+     */
+}
+
+body.ios-device.pwa-standalone .page {
+    /* Ensure the page fills viewport properly */
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
 /* Android specific */
 body.android-device {
     /* Android handles viewport better, but ensure safe areas work */
-}
-
-/* ===========================================
-   52. SCROLLABLE CONTENT AREA
-   =========================================== */
-
-/* Scrollable main content that respects fixed headers/footers */
-.scrollable-content {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    /* Prevent overscroll only on this element */
-    overscroll-behavior-y: contain;
-}
-
-/* Scrollable area with bottom padding for fixed footer */
-.scrollable-with-footer {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + 16px);
 }
