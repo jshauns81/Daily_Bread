@@ -185,6 +185,7 @@ builder.Services.AddScoped<IWeeklyProgressService, WeeklyProgressService>();
 builder.Services.AddScoped<IWeeklyReconciliationService, WeeklyReconciliationService>();
 builder.Services.AddScoped<IBiometricAuthService, BiometricAuthService>();
 builder.Services.AddScoped<IAppStateService, AppStateService>();
+builder.Services.AddScoped<INavigationService, NavigationService>();
 
 // Achievement system services (order matters - dependencies first)
 builder.Services.AddScoped<IAchievementConditionEvaluator, AchievementConditionEvaluator>();

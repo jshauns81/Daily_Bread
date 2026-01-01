@@ -1,7 +1,10 @@
 ﻿@inherits LayoutComponentBase
+@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared.Navigation
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
+@inject INavigationService NavService
 @implements IDisposable
 
 <div class="page @(_sidebarOpen ? "sidebar-open" : "") @(_showBottomNav ? "has-bottom-nav" : "")" id="page-container">
@@ -32,37 +35,28 @@
     </aside>
 
     <!-- Main Content -->
-    <main>
+    <main class="@(_showBottomNav ? "has-bottom-nav" : "")">
         <!-- Desktop Header - LoginDisplay moved here via CSS on desktop -->
         <div class="desktop-header">
             <!-- Empty - LoginDisplay is positioned here via CSS on desktop -->
         </div>
 
-        <article class="content @(_showBottomNav ? "has-bottom-nav" : "")">
+        <article class="content">
             @Body
         </article>
     </main>
     
-    <!-- Mobile Bottom Navigation (for Child users) -->
-    @if (_showBottomNav)
+    <!-- Mobile Bottom Navigation (driven by NavigationService) -->
+    @if (_showBottomNav && _mobileNavItems.Count > 0)
     {
         <nav class="mobile-bottom-nav" aria-label="Main navigation">
-            <a href="/" class="bottom-nav-item @(IsCurrentPage("/") ? "active" : "")">
-                <span class="bi bi-house-fill"></span>
-                <span>Home</span>
-            </a>
-            <a href="/my-balance" class="bottom-nav-item @(IsCurrentPage("/my-balance") ? "active" : "")">
-                <span class="bi bi-wallet2"></span>
-                <span>Balance</span>
-            </a>
-            <a href="/achievements" class="bottom-nav-item @(IsCurrentPage("/achievements") ? "active" : "")">
-                <span class="bi bi-trophy-fill"></span>
-                <span>Badges</span>
-            </a>
-            <a href="/goals" class="bottom-nav-item @(IsCurrentPage("/goals") ? "active" : "")">
-                <span class="bi bi-bullseye"></span>
-                <span>Goals</span>
-            </a>
+            @foreach (var item in _mobileNavItems)
+            {
+                <a href="@item.Route" class="bottom-nav-item @(IsCurrentPage(item.Route) ? "active" : "")">
+                    <span class="bi @item.Icon"></span>
+                    <span>@GetMobileLabel(item.Label)</span>
+                </a>
+            }
         </nav>
     }
 </div>
@@ -108,7 +102,7 @@
 @code {
     private bool _sidebarOpen = false;
     private bool _showBottomNav = false;
-    private bool _isChild = false;
+    private IReadOnlyList<NavItem> _mobileNavItems = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -125,15 +119,20 @@
             
             if (user.Identity?.IsAuthenticated == true)
             {
-                // Show bottom nav for child users (not parent-only, not admin-only)
                 var isParent = user.IsInRole("Parent");
                 var isAdmin = user.IsInRole("Admin");
                 var isChild = user.IsInRole("Child");
                 
-                // Child users (including those who are also parents/admins) get bottom nav
-                // Pure admin-only or parent-only don't get bottom nav
-                _isChild = isChild && !(!isChild && (isParent || isAdmin));
-                _showBottomNav = _isChild;
+                // Show bottom nav for Parents and Children on mobile
+                // Admin-only users (no Parent or Child role) don't get bottom nav
+                var isAdminOnly = isAdmin && !isParent && !isChild;
+                _showBottomNav = !isAdminOnly && (isParent || isChild);
+                
+                // Get mobile nav items from centralized service
+                if (_showBottomNav)
+                {
+                    _mobileNavItems = NavService.GetMobileNavItems(isParent, isChild, isAdmin);
+                }
             }
         }
         catch
@@ -153,6 +152,22 @@
         }
         
         return currentPath.Equals("/" + targetPath, StringComparison.OrdinalIgnoreCase);
+    }
+    
+    /// <summary>
+    /// Gets a shortened label for mobile bottom nav (max ~8 chars).
+    /// </summary>
+    private static string GetMobileLabel(string label)
+    {
+        // Use shorter labels for mobile to prevent overflow
+        return label switch
+        {
+            "Achievements" => "Badges",
+            "My Balance" => "Balance",
+            "Book of Deeds" => "Tracker",
+            "Labor Planner" => "Planner",
+            _ => label
+        };
     }
 
     private void CloseSidebar()

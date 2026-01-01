@@ -787,7 +787,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .modal-footer {
     background-color: var(--nord2);
     border-top: none;
-    padding: var(--space-md);
+    padding: var (--space-md);
 }
 
 /* ===========================================
@@ -884,12 +884,17 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     #user-dropdown-menu {
         position: fixed !important;
         top: auto !important;
-        bottom: 0 !important;
+        /* 
+         * Position above bottom nav when present.
+         * The .page.has-bottom-nav class sets --bottom-nav-offset to the nav height.
+         * Default to 0 when no bottom nav (admin-only users).
+         */
+        bottom: calc(var(--bottom-nav-offset, 0px) + env(safe-area-inset-bottom, 0px)) !important;
         left: 0 !important;
         right: 0 !important;
         border-radius: 16px 16px 0 0;
         min-width: 100%;
-        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-bottom: var(--space-sm, 8px);
         z-index: 9999 !important;
     }
     
@@ -897,6 +902,11 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
         padding: 1rem 1.25rem;
         font-size: 1rem;
     }
+}
+
+/* Set the offset variable when bottom nav is present */
+.page.has-bottom-nav {
+    --bottom-nav-offset: calc(var(--bottom-nav-height, 60px));
 }
 
 /* ===========================================
@@ -1385,9 +1395,32 @@ article {
     padding-top: max(var(--space-md, 16px), env(safe-area-inset-top, 0px));
 }
 
-/* Content with bottom fixed element */
-.has-bottom-nav {
+/* Content with bottom fixed element - for .content elements */
+.content.has-bottom-nav {
     padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-md, 16px));
+}
+
+/* Main scroll container needs bottom padding when bottom nav exists */
+main.has-bottom-nav {
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Desktop: no bottom nav, remove extra padding */
+@media (min-width: 768px) {
+    main.has-bottom-nav {
+        padding-bottom: 0;
+    }
+    
+    .content.has-bottom-nav {
+        padding-bottom: var(--space-lg, 24px);
+    }
+}
+
+/* Landscape mobile: smaller bottom nav */
+@media (max-width: 767px) and (orientation: landscape) {
+    main.has-bottom-nav {
+        padding-bottom: calc(50px + env(safe-area-inset-bottom, 0p
+    }
 }
 
 /* Fixed bottom element with safe area */

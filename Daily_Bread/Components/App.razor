@@ -104,6 +104,11 @@
             padding-top: calc(var(--header-height, 52px) + env(safe-area-inset-top, 0px));
         }
         
+        /* Main scroll container needs bottom padding when bottom nav exists */
+        main.has-bottom-nav {
+            padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px));
+        }
+        
         /* Mobile header critical styles - prevents flash of mispositioned header */
         .mobile-header {
             position: fixed;

@@ -1,0 +1,20 @@
+[33m59a5e99[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m StatCard cleanup
+[33m3ec5a94[m iphone hash
+[33mee4f43c[m update
+[33m8dab1ff[m commit
+[33m037811e[m RC_2.0
+[33ma44cabb[m COmmit chagnges
+[33me3c5388[m Chore: cleanup repo
+[33m17b30df[m commit to ammend files.
+[33mf43dd59[m pushing changes
+[33m802bdd0[m This was the move!
+[33m2dc4f1e[m Added better security measures
+[33mbc12e9f[m[33m ([m[1;33mtag: [m[1;33mPR_-.02[m[33m)[m  Password fix
+[33m9b71da4[m commit test.
+[33mb98fba1[m Update Program.cs
+[33mfcdd92e[m Merge pull request #8 from jshauns81/copilot/fix-password-input-regressions
+[33m20cd1ce[m[33m ([m[1;31morigin/copilot/fix-password-input-regressions[m[33m)[m Improve password toggle JavaScript
+[33mea44dec[m Fix password input styling to match username field
+[33m75e6bb9[m Initial plan
+[33mc4bd901[m Merge pull request #7 from jshauns81/copilot/fix-password-validation-login
+[33m5072d93[m Fix PasswordInput component to work in static SSR mode

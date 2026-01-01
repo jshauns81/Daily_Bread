@@ -100,13 +100,21 @@
     .btn-user-menu {
         padding: 0.5rem;
         border-radius: 50%;
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         justify-content: center;
+        /* Remove the double-circle effect - icon is already circular */
+        border: none;
+        background: transparent;
+    }
+    
+    .btn-user-menu:hover,
+    .btn-user-menu:focus {
+        background-color: var(--nord2);
     }
     
     .btn-user-menu .bi-person-circle {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
     }
     
     .btn-auth-text {
@@ -116,9 +124,20 @@
     .btn-auth {
         padding: 0.5rem;
         border-radius: 50%;
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         justify-content: center;
+        border: none;
+        background: transparent;
+    }
+    
+    .btn-auth:hover,
+    .btn-auth:focus {
+        background-color: var(--nord2);
+    }
+    
+    .btn-auth .bi {
+        font-size: 1.5rem;
     }
 }
 
