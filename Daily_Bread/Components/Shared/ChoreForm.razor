@@ -2,7 +2,7 @@
 @using Daily_Bread.Services
 @using System.ComponentModel.DataAnnotations
 
-<div class="chore-form">
+<div class="chore-form" @onclick:stopPropagation="true">
     <EditForm Model="FormModel" OnValidSubmit="HandleSubmit">
         <DataAnnotationsValidator />
 

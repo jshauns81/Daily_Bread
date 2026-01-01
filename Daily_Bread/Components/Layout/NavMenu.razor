@@ -1,4 +1,6 @@
 ﻿@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared.Navigation
+@inject INavigationService NavigationService
 @inject IDashboardService DashboardService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JS
@@ -11,87 +13,35 @@
 </div>
 
 <nav class="nav-menu" role="navigation">
-    @if (!_isAdminOnly)
-    {
-        <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="HandleNavigation">
-            <span class="bi bi-house-door-fill" aria-hidden="true"></span>
-            <span class="nav-link-text">Home</span>
-        </NavLink>
-    }
-
     <AuthorizeView>
         <Authorized>
-            @if (!_isAdminOnly)
-            {
-                <NavLink class="nav-link" href="tracker" @onclick="HandleNavigation">
-                    <span class="bi bi-check2-square" aria-hidden="true"></span>
-                    <span class="nav-link-text">Book of Deeds</span>
-                </NavLink>
-                
-                <NavLink class="nav-link" href="calendar" @onclick="HandleNavigation">
-                    <span class="bi bi-calendar3" aria-hidden="true"></span>
-                    <span class="nav-link-text">Calendar</span>
-                </NavLink>
-                
-                @if (!_isParentOnly)
-                {
-                    <NavLink class="nav-link" href="my-balance" @onclick="HandleNavigation">
-                        <span class="bi bi-wallet2" aria-hidden="true"></span>
-                        <span class="nav-link-text">My Balance</span>
-                    </NavLink>
-                    
-                    <NavLink class="nav-link" href="goals" @onclick="HandleNavigation">
-                        <span class="bi bi-bullseye" aria-hidden="true"></span>
-                        <span class="nav-link-text">Goals</span>
-                    </NavLink>
-                    
-                    <NavLink class="nav-link" href="achievements" @onclick="HandleNavigation">
-                        <span class="bi bi-trophy-fill" aria-hidden="true"></span>
-                        <span class="nav-link-text">Achievements</span>
-                    </NavLink>
-                }
+            @{
+                string? currentSection = null;
             }
-        </Authorized>
-    </AuthorizeView>
-
-    <AuthorizeView Roles="Parent">
-        <Authorized>
-            <div class="nav-section-label">Management</div>
-            
-            <NavLink class="nav-link" href="chore-planner" @onclick="HandleNavigation">
-                <span class="bi bi-calendar-check" aria-hidden="true"></span>
-                <span class="nav-link-text">Labor Planner</span>
-            </NavLink>
-            
-            <NavLink class="nav-link" href="ledger" @onclick="HandleNavigation">
-                <span class="bi bi-journal-text" aria-hidden="true"></span>
-                <span class="nav-link-text">Treasury</span>
-            </NavLink>
-            
-            <NavLink class="nav-link" href="settings" @onclick="HandleNavigation">
-                <span class="bi bi-gear-fill" aria-hidden="true"></span>
-                <span class="nav-link-text">Settings</span>
-            </NavLink>
-            
-            @if (_pendingCount > 0)
+            @foreach (var item in _navItems)
             {
-                <NavLink class="nav-link nav-link-alert" href="/" @onclick="HandleNavigation">
+                @* Render section label if it changes *@
+                @if (item.Section != currentSection && !string.IsNullOrEmpty(item.Section))
+                {
+                    currentSection = item.Section;
+                    <div class="nav-section-label">@item.Section</div>
+                }
+                
+                <NavLink class="nav-link" href="@item.Route.TrimStart('/')" Match="@GetNavLinkMatch(item.Route)" @onclick="HandleNavigation">
+                    <span class="bi @item.Icon" aria-hidden="true"></span>
+                    <span class="nav-link-text">@item.Label</span>
+                </NavLink>
+            }
+            
+            @* Pending approvals alert - shown for parents when there are pending items *@
+            @if (_isParent && _pendingCount > 0)
+            {
+                <NavLink class="nav-link nav-link-alert" href="" Match="NavLinkMatch.All" @onclick="HandleNavigation">
                     <span class="bi bi-exclamation-circle-fill" aria-hidden="true"></span>
                     <span class="nav-link-text">Blessings</span>
                     <span class="nav-badge">@_pendingCount</span>
                 </NavLink>
             }
-        </Authorized>
-    </AuthorizeView>
-
-    <AuthorizeView Roles="Admin">
-        <Authorized>
-            <div class="nav-section-label">Admin</div>
-            
-            <NavLink class="nav-link" href="admin/users" @onclick="HandleNavigation">
-                <span class="bi bi-people-fill" aria-hidden="true"></span>
-                <span class="nav-link-text">Users</span>
-            </NavLink>
         </Authorized>
     </AuthorizeView>
 </nav>
@@ -110,9 +60,11 @@
     [Parameter]
     public EventCallback OnNavigate { get; set; }
 
+    private IReadOnlyList<NavItem> _navItems = [];
     private int _pendingCount;
-    private bool _isAdminOnly;
-    private bool _isParentOnly;
+    private bool _isParent;
+    private bool _isChild;
+    private bool _isAdmin;
     private bool _isStandalone;
 
     protected override async Task OnInitializedAsync()
@@ -120,10 +72,15 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        _isAdminOnly = user.IsInRole("Admin") && !user.IsInRole("Parent") && !user.IsInRole("Child");
-        _isParentOnly = user.IsInRole("Parent") && !user.IsInRole("Child");
+        _isParent = user.IsInRole("Parent");
+        _isChild = user.IsInRole("Child");
+        _isAdmin = user.IsInRole("Admin");
+        
+        // Get navigation items from centralized service
+        _navItems = NavigationService.GetDesktopNavItems(_isParent, _isChild, _isAdmin);
 
-        if (user.IsInRole("Parent"))
+        // Load pending count for parents
+        if (_isParent)
         {
             try
             {
@@ -159,6 +116,15 @@
         {
             await OnNavigate.InvokeAsync();
         }
+    }
+    
+    /// <summary>
+    /// Determines the NavLinkMatch for a given route.
+    /// Home ("/") uses All to match exactly, others use Prefix.
+    /// </summary>
+    private static NavLinkMatch GetNavLinkMatch(string route)
+    {
+        return route == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix;
     }
 }
 
