@@ -28,7 +28,7 @@
            Loaded inline for immediate application
            =========================================== */
         
-        /* CSS Custom Properties for viewport - set by JS below */
+        /* CSS Custom Properties for viewport and layout - set by JS below */
         :root {
             --vh: 1vh;
             --app-height: 100vh;
@@ -38,6 +38,22 @@
             --safe-right: 0px;
             /* Bottom nav height for content padding */
             --bottom-nav-height: 60px;
+            /* Header height - must match MainLayout.razor.css */
+            --header-height: 52px;
+        }
+        
+        /* Smaller header on very small screens */
+        @@media (max-width: 480px) {
+            :root {
+                --header-height: 48px;
+            }
+        }
+        
+        /* Compact header in landscape */
+        @@media (max-width: 767px) and (orientation: landscape) {
+            :root {
+                --header-height: 44px;
+            }
         }
         
         html, body {
@@ -80,6 +96,38 @@
             -webkit-overflow-scrolling: touch;
             /* Prevent overscroll on main element */
             overscroll-behavior-y: contain;
+            /* 
+             * CRITICAL: Push content below fixed header + safe area
+             * Header sits at top: env(safe-area-inset-top)
+             * So content needs: header-height + safe-area-inset-top
+             */
+            padding-top: calc(var(--header-height, 52px) + env(safe-area-inset-top, 0px));
+        }
+        
+        /* Mobile header critical styles - prevents flash of mispositioned header */
+        .mobile-header {
+            position: fixed;
+            /* Position BELOW the safe area (notch/Dynamic Island) */
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            height: var(--header-height, 52px);
+            background-color: #3B4252;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Extend header background INTO safe area (behind notch/Dynamic Island) */
+        .mobile-header::before {
+            content: '';
+            position: absolute;
+            top: calc(-1 * env(safe-area-inset-top, 0px));
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background-color: inherit;
+            z-index: -1;
         }
         
         /* PWA standalone mode adjustments */
@@ -92,6 +140,17 @@
         body.ios-device {
             /* iOS-specific touch handling */
             -webkit-touch-callout: none;
+        }
+        
+        /* Desktop: no safe area padding needed */
+        @@media (min-width: 768px) {
+            main {
+                padding-top: 0;
+            }
+            
+            .mobile-header::before {
+                display: none;
+            }
         }
     </style>
     
