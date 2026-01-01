@@ -1,51 +1,70 @@
-@namespace Daily_Bread.Components.Shared
+﻿@namespace Daily_Bread.Components.Shared
 @using Daily_Bread.Data.Models
 @using Daily_Bread.Helpers
 @using Daily_Bread.Services
 
-<div class="chore-card @ChoreDisplayHelper.GetCardClass(Item.Status)">
-    <div class="chore-card-checkbox-wrapper">
-        <button class="chore-card-checkbox @ChoreDisplayHelper.GetCheckboxClass(Item.Status, Item.IsCompleted)"
+<div class="tracker-card @ChoreDisplayHelper.GetCardClass(Item.Status)">
+    @* Status Indicator - aligned with SwipeableChoreCard pattern *@
+    <div class="card-indicator">
+        <button class="status-button @ChoreDisplayHelper.GetCheckboxClass(Item.Status, Item.IsCompleted)"
                 disabled="@IsDisabled"
-                @onclick="OnToggleClicked">
-            @if (Item.IsCompleted)
-            {
-                <span class="bi bi-check-lg"></span>
-            }
+                @onclick="OnToggleClicked"
+                title="@GetTooltip()">
+            <span class="bi @GetIndicatorIcon()"></span>
         </button>
     </div>
-    <div class="chore-card-content">
-        <span class="chore-card-name @(Item.IsCompleted ? "completed" : "")">
-            @Item.ChoreName
-        </span>
-        <div class="chore-card-meta">
-            @if (ShowAssignee && !string.IsNullOrEmpty(Item.AssignedUserName))
-            {
-                <span class="user-name">@Item.AssignedUserName</span>
-            }
-            <span class="badge @ChoreDisplayHelper.GetStatusBadgeClass(Item.Status) badge-sm">
-                @ChoreDisplayHelper.GetStatusDisplay(Item.Status)
+    
+    @* Card Content - matching SwipeableChoreCard structure *@
+    <div class="card-content">
+        <div class="chore-info">
+            <span class="chore-name @(Item.IsApproved ? "strikethrough" : "")">
+                @Item.ChoreName
             </span>
+            <div class="chore-meta">
+                @if (ShowAssignee && !string.IsNullOrEmpty(Item.AssignedUserName))
+                {
+                    <span class="user-name">@Item.AssignedUserName</span>
+                }
+                <span class="status-text">@ChoreDisplayHelper.GetStatusDisplay(Item.Status)</span>
+            </div>
         </div>
     </div>
-    <div class="chore-card-right">
-        <span class="chore-card-value @(Item.IsMissed ? "text-danger" : "")">
+    
+    @* Value display - aligned with SwipeableChoreCard *@
+    <div class="chore-value">
+        <span class="value-amount @(Item.IsMissed ? "negative" : "")">
             @(Item.IsMissed ? "-" : "")$@Item.Value.ToString("F2")
         </span>
         @if (ShowActions)
         {
-            <div class="chore-card-actions">
-                @if (Item.Status == ChoreStatus.Completed)
+            <div class="card-actions">
+                @switch (Item.Status)
                 {
-                    <button class="btn btn-success btn-sm" @onclick="OnApproveClicked">
-                        ✓
-                    </button>
-                }
-                @if (Item.Status == ChoreStatus.Pending)
-                {
-                    <button class="btn btn-outline-secondary btn-sm" @onclick="OnSkipClicked">
-                        Skip
-                    </button>
+                    case ChoreStatus.Completed:
+                        <button class="action-btn approve" @onclick="OnApproveClicked" title="Bless this labor">
+                            <span class="bi bi-check2-circle"></span>
+                        </button>
+                        break;
+                        
+                    case ChoreStatus.Help:
+                        <button class="action-btn help" @onclick="OnRespondToHelpClicked" title="Respond to help request">
+                            <span class="bi bi-chat-heart"></span>
+                        </button>
+                        break;
+                        
+                    case ChoreStatus.Pending:
+                        <button class="action-btn muted" @onclick="OnSkipClicked" title="Excuse for today">
+                            <span class="bi bi-dash-circle"></span>
+                        </button>
+                        break;
+                        
+                    case ChoreStatus.Approved:
+                    case ChoreStatus.Missed:
+                    case ChoreStatus.Skipped:
+                        <button class="action-btn muted" @onclick="OnResetClicked" title="Restore">
+                            <span class="bi bi-arrow-counterclockwise"></span>
+                        </button>
+                        break;
                 }
             </div>
         }
@@ -73,8 +92,36 @@
 
     [Parameter]
     public EventCallback<TrackerChoreItem> OnSkip { get; set; }
+    
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnReset { get; set; }
+    
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnRespondToHelp { get; set; }
+
+    private string GetIndicatorIcon() => Item.Status switch
+    {
+        ChoreStatus.Approved => "bi-check-circle-fill",
+        ChoreStatus.Completed => "bi-check-lg",
+        ChoreStatus.Help => "bi-question-circle-fill",
+        ChoreStatus.Missed => "bi-x-circle",
+        ChoreStatus.Skipped => "bi-dash-circle",
+        _ => "bi-circle"
+    };
+
+    private string GetTooltip() => Item.Status switch
+    {
+        ChoreStatus.Approved => "Blessed",
+        ChoreStatus.Completed => "Done - awaiting blessing",
+        ChoreStatus.Help => "Help requested",
+        ChoreStatus.Missed => "Not completed",
+        ChoreStatus.Skipped => "Excused",
+        _ => "Mark as done"
+    };
 
     private async Task OnToggleClicked() => await OnToggle.InvokeAsync(Item);
     private async Task OnApproveClicked() => await OnApprove.InvokeAsync(Item);
     private async Task OnSkipClicked() => await OnSkip.InvokeAsync(Item);
+    private async Task OnResetClicked() => await OnReset.InvokeAsync(Item);
+    private async Task OnRespondToHelpClicked() => await OnRespondToHelp.InvokeAsync(Item);
 }

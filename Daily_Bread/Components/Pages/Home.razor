@@ -77,28 +77,16 @@ else if ((_isParent || _isAdmin) && _parentData != null)
 
         <div class="row mb-4 g-3">
             <div class="col-md-3 col-6">
-                <div class="summary-card h-100">
-                    <span class="summary-value text-warning">@_parentData.PendingApprovals.Count</span>
-                    <span class="summary-label">Pending Blessings</span>
-                </div>
+                <StatCard Value="@_parentData.PendingApprovals.Count" Label="Pending Blessings" Color="StatColor.Warning" FullHeight="true" />
             </div>
             <div class="col-md-3 col-6">
-                <div class="summary-card h-100">
-                    <span class="summary-value text-info">@_parentData.TodayCompletedCount</span>
-                    <span class="summary-label">Completed Today</span>
-                </div>
+                <StatCard Value="@_parentData.TodayCompletedCount" Label="Completed Today" Color="StatColor.Info" FullHeight="true" />
             </div>
             <div class="col-md-3 col-6">
-                <div class="summary-card h-100">
-                    <span class="summary-value text-success">@_parentData.TodayApprovedCount</span>
-                    <span class="summary-label">Blessed Today</span>
-                </div>
+                <StatCard Value="@_parentData.TodayApprovedCount" Label="Blessed Today" Color="StatColor.Success" FullHeight="true" />
             </div>
             <div class="col-md-3 col-6">
-                <div class="summary-card h-100">
-                    <span class="summary-value">@_parentData.TodayPendingCount</span>
-                    <span class="summary-label">Still Pending</span>
-                </div>
+                <StatCard Value="@_parentData.TodayPendingCount" Label="Still Pending" FullHeight="true" />
             </div>
         </div>
 

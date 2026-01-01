@@ -22,28 +22,34 @@ public static class ChoreDisplayHelper
 
     /// <summary>
     /// Gets the CSS class for a mobile card based on chore status.
+    /// Aligned with SwipeableChoreCard state classes for unified design system.
     /// </summary>
     public static string GetCardClass(ChoreStatus status) => status switch
     {
-        ChoreStatus.Approved => "approved",
-        ChoreStatus.Completed => "completed",
+        ChoreStatus.Approved => "completed",
+        ChoreStatus.Completed => "pending-approval",
         ChoreStatus.Missed => "missed",
         ChoreStatus.Skipped => "skipped",
-        ChoreStatus.Help => "help",
+        ChoreStatus.Help => "help-requested",
         _ => ""
     };
 
     /// <summary>
-    /// Gets the CSS class for a checkbox based on chore status.
+    /// Gets the CSS class for a checkbox/indicator based on chore status.
+    /// Aligned with unified design system indicator states.
     /// </summary>
     public static string GetCheckboxClass(ChoreStatus status, bool isCompleted)
     {
-        if (status == ChoreStatus.Approved) return "checked approved";
-        if (isCompleted) return "checked pending";
-        if (status == ChoreStatus.Missed) return "missed";
-        if (status == ChoreStatus.Skipped) return "skipped";
-        if (status == ChoreStatus.Help) return "help";
-        return "";
+        return status switch
+        {
+            ChoreStatus.Approved => "indicator-done",
+            ChoreStatus.Completed => "indicator-awaiting",
+            ChoreStatus.Missed => "indicator-missed",
+            ChoreStatus.Skipped => "indicator-skipped",
+            ChoreStatus.Help => "indicator-help",
+            _ when isCompleted => "indicator-awaiting",
+            _ => "indicator-pending"
+        };
     }
 
     /// <summary>

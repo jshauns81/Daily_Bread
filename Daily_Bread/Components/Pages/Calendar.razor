@@ -5,6 +5,7 @@
 
 @using System.Security.Claims
 @using Daily_Bread.Services
+@using Daily_Bread.Components.Shared
 
 @inject ICalendarService CalendarService
 @inject IChildProfileService ProfileService
@@ -77,40 +78,22 @@
     {
         <div class="row mb-4 g-2">
             <div class="col-md-2 col-4">
-                <div class="summary-card h-100">
-                    <span class="summary-value text-success">@_monthSummary.DaysWithAllComplete</span>
-                    <span class="summary-label">Perfect Days</span>
-                </div>
+                <StatCard Value="@_monthSummary.DaysWithAllComplete" Label="Perfect Days" Color="StatColor.Success" FullHeight="true" />
             </div>
             <div class="col-md-2 col-4">
-                <div class="summary-card h-100">
-                    <span class="summary-value">@_monthSummary.TotalCompleted / @_monthSummary.TotalChores</span>
-                    <span class="summary-label">Completed</span>
-                </div>
+                <StatCard Value="@($"{_monthSummary.TotalCompleted} / {_monthSummary.TotalChores}")" Label="Completed" FullHeight="true" />
             </div>
             <div class="col-md-2 col-4">
-                <div class="summary-card h-100">
-                    <span class="summary-value text-danger">@_monthSummary.TotalMissed</span>
-                    <span class="summary-label">Missed</span>
-                </div>
+                <StatCard Value="@_monthSummary.TotalMissed" Label="Missed" Color="StatColor.Danger" FullHeight="true" />
             </div>
             <div class="col-md-2 col-4">
-                <div class="summary-card h-100">
-                    <span class="summary-value text-success">$@_monthSummary.TotalEarned.ToString("F2")</span>
-                    <span class="summary-label">Earned</span>
-                </div>
+                <StatCard Value="@_monthSummary.TotalEarned.ToString("F2")" Label="Earned" Prefix="$" Color="StatColor.Success" FullHeight="true" />
             </div>
             <div class="col-md-2 col-4">
-                <div class="summary-card h-100">
-                    <span class="summary-value text-warning"><span class="bi bi-fire"></span> @_monthSummary.CurrentStreak</span>
-                    <span class="summary-label">Current Streak</span>
-                </div>
+                <StatCard Value="@_monthSummary.CurrentStreak" Label="Current Streak" Icon="bi-fire" Color="StatColor.Warning" FullHeight="true" />
             </div>
             <div class="col-md-2 col-4">
-                <div class="summary-card h-100">
-                    <span class="summary-value text-info"><span class="bi bi-trophy"></span> @_monthSummary.LongestStreak</span>
-                    <span class="summary-label">Best Streak</span>
-                </div>
+                <StatCard Value="@_monthSummary.LongestStreak" Label="Best Streak" Icon="bi-trophy" Color="StatColor.Info" FullHeight="true" />
             </div>
         </div>
     }
@@ -236,28 +219,16 @@
                     {
                         <div class="row text-center mb-3 g-2">
                             <div class="col-3">
-                                <div class="summary-card">
-                                    <span class="summary-value">@_selectedDay.TotalChores</span>
-                                    <span class="summary-label">Total</span>
-                                </div>
+                                <StatCard Value="@_selectedDay.TotalChores" Label="Total" />
                             </div>
                             <div class="col-3">
-                                <div class="summary-card">
-                                    <span class="summary-value text-success">@(_selectedDay.CompletedChores + _selectedDay.ApprovedChores)</span>
-                                    <span class="summary-label">Done</span>
-                                </div>
+                                <StatCard Value="@(_selectedDay.CompletedChores + _selectedDay.ApprovedChores)" Label="Done" Color="StatColor.Success" />
                             </div>
                             <div class="col-3">
-                                <div class="summary-card">
-                                    <span class="summary-value text-danger">@_selectedDay.MissedChores</span>
-                                    <span class="summary-label">Missed</span>
-                                </div>
+                                <StatCard Value="@_selectedDay.MissedChores" Label="Missed" Color="StatColor.Danger" />
                             </div>
                             <div class="col-3">
-                                <div class="summary-card">
-                                    <span class="summary-value text-warning">@_selectedDay.PendingChores</span>
-                                    <span class="summary-label">Pending</span>
-                                </div>
+                                <StatCard Value="@_selectedDay.PendingChores" Label="Pending" Color="StatColor.Warning" />
                             </div>
                         </div>
 

@@ -423,16 +423,17 @@ main {
 @media (min-width: 768px) {
     .page {
         flex-direction: row;
-        overflow-x: visible;
+        /* Desktop layout: sidebar + main side by side, no page-level overflow restrictions */
+        overflow: visible;
         /* Desktop doesn't need safe area padding */
         padding-top: 0;
         padding-left: 0;
         padding-right: 0;
     }
     
-    /* Hide the mobile header structure but keep LoginDisplay accessible */
+    /* On desktop, hide the mobile header entirely and show user menu differently */
     .mobile-header {
-        /* Position mobile header content into desktop header area */
+        /* Keep it fixed in top-right corner for the user dropdown */
         position: fixed;
         top: 0;
         right: 0;
@@ -442,7 +443,7 @@ main {
         background: transparent;
         border: none;
         padding: 0.75rem 1.5rem;
-        z-index: 50;
+        z-index: 150; /* Above sidebar and content */
         justify-content: flex-end;
     }
     
@@ -463,18 +464,23 @@ main {
     }
     
     .desktop-header {
-        /* Desktop header is now just a spacer/background */
+        /* Desktop header is sticky within the scrolling main content */
         display: flex;
+        position: sticky;
+        top: 0;
         padding: 0.75rem 1.5rem;
         background-color: var(--nord1);
-        border-bottom: none;
+        border-bottom: 1px solid var(--nord3);
         justify-content: flex-end;
         min-height: 56px;
+        z-index: 50; /* Above content but below mobile-header */
     }
     
     .sidebar {
-        position: sticky;
+        /* Fixed sidebar on desktop - doesn't scroll with content */
+        position: fixed;
         top: 0;
+        left: 0;
         height: 100vh; /* Fallback for older browsers */
         height: 100dvh;
         transform: translateX(0);
@@ -484,6 +490,7 @@ main {
         /* No safe area needed on desktop */
         padding-top: 0;
         padding-bottom: 0;
+        z-index: 100; /* Below the user menu */
     }
     
     .sidebar-overlay {
@@ -493,9 +500,14 @@ main {
     main {
         flex: 1;
         min-width: 0;
-        /* Desktop main area can scroll normally */
+        /* Main area scrolls independently */
         overflow-y: auto;
+        overflow-x: hidden;
+        height: 100vh;
+        height: 100dvh;
         padding-top: 0;
+        /* Offset for the fixed sidebar */
+        margin-left: 280px;
     }
     
     .content {
@@ -503,7 +515,6 @@ main {
         max-width: 1400px;
         margin: 0 auto;
         width: 100%;
-        max-width: none;
         overflow-x: visible;
         /* No safe area padding needed on desktop */
         padding-bottom: 1.5rem;
@@ -523,6 +534,11 @@ main {
 @media (min-width: 1200px) {
     .sidebar {
         width: 300px;
+    }
+    
+    main {
+        /* Offset for the larger sidebar */
+        margin-left: 300px;
     }
     
     .content {
