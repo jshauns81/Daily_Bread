@@ -1,5 +1,9 @@
 # 🍞 Daily Bread
 
+[![Version](https://img.shields.io/badge/version-1.0.0--rc.3-blue.svg)](https://github.com/jshauns81/Daily_Bread/releases)
+[![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
+[![Blazor](https://img.shields.io/badge/Blazor-Server-blueviolet.svg)](https://blazor.net/)
+
 Daily Bread is a comprehensive family management and chore tracking application built with **.NET 9** and **Blazor Server**. It is designed to help families manage daily responsibilities, track chores, maintain a financial ledger for kids, and gamify tasks with achievements and savings goals.
 
 ## 🚀 Key Features
@@ -11,13 +15,15 @@ Daily Bread is a comprehensive family management and chore tracking application 
 -   **Achievements**: Gamify chores with unlockable milestones and rewards.
 -   **Family Dashboard**: A centralized view for parents to monitor progress and approve tasks.
 -   **Push Notifications**: Integrated WebPush support for reminders and updates.
+-   **Chore Planner**: Visual weekly wage board for scheduling and tracking earnings.
+-   **Printable Chore Charts**: Generate fridge-ready weekly charts for kids.
 
 ## 🛠️ Tech Stack
 
 -   **Framework**: .NET 9.0 (Blazor Server)
 -   **Database**: PostgreSQL
 -   **ORM**: Entity Framework Core
--   **UI Components**: Custom Blazor components with Bootstrap
+-   **Styling**: Custom CSS Design System (Nord-inspired dark theme)
 -   **Deployment**: Docker & Docker Compose
 
 ## 📋 Prerequisites
@@ -126,3 +132,25 @@ By default, the container listens on port `8080`. You can map this to any port o
 ## 📄 License
 
 This project is licensed under the terms specified in the repository.
+
+---
+
+## 📋 Version History
+
+### 1.0.0-rc.3 (Current)
+- ✅ Complete design system migration
+- ✅ Removed legacy token compatibility layer
+- ✅ All components now use `--ds-*` tokens exclusively
+- ✅ Improved consistency across all UI components
+
+### 1.0.0-rc.2
+- Achievement system with bonuses
+- Weekly progress tracking and reconciliation
+- Push notification support
+- Chore Planner (Wage Board) improvements
+
+### 1.0.0-rc.1
+- Initial release candidate
+- Core chore management features
+- Kid Mode with PIN authentication
+- Financial ledger and savings goals
