@@ -1,6 +1,6 @@
 ﻿@inject IJSRuntime JS
 
-<div class="emoji-picker-wrapper">
+<div class="emoji-picker-wrapper" @ref="_wrapperRef">
     <button type="button" 
             class="emoji-circle @(string.IsNullOrEmpty(Value) ? "empty" : "")"
             @onclick="TogglePicker"
@@ -12,16 +12,19 @@
         }
         else
         {
-            <span class="placeholder-icon">+</span>
+            <span class="emoji-placeholder">☺</span>
         }
     </button>
     
     @if (_showPicker)
     {
-        <div class="emoji-picker-dropdown" @onclick:stopPropagation="true">
+        <div class="emoji-picker-backdrop" @onclick="ClosePicker"></div>
+        <div class="emoji-picker-dropdown" 
+             style="@GetDropdownStyle()"
+             @onclick:stopPropagation="true">
             <div class="emoji-picker-header">
                 <span>Choose an icon</span>
-                <button type="button" class="btn-close btn-close-white btn-sm" @onclick="ClosePicker"></button>
+                <button type="button" class="emoji-picker-close" @onclick="ClosePicker">×</button>
             </div>
             
             <!-- Quick picks for common chores -->
@@ -62,18 +65,13 @@
             {
                 <div class="emoji-picker-footer">
                     <button type="button" class="btn btn-sm btn-outline-danger" @onclick="ClearEmoji">
-                        <span class="bi bi-x-lg me-1"></span>Clear
+                        Clear
                     </button>
                 </div>
             }
         </div>
     }
 </div>
-
-@if (_showPicker)
-{
-    <div class="emoji-picker-backdrop" @onclick="ClosePicker"></div>
-}
 
 @code {
     [Parameter]
@@ -83,6 +81,10 @@
     public EventCallback<string?> ValueChanged { get; set; }
     
     private bool _showPicker;
+    private ElementReference _wrapperRef;
+    private DotNetObjectReference<EmojiPicker>? _dotNetRef;
+    private double _dropdownTop;
+    private double _dropdownLeft;
     
     // Quick picks - using EmojiConstants for reliable rendering
     private static readonly string[] QuickPickEmojis =
@@ -243,8 +245,40 @@
         [EmojiConstants.Sparkles] = "Sparkle - Clean room"
     };
     
-    private void TogglePicker()
+    private string GetDropdownStyle()
     {
+        // Position below the button, with some offset
+        // Using viewport-relative positioning since the dropdown is position:fixed
+        return $"top: {_dropdownTop}px; left: {_dropdownLeft}px;";
+    }
+    
+    private async Task TogglePicker()
+    {
+        if (!_showPicker)
+        {
+            // Get button position before showing
+            try
+            {
+                var rect = await JS.InvokeAsync<BoundingClientRect>("eval", 
+                    $"(function(){{ var el = document.querySelector('[_bl_{_wrapperRef.Id}]') || document.querySelector('.emoji-picker-wrapper'); if(el){{ var r = el.getBoundingClientRect(); return {{top:r.top,left:r.left,bottom:r.bottom,right:r.right,width:r.width,height:r.height}}; }} return {{top:100,left:20,bottom:148,right:68,width:48,height:48}}; }})()");
+                
+                _dropdownTop = rect.Bottom + 4; // 4px gap below button
+                _dropdownLeft = rect.Left;
+                
+                // Ensure dropdown doesn't go off-screen
+                if (_dropdownLeft + 320 > rect.Right + 200) // 320 is min-width
+                {
+                    _dropdownLeft = Math.Max(16, rect.Right - 320);
+                }
+            }
+            catch
+            {
+                // Fallback positioning - center of viewport
+                _dropdownTop = 120;
+                _dropdownLeft = 20;
+            }
+        }
+        
         _showPicker = !_showPicker;
     }
     
@@ -271,4 +305,6 @@
     {
         return EmojiNames.TryGetValue(emoji, out var name) ? name : emoji;
     }
+    
+    private record BoundingClientRect(double Top, double Left, double Bottom, double Right, double Width, double Height);
 }

@@ -7,35 +7,38 @@
         <DataAnnotationsValidator />
 
         <!-- GROUP 1: Identity -->
-        <div class="form-group identity-group">
+        <div class="form-section identity-section">
             <div class="icon-picker">
                 <EmojiPicker @bind-Value="FormModel.Icon" />
             </div>
-            <div class="name-input">
-                <InputText @bind-Value="FormModel.Name" class="form-control" placeholder="What's the chore?" />
+            <div class="name-field">
+                <InputText @bind-Value="FormModel.Name" class="ds-input ds-input--name" placeholder="What's the chore?" />
                 <ValidationMessage For="() => FormModel.Name" class="validation-msg" />
             </div>
         </div>
 
-        <!-- GROUP 2: Type & Value -->
-        <div class="form-group type-group">
-            <div class="type-switch">
+        <!-- GROUP 2: Type Selector - Luminous segmented control -->
+        <div class="form-section type-section">
+            <div class="seg2 seg2--money">
                 <button type="button" 
-                        class="type-option @(FormModel.ChoreType == ChoreTypeOption.Earning ? "selected earns" : "")"
+                        class="seg2__btn seg2__btn--earns @(FormModel.ChoreType == ChoreTypeOption.Earning ? "seg2__btn--active" : "")"
                         @onclick="() => SetChoreType(ChoreTypeOption.Earning)">
-                    <span class="type-label">Earns</span>
+                    <span class="seg2__label">Earns</span>
                     @if (FormModel.ChoreType == ChoreTypeOption.Earning)
                     {
-                        <span class="amount-inline">
-                            <span class="currency">$</span>
-                            <InputNumber @bind-Value="FormModel.EarnValue" class="amount-input" step="0.25" min="0" @onclick:stopPropagation="true" />
+                        <span class="seg2__amount">
+                            <span class="seg2__currency">$</span>
+                            <InputNumber @bind-Value="FormModel.EarnValue" class="seg2__input" step="0.25" min="0" @onclick:stopPropagation="true" />
                         </span>
                     }
+                    <span class="seg2__bar"></span>
                 </button>
+                
                 <button type="button" 
-                        class="type-option @(FormModel.ChoreType == ChoreTypeOption.Expectation ? "selected expected" : "")"
+                        class="seg2__btn seg2__btn--expected @(FormModel.ChoreType == ChoreTypeOption.Expectation ? "seg2__btn--active" : "")"
                         @onclick="() => SetChoreType(ChoreTypeOption.Expectation)">
-                    <span class="type-label">Expected</span>
+                    <span class="seg2__label">Expected</span>
+                    <span class="seg2__bar"></span>
                 </button>
             </div>
         </div>
@@ -43,61 +46,76 @@
         <!-- Assigned To (only if multiple users) -->
         @if (Users.Count > 1)
         {
-            <div class="form-group assign-group">
-                <span class="field-label">For</span>
-                <InputSelect @bind-Value="FormModel.AssignedUserId" class="form-select">
-                    <option value="">Anyone</option>
-                    @foreach (var user in Users)
-                    {
-                        <option value="@user.Id">@user.UserName</option>
-                    }
-                </InputSelect>
+            <div class="form-section assign-section">
+                <label class="field-row">
+                    <span class="field-label">For</span>
+                    <InputSelect @bind-Value="FormModel.AssignedUserId" class="ds-select">
+                        <option value="">Anyone</option>
+                        @foreach (var user in Users)
+                        {
+                            <option value="@user.Id">@user.UserName</option>
+                        }
+                    </InputSelect>
+                </label>
             </div>
         }
 
         <!-- GROUP 3: Schedule -->
-        <div class="form-group schedule-group">
-            <!-- Days row -->
-            <div class="days-row">
-                @foreach (var day in DayOptions)
-                {
-                    <button type="button" 
-                            class="day-chip @(IsDaySelected(day.Value) ? "selected" : "")"
-                            @onclick="() => ToggleDay(day.Value)">
-                        @day.Label
-                    </button>
-                }
-            </div>
-            
-            <!-- Frequency indicator -->
-            <div class="frequency-row">
-                <button type="button" 
-                        class="freq-option @(FormModel.ScheduleType == ChoreScheduleType.SpecificDays ? "active" : "")"
+        <div class="form-section schedule-section">
+            <span class="section-label">Schedule rule</span>
+            <div class="seg2 seg2--schedule">
+                <button type="button"
+                        class="seg2__btn seg2__btn--fixed @(FormModel.ScheduleType == ChoreScheduleType.SpecificDays ? "seg2__btn--active" : "")"
                         @onclick="() => SetScheduleType(ChoreScheduleType.SpecificDays)">
-                    these days
+                    <span class="seg2__label">Fixed days</span>
+                    <span class="seg2__bar"></span>
                 </button>
-                <span class="freq-divider">or</span>
-                <button type="button" 
-                        class="freq-option has-input @(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "active" : "")"
+                <button type="button"
+                        class="seg2__btn seg2__btn--weekly @(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "seg2__btn--active" : "")"
                         @onclick="() => SetScheduleType(ChoreScheduleType.WeeklyFrequency)">
-                    <InputNumber @bind-Value="FormModel.WeeklyTargetCount" class="freq-input" min="1" max="7" @onclick:stopPropagation="true" />
-                    <span>× weekly</span>
+                    <span class="seg2__label">Weekly goal</span>
+                    <span class="seg2__bar"></span>
                 </button>
             </div>
 
-            @if (FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ChoreType == ChoreTypeOption.Earning)
+            <!-- EITHER days OR frequency, not both -->
+            @if (FormModel.ScheduleType == ChoreScheduleType.SpecificDays)
             {
-                <label class="bonus-check">
-                    <InputCheckbox @bind-Value="FormModel.IsRepeatable" />
-                    <span>Extra completions earn bonus</span>
-                </label>
+                <!-- Fixed Days: show day picker -->
+                <div class="days-row">
+                    @foreach (var day in DayOptions)
+                    {
+                        <button type="button" 
+                                class="day-chip @(IsDaySelected(day.Value) ? "day-chip--selected" : "")"
+                                @onclick="() => ToggleDay(day.Value)">
+                            @day.Label
+                        </button>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Weekly Goal: show frequency with inline bonus toggle -->
+                <div class="frequency-row">
+                    <span class="frequency-row__text">up to</span>
+                    <InputNumber @bind-Value="FormModel.WeeklyTargetCount" class="frequency-row__input" min="1" max="7" />
+                    <span class="frequency-row__text">× weekly</span>
+                    
+                    @if (FormModel.ChoreType == ChoreTypeOption.Earning)
+                    {
+                        <label class="bonus-toggle">
+                            <InputCheckbox @bind-Value="FormModel.IsRepeatable" />
+                            <span>Bonus</span>
+                        </label>
+                    }
+                </div>
             }
         </div>
 
-        <!-- Options (collapsed) -->
-        <details class="options-group">
-            <summary>
-                <span class="summary-icon">⚙</span>
+        <!-- Options (collapsed) - reduced visual weight -->
+        <details class="options-section">
+            <summary class="options-summary">
+                <span class="options-icon">⚙</span>
                 <span>Options</span>
             </summary>
             <div class="options-content">
@@ -115,14 +133,14 @@
                 <div class="date-row">
                     <label class="date-field">
                         <span>Start</span>
-                        <InputDate @bind-Value="FormModel.StartDate" class="form-control" />
+                        <InputDate @bind-Value="FormModel.StartDate" class="ds-input ds-input--date" />
                     </label>
                     <label class="date-field">
                         <span>End</span>
-                        <InputDate @bind-Value="FormModel.EndDate" class="form-control" />
+                        <InputDate @bind-Value="FormModel.EndDate" class="ds-input ds-input--date" />
                     </label>
                 </div>
-                <InputTextArea @bind-Value="FormModel.Description" class="form-control notes-input" rows="2" placeholder="Notes (optional)" />
+                <InputTextArea @bind-Value="FormModel.Description" class="ds-input ds-input--textarea" rows="2" placeholder="Notes (optional)" />
             </div>
         </details>
 

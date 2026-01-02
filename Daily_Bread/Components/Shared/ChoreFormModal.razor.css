@@ -1,0 +1,83 @@
+/* ============================================
+   CHORE FORM MODAL - Scoped styles
+   ============================================ */
+
+/* Wrapper provides positioning context for absolute close button */
+.chore-form-modal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Close button - absolute positioned in top-right */
+.modal-close-absolute {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--ds-text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    z-index: 10;
+}
+
+.modal-close-absolute:hover {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+/* Modal header - with padding for close button */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 1rem 1.25rem;
+    padding-right: 3rem;
+    background: var(--ds-bg-hover);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    flex-shrink: 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ds-text-primary);
+}
+
+/* Modal body */
+.modal-body {
+    flex: 1;
+    padding: 1.25rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+    .modal-header {
+        padding: 0.875rem 1rem;
+        padding-right: 3rem;
+    }
+    
+    .modal-header h2 {
+        font-size: 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+}

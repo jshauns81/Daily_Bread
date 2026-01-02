@@ -51,17 +51,36 @@
     }
 }
 
-/* Modal header - compact */
+/* ===========================================
+   CHORE FORM MODAL - Positioning context
+   =========================================== */
+
+.chore-form-modal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ===========================================
+   MODAL HEADER
+   =========================================== */
+
+.chore-form-modal .modal-header,
 .modal-host-container .modal-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding: 1rem 1.25rem;
+    padding-right: 3rem; /* Make room for absolute close button */
     background: var(--ds-bg-hover);
     border-bottom: 1px solid var(--ds-bg-muted);
     flex-shrink: 0;
 }
 
+.chore-form-modal .modal-header h2,
 .modal-host-container .modal-header h2 {
     margin: 0;
     font-size: 1.1rem;
@@ -69,6 +88,38 @@
     color: var(--ds-text-primary);
 }
 
+/* ===========================================
+   CLOSE BUTTON - Absolute positioned top-right
+   =========================================== */
+
+.chore-form-modal .modal-close-absolute,
+.modal-host-container .modal-close-absolute {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--ds-text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    z-index: 10;
+}
+
+.chore-form-modal .modal-close-absolute:hover,
+.modal-host-container .modal-close-absolute:hover {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+/* Legacy inline close button */
 .modal-host-container .modal-close {
     display: flex;
     align-items: center;
@@ -89,7 +140,11 @@
     color: var(--ds-text-primary);
 }
 
-/* Modal body - scrollable */
+/* ===========================================
+   MODAL BODY - Scrollable content area
+   =========================================== */
+
+.chore-form-modal .modal-body,
 .modal-host-container .modal-body {
     flex: 1;
     padding: 1.25rem;
@@ -98,7 +153,10 @@
     overscroll-behavior-y: contain;
 }
 
-/* Mobile: Bottom sheet style */
+/* ===========================================
+   MOBILE: Bottom sheet style
+   =========================================== */
+
 @media (max-width: 640px) {
     .modal-host-backdrop {
         padding: 0;
@@ -113,14 +171,18 @@
         padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     
+    .chore-form-modal .modal-header,
     .modal-host-container .modal-header {
         padding: 0.875rem 1rem;
+        padding-right: 3rem;
     }
     
+    .chore-form-modal .modal-header h2,
     .modal-host-container .modal-header h2 {
         font-size: 1rem;
     }
     
+    .chore-form-modal .modal-body,
     .modal-host-container .modal-body {
         padding: 1rem;
         max-height: calc(92vh - 60px - env(safe-area-inset-bottom, 0px));
