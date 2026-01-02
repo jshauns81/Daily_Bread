@@ -36,6 +36,19 @@
     line-height: 1;
 }
 
+.emoji-circle .emoji-placeholder {
+    font-size: 1.5rem;
+    color: var(--ds-text-muted);
+    opacity: 0.7;
+    line-height: 1;
+    /* Use system emoji fonts - these are ALWAYS available on every OS */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
+}
+
+.emoji-circle:hover .emoji-placeholder {
+    opacity: 1;
+}
+
 .emoji-circle .selected-emoji {
     font-size: 1.5rem;
     line-height: 1;
@@ -43,20 +56,22 @@
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
 }
 
+/* CRITICAL: Backdrop must be FIXED and above modal (z-index 10000) */
 .emoji-picker-backdrop {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 1040;
+    z-index: 10001;
+    background: transparent;
 }
 
+/* CRITICAL: Dropdown must be FIXED to escape modal's overflow:hidden 
+   Position will be set via inline styles or JS */
 .emoji-picker-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 1050;
+    position: fixed;
+    z-index: 10002;
     min-width: 320px;
     max-width: 360px;
     max-height: 400px;
@@ -65,7 +80,6 @@
     border: 1px solid var(--ds-bg-muted);
     border-radius: var(--ds-radius-lg);
     box-shadow: var(--ds-shadow-lg);
-    margin-top: var(--ds-space-1);
     color: var(--ds-text-primary);
     -webkit-overflow-scrolling: touch;
 }
@@ -81,6 +95,27 @@
     position: sticky;
     top: 0;
     z-index: 1;
+    color: var(--ds-text-primary);
+}
+
+.emoji-picker-close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--ds-text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.emoji-picker-close:hover {
+    background: var(--ds-bg-muted);
     color: var(--ds-text-primary);
 }
 
@@ -160,8 +195,9 @@
     .emoji-picker-dropdown {
         min-width: 280px;
         max-width: calc(100vw - 2rem);
-        left: 50%;
-        transform: translateX(-50%);
+        left: 1rem !important;
+        right: 1rem !important;
+        width: auto !important;
     }
     
     .quick-picks-grid,

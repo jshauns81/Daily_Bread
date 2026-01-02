@@ -962,3 +962,20 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
    20. VALIDATION
    Migrated to use --ds-* tokens directly (Phase 3)
    =========================================== */
+
+/* ===========================================
+   21. CHORE FORM - Reset form-control defaults
+   Allows ChoreForm.razor.css to control styling
+   =========================================== */
+.chore-form .form-control,
+.chore-form input.form-control,
+.chore-form textarea.form-control,
+.chore-form select.form-control {
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    height: auto;
+    min-height: auto;
+    padding: 0;
+}

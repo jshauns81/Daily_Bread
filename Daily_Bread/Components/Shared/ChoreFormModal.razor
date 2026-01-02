@@ -1,12 +1,10 @@
 ﻿@using Daily_Bread.Data.Models
 @using Daily_Bread.Services
 
-<div>
+<div class="chore-form-modal">
+    <button class="modal-close-absolute" @onclick="HandleCancel" aria-label="Close">×</button>
     <div class="modal-header">
         <h2>@Title</h2>
-        <button class="modal-close" @onclick="HandleCancel">
-            <span class="bi bi-x-lg"></span>
-        </button>
     </div>
     <div class="modal-body">
         <ChoreForm 

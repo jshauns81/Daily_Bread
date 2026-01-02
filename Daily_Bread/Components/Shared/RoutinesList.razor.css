@@ -16,7 +16,7 @@
 
 .routines-header {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr minmax(100px, auto) 70px;
     gap: var(--ds-space-6);
     padding: var(--ds-space-4) var(--ds-space-6);
     background: var(--ds-bg-elevated);
@@ -27,9 +27,17 @@
     letter-spacing: 0.5px;
 }
 
+.routines-header span:nth-child(2) {
+    text-align: right;
+}
+
+.routines-header span:nth-child(3) {
+    text-align: center;
+}
+
 .routine-row {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr minmax(100px, auto) 70px;
     gap: var(--ds-space-6);
     align-items: center;
     padding: var(--ds-space-4) var(--ds-space-6);
@@ -68,7 +76,7 @@
 }
 
 .routine-schedule {
-    text-align: center;
+    text-align: right;
 }
 
 .schedule-badge {
@@ -82,6 +90,7 @@
 
 .routine-actions {
     display: flex;
+    justify-content: center;
     gap: var(--ds-space-1);
 }
 
