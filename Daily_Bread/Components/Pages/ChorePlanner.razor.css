@@ -1,6 +1,6 @@
 /* ============================================
-   WAGE BOARD - ELEGANT CHORE PLANNER
-   Modern, Card-Based Design with Nord Theme
+   WAGE BOARD - CHORE PLANNER PAGE SHELL
+   Container, Header, Navigation, Summary, Toasts
    ============================================ */
 
 /* ===========================================
@@ -324,265 +324,6 @@
 }
 
 /* ===========================================
-   WAGE GRID
-   =========================================== */
-
-.wage-grid {
-    background: var(--board-surface);
-    border-radius: var(--card-radius);
-    overflow: hidden;
-    margin-top: var(--ds-space-6);
-}
-
-.grid-header {
-    display: grid;
-    grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
-    gap: 2px;
-    padding: var(--ds-space-2);
-    background: var(--board-bg);
-    border-bottom: 2px solid var(--board-border);
-}
-
-.header-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--ds-space-2);
-    font-weight: 600;
-    color: var(--board-muted);
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.5px;
-}
-
-.job-header {
-    align-items: flex-start;
-    font-size: 0.75rem;
-}
-
-.day-header {
-    min-height: 50px;
-    border-radius: var(--ds-radius-sm);
-    transition: all var(--transition-smooth);
-}
-
-.day-header .day-name {
-    font-size: 0.65rem;
-    margin-bottom: 2px;
-}
-
-.day-header .day-num {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--board-text);
-}
-
-.day-header.today {
-    background: linear-gradient(135deg, var(--board-accent), var(--ds-accent-blue));
-    color: white;
-}
-
-.day-header.today .day-name,
-.day-header.today .day-num {
-    color: white;
-}
-
-.day-header.past {
-    opacity: 0.5;
-}
-
-.wage-header {
-    color: var(--board-success);
-}
-
-/* ===========================================
-   CHORE ROWS
-   =========================================== */
-
-.chore-row {
-    display: grid;
-    grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
-    gap: 2px;
-    padding: var(--ds-space-2);
-    border-bottom: 1px solid var(--board-border);
-    transition: background-color var(--transition-smooth);
-}
-
-.chore-row:last-child {
-    border-bottom: none;
-}
-
-.chore-row:hover {
-    background: rgba(136, 192, 208, 0.05);
-}
-
-/* Job Cell */
-.job-cell {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-2);
-    cursor: pointer;
-    border-radius: var(--ds-radius-md);
-    transition: all var(--transition-smooth);
-}
-
-.job-cell:hover {
-    background: var(--board-bg);
-}
-
-.job-emoji {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-
-.job-details {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.job-name {
-    font-weight: 600;
-    color: var(--board-text);
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.job-meta {
-    font-size: 0.75rem;
-    color: var(--board-muted);
-}
-
-.job-meta.weekly {
-    color: var(--board-success);
-}
-
-.job-assignee {
-    font-size: 0.7rem;
-    color: var(--board-info);
-    text-transform: capitalize;
-}
-
-/* Day Cells */
-.day-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: var(--cell-size);
-    border-radius: var(--cell-radius);
-    cursor: pointer;
-    transition: all var(--transition-smooth);
-    position: relative;
-}
-
-.day-cell:hover:not(.past) {
-    transform: scale(1.1);
-    z-index: 1;
-}
-
-.day-cell.today {
-    background: rgba(94, 129, 172, 0.15);
-    box-shadow: inset 0 0 0 2px var(--board-accent);
-}
-
-.day-cell.past {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.day-cell.scheduled {
-    background: rgba(163, 190, 140, 0.15);
-}
-
-.day-cell.override {
-    background: rgba(136, 192, 208, 0.15);
-}
-
-.day-cell.available {
-    background: var(--board-bg);
-}
-
-.day-cell.empty {
-    background: transparent;
-}
-
-/* Cell Indicators */
-.cell-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-}
-
-.cell-indicator .indicator {
-    transition: all var(--transition-smooth);
-}
-
-.cell-indicator .indicator.scheduled {
-    color: var(--board-success);
-    filter: drop-shadow(0 0 4px rgba(163, 190, 140, 0.4));
-}
-
-.cell-indicator .indicator.available {
-    color: var(--board-muted);
-    font-size: 0.8rem;
-}
-
-.cell-indicator .indicator.override {
-    color: var(--board-info);
-    filter: drop-shadow(0 0 4px rgba(136, 192, 208, 0.4));
-}
-
-.cell-indicator .indicator.removed {
-    color: var(--board-danger);
-    opacity: 0.6;
-    font-size: 0.9rem;
-}
-
-.cell-indicator .indicator.empty {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--board-border);
-    opacity: 0.3;
-}
-
-.cell-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--board-border);
-    border-top-color: var(--board-accent);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-}
-
-/* Wage Cell */
-.wage-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    padding: var(--ds-space-2);
-}
-
-.wage-amount {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--board-success);
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-}
-
-.wage-multiplier {
-    font-size: 0.7rem;
-    color: var(--board-muted);
-    font-weight: 500;
-}
-
-/* ===========================================
    WEEKLY SUMMARY
    =========================================== */
 
@@ -714,132 +455,6 @@
     margin-top: var(--ds-space-1);
     font-size: 0.75rem;
     opacity: 0.8;
-}
-
-/* ===========================================
-   ROUTINES LIST
-   =========================================== */
-
-.routines-list {
-    margin-top: var(--ds-space-6);
-    background: var(--board-surface);
-    border-radius: var(--card-radius);
-    overflow: hidden;
-}
-
-.routines-header {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: var(--ds-space-6);
-    padding: var(--ds-space-4) var(--ds-space-6);
-    background: var(--board-bg);
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--board-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.routine-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: var(--ds-space-6);
-    align-items: center;
-    padding: var(--ds-space-4) var(--ds-space-6);
-    border-bottom: 1px solid var(--board-border);
-    transition: background-color var(--transition-smooth);
-}
-
-.routine-row:last-child {
-    border-bottom: none;
-}
-
-.routine-row:hover {
-    background: rgba(136, 192, 208, 0.05);
-}
-
-.routine-info {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-}
-
-.routine-emoji {
-    font-size: 1.5rem;
-}
-
-.routine-name {
-    font-weight: 500;
-    color: var(--board-text);
-}
-
-.routine-assignee {
-    font-size: 0.75rem;
-    color: var(--board-info);
-    margin-left: var(--ds-space-2);
-    text-transform: capitalize;
-}
-
-.routine-schedule {
-    text-align: center;
-}
-
-.schedule-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    background: var(--board-bg);
-    border-radius: var(--ds-radius-sm);
-    font-size: 0.8rem;
-    color: var(--board-muted);
-}
-
-.routine-actions {
-    display: flex;
-    gap: var(--ds-space-1);
-}
-
-.icon-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: var(--ds-radius-sm);
-    background: var(--board-bg);
-    color: var(--board-muted);
-    cursor: pointer;
-    transition: all var(--transition-smooth);
-}
-
-.icon-btn:hover {
-    background: var(--board-accent);
-    color: white;
-}
-
-.add-routine-footer {
-    padding: var(--ds-space-6);
-    text-align: center;
-}
-
-.add-routine-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-2) var(--ds-space-6);
-    border: 2px dashed var(--board-border);
-    border-radius: var(--ds-radius-md);
-    background: transparent;
-    color: var(--board-muted);
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all var(--transition-smooth);
-}
-
-.add-routine-btn:hover {
-    border-color: var(--board-accent);
-    color: var(--board-accent);
-    background: rgba(94, 129, 172, 0.05);
 }
 
 /* ===========================================
@@ -1058,14 +673,6 @@
         font-size: 0.85rem;
     }
 
-    .wage-grid {
-        border: 2px solid var(--board-border);
-    }
-
-    .day-cell {
-        border: 1px solid var(--board-border) !important;
-    }
-
     .toast-message,
     .modal-backdrop {
         display: none !important;
@@ -1080,25 +687,6 @@
     .wage-board {
         padding: var(--ds-space-2);
     }
-    
-    .grid-header,
-    .chore-row {
-        grid-template-columns: minmax(120px, 1.2fr) repeat(7, 1fr) minmax(60px, 0.6fr);
-    }
-    
-    .job-emoji {
-        font-size: 1.25rem;
-    }
-    
-    .job-name {
-        font-size: 0.8rem;
-    }
-    
-    .cell-indicator {
-        font-size: 1rem;
-    }
-    
-    --cell-size: 44px;
 }
 
 /* ===========================================
@@ -1146,42 +734,6 @@
         font-size: 1.4rem;
     }
     
-    /* Horizontal scroll for grid */
-    .wage-grid {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .grid-header,
-    .chore-row {
-        min-width: 600px;
-        grid-template-columns: 100px repeat(7, 55px) 60px;
-    }
-    
-    .job-cell {
-        padding: var(--ds-space-1);
-    }
-    
-    .job-emoji {
-        font-size: 1.1rem;
-    }
-    
-    .job-name {
-        font-size: 0.75rem;
-    }
-    
-    .job-meta,
-    .job-assignee {
-        display: none;
-    }
-    
-    --cell-size: 40px;
-    --cell-radius: 8px;
-    
-    .day-header .day-num {
-        font-size: 0.95rem;
-    }
-    
     .weekly-summary {
         flex-direction: column;
         text-align: center;
@@ -1198,19 +750,6 @@
     }
     
     .legend-tip {
-        display: none;
-    }
-    
-    /* Routines */
-    .routines-header {
-        display: none;
-    }
-    
-    .routine-row {
-        grid-template-columns: 1fr auto;
-    }
-    
-    .routine-schedule {
         display: none;
     }
 }
@@ -1230,30 +769,6 @@
     
     .week-label {
         font-size: 0.95rem;
-    }
-    
-    .grid-header,
-    .chore-row {
-        min-width: 520px;
-        grid-template-columns: 85px repeat(7, 48px) 50px;
-    }
-    
-    .job-emoji {
-        font-size: 1rem;
-    }
-    
-    .job-name {
-        font-size: 0.7rem;
-    }
-    
-    --cell-size: 36px;
-    
-    .cell-indicator {
-        font-size: 0.9rem;
-    }
-    
-    .wage-amount {
-        font-size: 0.85rem;
     }
     
     .toast-message {

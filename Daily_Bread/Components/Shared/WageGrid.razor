@@ -1,0 +1,125 @@
+﻿@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+
+<!-- Wage Grid -->
+<div class="wage-grid">
+    <!-- Day Headers -->
+    <div class="grid-header">
+        <div class="header-cell job-header">Job</div>
+        @foreach (var day in PlannerData.DayColumns)
+        {
+            <div class="header-cell day-header @(day.IsToday ? "today" : "") @(day.IsPast ? "past" : "")">
+                <span class="day-name">@day.DayName</span>
+                <span class="day-num">@day.DayNumber</span>
+            </div>
+        }
+        <div class="header-cell wage-header">Wage</div>
+    </div>
+
+    <!-- Chore Rows -->
+    @foreach (var chore in EarningChores)
+    {
+        <div class="chore-row" @key="chore.ChoreDefinitionId">
+            <!-- Job Info -->
+            <div class="job-cell" @onclick="() => OnEditChore.InvokeAsync(chore)">
+                <span class="job-emoji">@(chore.Icon ?? "✨")</span>
+                <div class="job-details">
+                    <span class="job-name">@chore.ChoreName</span>
+                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                    {
+                        <span class="job-meta weekly">@chore.WeeklyApprovedCount/@chore.WeeklyTargetCount this week</span>
+                    }
+                    else if (!chore.IsDailyChore)
+                    {
+                        <span class="job-meta">@chore.ScheduleDescription</span>
+                    }
+                    @if (string.IsNullOrEmpty(SelectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
+                    {
+                        <span class="job-assignee">@chore.AssignedUserName</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Day Cells -->
+            @foreach (var cell in chore.Cells)
+            {
+                var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
+                var isUpdating = UpdatingCellKey == cellKey;
+
+                <div class="day-cell @GetCellClasses(cell)"
+                     @onclick="() => OnCellClick.InvokeAsync((chore, cell))"
+                     title="@GetCellTooltip(chore, cell)"
+                     @key="cellKey">
+                    @if (isUpdating)
+                    {
+                        <span class="cell-spinner"></span>
+                    }
+                    else
+                    {
+                        <span class="cell-indicator">
+                            @if (cell.IsScheduled)
+                            {
+                                @if (cell.HasOverride)
+                                {
+                                    <span class="indicator override">⚡</span>
+                                }
+                                else
+                                {
+                                    <span class="indicator scheduled">@(chore.Icon ?? "●")</span>
+                                }
+                            }
+                            else if (cell.Status == ChoreCellStatus.Available)
+                            {
+                                <span class="indicator available">○</span>
+                            }
+                            else if (cell.HasOverride && cell.OverrideType == ScheduleOverrideType.Remove)
+                            {
+                                <span class="indicator removed">✕</span>
+                            }
+                            else
+                            {
+                                <span class="indicator empty"></span>
+                            }
+                        </span>
+                    }
+                </div>
+            }
+
+            <!-- Wage -->
+            <div class="wage-cell">
+                <span class="wage-amount">$@chore.Value.ToString("F2")</span>
+                @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency && chore.WeeklyTargetCount > 1)
+                {
+                    <span class="wage-multiplier">×@chore.WeeklyTargetCount</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ChorePlannerData PlannerData { get; set; } = default!;
+    [Parameter, EditorRequired] public List<ChorePlannerRow> EarningChores { get; set; } = [];
+    [Parameter] public string? SelectedUserId { get; set; }
+    [Parameter] public string? UpdatingCellKey { get; set; }
+    [Parameter] public EventCallback<ChorePlannerRow> OnEditChore { get; set; }
+    [Parameter] public EventCallback<(ChorePlannerRow Chore, ChorePlannerCell Cell)> OnCellClick { get; set; }
+
+    private string GetCellClasses(ChorePlannerCell cell)
+    {
+        var classes = new List<string>();
+        if (cell.IsToday) classes.Add("today");
+        if (cell.IsPast) classes.Add("past");
+        if (cell.HasOverride) classes.Add("override");
+        if (cell.IsScheduled) classes.Add("scheduled");
+        else if (cell.Status == ChoreCellStatus.Available) classes.Add("available");
+        else classes.Add("empty");
+        return string.Join(" ", classes);
+    }
+
+    private string GetCellTooltip(ChorePlannerRow chore, ChorePlannerCell cell)
+    {
+        var action = cell.IsScheduled ? "Remove from" : "Add to";
+        return $"{cell.Date:dddd, MMM d} — Click to {action.ToLower()} this day";
+    }
+}

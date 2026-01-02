@@ -124,101 +124,13 @@
             }
             else
             {
-                <!-- Wage Grid -->
-                <div class="wage-grid">
-                    <!-- Day Headers -->
-                    <div class="grid-header">
-                        <div class="header-cell job-header">Job</div>
-                        @foreach (var day in _plannerData.DayColumns)
-                        {
-                            <div class="header-cell day-header @(day.IsToday ? "today" : "") @(day.IsPast ? "past" : "")">
-                                <span class="day-name">@day.DayName</span>
-                                <span class="day-num">@day.DayNumber</span>
-                            </div>
-                        }
-                        <div class="header-cell wage-header">Wage</div>
-                    </div>
-
-                    <!-- Chore Rows -->
-                    @foreach (var chore in _earningChores)
-                    {
-                        <div class="chore-row" @key="chore.ChoreDefinitionId">
-                            <!-- Job Info -->
-                            <div class="job-cell" @onclick="() => ShowEditChoreForm(chore)">
-                                <span class="job-emoji">@(chore.Icon ?? "✨")</span>
-                                <div class="job-details">
-                                    <span class="job-name">@chore.ChoreName</span>
-                                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
-                                    {
-                                        <span class="job-meta weekly">@chore.WeeklyApprovedCount/@chore.WeeklyTargetCount this week</span>
-                                    }
-                                    else if (!chore.IsDailyChore)
-                                    {
-                                        <span class="job-meta">@chore.ScheduleDescription</span>
-                                    }
-                                    @if (string.IsNullOrEmpty(_selectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
-                                    {
-                                        <span class="job-assignee">@chore.AssignedUserName</span>
-                                    }
-                                </div>
-                            </div>
-
-                            <!-- Day Cells -->
-                            @foreach (var cell in chore.Cells)
-                            {
-                                var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
-                                var isUpdating = _updatingCellKey == cellKey;
-
-                                <div class="day-cell @GetCellClasses(cell)"
-                                     @onclick="() => HandleCellClick(chore, cell)"
-                                     title="@GetCellTooltip(chore, cell)"
-                                     @key="cellKey">
-                                    @if (isUpdating)
-                                    {
-                                        <span class="cell-spinner"></span>
-                                    }
-                                    else
-                                    {
-                                        <span class="cell-indicator">
-                                            @if (cell.IsScheduled)
-                                            {
-                                                @if (cell.HasOverride)
-                                                {
-                                                    <span class="indicator override">⚡</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="indicator scheduled">@(chore.Icon ?? "●")</span>
-                                                }
-                                            }
-                                            else if (cell.Status == ChoreCellStatus.Available)
-                                            {
-                                                <span class="indicator available">○</span>
-                                            }
-                                            else if (cell.HasOverride && cell.OverrideType == ScheduleOverrideType.Remove)
-                                            {
-                                                <span class="indicator removed">✕</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="indicator empty"></span>
-                                            }
-                                        </span>
-                                    }
-                                </div>
-                            }
-
-                            <!-- Wage -->
-                            <div class="wage-cell">
-                                <span class="wage-amount">$@chore.Value.ToString("F2")</span>
-                                @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency && chore.WeeklyTargetCount > 1)
-                                {
-                                    <span class="wage-multiplier">×@chore.WeeklyTargetCount</span>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
+                <WageGrid 
+                    PlannerData="_plannerData"
+                    EarningChores="_earningChores"
+                    SelectedUserId="_selectedUserId"
+                    UpdatingCellKey="_updatingCellKey"
+                    OnEditChore="ShowEditChoreForm"
+                    OnCellClick="HandleCellClickFromGrid" />
 
                 <!-- Weekly Summary -->
                 <div class="weekly-summary">
@@ -281,41 +193,11 @@
             }
             else
             {
-                <div class="routines-list">
-                    <div class="routines-header">
-                        <span>Routine</span>
-                        <span>Schedule</span>
-                        <span>Actions</span>
-                    </div>
-                    @foreach (var chore in _routineChores)
-                    {
-                        <div class="routine-row" @key="chore.ChoreDefinitionId">
-                            <div class="routine-info">
-                                <span class="routine-emoji">@(chore.Icon ?? "✨")</span>
-                                <span class="routine-name">@chore.ChoreName</span>
-                                @if (string.IsNullOrEmpty(_selectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
-                                {
-                                    <span class="routine-assignee">@chore.AssignedUserName</span>
-                                }
-                            </div>
-                            <div class="routine-schedule">
-                                <span class="schedule-badge">@chore.ScheduleDescription</span>
-                            </div>
-                            <div class="routine-actions">
-                                <button class="icon-btn edit" @onclick="() => ShowEditChoreForm(chore)" title="Edit">
-                                    <span class="bi bi-pencil"></span>
-                                </button>
-                            </div>
-                        </div>
-                    }
-                </div>
-
-                <div class="add-routine-footer">
-                    <button class="add-routine-btn" @onclick="ShowCreateRoutineForm">
-                        <span class="bi bi-plus-lg"></span>
-                        <span>Add Routine</span>
-                    </button>
-                </div>
+                <RoutinesList 
+                    RoutineChores="_routineChores"
+                    SelectedUserId="_selectedUserId"
+                    OnEditChore="ShowEditChoreForm"
+                    OnAddRoutine="ShowCreateRoutineForm" />
             }
         }
     }
@@ -466,6 +348,11 @@
         finally { _isNavigating = false; }
     }
 
+    private async Task HandleCellClickFromGrid((ChorePlannerRow Chore, ChorePlannerCell Cell) args)
+    {
+        await HandleCellClick(args.Chore, args.Cell);
+    }
+
     private async Task HandleCellClick(ChorePlannerRow chore, ChorePlannerCell cell)
     {
         if (string.IsNullOrEmpty(_currentUserId)) return;
@@ -591,21 +478,12 @@
         var editingChore = _editingChore;
         var assignableUsers = _assignableUsers;
         
-        ModalService.Open(@<div>
-            <div class="modal-header">
-                <h2>@title</h2>
-                <button class="modal-close" @onclick="HideChoreForm">
-                    <span class="bi bi-x-lg"></span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <Daily_Bread.Components.Shared.ChoreForm 
-                    Chore="editingChore"
-                    Users="assignableUsers"
-                    OnSubmit="HandleChoreFormSubmit"
-                    OnCancel="HideChoreForm" />
-            </div>
-        </div>, closeOnBackdropClick: true);
+        ModalService.Open(@<ChoreFormModal 
+            Title="@title"
+            Chore="editingChore"
+            Users="assignableUsers"
+            OnSubmit="HandleChoreFormSubmit"
+            OnCancel="HideChoreForm" />, closeOnBackdropClick: true);
     }
 
     private void HideChoreForm()
@@ -635,23 +513,5 @@
         {
             _errorMessage = result.ErrorMessage;
         }
-    }
-
-    private string GetCellClasses(ChorePlannerCell cell)
-    {
-        var classes = new List<string>();
-        if (cell.IsToday) classes.Add("today");
-        if (cell.IsPast) classes.Add("past");
-        if (cell.HasOverride) classes.Add("override");
-        if (cell.IsScheduled) classes.Add("scheduled");
-        else if (cell.Status == ChoreCellStatus.Available) classes.Add("available");
-        else classes.Add("empty");
-        return string.Join(" ", classes);
-    }
-
-    private string GetCellTooltip(ChorePlannerRow chore, ChorePlannerCell cell)
-    {
-        var action = cell.IsScheduled ? "Remove from" : "Add to";
-        return $"{cell.Date:dddd, MMM d} — Click to {action.ToLower()} this day";
     }
 }
