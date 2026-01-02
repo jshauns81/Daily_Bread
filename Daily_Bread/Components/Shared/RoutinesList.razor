@@ -1,0 +1,45 @@
+﻿@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+
+<div class="routines-list">
+    <div class="routines-header">
+        <span>Routine</span>
+        <span>Schedule</span>
+        <span>Actions</span>
+    </div>
+    @foreach (var chore in RoutineChores)
+    {
+        <div class="routine-row" @key="chore.ChoreDefinitionId">
+            <div class="routine-info">
+                <span class="routine-emoji">@(chore.Icon ?? "✨")</span>
+                <span class="routine-name">@chore.ChoreName</span>
+                @if (string.IsNullOrEmpty(SelectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
+                {
+                    <span class="routine-assignee">@chore.AssignedUserName</span>
+                }
+            </div>
+            <div class="routine-schedule">
+                <span class="schedule-badge">@chore.ScheduleDescription</span>
+            </div>
+            <div class="routine-actions">
+                <button class="icon-btn edit" @onclick="() => OnEditChore.InvokeAsync(chore)" title="Edit">
+                    <span class="bi bi-pencil"></span>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="add-routine-footer">
+    <button class="add-routine-btn" @onclick="() => OnAddRoutine.InvokeAsync()">
+        <span class="bi bi-plus-lg"></span>
+        <span>Add Routine</span>
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public List<ChorePlannerRow> RoutineChores { get; set; } = [];
+    [Parameter] public string? SelectedUserId { get; set; }
+    [Parameter] public EventCallback<ChorePlannerRow> OnEditChore { get; set; }
+    [Parameter] public EventCallback OnAddRoutine { get; set; }
+}
