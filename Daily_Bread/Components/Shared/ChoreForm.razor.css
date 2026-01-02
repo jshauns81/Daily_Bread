@@ -131,6 +131,7 @@
 
 /* ===========================================
    SEGMENTED CONTROL - Earns/Expected
+   With sliding pill animation
    =========================================== */
 
 .chore-form .type-section {
@@ -138,7 +139,9 @@
     justify-content: center;
 }
 
+/* Sliding pill container setup */
 .chore-form .seg2 {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
     width: 100%;
@@ -146,12 +149,34 @@
     border: 1px solid var(--ds-bg-muted);
     border-radius: var(--ds-radius-lg);
     padding: var(--ds-space-1);
-    gap: var(--ds-space-1);
+    gap: 0; /* Remove gap so pill slides cleanly */
     box-sizing: border-box;
 }
 
+/* The sliding pill background */
+.chore-form .seg2::before {
+    content: '';
+    position: absolute;
+    top: var(--ds-space-1);
+    left: var(--ds-space-1);
+    width: calc(50% - var(--ds-space-1));
+    height: calc(100% - var(--ds-space-2));
+    background: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-md);
+    box-shadow: var(--ds-shadow-sm);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+}
+
+/* Slide pill to second position when second button is active */
+.chore-form .seg2:has(.seg2__btn:last-child.seg2__btn--active)::before {
+    transform: translateX(100%);
+}
+
+/* Ensure buttons are above the sliding pill */
 .chore-form .seg2__btn {
     position: relative;
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -160,25 +185,26 @@
     padding: 0 var(--ds-space-3);
     border: none;
     border-radius: var(--ds-radius-md);
-    background: transparent;
+    background: transparent; /* Remove individual backgrounds - pill handles it */
     color: var(--ds-text-muted);
     font-size: var(--ds-text-sm);
     font-weight: var(--ds-font-semibold);
     cursor: pointer;
-    transition: all var(--ds-duration-fast) ease;
+    transition: color var(--ds-duration-fast) ease;
     white-space: nowrap;
     overflow: hidden;
 }
 
 .chore-form .seg2__btn:hover:not(.seg2__btn--active) {
-    background: var(--ds-bg-hover);
+    background: transparent; /* Keep transparent, pill handles background */
     color: var(--ds-text-secondary);
 }
 
+/* Active button - transparent background since pill handles it */
 .chore-form .seg2__btn--active {
-    background: var(--ds-bg-elevated);
+    background: transparent;
     color: var(--ds-text-primary);
-    box-shadow: var(--ds-shadow-sm);
+    box-shadow: none; /* Remove shadow, pill has it */
 }
 
 .chore-form .seg2__label {
@@ -234,7 +260,7 @@
     background-color: var(--ds-bg-hover) !important;
 }
 
-/* Indicator bar - prominent with glow */
+/* Glow bar - fades in with delay after slide */
 .chore-form .seg2__bar {
     position: absolute;
     left: 50%;
@@ -244,7 +270,8 @@
     height: 4px;
     border-radius: var(--ds-radius-full);
     opacity: 0;
-    transition: opacity var(--ds-duration-fast) ease, transform var(--ds-duration-fast) ease;
+    transition: opacity 0.2s ease 0.15s, transform 0.2s ease 0.15s; /* 0.15s delay after slide */
+    z-index: 2;
 }
 
 .chore-form .seg2__btn--active .seg2__bar {
@@ -255,13 +282,13 @@
 /* Earns button - green glow */
 .chore-form .seg2--money .seg2__btn--earns .seg2__bar {
     background: linear-gradient(90deg, var(--ds-semantic-success), var(--ds-accent-teal));
-    box-shadow: 0 0 12px rgba(163, 190, 140, 0.5), 0 0 4px rgba(163, 190, 140, 0.3);
+    box-shadow: var(--ds-glow-success);
 }
 
 /* Expected button - blue glow */
 .chore-form .seg2--money .seg2__btn--expected .seg2__bar {
     background: linear-gradient(90deg, var(--ds-accent-primary), var(--ds-accent-blue));
-    box-shadow: 0 0 12px rgba(136, 192, 208, 0.5), 0 0 4px rgba(136, 192, 208, 0.3);
+    box-shadow: var(--ds-glow-primary);
 }
 
 /* Schedule variant */
@@ -285,13 +312,13 @@
 /* Fixed days - green glow */
 .chore-form .seg2--schedule .seg2__btn--fixed .seg2__bar {
     background: var(--ds-semantic-success);
-    box-shadow: 0 0 12px rgba(163, 190, 140, 0.5), 0 0 4px rgba(163, 190, 140, 0.3);
+    box-shadow: var(--ds-glow-success);
 }
 
 /* Weekly goal - orange/warning glow */
 .chore-form .seg2--schedule .seg2__btn--weekly .seg2__bar {
     background: var(--ds-semantic-warning);
-    box-shadow: 0 0 12px rgba(208, 135, 112, 0.5), 0 0 4px rgba(208, 135, 112, 0.3);
+    box-shadow: var(--ds-glow-warning);
 }
 
 /* ===========================================
