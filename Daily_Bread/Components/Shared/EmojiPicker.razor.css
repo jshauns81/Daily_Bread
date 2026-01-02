@@ -8,8 +8,8 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    border: 2px dashed var(--nord3);
-    background: var(--nord2);
+    border: 2px dashed var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -20,18 +20,18 @@
 }
 
 .emoji-circle:hover {
-    border-color: var(--nord10);
-    background: var(--nord1);
+    border-color: var(--ds-accent-primary);
+    background: var(--ds-bg-elevated);
 }
 
 .emoji-circle:not(.empty) {
     border-style: solid;
-    border-color: var(--nord3);
+    border-color: var(--ds-bg-muted);
 }
 
 .emoji-circle .placeholder-icon {
     font-size: 1.25rem;
-    color: var(--nord4);
+    color: var(--ds-text-muted);
     font-weight: 300;
     line-height: 1;
 }
@@ -61,12 +61,12 @@
     max-width: 360px;
     max-height: 400px;
     overflow-y: auto;
-    background: var(--nord1);
-    border: 1px solid var(--nord3);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    margin-top: var(--space-xs);
-    color: var(--nord6);
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--ds-shadow-lg);
+    margin-top: var(--ds-space-1);
+    color: var(--ds-text-primary);
     -webkit-overflow-scrolling: touch;
 }
 
@@ -74,28 +74,28 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-sm) var(--space-md);
-    background: var(--nord2);
-    border-bottom: 1px solid var(--nord3);
-    font-weight: var(--font-weight-medium);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    background: var(--ds-bg-hover);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    font-weight: var(--ds-font-medium);
     position: sticky;
     top: 0;
     z-index: 1;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .emoji-quick-picks {
-    padding: var(--space-sm) var(--space-md);
-    border-bottom: 1px solid var(--nord3);
-    background: var(--nord2);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-bottom: 1px solid var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
 }
 
 .quick-picks-label,
 .category-label {
     display: block;
-    font-size: var(--font-size-xs);
-    color: var(--nord4);
-    margin-bottom: var(--space-xs);
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+    margin-bottom: var(--ds-space-1);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -104,12 +104,12 @@
 .emoji-grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: var(--space-xs);
+    gap: var(--ds-space-1);
 }
 
 .emoji-category {
-    padding: var(--space-sm) var(--space-md);
-    border-bottom: 1px solid var(--nord3);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-bottom: 1px solid var(--ds-bg-muted);
 }
 
 .emoji-category:last-of-type {
@@ -125,9 +125,9 @@
     font-size: 1.2rem;
     background: transparent;
     border: 2px solid transparent;
-    border-radius: var(--radius-sm);
+    border-radius: var(--ds-radius-sm);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all var(--ds-duration-fast) ease;
     padding: 0;
     /* CRITICAL: Use system emoji fonts - these are ALWAYS available on every OS */
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
@@ -138,19 +138,19 @@
 }
 
 .emoji-btn:hover {
-    background: var(--nord3);
+    background: var(--ds-bg-muted);
     transform: scale(1.1);
 }
 
 .emoji-btn.selected {
-    background: var(--nord10);
-    border-color: var(--nord8);
+    background: var(--ds-accent-primary);
+    border-color: var(--ds-accent-cyan);
 }
 
 .emoji-picker-footer {
-    padding: var(--space-sm) var(--space-md);
-    border-top: 1px solid var(--nord3);
-    background: var(--nord2);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-top: 1px solid var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
     position: sticky;
     bottom: 0;
 }
@@ -182,14 +182,14 @@
 }
 
 .emoji-picker-dropdown::-webkit-scrollbar-track {
-    background: var(--nord1);
+    background: var(--ds-bg-elevated);
 }
 
 .emoji-picker-dropdown::-webkit-scrollbar-thumb {
-    background: var(--nord3);
+    background: var(--ds-bg-muted);
     border-radius: 3px;
 }
 
 .emoji-picker-dropdown::-webkit-scrollbar-thumb:hover {
-    background: var(--nord4);
+    background: var(--ds-text-muted);
 }

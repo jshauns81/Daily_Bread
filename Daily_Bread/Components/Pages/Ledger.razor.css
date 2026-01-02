@@ -4,15 +4,15 @@
 }
 
 .ledger-container h1 {
-    color: var(--nord6);
-    margin-bottom: var(--space-lg);
+    color: var(--ds-text-primary);
+    margin-bottom: var(--ds-space-6);
 }
 
 /* Filters row - flexbox layout */
 .filters-row {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-md);
+    gap: var(--ds-space-4);
     align-items: flex-end;
 }
 
@@ -35,8 +35,8 @@
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
+    gap: var(--ds-space-4);
+    margin-bottom: var(--ds-space-6);
 }
 
 /* Responsive adjustments */

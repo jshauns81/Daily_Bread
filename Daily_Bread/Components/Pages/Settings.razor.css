@@ -16,9 +16,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-md, 16px);
-    padding: var(--space-md, 16px) var(--space-lg, 24px);
-    border-bottom: 1px solid var(--nord3, #4C566A);
+    gap: var(--ds-space-4);
+    padding: var(--ds-space-4) var(--ds-space-6);
+    border-bottom: 1px solid var(--ds-bg-muted);
     min-height: 72px;
 }
 
@@ -29,7 +29,7 @@
 .settings-row-header {
     display: flex;
     align-items: center;
-    gap: var(--space-md, 16px);
+    gap: var(--ds-space-4);
     flex: 1;
     min-width: 0;
 }
@@ -49,14 +49,14 @@
 }
 
 .settings-label {
-    font-weight: var(--font-weight-semibold, 600);
-    font-size: var(--font-size-md, 1rem);
-    color: var(--nord6, #ECEFF4);
+    font-weight: var(--ds-font-semibold);
+    font-size: var(--ds-text-base);
+    color: var(--ds-text-primary);
 }
 
 .settings-hint {
-    font-size: var(--font-size-sm, 0.875rem);
-    color: var(--nord4, #D8DEE9);
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -69,7 +69,7 @@
 /* Make form controls match the compact style */
 .settings-row .form-select,
 .settings-row .form-control {
-    font-size: var(--font-size-sm, 0.875rem);
+    font-size: var(--ds-text-sm);
 }
 
 .settings-row .form-check-input {
@@ -78,7 +78,7 @@
 
 /* Card footer styling */
 .card-footer {
-    padding: var(--space-md, 16px) var(--space-lg, 24px);
+    padding: var(--ds-space-4) var(--ds-space-6);
 }
 
 /* Mobile responsiveness */
@@ -88,13 +88,13 @@
     }
     
     .settings-container h1 {
-        padding: 0 var(--space-sm, 8px);
+        padding: 0 var(--ds-space-2);
     }
     
     .settings-row {
         flex-wrap: wrap;
-        padding: var(--space-md, 16px);
-        gap: var(--space-sm, 8px);
+        padding: var(--ds-space-4);
+        gap: var(--ds-space-2);
     }
     
     .settings-row-header {
@@ -103,7 +103,7 @@
     
     .settings-control {
         flex: 1 1 100%;
-        padding-left: calc(40px + var(--space-md, 16px)); /* Align with text */
+        padding-left: calc(40px + var(--ds-space-4)); /* Align with text */
     }
     
     .settings-control .form-select {

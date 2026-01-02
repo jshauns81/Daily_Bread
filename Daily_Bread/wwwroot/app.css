@@ -4,107 +4,14 @@
    ============================================ */
 
 /* ===========================================
-   LEGACY TOKEN COMPATIBILITY LAYER
-   
-   This layer maps legacy tokens to design-system.css tokens.
-   All legacy --nord*, --space*, --radius*, --shadow*, --font*
-   tokens now reference --ds-* tokens as the single source of truth.
-   
-   DO NOT define raw values here - only var() references.
-   To change a value, modify design-system.css instead.
-   
-   This layer will be removed in a future phase once all
-   components are migrated to use --ds-* tokens directly.
+   APP-SPECIFIC LAYOUT TOKENS
+   These are layout constants specific to the app,
+   not part of the design system primitives.
    =========================================== */
 
 :root {
-    /* ----- NORD COLOR PALETTE (aliased to design-system) ----- */
-    
-    /* Polar Night - Dark backgrounds */
-    --nord0: var(--ds-bg-base);       /* #2E3440 - Darkest - main background */
-    --nord1: var(--ds-bg-elevated);   /* #3B4252 - Cards, elevated surfaces */
-    --nord2: var(--ds-bg-hover);      /* #434C5E - Hover states, headers */
-    --nord3: var(--ds-bg-muted);      /* #4C566A - Borders, muted elements */
-    
-    /* Snow Storm - Light text */
-    --nord4: var(--ds-text-muted);    /* #D8DEE9 - Secondary text */
-    --nord5: var(--ds-text-secondary); /* #E5E9F0 - Tertiary text */
-    --nord6: var(--ds-text-primary);  /* #ECEFF4 - Primary text */
-    
-    /* Frost - Blues (primary actions) */
-    --nord7: var(--ds-accent-teal);   /* #8FBCBB - Teal accent */
-    --nord8: var(--ds-accent-cyan);   /* #88C0D0 - Links, info */
-    --nord9: var(--ds-accent-blue);   /* #81A1C1 - Secondary buttons */
-    --nord10: var(--ds-accent-primary); /* #5E81AC - Primary buttons */
-    
-    /* Aurora - Semantic colors */
-    --nord11: var(--ds-semantic-error);     /* #BF616A - Red - errors, danger, delete */
-    --nord12: var(--ds-semantic-warning);   /* #D08770 - Orange - warnings, pending */
-    --nord13: var(--ds-semantic-highlight); /* #EBCB8B - Yellow - highlights, stars */
-    --nord14: var(--ds-semantic-success);   /* #A3BE8C - Green - success, approved, money */
-    --nord15: var(--ds-semantic-special);   /* #B48EAD - Purple - special, premium */
-    
-    /* ----- SPACING SCALE (aliased to design-system) ----- */
-    --space-xs: var(--ds-space-1);    /* 4px */
-    --space-sm: var(--ds-space-2);    /* 8px */
-    --space-md: var(--ds-space-4);    /* 16px */
-    --space-lg: var(--ds-space-6);    /* 24px */
-    --space-xl: var(--ds-space-7);    /* 32px */
-    --space-2xl: var(--ds-space-9);   /* 48px */
-    
-    /* ----- TOUCH TARGETS (aliased to design-system) ----- */
-    --touch-target-min: var(--ds-touch-target);        /* 44px */
-    --touch-target-comfortable: var(--ds-touch-target-lg); /* 48px */
-    
-    /* ----- BOTTOM NAV HEIGHT ----- */
-    /* App-specific layout token - no ds equivalent yet */
+    /* Bottom navigation height for mobile layout */
     --bottom-nav-height: 60px;
-    
-    /* ----- TYPOGRAPHY (aliased to design-system) ----- */
-    --font-family: var(--ds-font-family);
-    
-    /* Font sizes - using fixed values as ds uses responsive clamp()
-       These remain as direct values for backwards compatibility
-       with components expecting fixed rem values */
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
-    --font-size-md: 1rem;
-    --font-size-lg: 1.25rem;
-    --font-size-xl: 1.5rem;
-    --font-size-2xl: 2rem;
-    
-    /* Font weights (aliased to design-system) */
-    --font-weight-normal: var(--ds-font-normal);     /* 400 */
-    --font-weight-medium: var(--ds-font-medium);     /* 500 */
-    --font-weight-semibold: var(--ds-font-semibold); /* 600 */
-    --font-weight-bold: var(--ds-font-bold);         /* 700 */
-    
-    /* Line heights (aliased to design-system) */
-    --line-height-tight: var(--ds-leading-tight);     /* 1.2 */
-    --line-height-normal: var(--ds-leading-normal);   /* 1.5 */
-    --line-height-relaxed: var(--ds-leading-relaxed); /* 1.75 */
-    
-    /* ----- BORDER RADIUS (aliased to design-system) ----- */
-    --radius-sm: var(--ds-radius-sm);     /* 6px */
-    --radius-md: var(--ds-radius-md);     /* 10px */
-    --radius-lg: var(--ds-radius-lg);     /* 16px */
-    --radius-xl: var(--ds-radius-xl);     /* 24px */
-    --radius-full: var(--ds-radius-full); /* 9999px */
-    
-    /* ----- SHADOWS (aliased to design-system) ----- */
-    --shadow-sm: var(--ds-shadow-sm);
-    --shadow-md: var(--ds-shadow-md);
-    --shadow-lg: var(--ds-shadow-lg);
-    --shadow-glow-green: var(--ds-glow-success);
-    --shadow-glow-blue: var(--ds-glow-primary);
-    --shadow-glow-red: var(--ds-glow-error);
-    
-    /* ----- TRANSITIONS ----- */
-    /* These combine duration + easing; ds tokens are separate
-       Keeping as composite values for backwards compatibility */
-    --transition-fast: var(--ds-duration-fast) ease;
-    --transition-normal: var(--ds-duration-normal) ease;
-    --transition-slow: var(--ds-duration-slow) ease;
 }
 
 /* ===========================================
@@ -113,10 +20,10 @@
 
 html, body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: var(--font-size-md);
-    line-height: var(--line-height-normal);
-    background-color: var(--nord0);
-    color: var(--nord6);
+    font-size: var(--ds-text-base);
+    line-height: var(--ds-leading-normal);
+    background-color: var(--ds-bg-base);
+    color: var(--ds-text-primary);
     -webkit-font-smoothing: antialiased;
     margin: 0;
     padding: 0;
@@ -194,7 +101,7 @@ h1 .emoji, h2 .emoji, h3 .emoji, h4 .emoji, h5 .emoji, h6 .emoji {
 }
 
 body {
-    background-color: var(--nord0);
+    background-color: var(--ds-bg-base);
     min-height: 100vh; /* Fallback for older browsers */
     min-height: 100dvh;
     margin: 0;
@@ -202,10 +109,10 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    color: var(--nord6);
-    font-weight: var(--font-weight-semibold);
-    line-height: var(--line-height-tight);
-    margin-bottom: var(--space-sm);
+    color: var(--ds-text-primary);
+    font-weight: var(--ds-font-semibold);
+    line-height: var(--ds-leading-tight);
+    margin-bottom: var(--ds-space-2);
 }
 
 /* Remove focus outline from headings (FocusOnNavigate targets h1) */
@@ -218,20 +125,20 @@ h6:focus {
     outline: none;
 }
 
-h1 { font-size: var(--font-size-2xl); }
-h2 { font-size: var(--font-size-xl); }
-h3 { font-size: var(--font-size-lg); }
+h1 { font-size: var(--ds-text-2xl); }
+h2 { font-size: var(--ds-text-xl); }
+h3 { font-size: var(--ds-text-lg); }
 
-p { color: var(--nord4); }
+p { color: var(--ds-text-muted); }
 
-/* UNIFIED: Links use --nord10 (blue) */
+/* UNIFIED: Links use --ds-accent-primary (blue) */
 a {
-    color: var(--nord10);
+    color: var(--ds-accent-primary);
     text-decoration: none;
-    transition: color var(--transition-fast);
+    transition: color var(--ds-duration-fast) ease;
 }
 
-a:hover { color: var(--nord9); }
+a:hover { color: var(--ds-accent-blue); }
 
 /* Focus visible for accessibility */
 a:focus-visible,
@@ -240,20 +147,20 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-    outline: 2px solid var(--nord10);
+    outline: 2px solid var(--ds-accent-primary);
     outline-offset: 2px;
 }
 
 small, .small { 
-    font-size: var(--font-size-sm);
-    color: var(--nord4); 
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted); 
 }
 
 hr {
     border: none;
-    border-top: 1px solid var(--nord3);
+    border-top: 1px solid var(--ds-bg-muted);
     opacity: 0.3;
-    margin: var(--space-lg) 0;
+    margin: var(--ds-space-6) 0;
 }
 
 /* Hide hr elements that shouldn't be visible */
@@ -263,16 +170,16 @@ hr.invisible,
 }
 
 code {
-    background-color: var(--nord1);
-    color: var(--nord12);
+    background-color: var(--ds-bg-elevated);
+    color: var(--ds-semantic-warning);
     padding: 2px 6px;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
+    border-radius: var(--ds-radius-sm);
+    font-size: var(--ds-text-sm);
 }
 
 ::selection {
-    background-color: var(--nord10);
-    color: var(--nord6);
+    background-color: var(--ds-accent-primary);
+    color: var(--ds-text-primary);
 }
 
 /* ===========================================
@@ -280,12 +187,12 @@ code {
    =========================================== */
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--nord0); }
+::-webkit-scrollbar-track { background: var(--ds-bg-base); }
 ::-webkit-scrollbar-thumb { 
-    background: var(--nord3); 
-    border-radius: var(--radius-sm); 
+    background: var(--ds-bg-muted); 
+    border-radius: var(--ds-radius-sm); 
 }
-::-webkit-scrollbar-thumb:hover { background: var(--nord4); }
+::-webkit-scrollbar-thumb:hover { background: var(--ds-text-muted); }
 
 /* ===========================================
    4. BUTTONS
@@ -616,7 +523,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     color: var(--ds-text-primary);
     font-weight: var(--ds-font-semibold);
     text-transform: uppercase;
-    font-size: var(--font-size-xs);
+    font-size: var(--ds-text-xs);
     letter-spacing: 0.5px;
     padding: var(--ds-space-4);
     border-bottom: 2px solid var(--ds-bg-muted);
@@ -756,7 +663,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     border-radius: var(--ds-radius-sm);
     font-weight: var(--ds-font-medium);
     padding: 0.35em 0.65em;
-    font-size: var(--font-size-xs);
+    font-size: var(--ds-text-xs);
 }
 
 .bg-primary { background-color: var(--ds-accent-primary) !important; color: var(--ds-text-primary) !important; }
@@ -956,7 +863,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .summary-value,
 .stat-value {
     display: block;
-    font-size: var(--font-size-xl);
+    font-size: var(--ds-text-xl);
     font-weight: var(--ds-font-bold);
     color: var(--ds-accent-cyan);
 }
@@ -964,7 +871,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .summary-label,
 .stat-label {
     display: block;
-    font-size: var(--font-size-xs);
+    font-size: var(--ds-text-xs);
     color: var(--ds-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -979,7 +886,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     padding: var(--ds-space-1) var(--ds-space-2);
     border-radius: var(--ds-radius-sm);
     font-weight: var(--ds-font-semibold);
-    font-size: var(--font-size-sm);
+    font-size: var(--ds-text-sm);
     font-family: var(--ds-font-mono);
 }
 
@@ -990,7 +897,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 /* Action buttons (table actions) */
 .action-btn {
     padding: var(--ds-space-1) var(--ds-space-2);
-    font-size: var(--font-size-xs);
+    font-size: var(--ds-text-xs);
     font-weight: var(--ds-font-medium);
     border-radius: var(--ds-radius-sm);
     transition: all var(--ds-duration-fast) ease;

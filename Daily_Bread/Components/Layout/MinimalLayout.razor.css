@@ -2,15 +2,15 @@
 .minimal-layout {
     min-height: 100vh; /* Fallback for older browsers */
     min-height: 100dvh;
-    background: linear-gradient(135deg, var(--nord0) 0%, var(--nord1) 50%, var(--nord2) 100%);
+    background: linear-gradient(135deg, var(--ds-bg-base) 0%, var(--ds-bg-elevated) 50%, var(--ds-bg-hover) 100%);
     display: flex;
     flex-direction: column;
 }
 
 /* Blazor error UI */
 #blazor-error-ui {
-    background: var(--nord1);
-    border-top: 3px solid var(--nord12);
+    background: var(--ds-bg-elevated);
+    border-top: 3px solid var(--ds-semantic-warning);
     bottom: 0;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
@@ -20,7 +20,7 @@
     position: fixed;
     width: 100%;
     z-index: 2000;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 #blazor-error-ui .dismiss {
@@ -28,5 +28,5 @@
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
-    color: var(--nord4);
+    color: var(--ds-text-muted);
 }

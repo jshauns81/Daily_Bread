@@ -31,7 +31,7 @@
     justify-content: center;
     gap: 4px;
     padding: 8px 4px;
-    color: var(--nord4);
+    color: var(--ds-text-muted);
     text-decoration: none;
     transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
@@ -52,12 +52,12 @@
 
 .bottom-nav__item:hover,
 .bottom-nav__item:focus {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
     outline: none;
 }
 
 .bottom-nav__item--active {
-    color: var(--nord8);
+    color: var(--ds-accent-cyan);
 }
 
 .bottom-nav__item--active .bottom-nav__icon {
@@ -74,7 +74,7 @@
     transform: translateX(-50%);
     width: 4px;
     height: 4px;
-    background: var(--nord8);
+    background: var(--ds-accent-cyan);
     border-radius: 50%;
     box-shadow: 0 0 8px rgba(136, 192, 208, 0.6);
 }
@@ -89,8 +89,8 @@
     padding: 0 4px;
     font-size: 0.65rem;
     font-weight: 600;
-    background: var(--nord11);
-    color: var(--nord6);
+    background: var(--ds-semantic-error);
+    color: var(--ds-text-primary);
     border-radius: 8px;
     display: flex;
     align-items: center;
