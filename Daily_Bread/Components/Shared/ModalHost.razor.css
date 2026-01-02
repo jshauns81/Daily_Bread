@@ -11,7 +11,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.75);
+    background: color-mix(in srgb, var(--ds-bg-base) 75%, transparent);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     padding: var(--ds-space-4);
@@ -33,7 +33,7 @@
     max-height: 90dvh;
     background: var(--ds-bg-elevated);
     border-radius: var(--ds-radius-lg);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--ds-shadow-xl);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -154,21 +154,21 @@
 }
 
 /* ===========================================
-   MOBILE: Bottom sheet style
+   MOBILE: Centered modal (not bottom sheet)
    =========================================== */
 
 @media (max-width: 640px) {
     .modal-host-backdrop {
-        padding: 0;
-        align-items: flex-end;
+        padding: var(--ds-space-4);
+        align-items: center;      /* Vertical center */
+        justify-content: center;  /* Horizontal center */
     }
     
     .modal-host-container {
-        max-width: 100%;
-        max-height: 92vh;
-        max-height: 92dvh;
-        border-radius: 20px 20px 0 0;
-        padding-bottom: env(safe-area-inset-bottom, 0px);
+        max-width: calc(100% - var(--ds-space-8));
+        max-height: calc(100dvh - var(--ds-space-8));
+        border-radius: var(--ds-radius-lg);
+        margin: auto;  /* Fallback centering */
     }
     
     .chore-form-modal .modal-header,
@@ -185,8 +185,9 @@
     .chore-form-modal .modal-body,
     .modal-host-container .modal-body {
         padding: 1rem;
-        max-height: calc(92vh - 60px - env(safe-area-inset-bottom, 0px));
-        max-height: calc(92dvh - 60px - env(safe-area-inset-bottom, 0px));
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: calc(100dvh - var(--ds-space-8) - 60px);
     }
 }
 
