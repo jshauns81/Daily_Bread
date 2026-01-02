@@ -119,13 +119,11 @@
                 <span>Options</span>
             </summary>
             <div class="options-content">
-                @if (FormModel.ChoreType == ChoreTypeOption.Earning)
-                {
-                    <label class="option-check">
-                        <InputCheckbox @bind-Value="FormModel.AutoApprove" />
-                        <span>Auto-approve completions</span>
-                    </label>
-                }
+                <label class="option-check @(FormModel.ChoreType != ChoreTypeOption.Earning ? "option-check--disabled" : "")">
+                    <InputCheckbox @bind-Value="FormModel.AutoApprove" 
+                                   disabled="@(FormModel.ChoreType != ChoreTypeOption.Earning)" />
+                    <span>Auto-approve completions</span>
+                </label>
                 <label class="option-check">
                     <InputCheckbox @bind-Value="FormModel.IsActive" />
                     <span>Active</span>

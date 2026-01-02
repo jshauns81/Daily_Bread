@@ -33,15 +33,17 @@
 }
 
 .chore-form .section-label {
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: var(--ds-font-semibold);
     text-align: center;
     width: 100%;
+    display: block;
     margin-top: var(--ds-space-3);
-    margin-bottom: var(--ds-space-3);
+    margin-bottom: var(--ds-space-2);
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: var(--ds-font-semibold);
+    opacity: 0.8;
 }
 
 /* ===========================================
@@ -385,6 +387,7 @@
     flex-direction: column;
     gap: var(--ds-space-4);
     align-items: center;
+    width: 100%;
 }
 
 /* Fixed height container for schedule content (days or frequency) 
@@ -630,6 +633,21 @@
     background: var(--ds-bg-hover);
 }
 
+/* Disabled option checkbox - shown but not interactive */
+.chore-form .option-check--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.chore-form .option-check--disabled input[type="checkbox"] {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.chore-form .option-check--disabled:hover {
+    background: transparent;  /* Override hover state */
+}
+
 ::deep .option-check input[type="checkbox"],
 .chore-form .option-check input[type="checkbox"] {
     width: 18px;
@@ -783,86 +801,34 @@
 }
 
 /* ===========================================
-   RESPONSIVE - MOBILE / PWA
+   BONUS TOGGLE - Inline with frequency row
    =========================================== */
 
-@media (max-width: 480px) {
-    .chore-form {
-        gap: var(--ds-space-4);
-    }
-
-    .chore-form .identity-section {
-        flex-direction: column;
-    }
-
-    .chore-form .icon-picker {
-        width: 100%;
-        height: 52px;
-        border-right: none;
-        border-bottom: 1px solid var(--ds-bg-muted);
-    }
-
-    ::deep input.ds-input--name,
-    .chore-form .ds-input--name {
-        height: 52px;
-        font-size: var(--ds-text-base);
-        text-align: center;
-    }
-
-    .chore-form .seg2 {
-        grid-template-columns: 1fr;
-    }
-
-    .chore-form .days-row {
-        gap: 6px;
-        flex-wrap: wrap;
-    }
-
-    .chore-form .day-chip {
-        width: 38px;
-        height: 38px;
-    }
-
-    .chore-form .frequency-row {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: var(--ds-space-2);
-        white-space: normal;
-        text-align: center;
-    }
-
-    .chore-form .date-row {
-        grid-template-columns: 1fr;
-        gap: var(--ds-space-3);
-    }
-
-    .chore-form .form-actions {
-        grid-template-columns: 1fr 1fr;
-        gap: var(--ds-space-2);
-    }
-
-    .chore-form .btn-cancel,
-    .chore-form .btn-submit {
-        height: 52px;
-    }
+::deep .bonus-toggle,
+.chore-form .bonus-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    margin-left: var(--ds-space-4);
+    padding: var(--ds-space-1) var(--ds-space-2);
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-secondary);
+    cursor: pointer;
+    border-left: 1px solid var(--ds-bg-muted);
 }
 
-/* Small phones */
-@media (max-width: 360px) {
-    .chore-form .form-actions {
-        grid-template-columns: 1fr;
-    }
-
-    .chore-form .btn-cancel {
-        order: 2;
-    }
-
-    .chore-form .btn-submit {
-        order: 1;
-    }
+::deep .bonus-toggle input[type="checkbox"],
+.chore-form .bonus-toggle input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--ds-semantic-success);
+    cursor: pointer;
 }
 
-/* Touch device optimizations */
+/* ===========================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =========================================== */
+
 @media (hover: none) and (pointer: coarse) {
     .chore-form .seg2__btn {
         min-height: 52px;
@@ -889,7 +855,10 @@
     }
 }
 
-/* Reduced motion */
+/* ===========================================
+   REDUCED MOTION
+   =========================================== */
+
 @media (prefers-reduced-motion: reduce) {
     .chore-form *,
     .chore-form *::before,
@@ -901,55 +870,207 @@
 }
 
 /* ===========================================
-   BONUS TOGGLE - Inline with frequency row
+   MOBILE / PWA VARIANT (480px and below)
+   Target: iPhone 15+ (393px width minimum)
+   Same layout, proportionally tightened
    =========================================== */
 
-::deep .bonus-toggle,
-.chore-form .bonus-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-    margin-left: var(--ds-space-4);
-    padding: var(--ds-space-1) var(--ds-space-2);
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-secondary);
-    cursor: pointer;
-    border-left: 1px solid var(--ds-bg-muted);
-}
+@media (max-width: 480px) {
+    /* ----- FORM CONTAINER ----- */
+    .chore-form {
+        padding: var(--ds-space-4);
+        gap: var(--ds-space-4);
+    }
 
-::deep .bonus-toggle input[type="checkbox"],
-.chore-form .bonus-toggle input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-    accent-color: var(--ds-semantic-success);
-    cursor: pointer;
-}
+    /* ----- SECTION SPACING ----- */
+    .chore-form .form-section {
+        gap: var(--ds-space-2);
+    }
 
-/* ===========================================
-   BONUS CHECKBOX (legacy, keep for compatibility)
-   =========================================== */
+    .chore-form .section-label {
+        font-size: 0.625rem;
+        letter-spacing: 0.08em;
+        margin-top: var(--ds-space-1);
+        margin-bottom: var(--ds-space-1);
+    }
 
-.chore-form .bonus-check {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--ds-space-2);
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-secondary);
-    cursor: pointer;
-    padding: var(--ds-space-2) var(--ds-space-3);
-    border-radius: var(--ds-radius-md);
-    transition: background-color var(--ds-duration-fast) ease;
-}
+    /* ----- IDENTITY SECTION (keep horizontal layout) ----- */
+    .chore-form .identity-section {
+        flex-direction: row;
+    }
 
-.chore-form .bonus-check:hover {
-    background: var(--ds-bg-hover);
-}
+    .chore-form .icon-picker {
+        width: 48px;
+        min-width: 48px;
+        height: 48px;
+        border-right: 1px solid var(--ds-bg-muted);
+        border-bottom: none;
+    }
 
-::deep .bonus-check input[type="checkbox"],
-.chore-form .bonus-check input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--ds-semantic-success);
-    cursor: pointer;
+    .chore-form .name-field {
+        flex: 1;
+        min-width: 0;
+    }
+
+    ::deep .ds-input--name,
+    ::deep input.ds-input--name {
+        height: 48px;
+        text-align: left;  /* Align left, not center */
+        font-size: var(--ds-text-base);
+    }
+
+    /* ----- SEGMENTED CONTROLS (keep 2-column) ----- */
+    .chore-form .seg2 {
+        grid-template-columns: 1fr 1fr;
+        padding: 3px;
+        gap: 0;
+    }
+
+    .chore-form .seg2__btn {
+        min-height: var(--ds-touch-target);
+        padding: 0 var(--ds-space-2);
+        font-size: var(--ds-text-sm);
+    }
+
+    /* Sliding pill - adjusted for 3px padding */
+    .chore-form .seg2::before {
+        top: 3px;
+        left: 3px;
+        width: calc(50% - 3px);
+        height: calc(100% - 6px);
+    }
+
+    /* Glow bar - slightly smaller on mobile */
+    .chore-form .seg2__bar {
+        bottom: 5px;
+        height: 3px;
+        width: 70%;
+    }
+
+    /* Amount badge inside Earns button */
+    .chore-form .seg2__amount {
+        height: 26px;
+        padding: 0 var(--ds-space-1);
+        gap: 2px;
+    }
+
+    ::deep .seg2__input,
+    ::deep .seg2__input[type="number"],
+    ::deep input.seg2__input {
+        width: 44px !important;
+        min-width: 44px !important;
+        max-width: 44px !important;
+        height: 22px !important;
+        font-size: var(--ds-text-xs) !important;
+    }
+
+    .chore-form .seg2__currency {
+        font-size: var(--ds-text-xs);
+    }
+
+    /* ----- DAY CHIPS ----- */
+    .chore-form .days-row {
+        gap: var(--ds-space-1);
+        padding: 0;
+    }
+
+    .chore-form .day-chip {
+        width: 38px;
+        height: 38px;
+        font-size: 0.65rem;
+    }
+
+    /* ----- FREQUENCY ROW ----- */
+    .chore-form .frequency-row {
+        padding: var(--ds-space-2) var(--ds-space-3);
+        gap: var(--ds-space-2);
+    }
+
+    .chore-form .frequency-row__text {
+        font-size: var(--ds-text-xs);
+    }
+
+    ::deep .frequency-row__input,
+    ::deep .frequency-row__input[type="number"],
+    ::deep input.frequency-row__input {
+        width: 44px !important;
+        min-width: 44px !important;
+        max-width: 44px !important;
+        height: 32px !important;
+        font-size: var(--ds-text-sm) !important;
+    }
+
+    /* Bonus toggle */
+    ::deep .bonus-toggle,
+    .chore-form .bonus-toggle {
+        margin-left: var(--ds-space-2);
+        padding: var(--ds-space-1);
+        font-size: var(--ds-text-xs);
+        border-left: 1px solid var(--ds-bg-muted);
+    }
+
+    /* ----- SCHEDULE SECTION ----- */
+    .chore-form .schedule-section {
+        gap: var(--ds-space-3);
+        min-height: 80px;
+    }
+
+    /* ----- OPTIONS SECTION ----- */
+    .chore-form .options-summary {
+        padding: var(--ds-space-2);
+        font-size: 0.65rem;
+    }
+
+    .chore-form .options-content {
+        padding: var(--ds-space-3);
+        gap: var(--ds-space-3);
+        overflow: hidden;  /* Prevent content from expanding container */
+    }
+
+    .chore-form .option-check {
+        font-size: var(--ds-text-xs);
+        gap: var(--ds-space-2);
+    }
+
+    /* ----- DATE FIELDS FIX ----- */
+    .chore-form .date-row {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--ds-space-2);
+        width: 100%;
+        overflow: hidden;  /* Clip overflow */
+    }
+
+    .chore-form .date-field {
+        min-width: 0;  /* CRITICAL: Allow grid items to shrink below content size */
+        overflow: hidden;
+    }
+
+    ::deep .ds-input--date,
+    ::deep input.ds-input--date {
+        width: 100%;
+        min-width: 0;  /* Allow shrinking */
+        height: 36px;
+        font-size: var(--ds-text-xs);
+        padding: var(--ds-space-1) var(--ds-space-2);  /* Tighter padding */
+    }
+
+    ::deep .ds-input--textarea {
+        min-height: 60px;
+        font-size: var(--ds-text-xs);
+    }
+
+    /* ----- FORM ACTIONS ----- */
+    .chore-form .form-actions {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--ds-space-2);
+        padding-top: var(--ds-space-3);
+        margin-top: var(--ds-space-2);
+    }
+
+    .chore-form .btn-cancel,
+    .chore-form .btn-submit {
+        height: var(--ds-touch-target);
+        font-size: var(--ds-text-sm);
+        padding: 0 var(--ds-space-3);
+    }
 }
