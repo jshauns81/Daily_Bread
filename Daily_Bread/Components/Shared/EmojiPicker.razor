@@ -2,17 +2,17 @@
 
 <div class="emoji-picker-wrapper">
     <button type="button" 
-            class="btn @(string.IsNullOrEmpty(Value) ? "btn-outline-secondary" : "btn-outline-primary") emoji-trigger"
+            class="emoji-circle @(string.IsNullOrEmpty(Value) ? "empty" : "")"
             @onclick="TogglePicker"
-            @onclick:stopPropagation="true">
+            @onclick:stopPropagation="true"
+            title="Choose icon">
         @if (!string.IsNullOrEmpty(Value))
         {
             <span class="selected-emoji">@Value</span>
         }
         else
         {
-            <span class="bi bi-emoji-smile"></span>
-            <span class="ms-1">Pick Icon</span>
+            <span class="placeholder-icon">+</span>
         }
     </button>
     

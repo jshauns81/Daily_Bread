@@ -911,8 +911,15 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
-    z-index: 2000;
+    /* z-index must be higher than sidebar (1100) and header (100) */
+    z-index: 9000;
     padding: var(--space-md);
+    /* Ensure it covers entire viewport regardless of parent transforms */
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    top: 0;
+    left: 0;
 }
 
 .modal-dialog {

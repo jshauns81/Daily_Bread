@@ -2,308 +2,136 @@
 @using Daily_Bread.Services
 @using System.ComponentModel.DataAnnotations
 
-<div class="chore-form" @onclick:stopPropagation="true">
+<div class="chore-form">
     <EditForm Model="FormModel" OnValidSubmit="HandleSubmit">
         <DataAnnotationsValidator />
 
-        <!-- Chore Type Toggle and Assigned To - Top Row -->
-        <div class="card mb-3 border-primary">
-            <div class="card-body">
-                <div class="row align-items-start">
-                    <div class="@(Users.Count > 1 ? "col-md-8" : "col-12")">
-                        <label class="form-label fw-bold mb-3">What type of chore is this?</label>
-                        <div class="btn-group w-100" role="group">
-                            <input type="radio" class="btn-check" id="choreTypeEarning" name="choreType"
-                                   checked="@(FormModel.ChoreType == ChoreTypeOption.Earning)"
-                                   @onchange="() => SetChoreType(ChoreTypeOption.Earning)" />
-                            <label class="btn btn-outline-success" for="choreTypeEarning">
-                                <span class="bi bi-currency-dollar me-1"></span>
-                                <strong>Earning Chore</strong>
-                                <small class="d-block">Earns money when completed</small>
-                            </label>
+        <!-- GROUP 1: Identity -->
+        <div class="form-group identity-group">
+            <div class="icon-picker">
+                <EmojiPicker @bind-Value="FormModel.Icon" />
+            </div>
+            <div class="name-input">
+                <InputText @bind-Value="FormModel.Name" class="form-control" placeholder="What's the chore?" />
+                <ValidationMessage For="() => FormModel.Name" class="validation-msg" />
+            </div>
+        </div>
 
-                            <input type="radio" class="btn-check" id="choreTypeExpectation" name="choreType"
-                                   checked="@(FormModel.ChoreType == ChoreTypeOption.Expectation)"
-                                   @onchange="() => SetChoreType(ChoreTypeOption.Expectation)" />
-                            <label class="btn btn-outline-secondary" for="choreTypeExpectation">
-                                <span class="bi bi-check2-circle me-1"></span>
-                                <strong>Daily Expectation</strong>
-                                <small class="d-block">Must-do responsibility</small>
-                            </label>
-                        </div>
-                    </div>
-                    @if (Users.Count > 1)
+        <!-- GROUP 2: Type & Value -->
+        <div class="form-group type-group">
+            <div class="type-switch">
+                <button type="button" 
+                        class="type-option @(FormModel.ChoreType == ChoreTypeOption.Earning ? "selected earns" : "")"
+                        @onclick="() => SetChoreType(ChoreTypeOption.Earning)">
+                    <span class="type-label">Earns</span>
+                    @if (FormModel.ChoreType == ChoreTypeOption.Earning)
                     {
-                        <div class="col-md-4">
-                            <label for="assignedUser" class="form-label fw-bold mb-3">Assigned To</label>
-                            <InputSelect id="assignedUser" @bind-Value="FormModel.AssignedUserId" class="form-select">
-                                <option value="">-- Unassigned --</option>
-                                @foreach (var user in Users)
-                                {
-                                    <option value="@user.Id" class="user-name">@user.UserName</option>
-                                }
-                            </InputSelect>
-                        </div>
+                        <span class="amount-inline">
+                            <span class="currency">$</span>
+                            <InputNumber @bind-Value="FormModel.EarnValue" class="amount-input" step="0.25" min="0" @onclick:stopPropagation="true" />
+                        </span>
                     }
-                </div>
+                </button>
+                <button type="button" 
+                        class="type-option @(FormModel.ChoreType == ChoreTypeOption.Expectation ? "selected expected" : "")"
+                        @onclick="() => SetChoreType(ChoreTypeOption.Expectation)">
+                    <span class="type-label">Expected</span>
+                </button>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-5">
-                <div class="mb-3">
-                    <label for="name" class="form-label">Chore Name <span class="text-danger">*</span></label>
-                    <InputText id="name" @bind-Value="FormModel.Name" class="form-control" placeholder="e.g., Make Bed" />
-                    <ValidationMessage For="() => FormModel.Name" class="text-danger" />
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label class="form-label">Icon</label>
-                    <div>
-                        <EmojiPicker @bind-Value="FormModel.Icon" />
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="mb-3">
-                    <label for="sortOrder" class="form-label">Sort Order</label>
-                    <InputNumber id="sortOrder" @bind-Value="FormModel.SortOrder" class="form-control" />
-                </div>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <InputTextArea id="description" @bind-Value="FormModel.Description" class="form-control" rows="2" placeholder="Optional details about the chore..." />
-        </div>
-
-        <!-- Simplified Money Settings Based on Chore Type -->
-        @if (FormModel.ChoreType == ChoreTypeOption.Earning)
+        <!-- Assigned To (only if multiple users) -->
+        @if (Users.Count > 1)
         {
-            <div class="card mb-3 border-success">
-                <div class="card-header bg-success text-white">
-                    <strong><span class="bi bi-currency-dollar me-1"></span> Earning Amount</strong>
-                </div>
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-4">
-                            <label for="earnValue" class="form-label">Amount Earned ($)</label>
-                            <InputNumber id="earnValue" @bind-Value="FormModel.EarnValue" class="form-control form-control-lg" step="1" min="0" />
-                            <ValidationMessage For="() => FormModel.EarnValue" class="text-danger" />
-                        </div>
-                        <div class="col-md-8">
-                            <div class="alert alert-success mb-0 mt-3 mt-md-0">
-                                <span class="bi bi-info-circle me-1"></span>
-                                Child earns <strong>$@FormModel.EarnValue.ToString("F2")</strong> each time this chore is completed.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-        else
-        {
-            <div class="card mb-3 border-secondary">
-                <div class="card-header bg-secondary text-white">
-                    <strong><span class="bi bi-check2-circle me-1"></span> Expectation Settings</strong>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-secondary mb-0">
-                        <span class="bi bi-info-circle me-1"></span>
-                        This is an <strong>expected responsibility</strong> - no money earned. 
-                        It's something that must be done as part of daily routines.
-                        <br/><small class="text-muted">Examples: Make bed, brush teeth, put away backpack</small>
-                    </div>
-                </div>
+            <div class="form-group assign-group">
+                <span class="field-label">For</span>
+                <InputSelect @bind-Value="FormModel.AssignedUserId" class="form-select">
+                    <option value="">Anyone</option>
+                    @foreach (var user in Users)
+                    {
+                        <option value="@user.Id">@user.UserName</option>
+                    }
+                </InputSelect>
             </div>
         }
 
-        <!-- Schedule Type Selection -->
-        <div class="card mb-3 @(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "border-info" : "")">
-            <div class="card-header">
-                <strong><span class="bi bi-calendar3 me-1"></span> Schedule</strong>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <div class="form-check form-check-inline">
-                        <input type="radio" class="form-check-input" id="scheduleSpecificDays" name="scheduleType"
-                               checked="@(FormModel.ScheduleType == ChoreScheduleType.SpecificDays)"
-                               @onchange="() => SetScheduleType(ChoreScheduleType.SpecificDays)" />
-                        <label class="form-check-label" for="scheduleSpecificDays">
-                            <strong>Specific Days</strong>
-                            <small class="d-block text-muted">Chore appears on selected days each week</small>
-                        </label>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <div class="form-check form-check-inline">
-                        <input type="radio" class="form-check-input" id="scheduleWeeklyFrequency" name="scheduleType"
-                               checked="@(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency)"
-                               @onchange="() => SetScheduleType(ChoreScheduleType.WeeklyFrequency)" />
-                        <label class="form-check-label" for="scheduleWeeklyFrequency">
-                            <strong>Weekly Frequency</strong>
-                            <small class="d-block text-muted">Complete X times per week, any days (e.g., "Walk the Dog 3x per week")</small>
-                        </label>
-                    </div>
-                </div>
-
-                @if (FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+        <!-- GROUP 3: Schedule -->
+        <div class="form-group schedule-group">
+            <!-- Days row -->
+            <div class="days-row">
+                @foreach (var day in DayOptions)
                 {
-                    <div class="alert alert-info mb-3">
-                        <div class="row align-items-center g-2">
-                            <div class="col-auto">
-                                <label for="weeklyTarget" class="form-label mb-0"><strong>Times per week:</strong></label>
-                            </div>
-                            <div class="col-auto">
-                                <InputNumber id="weeklyTarget" @bind-Value="FormModel.WeeklyTargetCount" class="form-control" style="width: 80px;" min="1" max="7" />
-                            </div>
-                            <div class="col-12 col-md-auto">
-                                <small class="text-muted">Chore must be completed @FormModel.WeeklyTargetCount time(s) each week</small>
-                            </div>
-                        </div>
-                        
-                        @if (FormModel.ChoreType == ChoreTypeOption.Earning)
-                        {
-                            <hr class="my-3" />
-                            <div class="form-check form-switch">
-                                <InputCheckbox id="isRepeatable" @bind-Value="FormModel.IsRepeatable" class="form-check-input" />
-                                <label class="form-check-label" for="isRepeatable">
-                                    <strong>Allow Bonus Completions</strong>
-                                </label>
-                            </div>
-                            <div class="mt-2">
-                                @if (FormModel.IsRepeatable)
-                                {
-                                    <small class="text-info">
-                                        <span class="bi bi-arrow-up-circle me-1"></span>
-                                        <strong>Bonus mode:</strong> Child can do this chore more than @FormModel.WeeklyTargetCount times for extra earnings 
-                                        with diminishing returns (50% → 25% → 12.5%...).
-                                        <br/>
-                                        <em>Example: @FormModel.WeeklyTargetCount×$@FormModel.EarnValue.ToString("F2") = $@((FormModel.WeeklyTargetCount * FormModel.EarnValue).ToString("F2")), 
-                                        then +$@((FormModel.EarnValue * 0.5m).ToString("F2")), +$@((FormModel.EarnValue * 0.25m).ToString("F2"))...</em>
-                                    </small>
-                                }
-                                else
-                                {
-                                    <small class="text-muted">
-                                        <span class="bi bi-x-circle me-1"></span>
-                                        <strong>Standard mode:</strong> Chore can only be completed @FormModel.WeeklyTargetCount time(s) per week. 
-                                        No bonus for extra completions.
-                                        <br/>
-                                        <em>Best for: Laundry, Cook Dinner (once is enough!)</em>
-                                    </small>
-                                }
-                            </div>
-                        }
-                    </div>
+                    <button type="button" 
+                            class="day-chip @(IsDaySelected(day.Value) ? "selected" : "")"
+                            @onclick="() => ToggleDay(day.Value)">
+                        @day.Label
+                    </button>
                 }
-
-                <div class="mb-3">
-                    <label class="form-label">
-                        @if (FormModel.ScheduleType == ChoreScheduleType.SpecificDays)
-                        {
-                            <span>Active Days <small class="text-muted">(chore appears on these days)</small></span>
-                        }
-                        else
-                        {
-                            <span>Available Days <small class="text-muted">(chore can be done on these days)</small></span>
-                        }
-                    </label>
-                    <div class="btn-group d-flex flex-wrap" role="group">
-                        @foreach (var day in DayOptions)
-                        {
-                            <input type="checkbox" 
-                                   class="btn-check" 
-                                   id="day-@day.Value" 
-                                   checked="@IsDaySelected(day.Value)"
-                                   @onchange="() => ToggleDay(day.Value)" />
-                            <label class="btn btn-outline-primary" for="day-@day.Value">@day.Label</label>
-                        }
-                    </div>
-                    <div class="mt-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectAllDays">All</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectWeekdays">Weekdays</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" @onclick="SelectWeekends">Weekends</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearDays">Clear</button>
-                    </div>
-                </div>
             </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="startDate" class="form-label">Start Date (optional)</label>
-                    <InputDate id="startDate" @bind-Value="FormModel.StartDate" class="form-control" />
-                    <small class="text-muted">Leave empty for no start restriction</small>
-                </div>
+            
+            <!-- Frequency indicator -->
+            <div class="frequency-row">
+                <button type="button" 
+                        class="freq-option @(FormModel.ScheduleType == ChoreScheduleType.SpecificDays ? "active" : "")"
+                        @onclick="() => SetScheduleType(ChoreScheduleType.SpecificDays)">
+                    these days
+                </button>
+                <span class="freq-divider">or</span>
+                <button type="button" 
+                        class="freq-option has-input @(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "active" : "")"
+                        @onclick="() => SetScheduleType(ChoreScheduleType.WeeklyFrequency)">
+                    <InputNumber @bind-Value="FormModel.WeeklyTargetCount" class="freq-input" min="1" max="7" @onclick:stopPropagation="true" />
+                    <span>× weekly</span>
+                </button>
             </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="endDate" class="form-label">End Date (optional)</label>
-                    <InputDate id="endDate" @bind-Value="FormModel.EndDate" class="form-control" />
-                    <small class="text-muted">Leave empty for no end restriction</small>
-                </div>
-            </div>
-        </div>
 
-        <!-- Approval Settings Card (only for earning chores) -->
-        @if (FormModel.ChoreType == ChoreTypeOption.Earning)
-        {
-            <div class="card mb-3 @(FormModel.AutoApprove ? "border-success" : "")">
-                <div class="card-body">
-                    <div class="form-check form-switch">
-                        <InputCheckbox id="autoApprove" @bind-Value="FormModel.AutoApprove" class="form-check-input" />
-                        <label class="form-check-label fw-bold" for="autoApprove">
-                            <span class="@(FormModel.AutoApprove ? "text-success" : "")">
-                                @(FormModel.AutoApprove ? "Auto-Approve Enabled" : "Requires Parent Approval")
-                            </span>
-                        </label>
-                    </div>
-                    <div class="mt-2">
-                        @if (FormModel.AutoApprove)
-                        {
-                            <small class="text-success">
-                                <strong>Auto-approve:</strong> When the child marks this chore as done, it will be 
-                                automatically approved and credited to their balance. Best for simple, trust-based tasks 
-                                like <em>Make Bed</em> or <em>Brush Teeth</em>.
-                            </small>
-                        }
-                        else
-                        {
-                            <small class="text-muted">
-                                <strong>Manual approval:</strong> A parent must review and approve this chore before 
-                                it's credited. Best for tasks that need inspection like <em>Mow the Yard</em> or 
-                                <em>Clean Room</em>.
-                            </small>
-                        }
-                    </div>
-                </div>
-            </div>
-        }
-
-        <div class="mb-3">
-            <div class="form-check">
-                <InputCheckbox id="isActive" @bind-Value="FormModel.IsActive" class="form-check-input" />
-                <label class="form-check-label" for="isActive">
-                    Active (appears in daily tracker)
+            @if (FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ChoreType == ChoreTypeOption.Earning)
+            {
+                <label class="bonus-check">
+                    <InputCheckbox @bind-Value="FormModel.IsRepeatable" />
+                    <span>Extra completions earn bonus</span>
                 </label>
-            </div>
+            }
         </div>
 
-        <hr />
-
-        <div class="d-flex justify-content-between">
-            <button type="button" class="btn btn-outline-secondary" @onclick="HandleCancel">
-                Cancel
-            </button>
-            <button type="submit" class="btn btn-primary" disabled="@IsSubmitting">
-                @if (IsSubmitting)
+        <!-- Options (collapsed) -->
+        <details class="options-group">
+            <summary>
+                <span class="summary-icon">⚙</span>
+                <span>Options</span>
+            </summary>
+            <div class="options-content">
+                @if (FormModel.ChoreType == ChoreTypeOption.Earning)
                 {
-                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    <label class="option-check">
+                        <InputCheckbox @bind-Value="FormModel.AutoApprove" />
+                        <span>Auto-approve completions</span>
+                    </label>
                 }
-                @(IsEditing ? "Save Changes" : "Create Chore")
+                <label class="option-check">
+                    <InputCheckbox @bind-Value="FormModel.IsActive" />
+                    <span>Active</span>
+                </label>
+                <div class="date-row">
+                    <label class="date-field">
+                        <span>Start</span>
+                        <InputDate @bind-Value="FormModel.StartDate" class="form-control" />
+                    </label>
+                    <label class="date-field">
+                        <span>End</span>
+                        <InputDate @bind-Value="FormModel.EndDate" class="form-control" />
+                    </label>
+                </div>
+                <InputTextArea @bind-Value="FormModel.Description" class="form-control notes-input" rows="2" placeholder="Notes (optional)" />
+            </div>
+        </details>
+
+        <!-- Actions -->
+        <div class="form-actions">
+            <button type="button" class="btn-cancel" @onclick="HandleCancel">Cancel</button>
+            <button type="submit" class="btn-submit" disabled="@IsSubmitting">
+                @if (IsSubmitting) { <span class="spinner"></span> }
+                @(IsEditing ? "Save" : "Create")
             </button>
         </div>
     </EditForm>
@@ -312,17 +140,10 @@
 @code {
     private enum ChoreTypeOption { Earning, Expectation }
 
-    [Parameter]
-    public ChoreDefinitionDto? Chore { get; set; }
-
-    [Parameter]
-    public List<UserSelectItem> Users { get; set; } = [];
-
-    [Parameter]
-    public EventCallback<ChoreDefinitionDto> OnSubmit { get; set; }
-
-    [Parameter]
-    public EventCallback OnCancel { get; set; }
+    [Parameter] public ChoreDefinitionDto? Chore { get; set; }
+    [Parameter] public List<UserSelectItem> Users { get; set; } = [];
+    [Parameter] public EventCallback<ChoreDefinitionDto> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
 
     private ChoreFormModel FormModel { get; set; } = new();
     private bool IsEditing => Chore?.Id > 0;
@@ -330,13 +151,13 @@
 
     private static readonly List<(DaysOfWeek Value, string Label)> DayOptions =
     [
-        (DaysOfWeek.Sunday, "Sun"),
-        (DaysOfWeek.Monday, "Mon"),
-        (DaysOfWeek.Tuesday, "Tue"),
-        (DaysOfWeek.Wednesday, "Wed"),
-        (DaysOfWeek.Thursday, "Thu"),
-        (DaysOfWeek.Friday, "Fri"),
-        (DaysOfWeek.Saturday, "Sat")
+        (DaysOfWeek.Sunday, "S"),
+        (DaysOfWeek.Monday, "M"),
+        (DaysOfWeek.Tuesday, "T"),
+        (DaysOfWeek.Wednesday, "W"),
+        (DaysOfWeek.Thursday, "T"),
+        (DaysOfWeek.Friday, "F"),
+        (DaysOfWeek.Saturday, "S")
     ];
 
     protected override void OnParametersSet()
@@ -361,7 +182,6 @@
                 IsActive = Chore.IsActive,
                 AutoApprove = Chore.AutoApprove,
                 SortOrder = Chore.SortOrder,
-                // Determine chore type from existing values
                 ChoreType = Chore.EarnValue > 0 ? ChoreTypeOption.Earning : ChoreTypeOption.Expectation
             };
         }
@@ -376,76 +196,47 @@
                 IsRepeatable = false,
                 IsActive = true,
                 AutoApprove = true,
-                EarnValue = 0.25m,
+                EarnValue = 1.00m,
                 PenaltyValue = 0
             };
         }
         
-        // Auto-select if there's only one child
         if (Users.Count == 1 && string.IsNullOrEmpty(FormModel.AssignedUserId))
-        {
             FormModel.AssignedUserId = Users[0].Id;
-        }
     }
 
-    private void SetChoreType(ChoreTypeOption choreType)
+    private void SetChoreType(ChoreTypeOption type)
     {
-        FormModel.ChoreType = choreType;
-        
-        if (choreType == ChoreTypeOption.Earning)
+        FormModel.ChoreType = type;
+        if (type == ChoreTypeOption.Earning)
         {
-            // Set default earning value if switching to earning
-            if (FormModel.EarnValue <= 0)
-            {
-                FormModel.EarnValue = 0.25m;
-            }
-            FormModel.PenaltyValue = 0;
+            if (FormModel.EarnValue <= 0) FormModel.EarnValue = 1.00m;
         }
         else
         {
-            // Expectation chore - no earnings
             FormModel.EarnValue = 0;
-            FormModel.PenaltyValue = 0;
-            FormModel.AutoApprove = true; // Expectations are always auto-approved
-            FormModel.IsRepeatable = false; // Expectations can't be repeatable
+            FormModel.AutoApprove = true;
+            FormModel.IsRepeatable = false;
         }
     }
 
-    private void SetScheduleType(ChoreScheduleType scheduleType)
+    private void SetScheduleType(ChoreScheduleType type)
     {
-        FormModel.ScheduleType = scheduleType;
-        
-        // When switching to WeeklyFrequency, default to All days if none selected
-        if (scheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ActiveDays == DaysOfWeek.None)
-        {
+        FormModel.ScheduleType = type;
+        if (type == ChoreScheduleType.WeeklyFrequency && FormModel.ActiveDays == DaysOfWeek.None)
             FormModel.ActiveDays = DaysOfWeek.All;
-        }
-        
-        // Reset IsRepeatable when switching to SpecificDays
-        if (scheduleType == ChoreScheduleType.SpecificDays)
-        {
+        if (type == ChoreScheduleType.SpecificDays)
             FormModel.IsRepeatable = false;
-        }
     }
 
     private bool IsDaySelected(DaysOfWeek day) => FormModel.ActiveDays.HasFlag(day);
 
     private void ToggleDay(DaysOfWeek day)
     {
-        if (FormModel.ActiveDays.HasFlag(day))
-        {
-            FormModel.ActiveDays &= ~day;
-        }
-        else
-        {
-            FormModel.ActiveDays |= day;
-        }
+        FormModel.ActiveDays = FormModel.ActiveDays.HasFlag(day) 
+            ? FormModel.ActiveDays & ~day 
+            : FormModel.ActiveDays | day;
     }
-
-    private void SelectAllDays() => FormModel.ActiveDays = DaysOfWeek.All;
-    private void SelectWeekdays() => FormModel.ActiveDays = DaysOfWeek.Weekdays;
-    private void SelectWeekends() => FormModel.ActiveDays = DaysOfWeek.Weekends;
-    private void ClearDays() => FormModel.ActiveDays = DaysOfWeek.None;
 
     private async Task HandleSubmit()
     {
@@ -465,68 +256,44 @@
                 ActiveDays = FormModel.ActiveDays,
                 WeeklyTargetCount = FormModel.WeeklyTargetCount,
                 IsRepeatable = FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ChoreType == ChoreTypeOption.Earning 
-                    ? FormModel.IsRepeatable 
-                    : false,
+                    ? FormModel.IsRepeatable : false,
                 StartDate = FormModel.StartDate,
                 EndDate = FormModel.EndDate,
                 IsActive = FormModel.IsActive,
                 AutoApprove = FormModel.ChoreType == ChoreTypeOption.Expectation ? true : FormModel.AutoApprove,
                 SortOrder = FormModel.SortOrder
             };
-
             await OnSubmit.InvokeAsync(dto);
         }
-        finally
-        {
-            IsSubmitting = false;
-        }
+        finally { IsSubmitting = false; }
     }
 
-    private async Task HandleCancel()
-    {
-        await OnCancel.InvokeAsync();
-    }
+    private async Task HandleCancel() => await OnCancel.InvokeAsync();
 
     private class ChoreFormModel
     {
         public int Id { get; set; }
-        
         public ChoreTypeOption ChoreType { get; set; } = ChoreTypeOption.Earning;
-
-        [Required(ErrorMessage = "Chore name is required")]
-        [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
+        [Required(ErrorMessage = "Required")]
+        [StringLength(100)]
         public string Name { get; set; } = string.Empty;
-
-        [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        [StringLength(500)]
         public string? Description { get; set; }
-        
         public string? Icon { get; set; }
-
         public string? AssignedUserId { get; set; }
-
-        [Range(0, 10000, ErrorMessage = "Earn value must be between $0 and $10,000")]
+        [Range(0, 10000)]
         public decimal EarnValue { get; set; }
-        
-        [Range(0, 10000, ErrorMessage = "Penalty value must be between $0 and $10,000")]
+        [Range(0, 10000)]
         public decimal PenaltyValue { get; set; }
-
         public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
-
         public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
-
-        [Range(1, 7, ErrorMessage = "Weekly target must be between 1 and 7")]
+        [Range(1, 7)]
         public int WeeklyTargetCount { get; set; } = 1;
-        
-        public bool IsRepeatable { get; set; } = false;
-
+        public bool IsRepeatable { get; set; }
         public DateOnly? StartDate { get; set; }
-
         public DateOnly? EndDate { get; set; }
-
         public bool IsActive { get; set; } = true;
-
         public bool AutoApprove { get; set; } = true;
-
         public int SortOrder { get; set; }
     }
 }
