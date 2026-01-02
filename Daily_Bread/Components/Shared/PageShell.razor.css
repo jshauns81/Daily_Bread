@@ -21,9 +21,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-md, 16px);
-    background-color: var(--nord1);
-    border-bottom: 1px solid var(--nord3);
+    padding: var(--ds-space-4);
+    background-color: var(--ds-bg-elevated);
+    border-bottom: 1px solid var(--ds-bg-muted);
     flex-shrink: 0;
     position: sticky;
     top: 0;
@@ -32,16 +32,16 @@
 
 .page-shell__title {
     margin: 0;
-    font-size: var(--font-size-xl, 1.5rem);
-    font-weight: var(--font-weight-semibold, 600);
-    color: var(--nord6);
+    font-size: var(--ds-text-xl);
+    font-weight: var(--ds-font-semibold);
+    color: var(--ds-text-primary);
     line-height: 1.2;
 }
 
 .page-shell__header-actions {
     display: flex;
     align-items: center;
-    gap: var(--space-sm, 8px);
+    gap: var(--ds-space-2);
 }
 
 /* ===========================================
@@ -50,7 +50,7 @@
 
 .page-shell__content {
     flex: 1;
-    padding: var(--space-md, 16px);
+    padding: var(--ds-space-4);
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -60,7 +60,7 @@
 
 /* Content padding when bottom nav is present */
 .page-shell--has-bottom-nav .page-shell__content {
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--ds-space-6));
 }
 
 /* ===========================================
@@ -78,15 +78,15 @@
     align-items: center;
     min-height: var(--bottom-nav-height, 60px);
     /* Padding with safe area for iPhone home indicator */
-    padding: var(--space-sm, 8px) var(--space-md, 16px);
-    padding-bottom: max(var(--space-sm, 8px), env(safe-area-inset-bottom, 0px));
-    padding-left: max(var(--space-md, 16px), env(safe-area-inset-left, 0px));
-    padding-right: max(var(--space-md, 16px), env(safe-area-inset-right, 0px));
+    padding: var(--ds-space-2) var(--ds-space-4);
+    padding-bottom: max(var(--ds-space-2), env(safe-area-inset-bottom, 0px));
+    padding-left: max(var(--ds-space-4), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--ds-space-4), env(safe-area-inset-right, 0px));
     /* Frosted glass effect */
     background-color: rgba(59, 66, 82, 0.9);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid var(--nord3);
+    border-top: 1px solid var(--ds-bg-muted);
     box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.2);
 }
 
@@ -96,10 +96,10 @@
 
 .page-shell__footer {
     flex-shrink: 0;
-    padding: var(--space-md, 16px);
-    padding-bottom: max(var(--space-md, 16px), env(safe-area-inset-bottom, 0px));
-    background-color: var(--nord1);
-    border-top: 1px solid var(--nord3);
+    padding: var(--ds-space-4);
+    padding-bottom: max(var(--ds-space-4), env(safe-area-inset-bottom, 0px));
+    background-color: var(--ds-bg-elevated);
+    border-top: 1px solid var(--ds-bg-muted);
 }
 
 /* ===========================================
@@ -118,7 +118,7 @@
     }
 
     .page-shell__content {
-        padding: var(--space-lg, 24px);
+        padding: var(--ds-space-6);
         max-width: 1200px;
         margin: 0 auto;
         width: 100%;
@@ -126,7 +126,7 @@
 
     /* Desktop: inline bottom nav, not fixed */
     .page-shell--has-bottom-nav .page-shell__content {
-        padding-bottom: var(--space-lg, 24px);
+        padding-bottom: var(--ds-space-6);
     }
 
     .page-shell__bottom-nav {
@@ -138,8 +138,8 @@
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
         box-shadow: none;
-        border-top: 1px solid var(--nord3);
-        padding: var(--space-md, 16px);
+        border-top: 1px solid var(--ds-bg-muted);
+        padding: var(--ds-space-4);
         min-height: auto;
     }
 }
@@ -150,19 +150,19 @@
 
 @media (max-width: 575.98px) {
     .page-shell__header {
-        padding: var(--space-sm, 8px) var(--space-md, 16px);
+        padding: var(--ds-space-2) var(--ds-space-4);
     }
 
     .page-shell__title {
-        font-size: var(--font-size-lg, 1.25rem);
+        font-size: var(--ds-text-lg);
     }
 
     .page-shell__content {
-        padding: var(--space-sm, 8px);
+        padding: var(--ds-space-2);
     }
 
     .page-shell--has-bottom-nav .page-shell__content {
-        padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--space-lg, 24px));
+        padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--ds-space-6));
     }
 }
 

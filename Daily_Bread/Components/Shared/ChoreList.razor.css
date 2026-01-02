@@ -1,13 +1,13 @@
 .chore-list .chore-name {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .chore-list .table-secondary .chore-name {
-    color: var(--nord4);
+    color: var(--ds-text-muted);
 }
 
 .chore-list .table-responsive {
-    border-radius: var(--radius-md);
+    border-radius: var(--ds-radius-md);
     overflow: hidden;
 }
 
@@ -18,8 +18,8 @@
 @media (max-width: 991px) {
     .chore-list .table th,
     .chore-list .table td {
-        padding: var(--space-sm);
-        font-size: var(--font-size-sm);
+        padding: var(--ds-space-2);
+        font-size: var(--ds-text-sm);
     }
     
     /* Hide less important columns on tablet */
@@ -31,17 +31,17 @@
 
 @media (max-width: 767px) {
     .chore-list .table-responsive {
-        margin: 0 calc(-1 * var(--space-sm));
+        margin: 0 calc(-1 * var(--ds-space-2));
         border-radius: 0;
     }
     
     .chore-list .table {
-        font-size: var(--font-size-sm);
+        font-size: var(--ds-text-sm);
     }
     
     .chore-list .table th,
     .chore-list .table td {
-        padding: var(--space-xs) var(--space-sm);
+        padding: var(--ds-space-1) var(--ds-space-2);
         vertical-align: middle;
     }
     
@@ -63,9 +63,9 @@
     }
     
     .chore-list .btn-group .btn {
-        border-radius: var(--radius-sm) !important;
-        padding: var(--space-xs);
-        font-size: var(--font-size-xs);
+        border-radius: var(--ds-radius-sm) !important;
+        padding: var(--ds-space-1);
+        font-size: var(--ds-text-xs);
         min-height: 32px;
     }
     
@@ -77,7 +77,7 @@
     
     /* Value badge compact */
     .chore-list .value-badge {
-        font-size: var(--font-size-xs);
+        font-size: var(--ds-text-xs);
         padding: 2px 4px;
     }
 }
@@ -118,6 +118,6 @@
 @media (hover: none) and (pointer: coarse) {
     .chore-list .btn-group .btn {
         min-height: 40px;
-        padding: var(--space-sm);
+        padding: var(--ds-space-2);
     }
 }

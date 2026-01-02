@@ -7,12 +7,12 @@
 .tracker-card {
     display: flex;
     align-items: center;
-    gap: var(--space-md, 16px);
-    padding: var(--space-md, 16px);
-    background: var(--nord1, #3B4252);
-    border: 1px solid var(--nord3, #4C566A);
-    border-radius: var(--radius-lg, 16px);
-    transition: all var(--transition-fast, 150ms ease);
+    gap: var(--ds-space-4);
+    padding: var(--ds-space-4);
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    transition: all var(--ds-duration-fast) ease;
     min-height: 64px;
 }
 
@@ -23,39 +23,39 @@
 
 /* PENDING (default) - ready for action */
 .tracker-card:not(.completed):not(.pending-approval):not(.help-requested):not(.missed):not(.skipped) {
-    background: var(--nord1, #3B4252);
-    border-color: var(--nord3, #4C566A);
+    background: var(--ds-bg-elevated);
+    border-color: var(--ds-bg-muted);
 }
 
 /* COMPLETED / APPROVED - green success state */
 .tracker-card.completed {
     background: rgba(163, 190, 140, 0.12);
-    border-color: var(--nord14, #A3BE8C);
+    border-color: var(--ds-semantic-success);
 }
 
 /* PENDING APPROVAL - blue waiting state */
 .tracker-card.pending-approval {
     background: rgba(136, 192, 208, 0.12);
-    border-color: var(--nord8, #88C0D0);
+    border-color: var(--ds-accent-cyan);
 }
 
 /* HELP REQUESTED - yellow attention state */
 .tracker-card.help-requested {
     background: rgba(235, 203, 139, 0.12);
-    border-color: var(--nord13, #EBCB8B);
+    border-color: var(--ds-semantic-highlight);
 }
 
 /* MISSED - red error state */
 .tracker-card.missed {
     background: rgba(191, 97, 106, 0.12);
-    border-color: var(--nord11, #BF616A);
+    border-color: var(--ds-semantic-error);
     opacity: 0.75;
 }
 
 /* SKIPPED - muted state */
 .tracker-card.skipped {
     background: rgba(76, 86, 106, 0.15);
-    border-color: var(--nord3, #4C566A);
+    border-color: var(--ds-bg-muted);
     opacity: 0.65;
 }
 
@@ -72,20 +72,20 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    border: 2px solid var(--nord3, #4C566A);
+    border: 2px solid var(--ds-bg-muted);
     background: transparent;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
-    color: var(--nord6, #ECEFF4);
-    transition: all var(--transition-fast, 150ms ease);
+    color: var(--ds-text-primary);
+    transition: all var(--ds-duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 .status-button:hover:not(:disabled) {
-    border-color: var(--nord8, #88C0D0);
+    border-color: var(--ds-accent-cyan);
     background: rgba(136, 192, 208, 0.1);
 }
 
@@ -96,38 +96,38 @@
 
 /* Indicator States - aligned with TrackerChoreRow */
 .status-button.indicator-pending {
-    border-color: var(--nord3, #4C566A);
-    color: var(--nord4, #D8DEE9);
+    border-color: var(--ds-bg-muted);
+    color: var(--ds-text-muted);
 }
 
 .status-button.indicator-awaiting {
-    border-color: var(--nord8, #88C0D0);
+    border-color: var(--ds-accent-cyan);
     background: rgba(136, 192, 208, 0.15);
-    color: var(--nord8, #88C0D0);
+    color: var(--ds-accent-cyan);
 }
 
 .status-button.indicator-done {
-    border-color: var(--nord14, #A3BE8C);
-    background: var(--nord14, #A3BE8C);
-    color: var(--nord0, #2E3440);
+    border-color: var(--ds-semantic-success);
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
 }
 
 .status-button.indicator-help {
-    border-color: var(--nord13, #EBCB8B);
-    background: var(--nord13, #EBCB8B);
-    color: var(--nord0, #2E3440);
+    border-color: var(--ds-semantic-highlight);
+    background: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
 }
 
 .status-button.indicator-missed {
-    border-color: var(--nord11, #BF616A);
+    border-color: var(--ds-semantic-error);
     background: rgba(191, 97, 106, 0.15);
-    color: var(--nord11, #BF616A);
+    color: var(--ds-semantic-error);
 }
 
 .status-button.indicator-skipped {
-    border-color: var(--nord3, #4C566A);
-    background: var(--nord2, #434C5E);
-    color: var(--nord4, #D8DEE9);
+    border-color: var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-muted);
 }
 
 /* ===========================================
@@ -146,9 +146,9 @@
 }
 
 .chore-name {
-    font-weight: var(--font-weight-semibold, 600);
-    font-size: var(--font-size-md, 1rem);
-    color: var(--nord6, #ECEFF4);
+    font-weight: var(--ds-font-semibold);
+    font-size: var(--ds-text-base);
+    color: var(--ds-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -158,48 +158,48 @@
 /* Strikethrough for completed/approved chores */
 .chore-name.strikethrough {
     text-decoration: line-through;
-    text-decoration-color: var(--nord4, #D8DEE9);
+    text-decoration-color: var(--ds-text-muted);
     opacity: 0.85;
 }
 
 .chore-meta {
     display: flex;
     align-items: center;
-    gap: var(--space-sm, 8px);
+    gap: var(--ds-space-2);
     flex-wrap: wrap;
 }
 
 .chore-meta .user-name {
-    font-size: var(--font-size-sm, 0.875rem);
-    color: var(--nord4, #D8DEE9);
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
     text-transform: capitalize;
 }
 
 .status-text {
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: var(--font-weight-medium, 500);
-    color: var(--nord4, #D8DEE9);
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-medium);
+    color: var(--ds-text-muted);
 }
 
 /* Status text colors based on state */
 .tracker-card.completed .status-text {
-    color: var(--nord14, #A3BE8C);
+    color: var(--ds-semantic-success);
 }
 
 .tracker-card.pending-approval .status-text {
-    color: var(--nord8, #88C0D0);
+    color: var(--ds-accent-cyan);
 }
 
 .tracker-card.help-requested .status-text {
-    color: var(--nord13, #EBCB8B);
+    color: var(--ds-semantic-highlight);
 }
 
 .tracker-card.missed .status-text {
-    color: var(--nord11, #BF616A);
+    color: var(--ds-semantic-error);
 }
 
 .tracker-card.skipped .status-text {
-    color: var(--nord4, #D8DEE9);
+    color: var(--ds-text-muted);
 }
 
 /* ===========================================
@@ -210,19 +210,19 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: var(--space-xs, 4px);
+    gap: var(--ds-space-1);
     flex-shrink: 0;
 }
 
 .value-amount {
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    font-weight: var(--font-weight-bold, 700);
-    font-size: var(--font-size-lg, 1.25rem);
-    color: var(--nord14, #A3BE8C);
+    font-weight: var(--ds-font-bold);
+    font-size: var(--ds-text-lg);
+    color: var(--ds-semantic-success);
 }
 
 .value-amount.negative {
-    color: var(--nord11, #BF616A);
+    color: var(--ds-semantic-error);
 }
 
 /* Dim value for completed/non-pending states */
@@ -239,26 +239,26 @@
 
 .card-actions {
     display: flex;
-    gap: var(--space-xs, 4px);
+    gap: var(--ds-space-1);
 }
 
 .action-btn {
     width: 36px;
     height: 36px;
-    border-radius: var(--radius-md, 10px);
+    border-radius: var(--ds-radius-md);
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1rem;
     cursor: pointer;
-    transition: all var(--transition-fast, 150ms ease);
+    transition: all var(--ds-duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 .action-btn.approve {
-    background: var(--nord14, #A3BE8C);
-    color: var(--nord0, #2E3440);
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
 }
 
 .action-btn.approve:hover {
@@ -267,8 +267,8 @@
 }
 
 .action-btn.help {
-    background: var(--nord13, #EBCB8B);
-    color: var(--nord0, #2E3440);
+    background: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
 }
 
 .action-btn.help:hover {
@@ -277,14 +277,14 @@
 }
 
 .action-btn.muted {
-    background: var(--nord2, #434C5E);
-    color: var(--nord4, #D8DEE9);
-    border: 1px solid var(--nord3, #4C566A);
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-muted);
+    border: 1px solid var(--ds-bg-muted);
 }
 
 .action-btn.muted:hover {
-    background: var(--nord3, #4C566A);
-    color: var(--nord6, #ECEFF4);
+    background: var(--ds-bg-muted);
+    color: var(--ds-text-primary);
 }
 
 .action-btn:active {
@@ -297,7 +297,7 @@
 
 @media (hover: none) and (pointer: coarse) {
     .tracker-card {
-        padding: var(--space-md, 16px);
+        padding: var(--ds-space-4);
         min-height: 72px;
     }
     
@@ -318,16 +318,16 @@
 
 @media (max-width: 480px) {
     .tracker-card {
-        padding: var(--space-sm, 12px);
-        gap: var(--space-sm, 12px);
+        padding: var(--ds-space-3);
+        gap: var(--ds-space-3);
     }
     
     .chore-name {
-        font-size: var(--font-size-sm, 0.875rem);
+        font-size: var(--ds-text-sm);
     }
     
     .value-amount {
-        font-size: var(--font-size-md, 1rem);
+        font-size: var(--ds-text-base);
     }
     
     .status-button {

@@ -22,11 +22,11 @@
 }
 
 .animated-counter.counting-up .counter-value {
-    color: var(--nord14); /* Green for increase */
+    color: var(--ds-semantic-success); /* Green for increase */
 }
 
 .animated-counter.counting-down .counter-value {
-    color: var(--nord11); /* Red for decrease */
+    color: var(--ds-semantic-error); /* Red for decrease */
 }
 
 /* Flash on complete */

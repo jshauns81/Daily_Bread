@@ -1,20 +1,20 @@
-444/* ============================================
+/* ============================================
    CHORE CHART - NORD THEME + PRINT STYLES
    Beautiful fridge-ready weekly chore chart
    ============================================ */
 
 :root {
-    --chart-bg: var(--nord0);
-    --chart-surface: var(--nord1);
-    --chart-surface-2: var(--nord2);
-    --chart-surface-3: var(--nord3);
-    --chart-text: var(--nord6);
-    --chart-text-muted: var(--nord4);
-    --chart-accent-blue: var(--nord10);
-    --chart-accent-green: var(--nord14);
-    --chart-accent-yellow: var(--nord13);
-    --chart-accent-orange: var(--nord12);
-    --chart-accent-purple: var(--nord15);
+    --chart-bg: var(--ds-bg-base);
+    --chart-surface: var(--ds-bg-elevated);
+    --chart-surface-2: var(--ds-bg-hover);
+    --chart-surface-3: var(--ds-bg-muted);
+    --chart-text: var(--ds-text-primary);
+    --chart-text-muted: var(--ds-text-muted);
+    --chart-accent-blue: var(--ds-accent-primary);
+    --chart-accent-green: var(--ds-semantic-success);
+    --chart-accent-yellow: var(--ds-semantic-highlight);
+    --chart-accent-orange: var(--ds-semantic-warning);
+    --chart-accent-purple: var(--ds-accent-purple);
 }
 
 /* ===========================================
@@ -24,13 +24,13 @@
 .chore-chart-page {
     max-width: 900px;
     margin: 0 auto;
-    padding: var(--space-md);
+    padding: var(--ds-space-4);
 }
 
 .screen-controls {
     max-width: 900px;
-    margin: 0 auto var(--space-lg) auto;
-    padding: var(--space-md);
+    margin: 0 auto var(--ds-space-6) auto;
+    padding: var(--ds-space-4);
 }
 
 .screen-controls h1 {
@@ -45,7 +45,7 @@
     background: var(--chart-surface);
     color: var(--chart-text);
     padding: 24px;
-    border-radius: var(--radius-lg);
+    border-radius: var(--ds-radius-lg);
     margin-bottom: 24px;
     border: 1px solid var(--chart-surface-3);
 }
@@ -270,15 +270,7 @@
    SCREEN CONTROLS (hidden when printing)
    =========================================== */
 
-.screen-controls {
-    max-width: 900px;
-    margin: 0 auto var(--space-lg) auto;
-    padding: var(--space-md);
-}
-
-.screen-controls h1 {
-    color: var(--chart-text);
-}
+/* Already defined above - keeping style reference */
 
 /* ===========================================
    WEEKLY CALENDAR CONTAINER

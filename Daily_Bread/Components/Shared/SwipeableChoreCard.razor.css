@@ -6,13 +6,13 @@
 .swipeable-card-container {
     position: relative;
     overflow: hidden;
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--space-xs);
+    border-radius: var(--ds-radius-lg);
+    margin-bottom: var(--ds-space-1);
     touch-action: pan-y;
     -webkit-user-select: none;
     user-select: none;
     /* Ensure the container has a background to prevent bleed-through */
-    background: var(--nord0);
+    background: var(--ds-bg-base);
 }
 
 /* Disable swipe visual cues when swipe is disabled */
@@ -43,13 +43,13 @@
 .swipe-action-left {
     right: 0;
     justify-content: flex-end;
-    background: linear-gradient(90deg, transparent 0%, var(--nord12) 30%, var(--nord11) 100%);
+    background: linear-gradient(90deg, transparent 0%, var(--ds-semantic-warning) 30%, var(--ds-semantic-error) 100%);
 }
 
 .swipe-action-right {
     left: 0;
     justify-content: flex-start;
-    background: linear-gradient(90deg, var(--nord14) 0%, #8fbc8f 70%, transparent 100%);
+    background: linear-gradient(90deg, var(--ds-semantic-success) 0%, #8fbc8f 70%, transparent 100%);
 }
 
 /* Only show swipe backgrounds when actively swiping */
@@ -62,11 +62,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-xs);
-    padding: var(--space-xl);
-    color: var(--nord6);
-    font-weight: var(--font-weight-bold);
-    font-size: var(--font-size-sm);
+    gap: var(--ds-space-1);
+    padding: var(--ds-space-7);
+    color: var(--ds-text-primary);
+    font-weight: var(--ds-font-bold);
+    font-size: var(--ds-text-sm);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: transform 0.2s ease;
@@ -84,11 +84,11 @@
 }
 
 .help-action {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 .done-action {
-    color: var(--nord0);
+    color: var(--ds-bg-base);
 }
 
 /* ===========================================
@@ -97,11 +97,11 @@
 
 .swipeable-card {
     position: relative;
-    background: var(--nord1);
-    border: 1px solid var(--nord3);
-    border-radius: var(--radius-lg);
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
     /* INCREASED padding for better touch targets */
-    padding: var(--space-lg) var(--space-lg);
+    padding: var(--ds-space-6) var(--ds-space-6);
     transform: translateX(0);
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
                 box-shadow 0.2s ease,
@@ -118,7 +118,7 @@
 }
 
 .swipeable-card:active {
-    background: var(--nord2);
+    background: var(--ds-bg-hover);
 }
 
 /* ===========================================
@@ -128,11 +128,11 @@
 
 .click-actions {
     position: absolute;
-    right: var(--space-md);
+    right: var(--ds-space-4);
     top: 50%;
     transform: translateY(-50%);
     display: flex;
-    gap: var(--space-sm);
+    gap: var(--ds-space-2);
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease, visibility 0.2s ease;
@@ -163,12 +163,12 @@
 .click-action-btn {
     display: flex;
     align-items: center;
-    gap: var(--space-xs);
-    padding: var(--space-sm) var(--space-md);
+    gap: var(--ds-space-1);
+    padding: var(--ds-space-2) var(--ds-space-4);
     border: none;
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
+    border-radius: var(--ds-radius-md);
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-semibold);
     cursor: pointer;
     transition: all 0.15s ease;
     white-space: nowrap;
@@ -191,8 +191,8 @@
 
 /* Done button - Green */
 .click-action-btn.done-btn {
-    background: var(--nord14);
-    color: var(--nord0);
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
 }
 
 .click-action-btn.done-btn:hover {
@@ -206,8 +206,8 @@
 
 /* Help button - Yellow/Orange */
 .click-action-btn.help-btn {
-    background: var(--nord13);
-    color: var(--nord0);
+    background: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
 }
 
 .click-action-btn.help-btn:hover {
@@ -232,35 +232,35 @@
 
 /* PENDING (default) - ready for action */
 .swipeable-card:not(.completed):not(.pending-approval):not(.help-requested):not(.missed):not(.skipped) {
-    background: var(--nord1);
-    border-color: var(--nord3);
+    background: var(--ds-bg-elevated);
+    border-color: var(--ds-bg-muted);
 }
 
 /* COMPLETED / APPROVED - green success state */
 .swipeable-card.completed {
     background: rgba(163, 190, 140, 0.12);
-    border-color: var(--nord14);
+    border-color: var(--ds-semantic-success);
     border-width: 2px;
 }
 
 /* PENDING APPROVAL - blue waiting state */
 .swipeable-card.pending-approval {
     background: rgba(136, 192, 208, 0.12);
-    border-color: var(--nord8);
+    border-color: var(--ds-accent-cyan);
     border-width: 2px;
 }
 
 /* HELP REQUESTED - yellow attention state */
 .swipeable-card.help-requested {
     background: rgba(235, 203, 139, 0.12);
-    border-color: var(--nord13);
+    border-color: var(--ds-semantic-highlight);
     border-width: 2px;
 }
 
 /* MISSED - red error state */
 .swipeable-card.missed {
     background: rgba(191, 97, 106, 0.12);
-    border-color: var(--nord11);
+    border-color: var(--ds-semantic-error);
     border-width: 2px;
     opacity: 0.75;
 }
@@ -268,7 +268,7 @@
 /* SKIPPED - muted state */
 .swipeable-card.skipped {
     background: rgba(76, 86, 106, 0.15);
-    border-color: var(--nord3);
+    border-color: var(--ds-bg-muted);
     opacity: 0.65;
 }
 
@@ -280,7 +280,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: var(--space-md);
+    gap: var(--ds-space-4);
 }
 
 .chore-info {
@@ -292,9 +292,9 @@
 }
 
 .chore-name {
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-lg);
-    color: var(--nord6);
+    font-weight: var(--ds-font-semibold);
+    font-size: var(--ds-text-lg);
+    color: var(--ds-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -305,45 +305,45 @@
 .swipeable-card.completed .chore-name,
 .swipeable-card.pending-approval .chore-name {
     text-decoration: line-through;
-    text-decoration-color: var(--nord4);
+    text-decoration-color: var(--ds-text-muted);
     opacity: 0.85;
 }
 
 .weekly-progress {
-    font-size: var(--font-size-sm);
-    color: var(--nord4);
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
 }
 
 .bonus-indicator {
-    color: var(--nord13);
-    font-weight: var(--font-weight-bold);
+    color: var(--ds-semantic-highlight);
+    font-weight: var(--ds-font-bold);
 }
 
 .status-text {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-medium);
     margin-top: 2px;
 }
 
 /* Status text colors based on state */
 .swipeable-card.completed .status-text {
-    color: var(--nord14);
+    color: var(--ds-semantic-success);
 }
 
 .swipeable-card.pending-approval .status-text {
-    color: var(--nord8);
+    color: var(--ds-accent-cyan);
 }
 
 .swipeable-card.help-requested .status-text {
-    color: var(--nord13);
+    color: var(--ds-semantic-highlight);
 }
 
 .swipeable-card.missed .status-text {
-    color: var(--nord11);
+    color: var(--ds-semantic-error);
 }
 
 .swipeable-card.skipped .status-text {
-    color: var(--nord4);
+    color: var(--ds-text-muted);
 }
 
 .chore-value {
@@ -353,13 +353,13 @@
 
 .value-amount {
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    font-weight: var(--font-weight-bold);
-    font-size: var(--font-size-xl);
-    color: var(--nord14);
+    font-weight: var(--ds-font-bold);
+    font-size: var(--ds-text-xl);
+    color: var(--ds-semantic-success);
 }
 
 .value-amount.bonus {
-    color: var(--nord13);
+    color: var(--ds-semantic-highlight);
 }
 
 /* Dim value for completed/non-pending chores */
@@ -378,7 +378,7 @@
     position: absolute;
     inset: 0;
     background: rgba(46, 52, 64, 0.85);
-    border-radius: var(--radius-lg);
+    border-radius: var(--ds-radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -386,7 +386,7 @@
 }
 
 .processing-overlay .spinner-border {
-    color: var(--nord8);
+    color: var(--ds-accent-cyan);
     width: 28px;
     height: 28px;
 }
@@ -397,13 +397,13 @@
    =========================================== */
 
 .swipeable-card-container.threshold-reached-right .swipeable-card {
-    border-color: var(--nord14);
+    border-color: var(--ds-semantic-success);
     box-shadow: 0 0 0 3px rgba(163, 190, 140, 0.35),
                 0 6px 20px rgba(163, 190, 140, 0.25);
 }
 
 .swipeable-card-container.threshold-reached-left .swipeable-card {
-    border-color: var(--nord11);
+    border-color: var(--ds-semantic-error);
     box-shadow: 0 0 0 3px rgba(191, 97, 106, 0.35),
                 0 6px 20px rgba(191, 97, 106, 0.25);
 }
@@ -417,15 +417,15 @@
 }
 
 .swipeable-card-container.completing .swipeable-card {
-    background: var(--nord14);
-    border-color: var(--nord14);
+    background: var(--ds-semantic-success);
+    border-color: var(--ds-semantic-success);
 }
 
 .swipeable-card-container.completing .chore-name,
 .swipeable-card-container.completing .value-amount,
 .swipeable-card-container.completing .status-text,
 .swipeable-card-container.completing .weekly-progress {
-    color: var(--nord0);
+    color: var(--ds-bg-base);
     text-decoration: none;
     opacity: 1;
 }
@@ -454,7 +454,7 @@
 
 .swipeable-card-container.help-requesting .swipeable-card {
     background: rgba(235, 203, 139, 0.2);
-    border-color: var(--nord13);
+    border-color: var(--ds-semantic-highlight);
 }
 
 @keyframes help-pulse {
@@ -485,20 +485,20 @@
 @media (hover: none) and (pointer: coarse) {
     .swipeable-card {
         /* Ensure 48px+ minimum touch target on mobile */
-        padding: var(--space-lg) var(--space-lg);
+        padding: var(--ds-space-6) var(--ds-space-6);
         min-height: 72px;
     }
     
     .chore-name {
-        font-size: var(--font-size-lg);
+        font-size: var(--ds-text-lg);
     }
     
     .value-amount {
-        font-size: var(--font-size-xl);
+        font-size: var(--ds-text-xl);
     }
     
     .action-content {
-        padding: var(--space-xl);
+        padding: var(--ds-space-7);
     }
     
     .action-content .bi {
@@ -517,15 +517,15 @@
 
 @media (max-width: 360px) {
     .swipeable-card {
-        padding: var(--space-md);
+        padding: var(--ds-space-4);
     }
     
     .chore-name {
-        font-size: var(--font-size-md);
+        font-size: var(--ds-text-base);
     }
     
     .value-amount {
-        font-size: var(--font-size-lg);
+        font-size: var(--ds-text-lg);
     }
 }
 

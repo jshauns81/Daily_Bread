@@ -43,7 +43,7 @@
 
 /* Background ring */
 .progress-bg {
-    stroke: var(--nord2);
+    stroke: var(--ds-bg-hover);
     opacity: 0.5;
 }
 
@@ -59,28 +59,28 @@
 
 /* Color variants */
 .progress-ring.color-success {
-    stroke: var(--nord14);
-    color: var(--nord14);
+    stroke: var(--ds-semantic-success);
+    color: var(--ds-semantic-success);
 }
 
 .progress-ring.color-info {
-    stroke: var(--nord8);
-    color: var(--nord8);
+    stroke: var(--ds-accent-cyan);
+    color: var(--ds-accent-cyan);
 }
 
 .progress-ring.color-warning {
-    stroke: var(--nord12);
-    color: var(--nord12);
+    stroke: var(--ds-semantic-warning);
+    color: var(--ds-semantic-warning);
 }
 
 .progress-ring.color-danger {
-    stroke: var(--nord11);
-    color: var(--nord11);
+    stroke: var(--ds-semantic-error);
+    color: var(--ds-semantic-error);
 }
 
 /* Complete state - extra glow */
 .progress-ring.complete {
-    filter: drop-shadow(0 0 12px var(--nord14));
+    filter: drop-shadow(0 0 12px var(--ds-semantic-success));
     animation: complete-glow 1.5s ease-in-out infinite alternate;
 }
 
@@ -100,7 +100,7 @@
 /* Percentage display */
 .progress-percentage {
     font-weight: 700;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
     line-height: 1;
 }
 
@@ -133,7 +133,7 @@
 /* Fraction display */
 .progress-fraction {
     font-weight: 700;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
     line-height: 1;
     display: flex;
     align-items: baseline;
@@ -161,7 +161,7 @@
 }
 
 .fraction-current {
-    color: var(--nord14);
+    color: var(--ds-semantic-success);
 }
 
 .fraction-separator {
@@ -177,7 +177,7 @@
 /* Checkmark display (for 0/0 state) */
 .progress-checkmark {
     font-weight: 700;
-    color: var(--nord14);
+    color: var(--ds-semantic-success);
     line-height: 1;
 }
 
@@ -213,10 +213,10 @@
 
 @keyframes complete-glow {
     from {
-        filter: drop-shadow(0 0 8px var(--nord14));
+        filter: drop-shadow(0 0 8px var(--ds-semantic-success));
     }
     to {
-        filter: drop-shadow(0 0 20px var(--nord14));
+        filter: drop-shadow(0 0 20px var(--ds-semantic-success));
     }
 }
 
