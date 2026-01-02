@@ -36,7 +36,7 @@
     /* Use dynamic viewport height that responds to browser chrome */
     height: 100vh; /* Fallback for older browsers */
     height: 100dvh;
-    background-color: var(--nord0);
+    background-color: var(--ds-bg-base);
     overflow: hidden; /* Prevent page-level scrolling */
     /* Safe area insets for notched devices - LEFT and RIGHT only */
     /* Top is handled by mobile-header, bottom by content/footer */
@@ -49,7 +49,7 @@ main {
     display: flex;
     flex-direction: column;
     min-height: 0; /* Allow flex shrinking */
-    background-color: var(--nord0);
+    background-color: var(--ds-bg-base);
     /* Ensure main content doesn't overlap mobile header */
     position: relative;
     z-index: 1;
@@ -79,7 +79,7 @@ main.has-bottom-nav {
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
     /* Content itself doesn't scroll - main scrolls */
     overflow: visible;
-    background-color: var(--nord0);
+    background-color: var(--ds-bg-base);
     /* Prevent content from extending beyond viewport */
     max-width: 100vw;
     box-sizing: border-box;
@@ -103,8 +103,8 @@ main.has-bottom-nav {
     justify-content: space-between;
     height: var(--header-height, 52px);
     padding: 0 1rem;
-    background-color: var(--nord1);
-    border-bottom: 1px solid var(--nord3);
+    background-color: var(--ds-bg-elevated);
+    border-bottom: 1px solid var(--ds-bg-muted);
     position: fixed;
     /* 
      * KEY: Position header BELOW the safe area inset
@@ -158,13 +158,13 @@ main.has-bottom-nav {
     /* Ensure touch target is properly sized */
     min-width: 48px;
     min-height: 48px;
-    border-radius: var(--radius-md);
-    transition: background-color var(--transition-fast);
+    border-radius: var(--ds-radius-md);
+    transition: background-color var(--ds-duration-fast) ease;
 }
 
 .hamburger-btn:hover,
 .hamburger-btn:focus {
-    background-color: var(--nord2);
+    background-color: var(--ds-bg-hover);
     outline: none;
 }
 
@@ -180,7 +180,7 @@ main.has-bottom-nav {
     display: block;
     height: 2px;
     width: 100%;
-    background-color: var(--nord6);
+    background-color: var(--ds-text-primary);
     border-radius: 2px;
     transition: transform 0.3s ease, opacity 0.3s ease;
     transform-origin: center;
@@ -204,7 +204,7 @@ main.has-bottom-nav {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
     text-decoration: none;
     font-weight: 600;
     font-size: 1.1rem;
@@ -261,7 +261,7 @@ main.has-bottom-nav {
     justify-content: center;
     gap: 4px;
     padding: 8px 4px;
-    color: var(--nord4);
+    color: var(--ds-text-muted);
     text-decoration: none;
     transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
@@ -282,12 +282,12 @@ main.has-bottom-nav {
 
 .bottom-nav-item:hover,
 .bottom-nav-item:focus {
-    color: var(--nord6);
+    color: var(--ds-text-primary);
     outline: none;
 }
 
 .bottom-nav-item.active {
-    color: var(--nord8);
+    color: var(--ds-accent-cyan);
 }
 
 .bottom-nav-item.active .bi {
@@ -304,7 +304,7 @@ main.has-bottom-nav {
     transform: translateX(-50%);
     width: 4px;
     height: 4px;
-    background: var(--nord8);
+    background: var(--ds-accent-cyan);
     border-radius: 50%;
     box-shadow: 0 0 8px rgba(136, 192, 208, 0.6);
 }
@@ -328,7 +328,7 @@ main.has-bottom-nav {
 .desktop-header {
     display: none;
     padding: 0.75rem 1.5rem;
-    background-color: var(--nord1);
+    background-color: var(--ds-bg-elevated);
     border-bottom: none;
     justify-content: flex-end;
 }
@@ -373,7 +373,7 @@ main.has-bottom-nav {
     bottom: 0;
     width: 220px;
     max-width: 85vw; /* Don't exceed viewport on very small screens */
-    background-color: var(--nord1);
+    background-color: var(--ds-bg-elevated);
     border-right: none;
     z-index: 1100; /* Above overlay */
     transform: translateX(-100%);
@@ -456,8 +456,8 @@ main.has-bottom-nav {
         position: sticky;
         top: 0;
         padding: 0.75rem 1.5rem;
-        background-color: var(--nord1);
-        border-bottom: 1px solid var(--nord3);
+        background-color: var(--ds-bg-elevated);
+        border-bottom: 1px solid var(--ds-bg-muted);
         justify-content: flex-end;
         min-height: 56px;
         z-index: 50; /* Above content but below mobile-header */
@@ -596,7 +596,7 @@ main.has-bottom-nav {
 
 @media (hover: none) and (pointer: coarse) {
     .hamburger-btn:active {
-        background-color: var(--nord2);
+        background-color: var(--ds-bg-hover);
     }
     
     .mobile-brand:active {
@@ -664,8 +664,8 @@ main.has-bottom-nav {
    =========================================== */
 
 #blazor-error-ui {
-    background: var(--nord1);
-    border-top: 3px solid var(--nord12);
+    background: var(--ds-bg-elevated);
+    border-top: 3px solid var(--ds-semantic-warning);
     bottom: 0;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
@@ -675,7 +675,7 @@ main.has-bottom-nav {
     position: fixed;
     width: 100%;
     z-index: 2000;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
 }
 
 #blazor-error-ui .dismiss {
@@ -683,7 +683,7 @@ main.has-bottom-nav {
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
-    color: var(--nord4);
+    color: var(--ds-text-muted);
 }
 
 /* ===========================================

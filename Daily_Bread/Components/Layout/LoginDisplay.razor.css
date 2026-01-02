@@ -14,13 +14,79 @@
     position: relative;
 }
 
+/* Dropdown Menu - Absolute overlay anchored to button */
+.user-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + var(--ds-space-2));
+    z-index: var(--ds-z-dropdown);
+    min-width: 180px;
+    background-color: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-md);
+    box-shadow: var(--ds-shadow-lg);
+    padding: var(--ds-space-2) 0;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity var(--ds-duration-fast) ease, transform var(--ds-duration-fast) ease;
+}
+
+.user-dropdown-menu.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Dropdown Items */
+.user-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    color: var(--ds-text-primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--ds-duration-fast) ease;
+}
+
+.user-dropdown-menu .dropdown-item:hover {
+    background-color: var(--ds-bg-hover);
+}
+
+.user-dropdown-menu .dropdown-item .bi {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* Danger variant for logout */
+.user-dropdown-menu .dropdown-item-danger {
+    color: var(--ds-semantic-error);
+}
+
+.user-dropdown-menu .dropdown-item-danger:hover {
+    background-color: rgba(191, 97, 106, 0.15);
+}
+
+/* Dropdown Divider */
+.user-dropdown-menu .dropdown-divider {
+    margin: var(--ds-space-2) 0;
+    border: none;
+    border-top: 1px solid var(--ds-bg-muted);
+    opacity: 0.5;
+}
+
 .btn-user-menu {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     background-color: transparent;
-    color: var(--nord4);
-    border: 1px solid var(--nord3);
+    color: var(--ds-text-muted);
+    border: 1px solid var(--ds-bg-muted);
     border-radius: 8px;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
@@ -31,9 +97,9 @@
 }
 
 .btn-user-menu:hover {
-    background-color: var(--nord2);
-    color: var(--nord6);
-    border-color: var(--nord4);
+    background-color: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+    border-color: var(--ds-text-muted);
 }
 
 .btn-user-menu .bi-person-circle {
@@ -64,8 +130,8 @@
     align-items: center;
     gap: 0.5rem;
     background-color: transparent;
-    color: var(--nord4);
-    border: 1px solid var(--nord3);
+    color: var(--ds-text-muted);
+    border: 1px solid var(--ds-bg-muted);
     border-radius: 8px;
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
@@ -78,9 +144,9 @@
 }
 
 .btn-auth:hover {
-    background-color: var(--nord10);
-    border-color: var(--nord10);
-    color: var(--nord6);
+    background-color: var(--ds-accent-primary);
+    border-color: var(--ds-accent-primary);
+    color: var(--ds-text-primary);
 }
 
 .btn-auth .bi {
@@ -110,7 +176,7 @@
     
     .btn-user-menu:hover,
     .btn-user-menu:focus {
-        background-color: var(--nord2);
+        background-color: var(--ds-bg-hover);
     }
     
     .btn-user-menu .bi-person-circle {
@@ -133,7 +199,7 @@
     
     .btn-auth:hover,
     .btn-auth:focus {
-        background-color: var(--nord2);
+        background-color: var(--ds-bg-hover);
     }
     
     .btn-auth .bi {
@@ -155,7 +221,7 @@
     
     .btn-user-menu:active,
     .btn-auth:active {
-        background-color: var(--nord2);
+        background-color: var(--ds-bg-hover);
     }
 }
 

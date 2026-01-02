@@ -17,7 +17,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
     text-decoration: none;
     font-weight: 600;
     font-size: 1.25rem;
@@ -62,7 +62,7 @@
     min-height: 0;
     /* Scrollbar styling for mobile */
     scrollbar-width: thin;
-    scrollbar-color: var(--nord3) transparent;
+    scrollbar-color: var(--ds-bg-muted) transparent;
 }
 
 /* Section labels - subtle gradient text */
@@ -72,8 +72,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    color: var(--nord4); /* Fallback for browsers without background-clip support */
-    background: linear-gradient(90deg, var(--nord4) 0%, var(--nord8) 100%);
+    color: var(--ds-text-muted); /* Fallback for browsers without background-clip support */
+    background: linear-gradient(90deg, var(--ds-text-muted) 0%, var(--ds-accent-cyan) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -91,10 +91,10 @@
     gap: 0.75rem;
     padding: 0.875rem 1rem;
     margin: 0.125rem 0.5rem;
-    color: var(--nord4);
+    color: var(--ds-text-muted);
     text-decoration: none;
-    border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
+    border-radius: var(--ds-radius-md);
+    transition: all var(--ds-duration-fast) ease;
     font-size: 0.95rem;
     font-weight: 500;
     position: relative;
@@ -117,7 +117,7 @@
 /* Hover state with glow */
 .nav-link:hover {
     background: rgba(136, 192, 208, 0.08);
-    color: var(--nord6);
+    color: var(--ds-text-primary);
     transform: translateX(4px);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -133,13 +133,13 @@
 
 .nav-link:hover .bi {
     transform: scale(1.15);
-    color: var(--nord8);
+    color: var(--ds-accent-cyan);
 }
 
 /* Active state - Discord-style indicator pill */
 .nav-link.active {
     background: linear-gradient(135deg, rgba(136, 192, 208, 0.15) 0%, rgba(143, 188, 187, 0.1) 100%);
-    color: var(--nord8);
+    color: var(--ds-accent-cyan);
     position: relative;
 }
 
@@ -151,23 +151,23 @@
     transform: translateY(-50%);
     width: 4px;
     height: 60%;
-    background: linear-gradient(180deg, var(--nord8) 0%, var(--nord7) 100%);
+    background: linear-gradient(180deg, var(--ds-accent-cyan) 0%, var(--ds-accent-teal) 100%);
     border-radius: 0 4px 4px 0;
     box-shadow: 0 0 8px rgba(136, 192, 208, 0.5);
 }
 
 .nav-link.active .bi {
-    color: var(--nord8);
+    color: var(--ds-accent-cyan);
     filter: drop-shadow(0 0 4px rgba(136, 192, 208, 0.4));
 }
 
 /* Alert link (pending approvals) */
 .nav-link-alert {
-    color: var(--nord13);
+    color: var(--ds-semantic-highlight);
 }
 
 .nav-link-alert .bi {
-    color: var(--nord13);
+    color: var(--ds-semantic-highlight);
 }
 
 .nav-link-alert:hover {
@@ -184,8 +184,8 @@
     padding: 0 6px;
     font-size: 0.75rem;
     font-weight: 600;
-    background-color: var(--nord13);
-    color: var(--nord0);
+    background-color: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
     border-radius: 11px;
     flex-shrink: 0;
     animation: badge-pulse 2s ease-in-out infinite;
@@ -214,9 +214,9 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    color: var(--nord6);
+    color: var(--ds-text-primary);
     text-decoration: none;
-    background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%);
+    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
     border: none;
     box-shadow: 0 2px 8px rgba(94, 129, 172, 0.3);
     border-radius: 8px;
@@ -227,8 +227,8 @@
 }
 
 .kid-mode-link:hover {
-    background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%);
-    color: var(--nord6);
+    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
+    color: var(--ds-text-primary);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(94, 129, 172, 0.4);
 }
@@ -304,7 +304,7 @@
     }
     
     .kid-mode-link:active {
-        background: linear-gradient(135deg, var(--nord10) 0%, var(--nord9) 100%);
+        background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
         transform: scale(0.98);
     }
     
@@ -378,12 +378,12 @@
 }
 
 .nav-menu::-webkit-scrollbar-thumb {
-    background-color: var(--nord3);
+    background-color: var(--ds-bg-muted);
     border-radius: 3px;
 }
 
 .nav-menu::-webkit-scrollbar-thumb:hover {
-    background-color: var(--nord4);
+    background-color: var(--ds-text-muted);
 }
 
 /* Hide scrollbar on mobile but keep functionality */
