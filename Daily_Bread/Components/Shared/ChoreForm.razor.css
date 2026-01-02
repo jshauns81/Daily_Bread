@@ -1,0 +1,592 @@
+/* ============================================
+   CHORE FORM - "Sticky Note, Not Tax Form"
+   Clean, lightweight, progressive disclosure
+   ============================================ */
+
+.chore-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+/* ===========================================
+   FORM GROUPS - Minimal visual weight
+   =========================================== */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* ===========================================
+   GROUP 1: IDENTITY (Emoji + Name)
+   The hero - most prominent element
+   =========================================== */
+
+.identity-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.icon-picker {
+    flex-shrink: 0;
+}
+
+.name-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.name-input .form-control {
+    height: 52px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    padding: 0.875rem 1rem;
+    background: var(--nord0);
+    border: 2px solid var(--nord3);
+    border-radius: var(--radius-lg);
+    color: var(--nord6);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.name-input .form-control:focus {
+    border-color: var(--nord10);
+    box-shadow: 0 0 0 4px rgba(94, 129, 172, 0.15);
+    outline: none;
+}
+
+.name-input .form-control::placeholder {
+    color: var(--nord4);
+    font-weight: 400;
+}
+
+.validation-msg {
+    font-size: var(--font-size-xs);
+    color: var(--nord11);
+    margin-top: var(--space-xs);
+}
+
+/* ===========================================
+   GROUP 2: TYPE & VALUE
+   Pill-style toggle with inline amount
+   =========================================== */
+
+.type-group {
+    /* No extra margin - let gap handle it */
+}
+
+.type-switch {
+    display: flex;
+    background: var(--nord0);
+    padding: 4px;
+    border-radius: 28px; /* Pill shape */
+    border: 1px solid var(--nord3);
+    gap: 4px;
+}
+
+.type-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    min-height: 48px;
+    padding: var(--space-sm) var(--space-lg);
+    border: none;
+    border-radius: 24px; /* Pill shape */
+    background: transparent;
+    color: var(--nord4);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.type-option:hover:not(.selected) {
+    color: var(--nord6);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Selected state - filled pill */
+.type-option.selected {
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Earns selected - green pill */
+.type-option.selected.earns {
+    background: linear-gradient(135deg, var(--nord14), rgba(163, 190, 140, 0.85));
+    color: var(--nord0);
+}
+
+/* Expected selected - blue pill */
+.type-option.selected.expected {
+    background: linear-gradient(135deg, var(--nord10), var(--nord9));
+    color: white;
+}
+
+.type-label {
+    white-space: nowrap;
+}
+
+/* Inline amount - lives INSIDE the Earns pill */
+.amount-inline {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 4px 8px;
+    margin-left: var(--space-xs);
+}
+
+.amount-inline .currency {
+    color: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.amount-inline .amount-input {
+    width: 48px;
+    height: 26px;
+    padding: 2px 4px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--nord0);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.amount-inline .amount-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+/* ===========================================
+   ASSIGN GROUP - Subtle inline
+   =========================================== */
+
+.assign-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+}
+
+.assign-group .field-label {
+    font-size: 0.875rem;
+    color: var(--nord4);
+    white-space: nowrap;
+}
+
+.assign-group .form-select {
+    flex: 1;
+    max-width: 200px;
+    height: 36px;
+    background: var(--nord1);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-md);
+    color: var(--nord6);
+    font-size: 0.875rem;
+    padding: 0 var(--space-sm);
+}
+
+.assign-group .form-select:focus {
+    border-color: var(--nord10);
+    outline: none;
+}
+
+/* ===========================================
+   GROUP 3: SCHEDULE
+   Days as primary, frequency as subtle label
+   =========================================== */
+
+.schedule-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    /* NO background box - keep it light */
+}
+
+/* Day chips row - the main interaction */
+.days-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.day-chip {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: var(--nord1);
+    color: var(--nord4);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.day-chip:hover:not(.selected) {
+    background: var(--nord2);
+    color: var(--nord6);
+    border-color: var(--nord3);
+}
+
+/* Selected day - filled dot */
+.day-chip.selected {
+    background: var(--nord3);
+    color: var(--nord6);
+    border-color: var(--nord4);
+}
+
+/* Frequency row - subtle, secondary */
+.frequency-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+}
+
+.freq-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-md);
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--nord4);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.freq-option:hover:not(.active) {
+    color: var(--nord6);
+}
+
+.freq-option.active {
+    background: var(--nord2);
+    color: var(--nord6);
+}
+
+.freq-divider {
+    color: var(--nord3);
+    font-size: 0.75rem;
+}
+
+/* Frequency input - small, inline */
+.freq-option.has-input {
+    padding: var(--space-xs) var(--space-sm);
+}
+
+.freq-input {
+    width: 28px;
+    height: 22px;
+    padding: 2px;
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-sm);
+    background: var(--nord1);
+    color: var(--nord6);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.freq-input:focus {
+    outline: none;
+    border-color: var(--nord10);
+}
+
+/* Bonus checkbox - subtle hint */
+.bonus-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    font-size: 0.75rem;
+    color: var(--nord4);
+    cursor: pointer;
+    padding: var(--space-xs) 0;
+}
+
+.bonus-check input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--nord14);
+    cursor: pointer;
+}
+
+/* ===========================================
+   OPTIONS GROUP (Collapsible)
+   Ghost-like, doesn't compete
+   =========================================== */
+
+.options-group {
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+}
+
+.options-group summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    color: var(--nord4);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    transition: color 0.15s ease;
+    border-radius: var(--radius-md);
+}
+
+.options-group summary::-webkit-details-marker {
+    display: none;
+}
+
+.options-group summary::marker {
+    display: none;
+}
+
+.options-group summary:hover {
+    color: var(--nord6);
+}
+
+.options-group[open] summary {
+    margin-bottom: var(--space-sm);
+}
+
+.summary-icon {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.options-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--nord1);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--nord3);
+}
+
+/* Option checkboxes */
+.option-check {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.875rem;
+    color: var(--nord6);
+    cursor: pointer;
+}
+
+.option-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--nord10);
+    cursor: pointer;
+}
+
+/* Date fields */
+.date-row {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.date-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.date-field > span {
+    font-size: 0.75rem;
+    color: var(--nord4);
+    font-weight: 500;
+}
+
+.date-field .form-control {
+    height: 36px;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--nord2);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-sm);
+    color: var(--nord6);
+    font-size: 0.875rem;
+}
+
+.date-field .form-control:focus {
+    border-color: var(--nord10);
+    outline: none;
+}
+
+/* Notes textarea */
+.notes-input {
+    background: var(--nord2);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-sm);
+    color: var(--nord6);
+    font-size: 0.875rem;
+    resize: none;
+    padding: var(--space-sm);
+}
+
+.notes-input::placeholder {
+    color: var(--nord4);
+}
+
+.notes-input:focus {
+    border-color: var(--nord10);
+    outline: none;
+}
+
+/* ===========================================
+   FORM ACTIONS
+   =========================================== */
+
+.form-actions {
+    display: flex;
+    gap: var(--space-sm);
+    padding-top: var(--space-lg);
+}
+
+.btn-cancel {
+    flex: 1;
+    min-height: 48px;
+    padding: var(--space-md);
+    border: 1px solid var(--nord3);
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--nord4);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-cancel:hover {
+    background: var(--nord1);
+    color: var(--nord6);
+    border-color: var(--nord4);
+}
+
+.btn-submit {
+    flex: 1.5;
+    min-height: 48px;
+    padding: var(--space-md);
+    border: none;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--nord10), var(--nord9));
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+}
+
+.btn-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(94, 129, 172, 0.35);
+}
+
+.btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Loading spinner */
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===========================================
+   RESPONSIVE - MOBILE
+   =========================================== */
+
+@media (max-width: 480px) {
+    .chore-form {
+        gap: var(--space-md);
+    }
+    
+    .identity-group {
+        gap: var(--space-sm);
+    }
+    
+    .name-input .form-control {
+        height: 48px;
+        font-size: 1rem;
+    }
+    
+    .type-switch {
+        flex-direction: column;
+        border-radius: var(--radius-lg);
+    }
+    
+    .type-option {
+        border-radius: var(--radius-md);
+        min-height: 44px;
+    }
+    
+    .days-row {
+        gap: 6px;
+    }
+    
+    .day-chip {
+        width: 36px;
+        height: 36px;
+        font-size: 0.7rem;
+    }
+    
+    .frequency-row {
+        flex-wrap: wrap;
+    }
+    
+    .date-row {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-cancel,
+    .btn-submit {
+        flex: none;
+        width: 100%;
+    }
+}

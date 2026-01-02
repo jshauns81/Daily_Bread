@@ -161,6 +161,7 @@ builder.Services.AddAuthorization(options =>
 // Add application services
 builder.Services.AddScoped<IDateProvider, SystemDateProvider>();
 builder.Services.AddScoped<IToastService, ToastService>();
+builder.Services.AddScoped<ModalService>(); // Modal service for root-level modal rendering
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddSingleton<IAuditLogService, AuditLogService>();

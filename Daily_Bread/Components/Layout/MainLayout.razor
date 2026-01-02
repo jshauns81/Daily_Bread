@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @using Daily_Bread.Services
 @using Daily_Bread.Components.Shared.Navigation
+@using Daily_Bread.Components.Shared
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
@@ -63,6 +64,7 @@
 
 <ToastContainer />
 <PwaInstallPrompt />
+<ModalHost />
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

@@ -3,16 +3,40 @@
     display: inline-block;
 }
 
-.emoji-trigger {
-    min-width: 100px;
+/* Circle button - clean, minimal */
+.emoji-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px dashed var(--nord3);
+    background: var(--nord2);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-xs);
-    min-height: var(--touch-target-min);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.selected-emoji {
+.emoji-circle:hover {
+    border-color: var(--nord10);
+    background: var(--nord1);
+}
+
+.emoji-circle:not(.empty) {
+    border-style: solid;
+    border-color: var(--nord3);
+}
+
+.emoji-circle .placeholder-icon {
+    font-size: 1.25rem;
+    color: var(--nord4);
+    font-weight: 300;
+    line-height: 1;
+}
+
+.emoji-circle .selected-emoji {
     font-size: 1.5rem;
     line-height: 1;
     /* Use system emoji fonts - these are ALWAYS available on every OS */
@@ -96,9 +120,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    font-size: 1.25rem;
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
     background: transparent;
     border: 2px solid transparent;
     border-radius: var(--radius-sm);
@@ -154,18 +178,18 @@
 
 /* Scrollbar styling */
 .emoji-picker-dropdown::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 .emoji-picker-dropdown::-webkit-scrollbar-track {
-    background: var(--nord1, #3B4252);
+    background: var(--nord1);
 }
 
 .emoji-picker-dropdown::-webkit-scrollbar-thumb {
-    background: var(--nord3, #4C566A);
-    border-radius: 4px;
+    background: var(--nord3);
+    border-radius: 3px;
 }
 
 .emoji-picker-dropdown::-webkit-scrollbar-thumb:hover {
-    background: var(--nord4, #D8DEE9);
+    background: var(--nord4);
 }

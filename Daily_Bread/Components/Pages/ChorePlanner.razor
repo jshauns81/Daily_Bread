@@ -14,6 +14,7 @@
 @inject IDateProvider DateProvider
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject ModalService ModalService
 
 <PageTitle>Wage Board</PageTitle>
 
@@ -353,36 +354,6 @@
     </div>
 }
 
-<!-- Add/Edit Modal -->
-@if (_showChoreForm)
-{
-    <div class="modal-backdrop" @onclick="HideChoreForm">
-        <div class="modal-dialog" @onclick:stopPropagation="true">
-            <div class="modal-header">
-                <h2>
-                    @if (_editingChore?.Id > 0)
-                    {
-                        <span>Edit @(_isRoutineMode ? "Routine" : "Labor")</span>
-                    }
-                    else
-                    {
-                        <span>Add @(_isRoutineMode ? "Routine" : "Labor")</span>
-                    }
-                </h2>
-                <button class="modal-close" @onclick="HideChoreForm">
-                    <span class="bi bi-x-lg"></span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <Daily_Bread.Components.Shared.ChoreForm Chore="_editingChore"
-                                                         Users="_assignableUsers"
-                                                         OnSubmit="HandleChoreFormSubmit"
-                                                         OnCancel="HideChoreForm" />
-            </div>
-        </div>
-    </div>
-}
-
 @code {
     private enum TabView { Wages, Routines }
 
@@ -559,6 +530,7 @@
             EarnValue = 1.00m
         };
         _showChoreForm = true;
+        OpenChoreModal();
     }
 
     private void ShowCreateRoutineForm()
@@ -571,6 +543,7 @@
             EarnValue = 0m
         };
         _showChoreForm = true;
+        OpenChoreModal();
     }
 
     private async Task ShowEditChoreForm(ChorePlannerRow chore)
@@ -600,6 +573,7 @@
                     SortOrder = choreDetails.SortOrder
                 };
                 _showChoreForm = true;
+                OpenChoreModal();
             }
         }
         catch (Exception ex)
@@ -608,10 +582,37 @@
         }
     }
 
+    private void OpenChoreModal()
+    {
+        var title = _editingChore?.Id > 0 
+            ? $"Edit {(_isRoutineMode ? "Routine" : "Labor")}" 
+            : $"Add {(_isRoutineMode ? "Routine" : "Labor")}";
+        
+        var editingChore = _editingChore;
+        var assignableUsers = _assignableUsers;
+        
+        ModalService.Open(@<div>
+            <div class="modal-header">
+                <h2>@title</h2>
+                <button class="modal-close" @onclick="HideChoreForm">
+                    <span class="bi bi-x-lg"></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <Daily_Bread.Components.Shared.ChoreForm 
+                    Chore="editingChore"
+                    Users="assignableUsers"
+                    OnSubmit="HandleChoreFormSubmit"
+                    OnCancel="HideChoreForm" />
+            </div>
+        </div>, closeOnBackdropClick: true);
+    }
+
     private void HideChoreForm()
     {
         _showChoreForm = false;
         _editingChore = null;
+        ModalService.Close();
     }
 
     private async Task HandleChoreFormSubmit(ChoreDefinitionDto dto)
