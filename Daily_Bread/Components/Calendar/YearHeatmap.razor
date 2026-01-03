@@ -1,0 +1,440 @@
+﻿@using Daily_Bread.Services
+@using System.Security.Claims
+
+@inject ICalendarService CalendarService
+@inject IDateProvider DateProvider
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="year-heatmap">
+    <div class="heatmap-header">
+        <h2>@_selectedYear Year Overview</h2>
+        <div class="year-nav">
+            <button class="btn-nav" @onclick="PreviousYear" disabled="@_isLoading" title="Previous Year">‹</button>
+            <span class="year-display">@_selectedYear</span>
+            <button class="btn-nav" @onclick="NextYear" disabled="@_isLoading" title="Next Year">›</button>
+            @if (_selectedYear != _today.Year)
+            {
+                <button class="btn btn-sm btn-outline-primary ms-2" @onclick="GoToCurrentYear" disabled="@_isLoading">
+                    This Year
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="loading">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span>Loading year data...</span>
+        </div>
+    }
+    else
+    {
+        <!-- Day headers -->
+        <div class="heatmap-day-headers">
+            <div class="month-label-spacer"></div>
+            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+        </div>
+
+        <!-- Continuous grid of weeks -->
+        <div class="heatmap-grid">
+            @foreach (var week in _yearWeeks)
+            {
+                <div class="week-row">
+                    <div class="month-label" style="@(week.MonthNumber.HasValue ? $"color: var({GetMonthColorToken(week.MonthNumber.Value)});" : "")">
+                        @week.MonthLabel
+                    </div>
+                    @foreach (var day in week.Days)
+                    {
+                        @if (day == null)
+                        {
+                            <div class="day-cell empty"></div>
+                        }
+                        else
+                        {
+                            <div class="day-cell @GetCellClass(day)" 
+                                 style="@GetCellStyle(day)"
+                                 @onclick="() => SelectDay(day)"
+                                 title="@GetCellTooltip(day)">
+                                @if (day.IsComplete && day.HasChores)
+                                {
+                                    <span class="check">✓</span>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Legend -->
+        <div class="heatmap-legend">
+            <span>Less</span>
+            <div class="legend-cell level-0" title="No chores or 0%"></div>
+            <div class="legend-cell level-1" title="1-25%"></div>
+            <div class="legend-cell level-2" title="26-50%"></div>
+            <div class="legend-cell level-3" title="51-75%"></div>
+            <div class="legend-cell level-4" title="76-100%"></div>
+            <span>More</span>
+        </div>
+
+        <!-- Year Stats -->
+        @if (_yearStats != null)
+        {
+            <div class="year-stats">
+                <div class="stat-item">
+                    <span class="stat-value">@_yearStats.PerfectDays</span>
+                    <span class="stat-label">Perfect Days</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">@_yearStats.TotalCompleted / @_yearStats.TotalChores</span>
+                    <span class="stat-label">Chores Done</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">$@_yearStats.TotalEarned.ToString("F2")</span>
+                    <span class="stat-label">Total Earned</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">@_yearStats.LongestStreak</span>
+                    <span class="stat-label">Best Streak</span>
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Day Detail Tooltip/Modal -->
+    @if (_selectedDay != null)
+    {
+        <div class="day-tooltip-overlay" @onclick="ClearSelection">
+            <div class="day-tooltip" @onclick:stopPropagation="true">
+                <div class="tooltip-header">
+                    <span class="tooltip-date">@_selectedDay.Date.ToString("ddd, MMM d, yyyy")</span>
+                    <button class="btn-close-sm" @onclick="ClearSelection">×</button>
+                </div>
+                <div class="tooltip-body">
+                    @if (!_selectedDay.HasChores)
+                    {
+                        <p class="tooltip-empty">No chores scheduled</p>
+                    }
+                    else
+                    {
+                        <div class="tooltip-stat">
+                            <span class="tooltip-stat-label">Completed</span>
+                            <span class="tooltip-stat-value">@_selectedDay.CompletedChores / @_selectedDay.TotalChores</span>
+                        </div>
+                        <div class="tooltip-stat">
+                            <span class="tooltip-stat-label">Completion</span>
+                            <span class="tooltip-stat-value">@((int)_selectedDay.CompletionPercent)%</span>
+                        </div>
+                        @if (_selectedDay.EarnedAmount > 0)
+                        {
+                            <div class="tooltip-stat">
+                                <span class="tooltip-stat-label">Earned</span>
+                                <span class="tooltip-stat-value text-success">$@_selectedDay.EarnedAmount.ToString("F2")</span>
+                            </div>
+                        }
+                        <div class="tooltip-progress">
+                            <div class="tooltip-progress-bar" style="width: @_selectedDay.CompletionPercent%"></div>
+                        </div>
+                    }
+                </div>
+                <div class="tooltip-footer">
+                    <a href="/tracker/@_selectedDay.Date.ToString("yyyy-MM-dd")" class="btn btn-sm btn-primary">
+                        View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? UserId { get; set; }
+
+    [Parameter]
+    public int? Year { get; set; }
+
+    private int _selectedYear;
+    private DateOnly _today;
+    private bool _isLoading = true;
+    private string? _currentUserId;
+    private bool _isParent;
+
+    private List<YearWeekData> _yearWeeks = [];
+    private DayCellData? _selectedDay;
+    private YearStats? _yearStats;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _currentUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        _isParent = user.IsInRole("Parent") || user.IsInRole("Admin");
+
+        _today = DateProvider.Today;
+        _selectedYear = Year ?? _today.Year;
+
+        await LoadYearDataAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Year.HasValue && Year.Value != _selectedYear)
+        {
+            _selectedYear = Year.Value;
+            await LoadYearDataAsync();
+        }
+    }
+
+    private async Task LoadYearDataAsync()
+    {
+        if (_isLoading && _yearWeeks.Count > 0) return; // Guard against concurrent calls
+        
+        _isLoading = true;
+        _yearWeeks.Clear();
+        StateHasChanged();
+
+        try
+        {
+            var effectiveUserId = UserId ?? (_isParent ? null : _currentUserId);
+            var yearStats = new YearStats();
+            
+            // Load all 12 months of data (only for current/past years with data)
+            var allDays = new Dictionary<DateOnly, DayCellData>();
+            
+            // Only fetch data if the year has started (not a future year)
+            var jan1OfYear = new DateOnly(_selectedYear, 1, 1);
+            if (jan1OfYear <= _today)
+            {
+                for (int month = 1; month <= 12; month++)
+                {
+                    // Skip future months
+                    var firstOfMonth = new DateOnly(_selectedYear, month, 1);
+                    if (firstOfMonth > _today) break;
+                    
+                    var monthSummary = await CalendarService.GetMonthSummaryAsync(_selectedYear, month, effectiveUserId);
+                    
+                    if (monthSummary != null)
+                    {
+                        // Aggregate stats
+                        yearStats.PerfectDays += monthSummary.DaysWithAllComplete;
+                        yearStats.TotalCompleted += monthSummary.TotalCompleted;
+                        yearStats.TotalChores += monthSummary.TotalChores;
+                        yearStats.TotalEarned += monthSummary.TotalEarned;
+                        yearStats.LongestStreak = Math.Max(yearStats.LongestStreak, monthSummary.LongestStreak);
+                        
+                        foreach (var day in monthSummary.Days)
+                        {
+                            var completionPercent = day.TotalChores > 0 
+                                ? (double)(day.CompletedChores + day.ApprovedChores) / day.TotalChores * 100 
+                                : 0;
+                            
+                            allDays[day.Date] = new DayCellData
+                            {
+                                Date = day.Date,
+                                Month = month,
+                                CompletionPercent = completionPercent,
+                                IsComplete = day.Status == DayCompletionStatus.AllComplete,
+                                IsFuture = day.Status == DayCompletionStatus.Future,
+                                TotalChores = day.TotalChores,
+                                CompletedChores = day.CompletedChores + day.ApprovedChores,
+                                EarnedAmount = day.EarnedAmount,
+                                HasChores = day.TotalChores > 0
+                            };
+                        }
+                    }
+                }
+            }
+            
+            _yearStats = yearStats;
+            
+            // Build weeks starting from Jan 1
+            var jan1 = new DateOnly(_selectedYear, 1, 1);
+            var dec31 = new DateOnly(_selectedYear, 12, 31);
+            
+            // Find the Sunday on or before Jan 1
+            var startDate = jan1.AddDays(-(int)jan1.DayOfWeek);
+            
+            // Find the Saturday on or after Dec 31
+            var endDate = dec31.AddDays(6 - (int)dec31.DayOfWeek);
+            
+            var currentDate = startDate;
+            int? lastMonth = null;
+            
+            while (currentDate <= endDate)
+            {
+                var week = new YearWeekData();
+                
+                for (int dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++)
+                {
+                    var date = currentDate.AddDays(dayOfWeek);
+                    
+                    // Only include days within the selected year
+                    if (date.Year == _selectedYear)
+                    {
+                        // Check if this is first occurrence of a new month in the grid
+                        if (date.Month != lastMonth)
+                        {
+                            week.MonthLabel = GetMonthAbbrev(date.Month);
+                            week.MonthNumber = date.Month;
+                            lastMonth = date.Month;
+                        }
+                        
+                        // Check if we have data for this day
+                        if (allDays.TryGetValue(date, out var dayData))
+                        {
+                            week.Days.Add(dayData);
+                        }
+                        else
+                        {
+                            // No data - create a placeholder cell
+                            // This handles future dates and dates without chore data
+                            week.Days.Add(new DayCellData 
+                            { 
+                                Date = date, 
+                                Month = date.Month,
+                                HasChores = false,
+                                IsFuture = date > _today
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // Day outside the year (padding) - null cell renders as empty
+                        week.Days.Add(null);
+                    }
+                }
+                
+                _yearWeeks.Add(week);
+                currentDate = currentDate.AddDays(7);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading year data: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PreviousYear()
+    {
+        _selectedYear--;
+        await LoadYearDataAsync();
+    }
+
+    private async Task NextYear()
+    {
+        _selectedYear++;
+        await LoadYearDataAsync();
+    }
+
+    private async Task GoToCurrentYear()
+    {
+        _selectedYear = _today.Year;
+        await LoadYearDataAsync();
+    }
+
+    private void SelectDay(DayCellData day)
+    {
+        _selectedDay = day;
+    }
+
+    private void ClearSelection()
+    {
+        _selectedDay = null;
+    }
+
+    private static string GetMonthAbbrev(int month) => month switch
+    {
+        1 => "Jan", 2 => "Feb", 3 => "Mar", 4 => "Apr",
+        5 => "May", 6 => "Jun", 7 => "Jul", 8 => "Aug",
+        9 => "Sep", 10 => "Oct", 11 => "Nov", 12 => "Dec",
+        _ => ""
+    };
+
+    private static string GetMonthColorToken(int month) => month switch
+    {
+        1 => "--ds-accent-primary",      // Jan - blue
+        2 => "--ds-semantic-special",    // Feb - purple
+        3 => "--ds-accent-teal",         // Mar - teal
+        4 => "--ds-semantic-success",    // Apr - green
+        5 => "--ds-accent-cyan",         // May - cyan
+        6 => "--ds-semantic-highlight",  // Jun - yellow
+        7 => "--ds-semantic-warning",    // Jul - orange
+        8 => "--ds-semantic-error",      // Aug - red
+        9 => "--ds-accent-blue",         // Sep - light blue
+        10 => "--ds-semantic-special",   // Oct - purple
+        11 => "--ds-accent-teal",        // Nov - teal
+        12 => "--ds-semantic-success",   // Dec - green
+        _ => "--ds-accent-primary"
+    };
+
+    private static string GetCellClass(DayCellData day)
+    {
+        if (day.IsFuture) return "future";
+        if (!day.HasChores) return "no-chores";
+        if (day.IsComplete) return "complete";
+        if (day.CompletionPercent > 0) return "has-progress";
+        return "no-chores";
+    }
+
+    private static string GetCellStyle(DayCellData day)
+    {
+        if (day.IsFuture || !day.HasChores || day.CompletionPercent == 0) return "";
+        
+        var colorToken = GetMonthColorToken(day.Month);
+        var opacity = day.CompletionPercent switch
+        {
+            <= 25 => "0.25",
+            <= 50 => "0.5",
+            <= 75 => "0.75",
+            _ => "1"
+        };
+        
+        return $"--month-color: var({colorToken}); --cell-opacity: {opacity};";
+    }
+
+    private static string GetCellTooltip(DayCellData day)
+    {
+        if (day.IsFuture) return $"{day.Date:MMM d, yyyy} - Future";
+        if (!day.HasChores) return $"{day.Date:MMM d, yyyy} - No chores";
+        return $"{day.Date:MMM d, yyyy} - {day.CompletedChores}/{day.TotalChores} ({(int)day.CompletionPercent}%)";
+    }
+
+    // Data classes
+    private class YearWeekData
+    {
+        public string? MonthLabel { get; set; }
+        public int? MonthNumber { get; set; }
+        public List<DayCellData?> Days { get; set; } = [];
+    }
+
+    private class DayCellData
+    {
+        public DateOnly Date { get; set; }
+        public int Month { get; set; }
+        public double CompletionPercent { get; set; }
+        public bool IsComplete { get; set; }
+        public bool IsFuture { get; set; }
+        public int TotalChores { get; set; }
+        public int CompletedChores { get; set; }
+        public decimal EarnedAmount { get; set; }
+        public bool HasChores { get; set; }
+    }
+
+    private class YearStats
+    {
+        public int PerfectDays { get; set; }
+        public int TotalCompleted { get; set; }
+        public int TotalChores { get; set; }
+        public decimal TotalEarned { get; set; }
+        public int LongestStreak { get; set; }
+    }
+}

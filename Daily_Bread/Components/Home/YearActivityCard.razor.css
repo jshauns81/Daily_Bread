@@ -1,0 +1,452 @@
+/* ==========================================================================
+   Year Activity Card - Hero Heatmap
+   Rainbow month colors with gradient intensity based on completion
+   ========================================================================== */
+
+.year-activity-hero {
+    background: linear-gradient(160deg, #1a1f2e 0%, #252d3f 50%, #1e2636 100%);
+    border: 2px solid rgba(136, 192, 208, 0.3);
+    border-radius: var(--ds-radius-xl);
+    padding: var(--ds-space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.year-activity-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 30%, rgba(136, 192, 208, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   Header & Navigation
+   ========================================================================== */
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.year-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+}
+
+.nav-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(136, 192, 208, 0.1);
+    border: 1px solid rgba(136, 192, 208, 0.2);
+    border-radius: var(--ds-radius-full);
+    color: var(--ds-text-muted);
+    font-size: var(--ds-font-size-xl);
+    cursor: pointer;
+    transition: all var(--ds-transition-fast);
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: rgba(136, 192, 208, 0.2);
+    color: var(--ds-text-primary);
+    border-color: rgba(136, 192, 208, 0.4);
+}
+
+.nav-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.activity-title {
+    font-size: var(--ds-font-size-xl);
+    font-weight: var(--ds-font-weight-bold);
+    color: var(--ds-text-primary);
+    min-width: 60px;
+    text-align: center;
+}
+
+.activity-legend {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-1);
+    font-size: var(--ds-font-size-xs);
+    color: var(--ds-text-muted);
+}
+
+.legend-cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+/* ==========================================================================
+   Loading
+   ========================================================================== */
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ds-space-6);
+    color: var(--ds-text-muted);
+}
+
+/* ==========================================================================
+   Heatmap Grid - Desktop (full width, no scroll)
+   ========================================================================== */
+
+.heatmap-container {
+    display: flex;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+.day-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-right: var(--ds-space-2);
+    flex-shrink: 0;
+}
+
+.day-labels span {
+    height: 12px;
+    font-size: 9px;
+    font-weight: var(--ds-font-weight-medium);
+    color: var(--ds-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.month-row-spacer {
+    height: 14px;
+}
+
+.weeks-container {
+    display: flex;
+    flex: 1;
+    justify-content: space-between;
+    gap: 2px;
+}
+
+.week-column {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    align-items: center;
+}
+
+.month-label {
+    height: 14px;
+    font-size: 8px;
+    font-weight: var(--ds-font-weight-medium);
+    color: var(--ds-text-muted);
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Day Cells
+   ========================================================================== */
+
+.day-cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    transition: transform var(--ds-transition-fast);
+    box-sizing: border-box;
+}
+
+.day-cell.clickable {
+    cursor: pointer;
+}
+
+.day-cell:hover:not(.empty):not(.future) {
+    transform: scale(1.4);
+    z-index: 10;
+}
+
+.day-cell.empty {
+    background: transparent;
+    cursor: default;
+}
+
+/* Future days - hollow outline */
+.day-cell.future {
+    background: transparent;
+    border: 1px solid rgba(136, 192, 208, 0.2);
+}
+
+.day-cell.future.clickable:hover {
+    border-color: rgba(136, 192, 208, 0.4);
+    transform: scale(1.4);
+    z-index: 10;
+}
+
+/* No progress - grey */
+.day-cell.no-progress {
+    background: rgba(76, 86, 106, 0.3);
+}
+
+/* Has progress - colored by month, opacity set via inline style */
+.day-cell.has-progress {
+    background: var(--month-color);
+}
+
+/* ==========================================================================
+   Responsive - Mobile/PWA (scrollable with proper sizing)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .year-activity-hero {
+        padding: var(--ds-space-3);
+    }
+
+    .activity-header {
+        flex-wrap: wrap;
+        gap: var(--ds-space-2);
+    }
+
+    .nav-btn {
+        width: 28px;
+        height: 28px;
+        font-size: var(--ds-font-size-lg);
+    }
+
+    .year-nav {
+        gap: var(--ds-space-2);
+    }
+
+    .activity-title {
+        font-size: var(--ds-font-size-lg);
+    }
+
+    .legend-cell {
+        width: 10px;
+        height: 10px;
+    }
+
+    /* Scrollable heatmap on mobile */
+    .heatmap-container {
+        overflow: hidden;
+    }
+
+    /* Day labels - transparent, no background */
+    .day-labels {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        padding-right: var(--ds-space-2);
+        flex-shrink: 0;
+        gap: 3px;
+    }
+
+    .day-labels span {
+        height: 14px;
+        min-height: 14px;
+        font-size: 8px;
+        min-width: 14px;
+    }
+
+    .month-row-spacer {
+        height: 16px;
+        min-height: 16px;
+    }
+
+    .weeks-container {
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        justify-content: flex-start;
+        flex: 1;
+        gap: 3px;
+        
+        /* Hide scrollbar but keep functionality */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .weeks-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Fixed width columns on mobile - don't squish */
+    .week-column {
+        flex-shrink: 0;
+        flex: 0 0 auto;
+        gap: 3px;
+    }
+
+    .month-label {
+        height: 16px;
+        min-height: 16px;
+        font-size: 8px;
+        min-width: 14px;
+    }
+
+    /* Properly sized cells that don't squish */
+    .day-cell {
+        width: 14px;
+        height: 14px;
+        min-width: 14px;
+        min-height: 14px;
+    }
+}
+
+/* ==========================================================================
+   Responsive - Small Mobile (still readable)
+   ========================================================================== */
+
+@media (max-width: 480px) {
+    .year-activity-hero {
+        padding: var(--ds-space-2);
+    }
+
+    .day-labels {
+        gap: 2px;
+    }
+
+    .day-labels span {
+        height: 12px;
+        min-height: 12px;
+        font-size: 7px;
+        min-width: 12px;
+    }
+
+    .month-row-spacer {
+        height: 14px;
+        min-height: 14px;
+    }
+
+    .month-label {
+        height: 14px;
+        min-height: 14px;
+        font-size: 7px;
+        min-width: 12px;
+    }
+
+    .day-cell {
+        width: 12px;
+        height: 12px;
+        min-width: 12px;
+        min-height: 12px;
+    }
+
+    .week-column {
+        gap: 2px;
+    }
+
+    .weeks-container {
+        gap: 2px;
+    }
+
+    .legend-cell {
+        width: 8px;
+        height: 8px;
+    }
+}
+
+/* ==========================================================================
+   Responsive - Large screens
+   ========================================================================== */
+
+@media (min-width: 1200px) {
+    .day-cell {
+        width: 14px;
+        height: 14px;
+    }
+
+    .day-labels span {
+        height: 14px;
+        font-size: 10px;
+    }
+
+    .month-label {
+        height: 16px;
+        font-size: 9px;
+    }
+
+    .week-column {
+        gap: 3px;
+    }
+
+    .day-labels {
+        gap: 3px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .year-activity-hero {
+        padding: var(--ds-space-8);
+    }
+
+    .day-cell {
+        width: 16px;
+        height: 16px;
+    }
+
+    .day-labels span {
+        height: 16px;
+        font-size: 11px;
+    }
+
+    .month-label {
+        height: 18px;
+        font-size: 10px;
+    }
+
+    .week-column {
+        gap: 4px;
+    }
+
+    .day-labels {
+        gap: 4px;
+    }
+
+    .legend-cell {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .day-cell,
+    .nav-btn {
+        transition: none;
+    }
+
+    .day-cell:hover:not(.empty):not(.future) {
+        transform: none;
+    }
+
+    .nav-btn:active:not(:disabled) {
+        transform: none;
+    }
+
+    .weeks-container {
+        scroll-behavior: auto;
+    }
+}

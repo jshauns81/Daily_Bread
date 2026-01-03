@@ -1,0 +1,401 @@
+﻿@using Daily_Bread.Services
+@using System.Security.Claims
+
+@inject ICalendarService CalendarService
+@inject IDateProvider DateProvider
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="year-activity-hero">
+    <div class="activity-header">
+        <div class="year-nav">
+            <button class="nav-btn" @onclick="PreviousYear" disabled="@_isLoading" title="Previous Year">
+                ‹
+            </button>
+            <span class="activity-title">@_selectedYear</span>
+            <button class="nav-btn" @onclick="NextYear" disabled="@_isLoading" title="Next Year">
+                ›
+            </button>
+        </div>
+        <div class="activity-legend">
+            <span>Less</span>
+            <div class="legend-cell" style="background: rgba(76, 86, 106, 0.3);"></div>
+            <div class="legend-cell" style="@GetLegendStyle(0.3)"></div>
+            <div class="legend-cell" style="@GetLegendStyle(0.5)"></div>
+            <div class="legend-cell" style="@GetLegendStyle(0.75)"></div>
+            <div class="legend-cell" style="@GetLegendStyle(1)"></div>
+            <span>More</span>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="loading">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="heatmap-container">
+            <div class="day-labels">
+                <div class="month-row-spacer"></div>
+                <span>S</span>
+                <span>M</span>
+                <span>T</span>
+                <span>W</span>
+                <span>T</span>
+                <span>F</span>
+                <span>S</span>
+            </div>
+            
+            <div class="weeks-container" @ref="_weeksContainer">
+                @foreach (var week in _weeks)
+                {
+                    <div class="week-column">
+                        <div class="month-label">@week.MonthLabel</div>
+                        @for (int d = 0; d < 7; d++)
+                        {
+                            var day = week.Days[d];
+                            @if (day == null)
+                            {
+                                <div class="day-cell empty"></div>
+                            }
+                            else
+                            {
+                                <div class="day-cell @GetCellClass(day) clickable"
+                                     style="@GetCellStyle(day)"
+                                     title="@GetCellTooltip(day)"
+                                     @onclick="() => NavigateToDay(day)">
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? UserId { get; set; }
+
+    private int _selectedYear;
+    private DateOnly _today;
+    private bool _isLoading = true;
+    private string? _currentUserId;
+    private bool _isParent;
+    private List<WeekColumnData> _weeks = [];
+    private ElementReference _weeksContainer;
+    private bool _isMobile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _currentUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        _isParent = user.IsInRole("Parent") || user.IsInRole("Admin");
+
+        _today = DateProvider.Today;
+        _selectedYear = _today.Year;
+
+        await LoadYearDataAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _isMobile = await JS.InvokeAsync<bool>("isMobileDevice");
+                
+                if (_isMobile && _selectedYear == _today.Year)
+                {
+                    await ScrollToCurrentMonth();
+                }
+            }
+            catch
+            {
+                // JS interop may fail during prerender
+            }
+        }
+    }
+
+    private async Task ScrollToCurrentMonth()
+    {
+        if (!_isMobile) return;
+        
+        try
+        {
+            // Calculate the week index for the middle of the current month
+            var midMonth = new DateOnly(_today.Year, _today.Month, 15);
+            var jan1 = new DateOnly(_selectedYear, 1, 1);
+            var startDate = jan1.AddDays(-(int)jan1.DayOfWeek);
+            
+            var daysSinceStart = midMonth.DayNumber - startDate.DayNumber;
+            var weekIndex = daysSinceStart / 7;
+            
+            // Calculate scroll position (cell width + gap) * weekIndex - half container
+            var cellWidth = 14; // matches mobile CSS
+            var gap = 2;
+            var weekWidth = cellWidth + gap;
+            var containerWidth = 300; // approximate mobile container width
+            var scrollPosition = (weekIndex * weekWidth) - (containerWidth / 2);
+            
+            if (scrollPosition < 0) scrollPosition = 0;
+            
+            await JS.InvokeVoidAsync("scrollHeatmap", _weeksContainer, scrollPosition);
+        }
+        catch
+        {
+            // Ignore JS errors
+        }
+    }
+
+    private async Task LoadYearDataAsync()
+    {
+        if (_isLoading && _weeks.Count > 0) return;
+        
+        _isLoading = true;
+        StateHasChanged();
+
+        _weeks.Clear();
+        _today = DateProvider.Today;
+
+        try
+        {
+            var effectiveUserId = UserId ?? (_isParent ? null : _currentUserId);
+            var allDays = new Dictionary<DateOnly, DayCellData>();
+
+            // Load December of previous year (for bookend)
+            var prevYearDec = await CalendarService.GetMonthSummaryAsync(_selectedYear - 1, 12, effectiveUserId);
+            if (prevYearDec != null)
+            {
+                foreach (var day in prevYearDec.Days)
+                {
+                    ProcessDayData(day, allDays);
+                }
+            }
+
+            // Load all 12 months of selected year
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthSummary = await CalendarService.GetMonthSummaryAsync(_selectedYear, month, effectiveUserId);
+                if (monthSummary != null)
+                {
+                    foreach (var day in monthSummary.Days)
+                    {
+                        ProcessDayData(day, allDays);
+                    }
+                }
+            }
+
+            // Load January of next year (for bookend)
+            var nextYearJan = await CalendarService.GetMonthSummaryAsync(_selectedYear + 1, 1, effectiveUserId);
+            if (nextYearJan != null)
+            {
+                foreach (var day in nextYearJan.Days)
+                {
+                    ProcessDayData(day, allDays);
+                }
+            }
+
+            // Build weeks as columns
+            var jan1 = new DateOnly(_selectedYear, 1, 1);
+            var dec31 = new DateOnly(_selectedYear, 12, 31);
+            var startDate = jan1.AddDays(-(int)jan1.DayOfWeek);
+            var endDate = dec31.AddDays(6 - (int)dec31.DayOfWeek);
+
+            var currentDate = startDate;
+            int? lastMonth = null;
+            int weekNum = 0;
+
+            while (currentDate <= endDate)
+            {
+                var week = new WeekColumnData
+                {
+                    WeekNumber = weekNum++,
+                    Days = new DayCellData?[7]
+                };
+
+                for (int dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++)
+                {
+                    var date = currentDate.AddDays(dayOfWeek);
+
+                    // Only show month label for days in the selected year
+                    if (date.Year == _selectedYear && date.Day <= 7 && date.Month != lastMonth)
+                    {
+                        week.MonthLabel = GetMonthAbbrev(date.Month);
+                        lastMonth = date.Month;
+                    }
+
+                    if (allDays.TryGetValue(date, out var dayData))
+                    {
+                        dayData.IsFuture = date > _today;
+                        week.Days[dayOfWeek] = dayData;
+                    }
+                    else
+                    {
+                        week.Days[dayOfWeek] = new DayCellData
+                        {
+                            Date = date,
+                            Month = date.Month,
+                            CompletionPercent = 0,
+                            IsFuture = date > _today
+                        };
+                    }
+                }
+
+                _weeks.Add(week);
+                currentDate = currentDate.AddDays(7);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading year activity data: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ProcessDayData(DaySummary day, Dictionary<DateOnly, DayCellData> allDays)
+    {
+        var completionPercent = day.TotalChores > 0
+            ? (double)(day.CompletedChores + day.ApprovedChores) / day.TotalChores * 100
+            : 0;
+
+        allDays[day.Date] = new DayCellData
+        {
+            Date = day.Date,
+            Month = day.Date.Month,
+            CompletionPercent = completionPercent,
+            IsFuture = false
+        };
+    }
+
+    private async Task PreviousYear()
+    {
+        _selectedYear--;
+        await LoadYearDataAsync();
+        
+        if (_isMobile && _selectedYear == _today.Year)
+        {
+            await ScrollToCurrentMonth();
+        }
+    }
+
+    private async Task NextYear()
+    {
+        _selectedYear++;
+        await LoadYearDataAsync();
+        
+        if (_isMobile && _selectedYear == _today.Year)
+        {
+            await ScrollToCurrentMonth();
+        }
+    }
+
+    private static string GetMonthAbbrev(int month) => month switch
+    {
+        1 => "Jan", 2 => "Feb", 3 => "Mar", 4 => "Apr",
+        5 => "May", 6 => "Jun", 7 => "Jul", 8 => "Aug",
+        9 => "Sep", 10 => "Oct", 11 => "Nov", 12 => "Dec",
+        _ => ""
+    };
+
+    private static string GetMonthColor(int month) => month switch
+    {
+        1 => "#BF616A",   // Jan - Red
+        2 => "#D08770",   // Feb - Orange
+        3 => "#EBCB8B",   // Mar - Yellow
+        4 => "#A3BE8C",   // Apr - Chartreuse
+        5 => "#8FBC8F",   // May - Green
+        6 => "#88C0A8",   // Jun - Spring Green
+        7 => "#8FBCBB",   // Jul - Cyan
+        8 => "#81A1C1",   // Aug - Azure
+        9 => "#5E81AC",   // Sep - Blue
+        10 => "#9A7AA0",  // Oct - Violet
+        11 => "#B48EAD",  // Nov - Magenta
+        12 => "#BF7A8E",  // Dec - Rose
+        _ => "#81A1C1"
+    };
+
+    private static string GetCellClass(DayCellData day)
+    {
+        if (day.IsFuture)
+        {
+            return "future";
+        }
+        
+        if (day.CompletionPercent > 0)
+        {
+            return "has-progress";
+        }
+        
+        return "no-progress";
+    }
+
+    private static string GetCellStyle(DayCellData day)
+    {
+        if (day.IsFuture || day.CompletionPercent == 0) return "";
+        
+        var color = GetMonthColor(day.Month);
+        var opacity = day.CompletionPercent switch
+        {
+            <= 25 => "0.3",
+            <= 50 => "0.5",
+            <= 75 => "0.75",
+            _ => "1"
+        };
+        
+        // Add glow for 100% complete days
+        if (day.CompletionPercent >= 100)
+        {
+            return $"--month-color: {color}; opacity: 1; box-shadow: 0 0 6px {color};";
+        }
+        
+        return $"--month-color: {color}; opacity: {opacity};";
+    }
+
+    private string GetLegendStyle(double opacity)
+    {
+        var color = GetMonthColor(_today.Month);
+        return $"background: {color}; opacity: {opacity};";
+    }
+
+    private static string GetCellTooltip(DayCellData day)
+    {
+        if (day.IsFuture) return $"{day.Date:MMM d}";
+        if (day.CompletionPercent == 0) return $"{day.Date:MMM d} - No activity";
+        return $"{day.Date:MMM d} - {(int)day.CompletionPercent}%";
+    }
+
+    private void NavigateToDay(DayCellData day)
+    {
+        // Navigate to the Book of Deeds (Tracker) page for the clicked date
+        Navigation.NavigateTo($"/tracker/{day.Date:yyyy-MM-dd}");
+    }
+
+    // Data classes
+    private class WeekColumnData
+    {
+        public int WeekNumber { get; set; }
+        public string? MonthLabel { get; set; }
+        public DayCellData?[] Days { get; set; } = new DayCellData?[7];
+    }
+
+    private class DayCellData
+    {
+        public DateOnly Date { get; set; }
+        public int Month { get; set; }
+        public double CompletionPercent { get; set; }
+        public bool IsFuture { get; set; }
+    }
+}

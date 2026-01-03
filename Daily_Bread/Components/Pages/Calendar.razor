@@ -38,12 +38,12 @@
     <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
-                <button class="btn btn-outline-secondary" @onclick="PreviousMonth">
+                <button class="btn btn-outline-secondary" @onclick="PreviousMonth" disabled="@_isLoading">
                     <span class="bi bi-chevron-left"></span> Previous
                 </button>
                 
                 <div class="d-flex align-items-center gap-3">
-                    <select class="form-select" style="width: auto;" @bind="_selectedMonth" @bind:after="LoadCalendarAsync">
+                    <select class="form-select" style="width: auto;" @bind="_selectedMonth" @bind:after="LoadCalendarAsync" disabled="@_isLoading">
                         @for (int m = 1; m <= 12; m++)
                         {
                             var monthName = new DateTime(2000, m, 1).ToString("MMMM");
@@ -51,7 +51,7 @@
                         }
                     </select>
                     
-                    <select class="form-select" style="width: auto;" @bind="_selectedYear" @bind:after="LoadCalendarAsync">
+                    <select class="form-select" style="width: auto;" @bind="_selectedYear" @bind:after="LoadCalendarAsync" disabled="@_isLoading">
                         @for (int y = DateTime.Now.Year - 2; y <= DateTime.Now.Year + 1; y++)
                         {
                             <option value="@y">@y</option>
@@ -60,13 +60,13 @@
                     
                     @if (_selectedYear != _today.Year || _selectedMonth != _today.Month)
                     {
-                        <button class="btn btn-outline-primary btn-sm" @onclick="GoToToday">
+                        <button class="btn btn-outline-primary btn-sm" @onclick="GoToToday" disabled="@_isLoading">
                             Today
                         </button>
                     }
                 </div>
                 
-                <button class="btn btn-outline-secondary" @onclick="NextMonth">
+                <button class="btn btn-outline-secondary" @onclick="NextMonth" disabled="@_isLoading">
                     Next <span class="bi bi-chevron-right"></span>
                 </button>
             </div>
@@ -301,7 +301,10 @@
 
     private async Task LoadCalendarAsync()
     {
+        if (_isLoading && _monthSummary != null) return; // Guard against concurrent calls (allow initial load)
+        
         _isLoading = true;
+        StateHasChanged(); // Show spinner immediately
 
         try
         {
@@ -317,10 +320,11 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged(); // Update UI when done
         }
     }
 
-    private void PreviousMonth()
+    private async Task PreviousMonth()
     {
         if (_selectedMonth == 1)
         {
@@ -331,10 +335,10 @@
         {
             _selectedMonth--;
         }
-        _ = LoadCalendarAsync();
+        await LoadCalendarAsync();
     }
 
-    private void NextMonth()
+    private async Task NextMonth()
     {
         if (_selectedMonth == 12)
         {
@@ -345,14 +349,14 @@
         {
             _selectedMonth++;
         }
-        _ = LoadCalendarAsync();
+        await LoadCalendarAsync();
     }
 
-    private void GoToToday()
+    private async Task GoToToday()
     {
         _selectedYear = _today.Year;
         _selectedMonth = _today.Month;
-        _ = LoadCalendarAsync();
+        await LoadCalendarAsync();
     }
 
     private void NavigateToDay(DateOnly date)
@@ -384,6 +388,6 @@
             return $"{day.TotalChores} chores scheduled";
 
         var done = day.CompletedChores + day.ApprovedChores;
-        return $"{done}/{day.TotalChores} completed � ${day.EarnedAmount:F2} earned";
+        return $"{done}/{day.TotalChores} completed • ${day.EarnedAmount:F2} earned";
     }
 }

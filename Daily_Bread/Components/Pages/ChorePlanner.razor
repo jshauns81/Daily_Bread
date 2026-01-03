@@ -252,7 +252,9 @@
     private string? _currentUserId;
     private string? _selectedUserId;
     private bool _showOverrides = false;
+#pragma warning disable CS0414 // Field is assigned but never read - used for state tracking with ModalService
     private bool _showChoreForm = false;
+#pragma warning restore CS0414
 
     private ChorePlannerData? _plannerData;
     private List<ChildProfileSummary> _childProfiles = [];

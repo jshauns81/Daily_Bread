@@ -1,0 +1,475 @@
+/* ==========================================================================
+   Year Heatmap Component Styles
+   GitHub-style continuous contribution graph for chore completions
+   ========================================================================== */
+
+.year-heatmap {
+    padding: var(--ds-space-4);
+    background: var(--ds-bg-card);
+    border-radius: var(--ds-radius-lg);
+    border: 1px solid var(--ds-border-default);
+    overflow-x: auto;
+}
+
+/* ==========================================================================
+   Header & Navigation
+   ========================================================================== */
+
+.heatmap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--ds-space-4);
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+}
+
+.heatmap-header h2 {
+    font-size: var(--ds-font-size-xl);
+    font-weight: var(--ds-font-weight-semibold);
+    color: var(--ds-text-primary);
+    margin: 0;
+}
+
+.year-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+}
+
+.btn-nav {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-border-default);
+    border-radius: var(--ds-radius-full);
+    color: var(--ds-text-muted);
+    cursor: pointer;
+    transition: all var(--ds-transition-fast);
+    font-size: var(--ds-font-size-lg);
+    font-weight: var(--ds-font-weight-bold);
+}
+
+.btn-nav:hover:not(:disabled) {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+    border-color: var(--ds-border-strong);
+}
+
+.btn-nav:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.year-display {
+    font-size: var(--ds-font-size-lg);
+    font-weight: var(--ds-font-weight-bold);
+    color: var(--ds-text-primary);
+    min-width: 60px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   Loading State
+   ========================================================================== */
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-8);
+    color: var(--ds-text-muted);
+    font-size: var(--ds-font-size-sm);
+}
+
+/* ==========================================================================
+   Day Headers Row
+   ========================================================================== */
+
+.heatmap-day-headers {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-bottom: var(--ds-space-2);
+}
+
+.month-label-spacer {
+    width: 36px;
+    flex-shrink: 0;
+}
+
+.heatmap-day-headers span {
+    width: 14px;
+    text-align: center;
+    font-size: 9px;
+    font-weight: var(--ds-font-weight-semibold);
+    color: var(--ds-text-muted);
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Main Grid - Continuous weeks
+   ========================================================================== */
+
+.heatmap-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.week-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.month-label {
+    width: 36px;
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: var(--ds-font-weight-bold);
+    color: var(--ds-text-muted);
+    text-transform: capitalize;
+}
+
+/* ==========================================================================
+   Day Cells - Small GitHub-style squares
+   ========================================================================== */
+
+.day-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    background: var(--ds-bg-muted);
+    cursor: pointer;
+    transition: all var(--ds-transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.day-cell:hover:not(.empty):not(.future) {
+    transform: scale(1.4);
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.day-cell.empty {
+    background: transparent;
+    cursor: default;
+}
+
+.day-cell.future {
+    background: var(--ds-bg-subtle);
+    opacity: 0.3;
+    cursor: default;
+}
+
+.day-cell.no-chores {
+    background: var(--ds-bg-muted);
+}
+
+.day-cell.has-progress {
+    background: var(--month-color, var(--ds-accent-primary));
+    opacity: var(--cell-opacity, 1);
+}
+
+.day-cell.complete {
+    background: var(--month-color, var(--ds-accent-primary));
+    opacity: 1;
+    box-shadow: 0 0 6px 1px color-mix(in srgb, var(--month-color, var(--ds-accent-primary)) 70%, transparent);
+}
+
+.day-cell .check {
+    font-size: 8px;
+    color: var(--ds-bg-base);
+    font-weight: var(--ds-font-weight-bold);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    line-height: 1;
+}
+
+/* ==========================================================================
+   Legend
+   ========================================================================== */
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: var(--ds-space-4);
+    padding-top: var(--ds-space-3);
+    border-top: 1px solid var(--ds-border-subtle);
+    font-size: var(--ds-font-size-xs);
+    color: var(--ds-text-muted);
+}
+
+.legend-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+}
+
+.legend-cell.level-0 {
+    background: var(--ds-bg-muted);
+}
+
+.legend-cell.level-1 {
+    background: var(--ds-accent-primary);
+    opacity: 0.25;
+}
+
+.legend-cell.level-2 {
+    background: var(--ds-accent-primary);
+    opacity: 0.5;
+}
+
+.legend-cell.level-3 {
+    background: var(--ds-accent-primary);
+    opacity: 0.75;
+}
+
+.legend-cell.level-4 {
+    background: var(--ds-accent-primary);
+    opacity: 1;
+}
+
+/* ==========================================================================
+   Year Stats
+   ========================================================================== */
+
+.year-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--ds-space-3);
+    margin-top: var(--ds-space-4);
+    padding-top: var(--ds-space-4);
+    border-top: 1px solid var(--ds-border-subtle);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: var(--ds-font-size-lg);
+    font-weight: var(--ds-font-weight-bold);
+    color: var(--ds-text-primary);
+}
+
+.stat-label {
+    font-size: var(--ds-font-size-xs);
+    color: var(--ds-text-muted);
+    margin-top: var(--ds-space-1);
+}
+
+/* ==========================================================================
+   Day Tooltip/Modal
+   ========================================================================== */
+
+.day-tooltip-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--ds-z-modal);
+    padding: var(--ds-space-4);
+}
+
+.day-tooltip {
+    background: var(--ds-bg-card);
+    border: 1px solid var(--ds-border-default);
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--ds-shadow-lg);
+    width: 100%;
+    max-width: 280px;
+    overflow: hidden;
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--ds-space-3) var(--ds-space-4);
+    background: var(--ds-bg-elevated);
+    border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.tooltip-date {
+    font-weight: var(--ds-font-weight-semibold);
+    color: var(--ds-text-primary);
+}
+
+.btn-close-sm {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--ds-text-muted);
+    font-size: var(--ds-font-size-lg);
+    cursor: pointer;
+    border-radius: var(--ds-radius-sm);
+    transition: all var(--ds-transition-fast);
+}
+
+.btn-close-sm:hover {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+.tooltip-body {
+    padding: var(--ds-space-4);
+}
+
+.tooltip-empty {
+    text-align: center;
+    color: var(--ds-text-muted);
+    margin: 0;
+}
+
+.tooltip-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--ds-space-2) 0;
+}
+
+.tooltip-stat:not(:last-of-type) {
+    border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.tooltip-stat-label {
+    color: var(--ds-text-secondary);
+    font-size: var(--ds-font-size-sm);
+}
+
+.tooltip-stat-value {
+    font-weight: var(--ds-font-weight-semibold);
+    color: var(--ds-text-primary);
+}
+
+.tooltip-stat-value.text-success {
+    color: var(--ds-semantic-success);
+}
+
+.tooltip-progress {
+    height: 4px;
+    background: var(--ds-bg-muted);
+    border-radius: var(--ds-radius-full);
+    margin-top: var(--ds-space-3);
+    overflow: hidden;
+}
+
+.tooltip-progress-bar {
+    height: 100%;
+    background: var(--ds-accent-primary);
+    border-radius: var(--ds-radius-full);
+    transition: width var(--ds-transition-normal);
+}
+
+.tooltip-footer {
+    padding: var(--ds-space-3) var(--ds-space-4);
+    background: var(--ds-bg-subtle);
+    border-top: 1px solid var(--ds-border-subtle);
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ==========================================================================
+   Mobile Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .year-heatmap {
+        padding: var(--ds-space-3);
+    }
+
+    .heatmap-header h2 {
+        font-size: var(--ds-font-size-lg);
+    }
+
+    .year-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-value {
+        font-size: var(--ds-font-size-base);
+    }
+}
+
+@media (max-width: 480px) {
+    .year-heatmap {
+        padding: var(--ds-space-2);
+    }
+
+    .day-cell {
+        width: 10px;
+        height: 10px;
+    }
+
+    .heatmap-day-headers span {
+        width: 10px;
+        font-size: 7px;
+    }
+
+    .month-label,
+    .month-label-spacer {
+        width: 28px;
+        font-size: 7px;
+    }
+
+    .day-cell .check {
+        font-size: 6px;
+    }
+
+    .legend-cell {
+        width: 10px;
+        height: 10px;
+    }
+
+    .heatmap-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .btn-outline-primary {
+        display: none;
+    }
+}
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .day-cell,
+    .btn-nav,
+    .btn-close-sm {
+        transition: none;
+    }
+
+    .day-cell:hover:not(.empty):not(.future) {
+        transform: none;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .day-cell {
+        border: 1px solid var(--ds-border-strong);
+    }
+
+    .day-cell.complete {
+        border: 2px solid var(--ds-text-primary);
+    }
+}
