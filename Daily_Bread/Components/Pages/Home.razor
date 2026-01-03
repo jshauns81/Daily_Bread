@@ -730,7 +730,7 @@ else
             Logger.LogInformation("User authenticated: UserId={UserId}, IsParent={IsParent}, IsAdmin={IsAdmin}, IsAdminOnly={IsAdminOnly}", 
                 _userId, _isParent, _isAdmin, _isAdminOnly);
 
-            await LoadDashboardAsync();
+            await LoadDashboardAsync(forceRefresh: true);
 
             Logger.LogInformation("Dashboard loaded: ParentData={ParentData}, ChildData={ChildData}", 
                 _parentData != null, _childData != null);

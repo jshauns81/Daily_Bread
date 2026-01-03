@@ -1,7 +1,7 @@
 ﻿@page "/tracker"
 @page "/tracker/{DateParam}"
 @attribute [Authorize]
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @implements IDisposable
 
 @using System.Security.Claims
@@ -43,7 +43,7 @@
 
     @if (IsLoading)
     {
-        @* Skeleton loader *@
+        @* Skeleton loader - only for initial load/date changes *@
         <div class="loading-placeholder">
             <div class="skeleton-row"></div>
             <div class="skeleton-row"></div>
@@ -78,7 +78,7 @@
             @foreach (var item in ChoreItems)
             {
                 <TrackerChoreCard Item="item"
-                                  IsDisabled="IsCheckboxDisabled(item)"
+                                  IsDisabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
                                   ShowAssignee="IsParent"
                                   ShowActions="IsParent"
                                   OnToggle="ToggleChore"
@@ -111,7 +111,7 @@
                     @foreach (var item in ChoreItems)
                     {
                         <TrackerChoreRow Item="item"
-                                         IsDisabled="IsCheckboxDisabled(item)"
+                                         IsDisabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
                                          ShowAssignee="IsParent"
                                          ShowActions="IsParent"
                                          OnToggle="ToggleChore"
@@ -189,6 +189,9 @@
 
     private bool _showConfetti;
     private int _previousCompletedCount;
+    
+    // Track which item is being processed (for individual loading states)
+    private int? _processingItemId;
     
     // Confirmation modal state
     private bool _showMissConfirmation;
@@ -331,6 +334,57 @@
         }
     }
 
+    /// <summary>
+    /// Refresh data without showing the loading skeleton (for after item updates)
+    /// </summary>
+    private async Task RefreshDataAsync()
+    {
+        try
+        {
+            List<TrackerChoreItem> items;
+            decimal balance = 0;
+
+            if (IsParent)
+            {
+                items = await TrackerService.GetTrackerItemsForDateAsync(SelectedDate);
+            }
+            else if (!string.IsNullOrEmpty(UserId))
+            {
+                items = await TrackerService.GetTrackerItemsForUserOnDateAsync(UserId, SelectedDate);
+            }
+            else
+            {
+                items = [];
+            }
+
+            if (!string.IsNullOrEmpty(UserId))
+            {
+                balance = await LedgerService.GetUserBalanceAsync(UserId);
+            }
+
+            var previousCount = _previousCompletedCount;
+            ChoreItems = items;
+            Balance = balance;
+
+            // Check if all chores just became completed (trigger confetti)
+            var currentCompleted = ChoreItems.Count(c => c.IsCompleted);
+            var totalChores = ChoreItems.Count;
+
+            if (totalChores > 0 &&
+                currentCompleted == totalChores &&
+                previousCount < totalChores)
+            {
+                _showConfetti = true;
+            }
+
+            _previousCompletedCount = currentCompleted;
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", $"Failed to refresh: {ex.Message}");
+        }
+    }
+
     private string GetEmptyMessage()
     {
         if (IsToday)
@@ -341,42 +395,66 @@
     private async Task ToggleChore(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId)) return;
+        if (_processingItemId.HasValue) return; // Prevent double-clicks
 
-        var result = await TrackerService.ToggleChoreCompletionAsync(
-            item.ChoreDefinitionId,
-            SelectedDate,
-            UserId,
-            IsParent);
+        _processingItemId = item.ChoreDefinitionId;
+        StateHasChanged();
 
-        if (result.Success)
+        try
         {
-            ToastService.ShowSuccess("Done!", $"'{item.ChoreName}' marked as complete.");
-            await LoadDataAsync();
+            var result = await TrackerService.ToggleChoreCompletionAsync(
+                item.ChoreDefinitionId,
+                SelectedDate,
+                UserId,
+                IsParent);
+
+            if (result.Success)
+            {
+                ToastService.ShowSuccess("Done!", $"'{item.ChoreName}' marked as complete.");
+                await RefreshDataAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
+            }
         }
-        else
+        finally
         {
-            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to update chore.");
+            _processingItemId = null;
+            StateHasChanged();
         }
     }
 
     private async Task ApproveChore(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId) || !IsParent) return;
+        if (_processingItemId.HasValue) return;
 
-        var result = await TrackerService.SetChoreStatusAsync(
-            item.ChoreDefinitionId,
-            SelectedDate,
-            ChoreStatus.Approved,
-            UserId);
+        _processingItemId = item.ChoreDefinitionId;
+        StateHasChanged();
 
-        if (result.Success)
+        try
         {
-            ToastService.ShowSuccess("Blessed!", $"'{item.ChoreName}' blessed - ${item.Value:F2} wages earned!");
-            await LoadDataAsync();
+            var result = await TrackerService.SetChoreStatusAsync(
+                item.ChoreDefinitionId,
+                SelectedDate,
+                ChoreStatus.Approved,
+                UserId);
+
+            if (result.Success)
+            {
+                ToastService.ShowSuccess("Blessed!", $"'{item.ChoreName}' blessed - ${item.Value:F2} wages earned!");
+                await RefreshDataAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to bless labor.");
+            }
         }
-        else
+        finally
         {
-            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to bless labor.");
+            _processingItemId = null;
+            StateHasChanged();
         }
     }
 
@@ -421,7 +499,7 @@
             {
                 ToastService.ShowWarning("Marked Undone", $"'{_confirmingItem.ChoreName}' marked as not completed.");
                 CloseConfirmationModals();
-                await LoadDataAsync();
+                await RefreshDataAsync();
             }
             else
             {
@@ -458,7 +536,7 @@
             {
                 ToastService.ShowInfo("Excused", $"'{_confirmingItem.ChoreName}' excused for today.");
                 CloseConfirmationModals();
-                await LoadDataAsync();
+                await RefreshDataAsync();
             }
             else
             {
@@ -514,7 +592,7 @@
                     ToastService.ShowInfo("Resolved", message);
                     
                 CloseConfirmationModals();
-                await LoadDataAsync();
+                await RefreshDataAsync();
             }
             else
             {
@@ -530,20 +608,32 @@
     private async Task ResetToPending(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId) || !IsParent) return;
+        if (_processingItemId.HasValue) return;
 
-        var result = await TrackerService.ResetChoreToPendingAsync(
-            item.ChoreDefinitionId,
-            SelectedDate,
-            UserId);
+        _processingItemId = item.ChoreDefinitionId;
+        StateHasChanged();
 
-        if (result.Success)
+        try
         {
-            ToastService.ShowInfo("Restored", $"'{item.ChoreName}' restored to pending.");
-            await LoadDataAsync();
+            var result = await TrackerService.ResetChoreToPendingAsync(
+                item.ChoreDefinitionId,
+                SelectedDate,
+                UserId);
+
+            if (result.Success)
+            {
+                ToastService.ShowInfo("Restored", $"'{item.ChoreName}' restored to pending.");
+                await RefreshDataAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to reset chore.");
+            }
         }
-        else
+        finally
         {
-            ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to reset chore.");
+            _processingItemId = null;
+            StateHasChanged();
         }
     }
     
