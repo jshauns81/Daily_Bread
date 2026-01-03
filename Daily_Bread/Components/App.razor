@@ -260,12 +260,12 @@
     <meta name="apple-mobile-web-app-title" content="Daily Bread">
     <link rel="apple-touch-startup-image" href="/apple-touch-icon.png">
     
-    <HeadOutlet @rendermode="InteractiveServer" />
+    <HeadOutlet @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
 </head>
 
 <body>
     <CascadingAuthenticationState>
-        <Routes @rendermode="InteractiveServer" />
+        <Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
     </CascadingAuthenticationState>
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>

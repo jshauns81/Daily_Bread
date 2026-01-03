@@ -54,6 +54,32 @@ public interface IAppStateService
     /// Whether the parent dashboard has been loaded.
     /// </summary>
     bool IsParentDashboardLoaded { get; }
+    
+    #region State Change Events
+    
+    /// <summary>
+    /// Event fired when parent dashboard data changes (approvals, etc.).
+    /// Components like NavMenu can subscribe to refresh their state.
+    /// </summary>
+    event Action? OnParentDashboardChanged;
+    
+    /// <summary>
+    /// Event fired when child dashboard data changes (chore completion, etc.).
+    /// </summary>
+    event Action? OnChildDashboardChanged;
+    
+    /// <summary>
+    /// Event fired when tracker data changes (chore status updates).
+    /// </summary>
+    event Action? OnTrackerChanged;
+    
+    /// <summary>
+    /// Event fired when any state changes. Components can subscribe to this
+    /// for a catch-all refresh trigger instead of individual events.
+    /// </summary>
+    event Action? OnStateChanged;
+    
+    #endregion
 }
 
 /// <summary>
@@ -78,6 +104,31 @@ public class AppStateService : IAppStateService
     private readonly SemaphoreSlim _childLoadLock = new(1, 1);
     private readonly SemaphoreSlim _parentLoadLock = new(1, 1);
     private readonly SemaphoreSlim _trackerLoadLock = new(1, 1);
+    
+    #region State Change Events
+    
+    /// <inheritdoc />
+    public event Action? OnParentDashboardChanged;
+    
+    /// <inheritdoc />
+    public event Action? OnChildDashboardChanged;
+    
+    /// <inheritdoc />
+    public event Action? OnTrackerChanged;
+    
+    /// <inheritdoc />
+    public event Action? OnStateChanged;
+    
+    /// <summary>
+    /// Notifies all subscribers that state has changed.
+    /// Called at the end of every invalidation method.
+    /// </summary>
+    private void NotifyStateChanged()
+    {
+        OnStateChanged?.Invoke();
+    }
+    
+    #endregion
     
     public AppStateService(
         IDashboardService dashboardService,
@@ -231,12 +282,20 @@ public class AppStateService : IAppStateService
             _childDashboardCache.Clear();
             _logger.LogDebug("All child dashboard caches invalidated");
         }
+        
+        // Notify subscribers
+        OnChildDashboardChanged?.Invoke();
+        NotifyStateChanged();
     }
     
     public void InvalidateParentDashboard()
     {
         _parentDashboardCache = null;
         _logger.LogDebug("Parent dashboard cache invalidated");
+        
+        // Notify subscribers
+        OnParentDashboardChanged?.Invoke();
+        NotifyStateChanged();
     }
     
     public void InvalidateTrackerCache(string? userId = null, DateOnly? date = null)
@@ -245,30 +304,35 @@ public class AppStateService : IAppStateService
         {
             _trackerCache.Clear();
             _logger.LogDebug("All tracker caches invalidated");
-            return;
         }
-        
-        // Remove matching entries
-        var keysToRemove = _trackerCache.Keys
-            .Where(k =>
-            {
-                var parts = k.Split(':');
-                if (parts.Length != 2) return false;
-                
-                var matchUserId = userId == null || parts[0] == userId;
-                var matchDate = date == null || parts[1] == date.Value.ToString("yyyy-MM-dd");
-                
-                return matchUserId && matchDate;
-            })
-            .ToList();
-        
-        foreach (var key in keysToRemove)
+        else
         {
-            _trackerCache.TryRemove(key, out _);
+            // Remove matching entries
+            var keysToRemove = _trackerCache.Keys
+                .Where(k =>
+                {
+                    var parts = k.Split(':');
+                    if (parts.Length != 2) return false;
+                    
+                    var matchUserId = userId == null || parts[0] == userId;
+                    var matchDate = date == null || parts[1] == date.Value.ToString("yyyy-MM-dd");
+                    
+                    return matchUserId && matchDate;
+                })
+                .ToList();
+            
+            foreach (var key in keysToRemove)
+            {
+                _trackerCache.TryRemove(key, out _);
+            }
+            
+            _logger.LogDebug("Tracker cache invalidated for userId={UserId}, date={Date}, removed {Count} entries", 
+                userId, date, keysToRemove.Count);
         }
         
-        _logger.LogDebug("Tracker cache invalidated for userId={UserId}, date={Date}, removed {Count} entries", 
-            userId, date, keysToRemove.Count);
+        // Notify subscribers
+        OnTrackerChanged?.Invoke();
+        NotifyStateChanged();
     }
     
     public void InvalidateAll()
@@ -277,6 +341,14 @@ public class AppStateService : IAppStateService
         _parentDashboardCache = null;
         _trackerCache.Clear();
         _logger.LogDebug("All caches invalidated");
+        
+        // Notify all specific event subscribers
+        OnParentDashboardChanged?.Invoke();
+        OnChildDashboardChanged?.Invoke();
+        OnTrackerChanged?.Invoke();
+        
+        // Notify generic state changed subscribers
+        NotifyStateChanged();
     }
     
     // Cache entry structures

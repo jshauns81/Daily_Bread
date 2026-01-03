@@ -414,7 +414,8 @@ app.MapPost("/auth/pin", async (
 app.MapStaticAssets().AllowAnonymous();
 
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AllowAnonymous(); // Allow anonymous access to Blazor framework - individual pages use [Authorize]
 
 // Map additional Identity endpoints
 app.MapAdditionalIdentityEndpoints();

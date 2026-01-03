@@ -1,8 +1,11 @@
 ﻿@using Daily_Bread.Services
 @using Daily_Bread.Components.Shared.Navigation
+@implements IDisposable
 @inject INavigationService NavigationService
 @inject IDashboardService DashboardService
+@inject IAppStateService AppState
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 @inject IJSRuntime JS
 
 <div class="nav-header">
@@ -82,14 +85,13 @@
         // Load pending count for parents
         if (_isParent)
         {
-            try
-            {
-                _pendingCount = await DashboardService.GetPendingApprovalsCountAsync();
-            }
-            catch
-            {
-                _pendingCount = 0;
-            }
+            await RefreshPendingCountAsync();
+            
+            // Subscribe to parent dashboard changes to refresh the badge
+            AppState.OnParentDashboardChanged += OnParentDashboardChanged;
+            
+            // Subscribe to navigation changes to refresh on page load
+            Navigation.LocationChanged += OnLocationChanged;
         }
     }
 
@@ -110,6 +112,35 @@
         }
     }
 
+    private async Task RefreshPendingCountAsync()
+    {
+        try
+        {
+            _pendingCount = await DashboardService.GetPendingApprovalsCountAsync();
+        }
+        catch
+        {
+            _pendingCount = 0;
+        }
+    }
+    
+    private async void OnParentDashboardChanged()
+    {
+        // Refresh the pending count when parent dashboard data changes
+        await RefreshPendingCountAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+    
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        // Refresh pending count whenever navigation occurs (catches cross-user changes)
+        if (_isParent)
+        {
+            await RefreshPendingCountAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
     private async Task HandleNavigation()
     {
         if (OnNavigate.HasDelegate)
@@ -125,6 +156,16 @@
     private static NavLinkMatch GetNavLinkMatch(string route)
     {
         return route == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix;
+    }
+    
+    public void Dispose()
+    {
+        // Unsubscribe from events to prevent memory leaks
+        if (_isParent)
+        {
+            AppState.OnParentDashboardChanged -= OnParentDashboardChanged;
+            Navigation.LocationChanged -= OnLocationChanged;
+        }
     }
 }
 
