@@ -63,7 +63,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Icon).HasMaxLength(50);
             entity.Property(e => e.EarnValue).HasPrecision(10, 2);
             entity.Property(e => e.PenaltyValue).HasPrecision(10, 2);
+#pragma warning disable CS0618 // Ignore obsolete warning - we need to tell EF to ignore this property
             entity.Ignore(e => e.Value);
+#pragma warning restore CS0618
             entity.HasIndex(e => e.AssignedUserId);
             entity.HasIndex(e => e.IsActive);
 

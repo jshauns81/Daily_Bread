@@ -4,6 +4,7 @@
 
 @using System.Security.Claims
 @using Daily_Bread.Components.Shared
+@using Daily_Bread.Components.Home
 @using Daily_Bread.Data.Models
 
 @inject IAppStateService AppState
@@ -190,6 +191,13 @@ else if ((_isParent || _isAdmin) && _parentData != null)
                         }
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Year Activity Heatmap -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <YearActivityCard />
             </div>
         </div>
     </div>
@@ -584,16 +592,11 @@ else
     private string? _userId;
     private bool _showConfetti;
     private bool _hasTriggeredConfetti;
-    private int? _togglingChoreId;
     private bool _initializationComplete;
     
     // Child dashboard state
     private bool _doneExpanded = false;
     private int? _processingChoreId;
-    
-    // Collapsible section state (legacy - keeping for parent view)
-    private bool _earningsExpanded = true;
-    private bool _expectationsExpanded = false;
 
     private ParentDashboardData? _parentData;
     private ChildDashboardData? _childData;
