@@ -8,6 +8,7 @@ using Daily_Bread.Components;
 using Daily_Bread.Components.Account;
 using Daily_Bread.Data;
 using Daily_Bread.Services;
+using Daily_Bread.Hubs;
 
 // Load .env file for local development test
 LoadDotEnv();
@@ -188,6 +189,10 @@ builder.Services.AddScoped<IBiometricAuthService, BiometricAuthService>();
 builder.Services.AddScoped<IAppStateService, AppStateService>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
 
+// SignalR for real-time notifications
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IChoreNotificationService, ChoreNotificationService>();
+
 // Achievement system services (order matters - dependencies first)
 builder.Services.AddScoped<IAchievementConditionEvaluator, AchievementConditionEvaluator>();
 builder.Services.AddScoped<IAchievementBonusService, AchievementBonusService>();
@@ -298,6 +303,9 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+
+// SignalR hub endpoint - must be after UseAuthentication/UseAuthorization
+app.MapHub<ChoreHub>("/chorehub");
 
 // Redirect unauthenticated document requests to login
 // Static files are already served above, so this only affects page requests

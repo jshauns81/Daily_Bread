@@ -1,4 +1,4 @@
-namespace Daily_Bread.Services;
+﻿namespace Daily_Bread.Services;
 
 /// <summary>
 /// Types of toast notifications.

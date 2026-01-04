@@ -1,6 +1,8 @@
 ﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Daily_Bread.Services;
 
@@ -213,6 +215,9 @@ public class DashboardService : IDashboardService
     private readonly ISavingsGoalService _savingsGoalService;
     private readonly IAchievementService _achievementService;
     private readonly IWeeklyProgressService _weeklyProgressService;
+    private readonly IChoreNotificationService _choreNotificationService;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ILogger<DashboardService> _logger;
 
     // Default cash out threshold - should match AppSettings
     private const decimal DefaultCashOutThreshold = 10.00m;
@@ -226,7 +231,10 @@ public class DashboardService : IDashboardService
         ILedgerService ledgerService,
         ISavingsGoalService savingsGoalService,
         IAchievementService achievementService,
-        IWeeklyProgressService weeklyProgressService)
+        IWeeklyProgressService weeklyProgressService,
+        IChoreNotificationService choreNotificationService,
+        UserManager<ApplicationUser> userManager,
+        ILogger<DashboardService> logger)
     {
         _contextFactory = contextFactory;
         _dateProvider = dateProvider;
@@ -237,6 +245,9 @@ public class DashboardService : IDashboardService
         _savingsGoalService = savingsGoalService;
         _achievementService = achievementService;
         _weeklyProgressService = weeklyProgressService;
+        _choreNotificationService = choreNotificationService;
+        _userManager = userManager;
+        _logger = logger;
     }
 
     public async Task<ParentDashboardData> GetParentDashboardAsync()
@@ -427,6 +438,9 @@ public class DashboardService : IDashboardService
 
     public async Task<ServiceResult> QuickApproveAsync(int choreLogId, string parentUserId)
     {
+        _logger.LogInformation("QuickApproveAsync called: ChoreLogId={ChoreLogId}, ParentUserId={ParentUserId}", 
+            choreLogId, parentUserId);
+
         await using var context = await _contextFactory.CreateDbContextAsync();
         
         var choreLog = await context.ChoreLogs
@@ -434,10 +448,25 @@ public class DashboardService : IDashboardService
             .FirstOrDefaultAsync(cl => cl.Id == choreLogId);
 
         if (choreLog == null)
+        {
+            _logger.LogWarning("QuickApproveAsync: ChoreLog {ChoreLogId} not found", choreLogId);
             return ServiceResult.Fail("Chore not found.");
+        }
 
         if (choreLog.Status != ChoreStatus.Completed)
+        {
+            _logger.LogWarning("QuickApproveAsync: ChoreLog {ChoreLogId} status is {Status}, not Completed", 
+                choreLogId, choreLog.Status);
             return ServiceResult.Fail("Only completed chores can be approved.");
+        }
+
+        var childUserId = choreLog.ChoreDefinition.AssignedUserId;
+        var choreName = choreLog.ChoreDefinition.Name;
+        var earnedAmount = choreLog.ChoreDefinition.EarnValue;
+
+        _logger.LogInformation(
+            "QuickApprove: ChoreLogId={ChoreLogId}, ChoreName={ChoreName}, ChildUserId={ChildUserId}, EarnedAmount={EarnedAmount}",
+            choreLogId, choreName, childUserId ?? "null", earnedAmount);
 
         choreLog.Status = ChoreStatus.Approved;
         choreLog.ApprovedByUserId = parentUserId;
@@ -447,6 +476,40 @@ public class DashboardService : IDashboardService
         await context.SaveChangesAsync();
         await _ledgerService.ReconcileChoreLogTransactionAsync(choreLogId);
 
+        // Broadcast dashboard change to parent and child
+        var affectedUserIds = new List<string> { parentUserId };
+        if (!string.IsNullOrEmpty(childUserId))
+        {
+            affectedUserIds.Add(childUserId);
+        }
+        
+        // Await notifications to ensure they're sent before returning
+        await _choreNotificationService.NotifyDashboardChangedAsync([.. affectedUserIds]);
+
+        // Send blessing notification to child
+        if (!string.IsNullOrEmpty(childUserId) && earnedAmount > 0)
+        {
+            var parentUser = await _userManager.FindByIdAsync(parentUserId);
+            var parentName = parentUser?.UserName;
+            
+            _logger.LogInformation(
+                "QuickApprove: Sending BlessingGranted notification to ChildUserId={ChildUserId}, ChoreName={ChoreName}, Amount={Amount}",
+                childUserId, choreName, earnedAmount);
+            
+            await _choreNotificationService.NotifyBlessingGrantedAsync(
+                childUserId,
+                choreName,
+                earnedAmount,
+                parentName);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "QuickApprove: Skipping BlessingGranted notification - ChildUserId={ChildUserId}, EarnedAmount={EarnedAmount}",
+                childUserId ?? "null", earnedAmount);
+        }
+
+        _logger.LogInformation("QuickApproveAsync completed successfully: ChoreLogId={ChoreLogId}", choreLogId);
         return ServiceResult.Ok();
     }
 
