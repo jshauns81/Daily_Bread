@@ -114,9 +114,33 @@ public interface ITrackerService
     Task<ServiceResult> RequestHelpAsync(int choreDefinitionId, DateOnly date, string userId, string reason);
     
     /// <summary>
+    /// Gets help request details for a specific chore log.
+    /// Used by the global help response modal.
+    /// </summary>
+    Task<HelpRequestDetails?> GetHelpRequestDetailsAsync(int choreLogId);
+
+    /// <summary>
     /// Parent responds to a help request.
     /// </summary>
-    Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response);
+    /// <param name="choreLogId">The ChoreLog ID with the help request</param>
+    /// <param name="parentUserId">The parent user ID responding</param>
+    /// <param name="response">The response type (CompletedByParent, Excused, Denied)</param>
+    /// <param name="note">Optional note from parent to child</param>
+    Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response, string? note = null);
+}
+
+/// <summary>
+/// Details about a help request for displaying in the modal.
+/// </summary>
+public class HelpRequestDetails
+{
+    public int ChoreLogId { get; init; }
+    public required string ChoreName { get; init; }
+    public required string ChildName { get; init; }
+    public string? ChildUserId { get; init; }
+    public string? HelpReason { get; init; }
+    public DateTime? HelpRequestedAt { get; init; }
+    public decimal EarnValue { get; init; }
 }
 
 /// <summary>
@@ -424,6 +448,7 @@ public class TrackerService : ITrackerService
                 .FirstOrDefaultAsync(c => c.Id == choreLogId);
             
             var assignedUserId = log?.ChoreDefinition?.AssignedUserId;
+            var choreName = log?.ChoreDefinition?.Name;
             var affectedUserIds = new HashSet<string> { actingUserId };
             if (!string.IsNullOrEmpty(assignedUserId) && assignedUserId != actingUserId)
             {
@@ -431,6 +456,25 @@ public class TrackerService : ITrackerService
             }
             
             _ = _choreNotificationService.NotifyDashboardChangedAsync([.. affectedUserIds]);
+            
+            // Check if this is an "undo" scenario - parent reverting a child's chore to pending/missed
+            // We detect this by checking if new status is "lower" than Completed/Approved
+            // and the acting user is different from the assigned user (parent action on child's chore)
+            if (!string.IsNullOrEmpty(assignedUserId) && 
+                assignedUserId != actingUserId &&
+                !string.IsNullOrEmpty(choreName) &&
+                (newStatus == ChoreStatus.Pending || newStatus == ChoreStatus.Completed || newStatus == ChoreStatus.Missed))
+            {
+                // Get parent name for the notification
+                var parentUser = await _userManager.FindByIdAsync(actingUserId);
+                var parentName = parentUser?.UserName;
+                
+                _logger.LogInformation(
+                    "Sending ChoreUndone notification: ChildUserId={ChildUserId}, ChoreName={ChoreName}",
+                    assignedUserId, choreName);
+                
+                _ = _choreNotificationService.NotifyChoreUndoneAsync(assignedUserId, choreName, parentName);
+            }
         }
 
         return result;
@@ -598,8 +642,8 @@ public class TrackerService : ITrackerService
         var childName = choreDefinition?.AssignedUser?.UserName ?? "Your child";
         var choreName = choreDefinition?.Name ?? "a chore";
         
-        // Push notification (existing)
-        _ = _pushNotificationService.SendHelpRequestNotificationAsync(childName, choreName, reason);
+        // Push notification with choreLogId for deep linking
+        _ = _pushNotificationService.SendHelpRequestNotificationAsync(choreLog.Id, childName, choreName, reason);
         
         // SignalR real-time notification
         _ = _choreNotificationService.NotifyHelpRequestedAsync(choreLog.Id, userId, choreName, childName);
@@ -610,7 +654,34 @@ public class TrackerService : ITrackerService
         return ServiceResult.Ok();
     }
     
-    public async Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response)
+    public async Task<HelpRequestDetails?> GetHelpRequestDetailsAsync(int choreLogId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var choreLog = await context.ChoreLogs
+            .Include(c => c.ChoreDefinition)
+                .ThenInclude(cd => cd.AssignedUser)
+            .FirstOrDefaultAsync(c => c.Id == choreLogId);
+        
+        if (choreLog == null)
+        {
+            _logger.LogWarning("GetHelpRequestDetails: ChoreLog {ChoreLogId} not found", choreLogId);
+            return null;
+        }
+        
+        return new HelpRequestDetails
+        {
+            ChoreLogId = choreLog.Id,
+            ChoreName = choreLog.ChoreDefinition.Name,
+            ChildName = choreLog.ChoreDefinition.AssignedUser?.UserName ?? "Child",
+            ChildUserId = choreLog.ChoreDefinition.AssignedUserId,
+            HelpReason = choreLog.HelpReason,
+            HelpRequestedAt = choreLog.HelpRequestedAt,
+            EarnValue = choreLog.ChoreDefinition.EarnValue
+        };
+    }
+
+    public async Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response, string? note = null)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         var choreLog = await context.ChoreLogs
@@ -642,8 +713,10 @@ public class TrackerService : ITrackerService
         };
 
         // For denied requests, we need to clear help fields as part of the update
-        // Pass notes to signal this (hacky but avoids refactoring UpdateStatusAtomicallyAsync)
-        string? notes = response == HelpResponse.Denied ? "__CLEAR_HELP_FIELDS__" : null;
+        // For other responses, save the parent's note if provided
+        string? notesToSave = response == HelpResponse.Denied 
+            ? "__CLEAR_HELP_FIELDS__" 
+            : note;
 
         // Parent-only action, verified server-side
         var result = await UpdateStatusAtomicallyAsync(
@@ -651,7 +724,7 @@ public class TrackerService : ITrackerService
             newStatus,
             parentUserId,
             requiresParent: true,
-            notes: notes);
+            notes: notesToSave);
 
         if (!result.Success)
         {
@@ -659,8 +732,8 @@ public class TrackerService : ITrackerService
         }
         
         _logger.LogInformation(
-            "Help response: ChoreLogId={ChoreLogId}, Response={Response}, NewStatus={NewStatus}, ChildUserId={ChildUserId}",
-            choreLogId, response, newStatus, childUserId ?? "null");
+            "Help response: ChoreLogId={ChoreLogId}, Response={Response}, NewStatus={NewStatus}, ChildUserId={ChildUserId}, Note={Note}",
+            choreLogId, response, newStatus, childUserId ?? "null", note ?? "none");
         
         // Send notification to child about the help response
         if (!string.IsNullOrEmpty(childUserId))
@@ -669,15 +742,16 @@ public class TrackerService : ITrackerService
             var parentName = parentUser?.UserName;
             
             _logger.LogInformation(
-                "Sending HelpResponded notification: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Response={Response}",
-                childUserId, choreName, response);
+                "Sending HelpResponded notification: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Response={Response}, Note={Note}",
+                childUserId, choreName, response, note ?? "none");
             
             // Await to ensure notification is sent before returning
             await _choreNotificationService.NotifyHelpRespondedAsync(
                 childUserId,
                 choreName,
                 response.ToString(),
-                parentName);
+                parentName,
+                note);
             
             // If the chore was completed by parent (approved), also send blessing notification
             if (response == HelpResponse.CompletedByParent && earnedAmount > 0)

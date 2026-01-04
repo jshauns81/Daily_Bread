@@ -444,6 +444,9 @@
         _processingItemId = item.ChoreDefinitionId;
         StateHasChanged();
 
+        // Capture the original status to determine if this was a completion or undo
+        var originalStatus = item.Status;
+
         try
         {
             var result = await TrackerService.ToggleChoreCompletionAsync(
@@ -454,7 +457,28 @@
 
             if (result.Success)
             {
-                ToastService.ShowSuccess("Done!", $"'{item.ChoreName}' marked as complete.");
+                var newStatus = result.Data;
+                
+                // Determine appropriate toast based on status transition
+                if (newStatus == ChoreStatus.Approved || newStatus == ChoreStatus.Completed)
+                {
+                    // Completion - show "Done!" with amount if applicable
+                    var message = item.EarnValue > 0 
+                        ? $"'{item.ChoreName}' +${item.EarnValue:F2}" 
+                        : $"'{item.ChoreName}' marked as complete.";
+                    ToastService.ShowSuccess("Done!", message);
+                }
+                else if (newStatus == ChoreStatus.Pending)
+                {
+                    // Undo - show "Undone" message
+                    ToastService.ShowInfo("Undone", $"'{item.ChoreName}' has been reset.");
+                }
+                else
+                {
+                    // Fallback for any other status change
+                    ToastService.ShowInfo("Updated", $"'{item.ChoreName}' status changed.");
+                }
+                
                 await RefreshDataAsync();
             }
             else
@@ -611,7 +635,8 @@
             var result = await TrackerService.RespondToHelpRequestAsync(
                 _helpRequestItem.ChoreLogId.Value,
                 UserId,
-                args.Response);
+                args.Response,
+                args.Note);
 
             if (result.Success)
             {
