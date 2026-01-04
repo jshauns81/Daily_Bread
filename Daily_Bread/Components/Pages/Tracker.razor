@@ -223,7 +223,51 @@
             SelectedDate = Today;
         }
 
+        // Subscribe to state changes from SignalR notifications
+        AppState.OnTrackerChanged += OnTrackerStateChanged;
+        AppState.OnChildDashboardChanged += OnChildDashboardStateChanged;
+        if (IsParent)
+        {
+            AppState.OnParentDashboardChanged += OnParentDashboardStateChanged;
+        }
+
         await LoadDataAsync();
+    }
+
+    private async void OnTrackerStateChanged()
+    {
+        // Refresh data when tracker cache is invalidated (e.g., from SignalR)
+        await InvokeAsync(async () =>
+        {
+            await RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async void OnChildDashboardStateChanged()
+    {
+        // Refresh data when child dashboard changes (e.g., blessing received)
+        if (!IsParent)
+        {
+            await InvokeAsync(async () =>
+            {
+                await RefreshDataAsync();
+                StateHasChanged();
+            });
+        }
+    }
+
+    private async void OnParentDashboardStateChanged()
+    {
+        // Refresh data when parent dashboard changes (e.g., help requests)
+        if (IsParent)
+        {
+            await InvokeAsync(async () =>
+            {
+                await RefreshDataAsync();
+                StateHasChanged();
+            });
+        }
     }
 
     private async Task OnDateChanged(DateOnly newDate)
@@ -664,5 +708,13 @@
     {
         _loadCts?.Cancel();
         _loadCts?.Dispose();
+        
+        // Unsubscribe from state change events
+        AppState.OnTrackerChanged -= OnTrackerStateChanged;
+        AppState.OnChildDashboardChanged -= OnChildDashboardStateChanged;
+        if (IsParent)
+        {
+            AppState.OnParentDashboardChanged -= OnParentDashboardStateChanged;
+        }
     }
 }

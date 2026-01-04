@@ -2,11 +2,16 @@
 @using Daily_Bread.Services
 @using Daily_Bread.Components.Shared.Navigation
 @using Daily_Bread.Components.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.Security.Claims
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 @inject INavigationService NavService
-@implements IDisposable
+@inject IAppStateService AppState
+@inject IToastService ToastService
+@inject ILogger<MainLayout> Logger
+@implements IAsyncDisposable
 
 <div class="page @(_sidebarOpen ? "sidebar-open" : "") @(_showBottomNav ? "has-bottom-nav" : "")" id="page-container">
     <!-- Mobile Header -->
@@ -105,11 +110,32 @@
     private bool _sidebarOpen = false;
     private bool _showBottomNav = false;
     private IReadOnlyList<NavItem> _mobileNavItems = [];
+    
+    // SignalR connection for real-time updates
+    private HubConnection? _hubConnection;
+    private string? _currentUserId;
+    private bool _isParent;
+    private bool _isChild;
+    private CancellationTokenSource? _reconnectCts;
+    private bool _signalRInitialized;
 
     protected override async Task OnInitializedAsync()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
         await CheckUserRoleAsync();
+        // Don't initialize SignalR here - wait for OnAfterRenderAsync when circuit is ready
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // DIAGNOSTIC: Log to browser console
+        await JS.InvokeVoidAsync("console.log", $">>> OnAfterRenderAsync called, firstRender={firstRender}, _signalRInitialized={_signalRInitialized}, _currentUserId={_currentUserId}");
+        
+        if (firstRender && !_signalRInitialized)
+        {
+            await JS.InvokeVoidAsync("console.log", ">>> Calling InitializeSignalRAsync from OnAfterRenderAsync");
+            await InitializeSignalRAsync();
+        }
     }
 
     private async Task CheckUserRoleAsync()
@@ -121,19 +147,20 @@
             
             if (user.Identity?.IsAuthenticated == true)
             {
-                var isParent = user.IsInRole("Parent");
+                _currentUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+                _isParent = user.IsInRole("Parent");
+                _isChild = user.IsInRole("Child");
                 var isAdmin = user.IsInRole("Admin");
-                var isChild = user.IsInRole("Child");
                 
                 // Show bottom nav for Parents and Children on mobile
                 // Admin-only users (no Parent or Child role) don't get bottom nav
-                var isAdminOnly = isAdmin && !isParent && !isChild;
-                _showBottomNav = !isAdminOnly && (isParent || isChild);
+                var isAdminOnly = isAdmin && !_isParent && !_isChild;
+                _showBottomNav = !isAdminOnly && (_isParent || _isChild);
                 
                 // Get mobile nav items from centralized service
                 if (_showBottomNav)
                 {
-                    _mobileNavItems = NavService.GetMobileNavItems(isParent, isChild, isAdmin);
+                    _mobileNavItems = NavService.GetMobileNavItems(_isParent, _isChild, isAdmin);
                 }
             }
         }
@@ -142,6 +169,263 @@
             // Ignore auth errors during initialization
         }
     }
+
+    #region SignalR Connection Management
+
+    private async Task InitializeSignalRAsync()
+    {
+        // DIAGNOSTIC: Log to browser console
+        await JS.InvokeVoidAsync("console.log", $">>> InitializeSignalRAsync called. CurrentUserId={_currentUserId}");
+        Logger.LogWarning(">>> InitializeSignalRAsync called. CurrentUserId={CurrentUserId}", _currentUserId);
+
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            await JS.InvokeVoidAsync("console.warn", ">>> User not authenticated, skipping SignalR connection");
+            Logger.LogWarning(">>> User not authenticated, skipping SignalR connection");
+            return;
+        }
+
+        if (_signalRInitialized)
+        {
+            await JS.InvokeVoidAsync("console.log", ">>> SignalR already initialized, skipping");
+            return;
+        }
+
+        try
+        {
+            var hubUrl = NavigationManager.ToAbsoluteUri("/chorehub");
+            
+            // DIAGNOSTIC: Log the URL we're connecting to
+            await JS.InvokeVoidAsync("console.log", $">>> ChoreHub connecting to: {hubUrl}");
+            Logger.LogWarning(">>> ChoreHub connecting to: {HubUrl}", hubUrl);
+            
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl)
+                .WithAutomaticReconnect(new SignalRRetryPolicy())
+                .Build();
+
+            // Subscribe to events using individual parameters for reliable deserialization
+            // All events use primitive types instead of complex objects
+            
+            // DashboardChanged: string[] affectedUserIds, DateTime timestamp
+            _hubConnection.On<string[], DateTime>("DashboardChanged", 
+                (affectedUserIds, timestamp) => OnDashboardChanged(affectedUserIds, timestamp));
+            
+            // HelpAlert: int choreLogId, string requestingUserId, string choreName, string childName, DateTime timestamp
+            _hubConnection.On<int, string, string, string, DateTime>("HelpAlert", 
+                (choreLogId, requestingUserId, choreName, childName, timestamp) => 
+                    OnHelpAlert(choreLogId, requestingUserId, choreName, childName, timestamp));
+            
+            // BlessingGranted: string childUserId, string choreName, decimal earnedAmount, string parentName, DateTime timestamp
+            _hubConnection.On<string, string, decimal, string, DateTime>("BlessingGranted", 
+                (childUserId, choreName, earnedAmount, parentName, timestamp) => 
+                    OnBlessingGranted(childUserId, choreName, earnedAmount, parentName, timestamp));
+            
+            // HelpResponded: string childUserId, string choreName, string response, string parentName, DateTime timestamp
+            _hubConnection.On<string, string, string, string, DateTime>("HelpResponded", 
+                (childUserId, choreName, response, parentName, timestamp) => 
+                    OnHelpResponded(childUserId, choreName, response, parentName, timestamp));
+
+            // DIAGNOSTIC: Log handler registration
+            await JS.InvokeVoidAsync("console.log", ">>> SignalR handlers registered: DashboardChanged, HelpAlert, BlessingGranted, HelpResponded");
+
+            // Handle connection lifecycle
+            _hubConnection.Closed += OnConnectionClosed;
+            _hubConnection.Reconnecting += OnReconnecting;
+            _hubConnection.Reconnected += OnReconnected;
+
+            await _hubConnection.StartAsync();
+            _signalRInitialized = true;
+            
+            // DIAGNOSTIC: Log successful connection
+            await JS.InvokeVoidAsync("console.log", $">>> ChoreHub connected! State={_hubConnection.State}, ConnectionId={_hubConnection.ConnectionId}");
+            Logger.LogWarning(">>> ChoreHub connected! State={State}, ConnectionId={ConnectionId}", 
+                _hubConnection.State, _hubConnection.ConnectionId);
+        }
+        catch (Exception ex)
+        {
+            // DIAGNOSTIC: Log connection failure with full details
+            await JS.InvokeVoidAsync("console.error", $">>> ChoreHub connection FAILED: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $">>> ChoreHub exception details: {ex}");
+            Logger.LogError(ex, ">>> ChoreHub connection FAILED: {Message}", ex.Message);
+            ScheduleReconnect();
+        }
+    }
+
+    private void OnDashboardChanged(string[]? affectedUserIds, DateTime timestamp)
+    {
+        // Check if this user is affected
+        if (affectedUserIds == null || affectedUserIds.Length == 0)
+            return;
+
+        var isAffected = affectedUserIds.Contains(_currentUserId);
+        
+        // Parents are always interested in child changes
+        if (_isParent || isAffected)
+        {
+            Logger.LogDebug("DashboardChanged received, invalidating caches");
+            
+            // Trigger existing AppStateService invalidation flow
+            // Components already subscribe to these events
+            if (_isParent)
+            {
+                AppState.InvalidateParentDashboard();
+            }
+            
+            if (isAffected)
+            {
+                AppState.InvalidateChildDashboard(_currentUserId);
+            }
+            
+            // Also invalidate tracker cache for affected users
+            foreach (var userId in affectedUserIds)
+            {
+                AppState.InvalidateTrackerCache(userId);
+            }
+        }
+    }
+
+    private async void OnHelpAlert(int choreLogId, string requestingUserId, string choreName, string childName, DateTime timestamp)
+    {
+        // Only parents need to see help alerts
+        if (!_isParent) return;
+
+        Logger.LogDebug("HelpAlert received: {ChildName} needs help with {ChoreName}", 
+            childName, choreName);
+
+        // Show toast notification
+        await InvokeAsync(() =>
+        {
+            ToastService.ShowWarning(
+                "Help Requested",
+                $"{childName} needs help with '{choreName}'");
+        });
+
+        // Also invalidate parent dashboard to update the help requests list
+        AppState.InvalidateParentDashboard();
+    }
+
+    private async void OnBlessingGranted(string childUserId, string choreName, decimal earnedAmount, string parentName, DateTime timestamp)
+    {
+        // Show notification if this event is for the current user
+        // (regardless of role - user might be both parent and child in test scenarios)
+        if (childUserId != _currentUserId) return;
+
+        Logger.LogDebug("BlessingGranted received: {ChoreName} earned ${Amount}", 
+            choreName, earnedAmount);
+
+        await InvokeAsync(() =>
+        {
+            ToastService.ShowSuccess(
+                "🎉 Blessed!",
+                $"'{choreName}' was blessed! +${earnedAmount:F2}");
+        });
+
+        // Invalidate child dashboard to refresh balance and chore status
+        AppState.InvalidateChildDashboard(_currentUserId);
+        AppState.InvalidateTrackerCache(_currentUserId);
+    }
+
+    private async void OnHelpResponded(string childUserId, string choreName, string response, string parentName, DateTime timestamp)
+    {
+        // Log to browser console
+        try
+        {
+            await JS.InvokeVoidAsync("console.log", $">>> HelpResponded RECEIVED: ChildUserId={childUserId}, ChoreName={choreName}, Response={response}, CurrentUserId={_currentUserId}");
+        }
+        catch { /* Ignore JS errors during logging */ }
+
+        // Show notification if this event is for the current user
+        if (childUserId != _currentUserId)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("console.log", $">>> HelpResponded SKIPPED: ChildUserId '{childUserId}' != CurrentUserId '{_currentUserId}'");
+            }
+            catch { /* Ignore JS errors */ }
+            return;
+        }
+
+        // Prepare the toast content
+        var (title, message) = response switch
+        {
+            "CompletedByParent" => ("✅ Help Received!", $"'{choreName}' was completed by {parentName}. You got credit!"),
+            "Excused" => ("🙏 Excused", $"'{choreName}' has been excused for today."),
+            "Denied" => ("📋 Try Again", $"'{choreName}' wasn't excused. Give it another try!"),
+            _ => ("Response Received", $"'{choreName}' help request was addressed.")
+        };
+
+        // Show toast notification
+        await InvokeAsync(() =>
+        {
+            if (response == "Denied")
+            {
+                ToastService.ShowInfo(title, message);
+            }
+            else
+            {
+                ToastService.ShowSuccess(title, message);
+            }
+        });
+
+        // Invalidate child dashboard to refresh chore status
+        AppState.InvalidateChildDashboard(_currentUserId);
+        AppState.InvalidateTrackerCache(_currentUserId);
+    }
+
+    private Task OnConnectionClosed(Exception? ex)
+    {
+        if (ex != null)
+        {
+            Logger.LogWarning(ex, "SignalR connection closed with error");
+        }
+        else
+        {
+            Logger.LogInformation("SignalR connection closed");
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task OnReconnecting(Exception? ex)
+    {
+        Logger.LogInformation("SignalR reconnecting... {Error}", ex?.Message);
+        return Task.CompletedTask;
+    }
+
+    private Task OnReconnected(string? connectionId)
+    {
+        Logger.LogInformation("SignalR reconnected: {ConnectionId}", connectionId);
+        
+        // Refresh data after reconnection in case we missed events
+        AppState.InvalidateAll();
+        
+        return Task.CompletedTask;
+    }
+
+    private void ScheduleReconnect()
+    {
+        _reconnectCts?.Cancel();
+        _reconnectCts = new CancellationTokenSource();
+        var token = _reconnectCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(5000, token);
+                if (!token.IsCancellationRequested)
+                {
+                    await InvokeAsync(async () => await InitializeSignalRAsync());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected on dispose
+            }
+        }, token);
+    }
+
+    #endregion
 
     private bool IsCurrentPage(string href)
     {
@@ -190,8 +474,66 @@
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+        
+        _reconnectCts?.Cancel();
+        _reconnectCts?.Dispose();
+        
+        if (_hubConnection != null)
+        {
+            _hubConnection.Closed -= OnConnectionClosed;
+            _hubConnection.Reconnecting -= OnReconnecting;
+            _hubConnection.Reconnected -= OnReconnected;
+            
+            try
+            {
+                await _hubConnection.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error disposing SignalR connection");
+            }
+        }
     }
+
+    #region SignalR Event DTOs
+    
+    // Note: These DTOs are no longer used for SignalR deserialization.
+    // All events now use individual parameters for reliable deserialization.
+    // Keeping this region as documentation of the event signatures.
+    
+    // DashboardChanged: string[] affectedUserIds, DateTime timestamp
+    // HelpAlert: int choreLogId, string requestingUserId, string choreName, string childName, DateTime timestamp
+    // BlessingGranted: string childUserId, string choreName, decimal earnedAmount, string parentName, DateTime timestamp
+    // HelpResponded: string childUserId, string choreName, string response, string parentName, DateTime timestamp
+
+    #endregion
+
+    #region Retry Policy
+
+    /// <summary>
+    /// Custom retry policy with exponential backoff.
+    /// </summary>
+    private sealed class SignalRRetryPolicy : IRetryPolicy
+    {
+        private static readonly TimeSpan[] RetryDelays =
+        [
+            TimeSpan.FromSeconds(0),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(10),
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromSeconds(60)
+        ];
+
+        public TimeSpan? NextRetryDelay(RetryContext retryContext)
+        {
+            var index = Math.Min(retryContext.PreviousRetryCount, RetryDelays.Length - 1);
+            return RetryDelays[index];
+        }
+    }
+
+    #endregion
 }

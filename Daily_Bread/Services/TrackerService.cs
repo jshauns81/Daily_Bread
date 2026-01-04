@@ -142,6 +142,7 @@ public class TrackerService : ITrackerService
     private readonly IWeeklyProgressService _weeklyProgressService;
     private readonly IFamilySettingsService _familySettingsService;
     private readonly IAchievementService _achievementService;
+    private readonly IChoreNotificationService _choreNotificationService;
     private readonly IDateProvider _dateProvider;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<TrackerService> _logger;
@@ -155,6 +156,7 @@ public class TrackerService : ITrackerService
         IWeeklyProgressService weeklyProgressService,
         IFamilySettingsService familySettingsService,
         IAchievementService achievementService,
+        IChoreNotificationService choreNotificationService,
         IDateProvider dateProvider,
         UserManager<ApplicationUser> userManager,
         ILogger<TrackerService> logger)
@@ -167,6 +169,7 @@ public class TrackerService : ITrackerService
         _weeklyProgressService = weeklyProgressService;
         _familySettingsService = familySettingsService;
         _achievementService = achievementService;
+        _choreNotificationService = choreNotificationService;
         _dateProvider = dateProvider;
         _userManager = userManager;
         _logger = logger;
@@ -372,7 +375,7 @@ public class TrackerService : ITrackerService
         // This runs outside the transaction so achievement failures don't affect chore updates
         if (result.Success && (newStatus == ChoreStatus.Completed || newStatus == ChoreStatus.Approved))
         {
-            // Get the assigned user ID for achievement check
+            // Get the assigned user ID for achievement check and SignalR notification
             await using var ctx = await _contextFactory.CreateDbContextAsync();
             var log = await ctx.ChoreLogs
                 .Include(c => c.ChoreDefinition)
@@ -381,6 +384,17 @@ public class TrackerService : ITrackerService
             var assignedUserId = log?.ChoreDefinition?.AssignedUserId;
             if (!string.IsNullOrEmpty(assignedUserId))
             {
+                // Broadcast dashboard change to affected users
+                // Both the acting user (parent/child) and the assigned user should refresh
+                var affectedUserIds = new HashSet<string> { actingUserId };
+                if (assignedUserId != actingUserId)
+                {
+                    affectedUserIds.Add(assignedUserId);
+                }
+                
+                _ = _choreNotificationService.NotifyDashboardChangedAsync([.. affectedUserIds]);
+                
+                // Achievement check (fire-and-forget)
                 _ = Task.Run(async () =>
                 {
                     try
@@ -400,6 +414,23 @@ public class TrackerService : ITrackerService
                     }
                 });
             }
+        }
+        // Also notify on other status changes (Missed, Skipped, Pending reset)
+        else if (result.Success)
+        {
+            await using var ctx = await _contextFactory.CreateDbContextAsync();
+            var log = await ctx.ChoreLogs
+                .Include(c => c.ChoreDefinition)
+                .FirstOrDefaultAsync(c => c.Id == choreLogId);
+            
+            var assignedUserId = log?.ChoreDefinition?.AssignedUserId;
+            var affectedUserIds = new HashSet<string> { actingUserId };
+            if (!string.IsNullOrEmpty(assignedUserId) && assignedUserId != actingUserId)
+            {
+                affectedUserIds.Add(assignedUserId);
+            }
+            
+            _ = _choreNotificationService.NotifyDashboardChangedAsync([.. affectedUserIds]);
         }
 
         return result;
@@ -567,7 +598,14 @@ public class TrackerService : ITrackerService
         var childName = choreDefinition?.AssignedUser?.UserName ?? "Your child";
         var choreName = choreDefinition?.Name ?? "a chore";
         
+        // Push notification (existing)
         _ = _pushNotificationService.SendHelpRequestNotificationAsync(childName, choreName, reason);
+        
+        // SignalR real-time notification
+        _ = _choreNotificationService.NotifyHelpRequestedAsync(choreLog.Id, userId, choreName, childName);
+        
+        // Also notify dashboard changed so parents see updated help count
+        _ = _choreNotificationService.NotifyDashboardChangedAsync(userId);
         
         return ServiceResult.Ok();
     }
@@ -577,6 +615,7 @@ public class TrackerService : ITrackerService
         await using var context = await _contextFactory.CreateDbContextAsync();
         var choreLog = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
+                .ThenInclude(cd => cd.AssignedUser)
             .FirstOrDefaultAsync(c => c.Id == choreLogId);
         
         if (choreLog == null)
@@ -588,6 +627,11 @@ public class TrackerService : ITrackerService
         {
             return ServiceResult.Fail("This chore is not waiting for help.");
         }
+
+        // Capture child info before status change
+        var childUserId = choreLog.ChoreDefinition.AssignedUserId;
+        var choreName = choreLog.ChoreDefinition.Name;
+        var earnedAmount = choreLog.ChoreDefinition.EarnValue;
 
         ChoreStatus newStatus = response switch
         {
@@ -615,8 +659,44 @@ public class TrackerService : ITrackerService
         }
         
         _logger.LogInformation(
-            "Help response: ChoreLogId={ChoreLogId}, Response={Response}, NewStatus={NewStatus}",
-            choreLogId, response, newStatus);
+            "Help response: ChoreLogId={ChoreLogId}, Response={Response}, NewStatus={NewStatus}, ChildUserId={ChildUserId}",
+            choreLogId, response, newStatus, childUserId ?? "null");
+        
+        // Send notification to child about the help response
+        if (!string.IsNullOrEmpty(childUserId))
+        {
+            var parentUser = await _userManager.FindByIdAsync(parentUserId);
+            var parentName = parentUser?.UserName;
+            
+            _logger.LogInformation(
+                "Sending HelpResponded notification: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Response={Response}",
+                childUserId, choreName, response);
+            
+            // Await to ensure notification is sent before returning
+            await _choreNotificationService.NotifyHelpRespondedAsync(
+                childUserId,
+                choreName,
+                response.ToString(),
+                parentName);
+            
+            // If the chore was completed by parent (approved), also send blessing notification
+            if (response == HelpResponse.CompletedByParent && earnedAmount > 0)
+            {
+                _logger.LogInformation(
+                    "Sending BlessingGranted notification: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Amount={Amount}",
+                    childUserId, choreName, earnedAmount);
+                
+                await _choreNotificationService.NotifyBlessingGrantedAsync(
+                    childUserId,
+                    choreName,
+                    earnedAmount,
+                    parentName);
+            }
+        }
+        else
+        {
+            _logger.LogWarning("Cannot send help response notification: childUserId is null for ChoreLogId={ChoreLogId}", choreLogId);
+        }
         
         return ServiceResult.Ok();
     }
