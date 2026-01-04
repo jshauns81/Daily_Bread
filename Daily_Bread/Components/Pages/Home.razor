@@ -899,7 +899,9 @@ else
             {
                 if (result.Data.IsApproved)
                 {
-                    ToastService.ShowSuccess("Done!", $"+${chore.EarnValue:F2}");
+                    // Only show amount if it's greater than $0
+                    var message = chore.EarnValue > 0 ? $"+${chore.EarnValue:F2}" : null;
+                    ToastService.ShowSuccess("Done!", message);
                 }
                 else if (result.Data.IsCompleted)
                 {

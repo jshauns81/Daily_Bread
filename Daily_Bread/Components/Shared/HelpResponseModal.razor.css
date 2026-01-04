@@ -1,0 +1,55 @@
+/* ============================================
+   HELP RESPONSE MODAL - Scoped Styles
+   Uses Daily Bread Design System tokens
+   ============================================ */
+
+/* Response option base styling */
+.response-option {
+    transition: all var(--ds-duration-fast) var(--ds-ease-default);
+    cursor: pointer;
+}
+
+.response-option:hover {
+    transform: translateX(2px);
+}
+
+/* ============================================
+   SELECTED STATE BACKGROUNDS
+   Match app.css table status patterns
+   ============================================ */
+
+.response-option.selected-success {
+    background-color: rgba(163, 190, 140, 0.15) !important;
+}
+
+.response-option.selected-secondary {
+    background-color: rgba(76, 86, 106, 0.4) !important;
+}
+
+.response-option.selected-warning {
+    background-color: rgba(235, 203, 139, 0.15) !important;
+}
+
+/* ============================================
+   SELECTED STATE TEXT
+   Use --ds-text-primary for good contrast on all tinted backgrounds
+   ============================================ */
+
+.response-option.selected-success .option-description,
+.response-option.selected-secondary .option-description,
+.response-option.selected-warning .option-description {
+    color: var(--ds-text-primary) !important;
+}
+
+/* Option titles use semantic colors when selected */
+.response-option.selected-success .option-title {
+    color: var(--ds-semantic-success) !important;
+}
+
+.response-option.selected-secondary .option-title {
+    color: var(--ds-text-primary) !important;
+}
+
+.response-option.selected-warning .option-title {
+    color: var(--ds-semantic-highlight) !important;
+}

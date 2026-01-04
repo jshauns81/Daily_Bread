@@ -8,7 +8,8 @@ public enum ToastType
     Success,
     Error,
     Warning,
-    Info
+    Info,
+    HelpAlert
 }
 
 /// <summary>
@@ -25,6 +26,17 @@ public class ToastMessage
     public bool IsVisible { get; set; } = true;
     
     /// <summary>
+    /// Optional click handler. When set, the toast becomes clickable.
+    /// The toast is automatically dismissed after the callback is invoked.
+    /// </summary>
+    public Action? OnClick { get; init; }
+    
+    /// <summary>
+    /// Whether this toast has a click action.
+    /// </summary>
+    public bool IsClickable => OnClick != null;
+    
+    /// <summary>
     /// Bootstrap Icon class based on toast type.
     /// </summary>
     public string IconClass => Type switch
@@ -33,6 +45,7 @@ public class ToastMessage
         ToastType.Error => "bi-x-circle",
         ToastType.Warning => "bi-exclamation-triangle",
         ToastType.Info => "bi-info-circle",
+        ToastType.HelpAlert => "bi-life-preserver",
         _ => "bi-info-circle"
     };
     
@@ -45,6 +58,7 @@ public class ToastMessage
         ToastType.Error => "toast-error",
         ToastType.Warning => "toast-warning",
         ToastType.Info => "toast-info",
+        ToastType.HelpAlert => "toast-help-alert",
         _ => "toast-info"
     };
 }
@@ -83,6 +97,16 @@ public interface IToastService
     /// Shows an info toast.
     /// </summary>
     void ShowInfo(string title, string? message = null, int durationMs = 4000);
+    
+    /// <summary>
+    /// Shows a help alert toast with optional click callback.
+    /// Uses longer duration and special styling for help requests.
+    /// </summary>
+    /// <param name="title">Toast title</param>
+    /// <param name="message">Toast message</param>
+    /// <param name="onClick">Optional callback when toast is clicked</param>
+    /// <param name="durationMs">Duration in milliseconds (default 8000ms for help alerts)</param>
+    void ShowHelpAlert(string title, string? message = null, Action? onClick = null, int durationMs = 8000);
     
     /// <summary>
     /// Shows a custom toast.
@@ -164,6 +188,18 @@ public class ToastService : IToastService, IDisposable
             Message = message,
             Type = ToastType.Info,
             DurationMs = durationMs
+        });
+    }
+    
+    public void ShowHelpAlert(string title, string? message = null, Action? onClick = null, int durationMs = 8000)
+    {
+        Show(new ToastMessage
+        {
+            Title = title,
+            Message = message,
+            Type = ToastType.HelpAlert,
+            DurationMs = durationMs,
+            OnClick = onClick
         });
     }
     

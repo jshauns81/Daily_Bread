@@ -46,7 +46,17 @@ public interface IChoreNotificationService
     /// <param name="choreName">Name of the chore</param>
     /// <param name="response">The parent's response type</param>
     /// <param name="parentName">Name of the parent who responded</param>
-    Task NotifyHelpRespondedAsync(string childUserId, string choreName, string response, string? parentName);
+    /// <param name="note">Optional note from parent to child</param>
+    Task NotifyHelpRespondedAsync(string childUserId, string choreName, string response, string? parentName, string? note = null);
+
+    /// <summary>
+    /// Broadcasts that a chore was undone (approval revoked) by a parent.
+    /// Notifies the child that their completed chore has been reset.
+    /// </summary>
+    /// <param name="childUserId">The child user ID whose chore was undone</param>
+    /// <param name="choreName">Name of the chore</param>
+    /// <param name="parentName">Name of the parent who undid it</param>
+    Task NotifyChoreUndoneAsync(string childUserId, string choreName, string? parentName);
 }
 
 /// <summary>
@@ -167,7 +177,8 @@ public class ChoreNotificationService : IChoreNotificationService
         string childUserId,
         string choreName,
         string response,
-        string? parentName)
+        string? parentName,
+        string? note = null)
     {
         if (string.IsNullOrEmpty(childUserId))
         {
@@ -181,16 +192,17 @@ public class ChoreNotificationService : IChoreNotificationService
             var timestamp = DateTime.UtcNow;
 
             _logger.LogInformation(
-                "Sending HelpResponded: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Response={Response}",
-                childUserId, choreName, response);
+                "Sending HelpResponded: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Response={Response}, Note={Note}",
+                childUserId, choreName, response, note ?? "none");
 
             // Send as individual parameters for reliable deserialization
-            // Client: _hubConnection.On<string, string, string, string, DateTime>("HelpResponded", ...)
+            // Client: _hubConnection.On<string, string, string, string, string?, DateTime>("HelpResponded", ...)
             await _hubContext.Clients.All.SendAsync("HelpResponded", 
                 childUserId, 
                 choreName, 
                 response, 
-                effectiveParentName, 
+                effectiveParentName,
+                note,
                 timestamp);
 
             _logger.LogInformation(
@@ -200,6 +212,44 @@ public class ChoreNotificationService : IChoreNotificationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to broadcast HelpResponded");
+        }
+    }
+
+    public async Task NotifyChoreUndoneAsync(
+        string childUserId,
+        string choreName,
+        string? parentName)
+    {
+        if (string.IsNullOrEmpty(childUserId))
+        {
+            _logger.LogWarning("NotifyChoreUndone called with null/empty childUserId, skipping");
+            return;
+        }
+
+        try
+        {
+            var effectiveParentName = parentName ?? "Parent";
+            var timestamp = DateTime.UtcNow;
+
+            _logger.LogInformation(
+                "Sending ChoreUndone: ChildUserId={ChildUserId}, ChoreName={ChoreName}",
+                childUserId, choreName);
+
+            // Send as individual parameters for reliable deserialization
+            // Client: _hubConnection.On<string, string, string, DateTime>("ChoreUndone", ...)
+            await _hubContext.Clients.All.SendAsync("ChoreUndone", 
+                childUserId, 
+                choreName, 
+                effectiveParentName, 
+                timestamp);
+
+            _logger.LogInformation(
+                "ChoreUndone broadcast sent successfully: Child={ChildUserId}, Chore={ChoreName}",
+                childUserId, choreName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to broadcast ChoreUndone");
         }
     }
 }

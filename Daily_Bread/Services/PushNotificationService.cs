@@ -85,8 +85,9 @@ public interface IPushNotificationService
     
     /// <summary>
     /// Sends a help request notification to all parents.
+    /// Includes choreLogId for deep linking to the help response modal.
     /// </summary>
-    Task<ServiceResult> SendHelpRequestNotificationAsync(string childName, string choreName, string? reason);
+    Task<ServiceResult> SendHelpRequestNotificationAsync(int choreLogId, string childName, string choreName, string? reason);
 }
 
 public class PushNotificationService : IPushNotificationService
@@ -279,7 +280,7 @@ public class PushNotificationService : IPushNotificationService
         return await SendToRoleAsync("Parent", payload);
     }
 
-    public async Task<ServiceResult> SendHelpRequestNotificationAsync(string childName, string choreName, string? reason)
+    public async Task<ServiceResult> SendHelpRequestNotificationAsync(int choreLogId, string childName, string choreName, string? reason)
     {
         var payload = new PushNotificationPayload
         {
@@ -289,11 +290,12 @@ public class PushNotificationService : IPushNotificationService
                 : $"{choreName}: {reason}",
             Icon = "/web-app-manifest-192x192.png",
             Badge = "/favicon-96x96.png",
-            Url = "/tracker",
-            Tag = "help-request",
+            Url = $"/?helpRequestId={choreLogId}",
+            Tag = $"help-request-{choreLogId}",
             Data = new Dictionary<string, object>
             {
                 ["type"] = "help-request",
+                ["choreLogId"] = choreLogId,
                 ["choreName"] = choreName,
                 ["childName"] = childName
             }

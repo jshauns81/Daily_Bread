@@ -80,6 +80,33 @@ public interface IAppStateService
     event Action? OnStateChanged;
     
     #endregion
+    
+    #region Help Request Modal State
+    
+    /// <summary>
+    /// Event fired when a help request should be opened (e.g., from toast click, push notification).
+    /// Subscribers (like MainLayout) should show the HelpResponseModal.
+    /// </summary>
+    event Action<int>? OnHelpRequestOpened;
+    
+    /// <summary>
+    /// The currently open help request ChoreLogId, or null if none.
+    /// </summary>
+    int? CurrentHelpRequestId { get; }
+    
+    /// <summary>
+    /// Opens the help response modal for a specific chore log.
+    /// Triggers OnHelpRequestOpened event.
+    /// </summary>
+    /// <param name="choreLogId">The ChoreLog ID with the help request</param>
+    void OpenHelpRequest(int choreLogId);
+    
+    /// <summary>
+    /// Closes the help response modal and clears the current help request.
+    /// </summary>
+    void CloseHelpRequest();
+    
+    #endregion
 }
 
 /// <summary>
@@ -105,6 +132,9 @@ public class AppStateService : IAppStateService
     private readonly SemaphoreSlim _parentLoadLock = new(1, 1);
     private readonly SemaphoreSlim _trackerLoadLock = new(1, 1);
     
+    // Help request modal state
+    private int? _currentHelpRequestId;
+    
     #region State Change Events
     
     /// <inheritdoc />
@@ -126,6 +156,32 @@ public class AppStateService : IAppStateService
     private void NotifyStateChanged()
     {
         OnStateChanged?.Invoke();
+    }
+    
+    #endregion
+    
+    #region Help Request Modal State
+    
+    /// <inheritdoc />
+    public event Action<int>? OnHelpRequestOpened;
+    
+    /// <inheritdoc />
+    public int? CurrentHelpRequestId => _currentHelpRequestId;
+    
+    /// <inheritdoc />
+    public void OpenHelpRequest(int choreLogId)
+    {
+        _currentHelpRequestId = choreLogId;
+        _logger.LogDebug("Opening help request modal for ChoreLogId={ChoreLogId}", choreLogId);
+        OnHelpRequestOpened?.Invoke(choreLogId);
+    }
+    
+    /// <inheritdoc />
+    public void CloseHelpRequest()
+    {
+        var previousId = _currentHelpRequestId;
+        _currentHelpRequestId = null;
+        _logger.LogDebug("Closed help request modal (was ChoreLogId={ChoreLogId})", previousId);
     }
     
     #endregion
