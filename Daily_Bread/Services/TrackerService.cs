@@ -416,7 +416,8 @@ public class TrackerService : ITrackerService
                     affectedUserIds.Add(assignedUserId);
                 }
                 
-                _ = _choreNotificationService.NotifyDashboardChangedAsync([.. affectedUserIds]);
+                // Exclude the acting user - they're already refreshing locally
+                _ = _choreNotificationService.NotifyDashboardChangedAsync(affectedUserIds.ToArray(), excludeUserId: actingUserId);
                 
                 // Achievement check (fire-and-forget)
                 _ = Task.Run(async () =>
@@ -455,7 +456,8 @@ public class TrackerService : ITrackerService
                 affectedUserIds.Add(assignedUserId);
             }
             
-            _ = _choreNotificationService.NotifyDashboardChangedAsync([.. affectedUserIds]);
+            // Exclude the acting user - they're already refreshing locally
+            _ = _choreNotificationService.NotifyDashboardChangedAsync(affectedUserIds.ToArray(), excludeUserId: actingUserId);
             
             // Check if this is an "undo" scenario - parent reverting a child's chore to pending/missed
             // We detect this by checking if new status is "lower" than Completed/Approved
@@ -649,7 +651,8 @@ public class TrackerService : ITrackerService
         _ = _choreNotificationService.NotifyHelpRequestedAsync(choreLog.Id, userId, choreName, childName);
         
         // Also notify dashboard changed so parents see updated help count
-        _ = _choreNotificationService.NotifyDashboardChangedAsync(userId);
+        // Exclude the acting user (child) - they're already refreshing locally
+        _ = _choreNotificationService.NotifyDashboardChangedAsync(new[] { userId }, excludeUserId: userId);
         
         return ServiceResult.Ok();
     }

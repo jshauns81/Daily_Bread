@@ -55,6 +55,12 @@ public interface IAppStateService
     /// </summary>
     bool IsParentDashboardLoaded { get; }
     
+    /// <summary>
+    /// Gets the pending approvals count from cached parent dashboard data.
+    /// Returns 0 if no data is cached (does NOT query database).
+    /// </summary>
+    int CachedPendingApprovalsCount { get; }
+    
     #region State Change Events
     
     /// <summary>
@@ -113,7 +119,7 @@ public interface IAppStateService
 /// Implementation of IAppStateService using scoped caching per circuit.
 /// This service is scoped, so a new instance is created per SignalR circuit.
 /// </summary>
-public class AppStateService : IAppStateService
+public class AppStateService : IAppStateService, IDisposable
 {
     private readonly IDashboardService _dashboardService;
     private readonly ITrackerService _trackerService;
@@ -132,8 +138,19 @@ public class AppStateService : IAppStateService
     private readonly SemaphoreSlim _parentLoadLock = new(1, 1);
     private readonly SemaphoreSlim _trackerLoadLock = new(1, 1);
     
+    // Debounce support - separate CTS for each event type
+    private CancellationTokenSource? _childDashboardDebounceCts;
+    private CancellationTokenSource? _parentDashboardDebounceCts;
+    private CancellationTokenSource? _trackerDebounceCts;
+    private CancellationTokenSource? _stateChangedDebounceCts;
+    private readonly object _debounceLock = new();
+    private const int DebounceDelayMs = 500;
+    
     // Help request modal state
     private int? _currentHelpRequestId;
+    
+    // Track if disposed
+    private bool _disposed;
     
     #region State Change Events
     
@@ -150,12 +167,149 @@ public class AppStateService : IAppStateService
     public event Action? OnStateChanged;
     
     /// <summary>
-    /// Notifies all subscribers that state has changed.
+    /// Fires the child dashboard changed event with debouncing.
+    /// Multiple calls within DebounceDelayMs will be coalesced into one.
+    /// </summary>
+    private void NotifyChildDashboardChangedDebounced()
+    {
+        _logger.LogWarning(">>> Debounce triggered for ChildDashboard - scheduling {DelayMs}ms delay", DebounceDelayMs);
+        
+        lock (_debounceLock)
+        {
+            _childDashboardDebounceCts?.Cancel();
+            _childDashboardDebounceCts?.Dispose();
+            _childDashboardDebounceCts = new CancellationTokenSource();
+            var token = _childDashboardDebounceCts.Token;
+            
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(DebounceDelayMs, token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        _logger.LogWarning(">>> Debounce FIRING OnChildDashboardChanged after {DelayMs}ms delay", DebounceDelayMs);
+                        OnChildDashboardChanged?.Invoke();
+                    }
+                    else
+                    {
+                        _logger.LogWarning(">>> Debounce CANCELLED for ChildDashboard (superseded by newer call)");
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    _logger.LogWarning(">>> Debounce CANCELLED for ChildDashboard (TaskCanceledException)");
+                }
+            });
+        }
+    }
+    
+    /// <summary>
+    /// Fires the parent dashboard changed event with debouncing.
+    /// Multiple calls within DebounceDelayMs will be coalesced into one.
+    /// </summary>
+    private void NotifyParentDashboardChangedDebounced()
+    {
+        _logger.LogWarning(">>> Debounce triggered for ParentDashboard - scheduling {DelayMs}ms delay", DebounceDelayMs);
+        
+        lock (_debounceLock)
+        {
+            _parentDashboardDebounceCts?.Cancel();
+            _parentDashboardDebounceCts?.Dispose();
+            _parentDashboardDebounceCts = new CancellationTokenSource();
+            var token = _parentDashboardDebounceCts.Token;
+            
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(DebounceDelayMs, token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        _logger.LogWarning(">>> Debounce FIRING OnParentDashboardChanged after {DelayMs}ms delay", DebounceDelayMs);
+                        OnParentDashboardChanged?.Invoke();
+                    }
+                    else
+                    {
+                        _logger.LogWarning(">>> Debounce CANCELLED for ParentDashboard (superseded by newer call)");
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    _logger.LogWarning(">>> Debounce CANCELLED for ParentDashboard (TaskCanceledException)");
+                }
+            });
+        }
+    }
+    
+    /// <summary>
+    /// Fires the tracker changed event with debouncing.
+    /// Multiple calls within DebounceDelayMs will be coalesced into one.
+    /// </summary>
+    private void NotifyTrackerChangedDebounced()
+    {
+        _logger.LogWarning(">>> Debounce triggered for Tracker - scheduling {DelayMs}ms delay", DebounceDelayMs);
+        
+        lock (_debounceLock)
+        {
+            _trackerDebounceCts?.Cancel();
+            _trackerDebounceCts?.Dispose();
+            _trackerDebounceCts = new CancellationTokenSource();
+            var token = _trackerDebounceCts.Token;
+            
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(DebounceDelayMs, token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        _logger.LogWarning(">>> Debounce FIRING OnTrackerChanged after {DelayMs}ms delay", DebounceDelayMs);
+                        OnTrackerChanged?.Invoke();
+                    }
+                    else
+                    {
+                        _logger.LogWarning(">>> Debounce CANCELLED for Tracker (superseded by newer call)");
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    _logger.LogWarning(">>> Debounce CANCELLED for Tracker (TaskCanceledException)");
+                }
+            });
+        }
+    }
+    
+    /// <summary>
+    /// Notifies all subscribers that state has changed (debounced).
     /// Called at the end of every invalidation method.
     /// </summary>
-    private void NotifyStateChanged()
+    private void NotifyStateChangedDebounced()
     {
-        OnStateChanged?.Invoke();
+        lock (_debounceLock)
+        {
+            _stateChangedDebounceCts?.Cancel();
+            _stateChangedDebounceCts?.Dispose();
+            _stateChangedDebounceCts = new CancellationTokenSource();
+            var token = _stateChangedDebounceCts.Token;
+            
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(DebounceDelayMs, token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        _logger.LogDebug("Debounced: Firing OnStateChanged");
+                        OnStateChanged?.Invoke();
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // Another invalidation came in, this one was cancelled - expected
+                }
+            });
+        }
     }
     
     #endregion
@@ -205,6 +359,13 @@ public class AppStateService : IAppStateService
     
     public bool IsParentDashboardLoaded => 
         _parentDashboardCache?.Data != null && !_parentDashboardCache.IsExpired;
+    
+    /// <summary>
+    /// Gets the pending approvals count from cached parent dashboard data.
+    /// Returns 0 if no data is cached (does NOT query database).
+    /// </summary>
+    public int CachedPendingApprovalsCount => 
+        _parentDashboardCache?.Data?.PendingApprovals.Count ?? 0;
     
     public async Task<ChildDashboardData?> GetChildDashboardAsync(string userId, bool forceRefresh = false)
     {
@@ -339,9 +500,9 @@ public class AppStateService : IAppStateService
             _logger.LogDebug("All child dashboard caches invalidated");
         }
         
-        // Notify subscribers
-        OnChildDashboardChanged?.Invoke();
-        NotifyStateChanged();
+        // Notify subscribers (debounced)
+        NotifyChildDashboardChangedDebounced();
+        NotifyStateChangedDebounced();
     }
     
     public void InvalidateParentDashboard()
@@ -349,9 +510,9 @@ public class AppStateService : IAppStateService
         _parentDashboardCache = null;
         _logger.LogDebug("Parent dashboard cache invalidated");
         
-        // Notify subscribers
-        OnParentDashboardChanged?.Invoke();
-        NotifyStateChanged();
+        // Notify subscribers (debounced)
+        NotifyParentDashboardChangedDebounced();
+        NotifyStateChangedDebounced();
     }
     
     public void InvalidateTrackerCache(string? userId = null, DateOnly? date = null)
@@ -386,9 +547,9 @@ public class AppStateService : IAppStateService
                 userId, date, keysToRemove.Count);
         }
         
-        // Notify subscribers
-        OnTrackerChanged?.Invoke();
-        NotifyStateChanged();
+        // Notify subscribers (debounced)
+        NotifyTrackerChangedDebounced();
+        NotifyStateChangedDebounced();
     }
     
     public void InvalidateAll()
@@ -398,13 +559,34 @@ public class AppStateService : IAppStateService
         _trackerCache.Clear();
         _logger.LogDebug("All caches invalidated");
         
-        // Notify all specific event subscribers
-        OnParentDashboardChanged?.Invoke();
-        OnChildDashboardChanged?.Invoke();
-        OnTrackerChanged?.Invoke();
+        // Notify all specific event subscribers (debounced)
+        NotifyParentDashboardChangedDebounced();
+        NotifyChildDashboardChangedDebounced();
+        NotifyTrackerChangedDebounced();
         
-        // Notify generic state changed subscribers
-        NotifyStateChanged();
+        // Notify generic state changed subscribers (debounced)
+        NotifyStateChangedDebounced();
+    }
+    
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        
+        // Dispose all debounce CTS
+        _childDashboardDebounceCts?.Cancel();
+        _childDashboardDebounceCts?.Dispose();
+        _parentDashboardDebounceCts?.Cancel();
+        _parentDashboardDebounceCts?.Dispose();
+        _trackerDebounceCts?.Cancel();
+        _trackerDebounceCts?.Dispose();
+        _stateChangedDebounceCts?.Cancel();
+        _stateChangedDebounceCts?.Dispose();
+        
+        // Dispose semaphores
+        _childLoadLock.Dispose();
+        _parentLoadLock.Dispose();
+        _trackerLoadLock.Dispose();
     }
     
     // Cache entry structures

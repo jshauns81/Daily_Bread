@@ -160,6 +160,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 // Add application services
+builder.Services.AddMemoryCache(); // Required for ChoreScheduleService caching
 builder.Services.AddScoped<IDateProvider, SystemDateProvider>();
 builder.Services.AddScoped<IToastService, ToastService>();
 builder.Services.AddScoped<ModalService>(); // Modal service for root-level modal rendering

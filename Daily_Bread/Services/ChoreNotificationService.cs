@@ -18,7 +18,8 @@ public interface IChoreNotificationService
     /// Clients should invalidate their cached data and refresh.
     /// </summary>
     /// <param name="affectedUserIds">User IDs whose dashboards may have changed</param>
-    Task NotifyDashboardChangedAsync(params string[] affectedUserIds);
+    /// <param name="excludeUserId">Optional user ID to exclude from broadcast (e.g., the acting user who already refreshed locally)</param>
+    Task NotifyDashboardChangedAsync(string[] affectedUserIds, string? excludeUserId = null);
 
     /// <summary>
     /// Broadcasts a help request alert to all connected clients (parents).
@@ -76,11 +77,22 @@ public class ChoreNotificationService : IChoreNotificationService
         _logger = logger;
     }
 
-    public async Task NotifyDashboardChangedAsync(params string[] affectedUserIds)
+    public async Task NotifyDashboardChangedAsync(string[] affectedUserIds, string? excludeUserId = null)
     {
         if (affectedUserIds.Length == 0)
         {
             _logger.LogDebug("NotifyDashboardChanged called with no affected users, skipping");
+            return;
+        }
+
+        // Filter out the excluded user (the acting user who already refreshed locally)
+        var usersToNotify = excludeUserId != null
+            ? affectedUserIds.Where(id => id != excludeUserId).ToArray()
+            : affectedUserIds;
+
+        if (usersToNotify.Length == 0)
+        {
+            _logger.LogDebug("NotifyDashboardChanged: All users filtered out (excludeUserId={ExcludeUserId}), skipping broadcast", excludeUserId);
             return;
         }
 
@@ -91,12 +103,13 @@ public class ChoreNotificationService : IChoreNotificationService
             // Send as individual parameters for reliable deserialization
             // Client: _hubConnection.On<string[], DateTime>("DashboardChanged", ...)
             await _hubContext.Clients.All.SendAsync("DashboardChanged", 
-                affectedUserIds, 
+                usersToNotify, 
                 timestamp);
 
             _logger.LogInformation(
-                "DashboardChanged broadcast sent for users: {UserIds}",
-                string.Join(", ", affectedUserIds));
+                "DashboardChanged broadcast sent for users: {UserIds} (excluded: {ExcludedUserId})",
+                string.Join(", ", usersToNotify),
+                excludeUserId ?? "none");
         }
         catch (Exception ex)
         {
