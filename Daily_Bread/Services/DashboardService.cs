@@ -256,10 +256,36 @@ public class DashboardService : IDashboardService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        // Get pending approvals (completed but not approved chores)
-        var pendingApprovals = await context.ChoreLogs
+        // =============================================================================
+        // OPTIMIZATION: Load ALL relevant ChoreLogs in a SINGLE query
+        // Previously: Multiple separate queries for pending, help, today, activity
+        // Now: One query, filter in memory
+        // =============================================================================
+        
+        // Load all ChoreLogs that we might need:
+        // - All with Status == Completed (pending approvals - any date)
+        // - All with Status == Help (help requests - any date)
+        // - All for today (for stats)
+        // - Recent completed/approved (for activity feed)
+        var allRelevantLogs = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
+            .Include(cl => cl.ApprovedByUser)
+            .Where(cl => 
+                cl.Status == ChoreStatus.Completed ||  // Pending approvals
+                cl.Status == ChoreStatus.Help ||       // Help requests
+                cl.Date == today ||                    // Today's stats
+                (cl.Status == ChoreStatus.Approved && cl.ApprovedAt != null)) // Recent activity
+            .ToListAsync();
+        
+        _logger.LogDebug("Parent dashboard: Loaded {Count} relevant ChoreLogs in single query", allRelevantLogs.Count);
+
+        // =============================================================================
+        // Now filter in memory - no additional DB queries for ChoreLogs
+        // =============================================================================
+
+        // Pending approvals (completed but not approved chores)
+        var pendingApprovals = allRelevantLogs
             .Where(cl => cl.Status == ChoreStatus.Completed)
             .OrderByDescending(cl => cl.CompletedAt)
             .Take(20)
@@ -268,20 +294,16 @@ public class DashboardService : IDashboardService
                 ChoreLogId = cl.Id,
                 ChoreDefinitionId = cl.ChoreDefinitionId,
                 ChoreName = cl.ChoreDefinition.Name,
-                ChildName = cl.ChoreDefinition.AssignedUser != null 
-                    ? cl.ChoreDefinition.AssignedUser.UserName ?? "Unknown"
-                    : "Unassigned",
+                ChildName = cl.ChoreDefinition.AssignedUser?.UserName ?? "Unassigned",
                 ChildUserId = cl.ChoreDefinition.AssignedUserId,
                 EarnValue = cl.ChoreDefinition.EarnValue,
                 Date = cl.Date,
                 CompletedAt = cl.CompletedAt
             })
-            .ToListAsync();
+            .ToList();
 
-        // Get help requests (chores with Help status)
-        var helpRequests = await context.ChoreLogs
-            .Include(cl => cl.ChoreDefinition)
-                .ThenInclude(cd => cd.AssignedUser)
+        // Help requests (chores with Help status)
+        var helpRequests = allRelevantLogs
             .Where(cl => cl.Status == ChoreStatus.Help)
             .OrderByDescending(cl => cl.HelpRequestedAt)
             .Select(cl => new HelpRequestItem
@@ -289,17 +311,20 @@ public class DashboardService : IDashboardService
                 ChoreLogId = cl.Id,
                 ChoreDefinitionId = cl.ChoreDefinitionId,
                 ChoreName = cl.ChoreDefinition.Name,
-                ChildName = cl.ChoreDefinition.AssignedUser != null 
-                    ? cl.ChoreDefinition.AssignedUser.UserName ?? "Unknown"
-                    : "Unassigned",
+                ChildName = cl.ChoreDefinition.AssignedUser?.UserName ?? "Unassigned",
                 ChildUserId = cl.ChoreDefinition.AssignedUserId,
                 Reason = cl.HelpReason,
                 Date = cl.Date,
                 RequestedAt = cl.HelpRequestedAt
             })
-            .ToListAsync();
+            .ToList();
 
-        // Get children balances
+        // Today's logs (for stats and per-child progress)
+        var todayLogs = allRelevantLogs
+            .Where(cl => cl.Date == today)
+            .ToList();
+
+        // Get children balances (still needs separate call - different table)
         var childProfiles = await _profileService.GetAllChildProfilesAsync();
         var childrenBalances = childProfiles.Select(p => new ChildBalanceSummary
         {
@@ -309,16 +334,10 @@ public class DashboardService : IDashboardService
             CanCashOut = p.TotalBalance >= DefaultCashOutThreshold
         }).ToList();
 
-        // Get recent activity (last 10 items)
-        var recentActivity = await GetRecentActivityAsync(10);
+        // Get recent activity - pass pre-loaded logs to avoid re-querying
+        var recentActivity = await GetRecentActivityAsync(10, allRelevantLogs);
 
-        // Get today's stats from chore logs
-        var todayLogs = await context.ChoreLogs
-            .Include(cl => cl.ChoreDefinition)
-            .Where(cl => cl.Date == today)
-            .ToListAsync();
-
-        // Build per-child progress for today
+        // Build per-child progress for today (in memory from pre-loaded data)
         var childrenProgress = new List<ChildTodayProgress>();
         foreach (var profile in childProfiles)
         {
@@ -356,23 +375,57 @@ public class DashboardService : IDashboardService
     public async Task<ChildDashboardData> GetChildDashboardAsync(string userId)
     {
         var today = _dateProvider.Today;
+        
+        // =============================================================================
+        // OPTIMIZATION: Load ALL ChoreLogs for this child in a SINGLE query
+        // This covers: today's chores, weekly progress, weekly comparison, and streaks
+        // Previously: Multiple separate queries (TrackerService, WeeklyProgress, Streaks, Comparison)
+        // Now: One query, filter in memory for different purposes
+        // =============================================================================
+        
+        // Calculate date ranges we need
+        var startOfThisWeek = today.AddDays(-(int)today.DayOfWeek);
+        var startOfLastWeek = startOfThisWeek.AddDays(-7);
+        var streakStartDate = today.AddDays(-365);
+        
+        // Load ALL ChoreLogs for this user from 365 days ago to today
+        // This single query replaces: TrackerService, StreaksAsync, WeeklyComparison
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var allUserLogs = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
+                .ThenInclude(cd => cd.AssignedUser)
+            .Include(cl => cl.ApprovedByUser)
+            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
+            .Where(cl => cl.Date >= streakStartDate && cl.Date <= today)
+            .ToListAsync();
+        
+        _logger.LogDebug("Child dashboard: Loaded {Count} ChoreLogs for user {UserId} in single query (365 days)", 
+            allUserLogs.Count, userId);
 
         // Get child profile
         var profile = await _profileService.GetProfileByUserIdAsync(userId);
         var displayName = profile?.DisplayName ?? "there";
 
-        // Get balance
+        // Get balance (still needs separate query - different table)
         var balance = await _ledgerService.GetUserBalanceAsync(userId);
         var balanceSummary = await _payoutService.GetBalanceSummaryAsync(userId);
 
-        // Get today's chores
+        // =============================================================================
+        // Filter in memory for different data needs
+        // =============================================================================
+        
+        // Today's logs
+        var todayLogs = allUserLogs.Where(cl => cl.Date == today).ToList();
+        
+        // Get today's chores using TrackerService (still needed for ChoreDefinitions + schedule logic)
+        // But the ChoreLogs part is already loaded
         var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, today);
 
         // Get weekly progress for weekly flexible chores
         var weeklyProgress = await _weeklyProgressService.GetWeeklyProgressForUserAsync(userId, today);
 
-        // Calculate streaks
-        var (currentStreak, bestStreak) = await CalculateStreaksAsync(userId);
+        // Calculate streaks from pre-loaded data (in memory)
+        var (currentStreak, bestStreak) = CalculateStreaksFromLogs(allUserLogs, today);
 
         // Calculate today's earnings
         var todayEarnings = todayChores
@@ -380,10 +433,10 @@ public class DashboardService : IDashboardService
             .Sum(c => c.Value);
         var todayPotential = todayChores.Sum(c => c.Value);
 
-        // Get primary savings goal
+        // Get primary savings goal (still needs separate query - different table)
         var primaryGoal = await _savingsGoalService.GetPrimaryGoalAsync(userId);
 
-        // Check and award any new achievements
+        // Check and award any new achievements (still needs service call)
         var newAchievements = await _achievementService.CheckAndAwardAchievementsAsync(userId);
 
         // Get recently earned achievements (last 5)
@@ -397,10 +450,10 @@ public class DashboardService : IDashboardService
         var allAchievements = await _achievementService.GetAllAchievementsAsync(userId);
         var totalPoints = await _achievementService.GetTotalPointsAsync(userId);
 
-        // Get weekly comparison
-        var weeklyStats = await GetWeeklyComparisonAsync(userId);
+        // Calculate weekly comparison from pre-loaded data (in memory)
+        var weeklyStats = await GetWeeklyComparisonFromLogsAsync(userId, allUserLogs, today, startOfThisWeek, startOfLastWeek);
 
-        // Get lifetime earnings
+        // Get lifetime earnings (still needs separate query - LedgerTransactions table)
         var lifetimeEarnings = await GetLifetimeEarningsAsync(userId);
 
         return new ChildDashboardData
@@ -542,21 +595,20 @@ public class DashboardService : IDashboardService
         return ServiceResult<TrackerChoreItem>.Ok(updatedChore);
     }
 
-    private async Task<List<RecentActivityItem>> GetRecentActivityAsync(int count)
+    /// <summary>
+    /// Gets recent activity items for the dashboard feed.
+    /// Overload that accepts pre-loaded ChoreLogs to avoid re-querying.
+    /// </summary>
+    private async Task<List<RecentActivityItem>> GetRecentActivityAsync(int count, List<ChoreLog> preLoadedLogs)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        
         var activities = new List<RecentActivityItem>();
 
-        // Get recent chore completions/approvals
-        var recentLogs = await context.ChoreLogs
-            .Include(cl => cl.ChoreDefinition)
-                .ThenInclude(cd => cd.AssignedUser)
-            .Include(cl => cl.ApprovedByUser)
+        // Use pre-loaded logs for chore activity (already includes navigation properties)
+        var recentLogs = preLoadedLogs
             .Where(cl => cl.Status == ChoreStatus.Approved || cl.Status == ChoreStatus.Completed)
             .OrderByDescending(cl => cl.ModifiedAt ?? cl.CreatedAt)
             .Take(count)
-            .ToListAsync();
+            .ToList();
 
         foreach (var log in recentLogs)
         {
@@ -586,7 +638,8 @@ public class DashboardService : IDashboardService
             }
         }
 
-        // Get recent transactions (payouts, bonuses, penalties)
+        // Get recent transactions (payouts, bonuses, penalties) - still need DB query
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var recentTransactions = await context.LedgerTransactions
             .Include(t => t.User)
             .Where(t => t.Type == TransactionType.Payout || 
@@ -623,23 +676,35 @@ public class DashboardService : IDashboardService
             .ToList();
     }
 
-    private async Task<(int current, int best)> CalculateStreaksAsync(string userId)
+    /// <summary>
+    /// Gets recent activity items for the dashboard feed.
+    /// Original method - queries database for ChoreLogs.
+    /// </summary>
+    private async Task<List<RecentActivityItem>> GetRecentActivityAsync(int count)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
-        var today = _dateProvider.Today;
-        var startDate = today.AddDays(-365);
-        
-        // OPTIMIZED: Single query to get all chore logs for the user in the last 365 days
-        // This eliminates the N+1 pattern (was 365 queries, now 1)
-        var allChoresInRange = await context.ChoreLogs
+        // Load chore logs for activity feed
+        var recentLogs = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
-            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
-            .Where(cl => cl.Date >= startDate && cl.Date <= today)
+                .ThenInclude(cd => cd.AssignedUser)
+            .Include(cl => cl.ApprovedByUser)
+            .Where(cl => cl.Status == ChoreStatus.Approved || cl.Status == ChoreStatus.Completed)
+            .OrderByDescending(cl => cl.ModifiedAt ?? cl.CreatedAt)
+            .Take(count)
             .ToListAsync();
 
+        // Delegate to the overload with pre-loaded logs
+        return await GetRecentActivityAsync(count, recentLogs);
+    }
+
+    /// <summary>
+    /// Calculates streaks from pre-loaded ChoreLogs (in memory).
+    /// </summary>
+    private (int current, int best) CalculateStreaksFromLogs(List<ChoreLog> allLogs, DateOnly today)
+    {
         // Group by date for efficient lookup
-        var choresByDate = allChoresInRange
+        var choresByDate = allLogs
             .GroupBy(cl => cl.Date)
             .ToDictionary(g => g.Key, g => g.ToList());
         
@@ -686,40 +751,39 @@ public class DashboardService : IDashboardService
         return (currentStreak, bestStreak);
     }
 
-    private async Task<WeeklyComparison> GetWeeklyComparisonAsync(string userId)
+    /// <summary>
+    /// Calculates weekly comparison from pre-loaded ChoreLogs (chore counts in memory, earnings still from DB).
+    /// </summary>
+    private async Task<WeeklyComparison> GetWeeklyComparisonFromLogsAsync(
+        string userId,
+        List<ChoreLog> allLogs,
+        DateOnly today,
+        DateOnly startOfThisWeek,
+        DateOnly startOfLastWeek)
     {
+        var endOfLastWeek = startOfThisWeek.AddDays(-1);
+        
+        // Calculate chore counts from pre-loaded logs (in memory)
+        var thisWeekChores = allLogs
+            .Where(cl => cl.Date >= startOfThisWeek && cl.Date <= today)
+            .Count(cl => cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved);
+
+        var lastWeekChores = allLogs
+            .Where(cl => cl.Date >= startOfLastWeek && cl.Date <= endOfLastWeek)
+            .Count(cl => cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved);
+
+        // Earnings still need DB query (LedgerTransactions table - not loaded)
         await using var context = await _contextFactory.CreateDbContextAsync();
         
-        var today = _dateProvider.Today;
-        var startOfThisWeek = today.AddDays(-(int)today.DayOfWeek);
-        var startOfLastWeek = startOfThisWeek.AddDays(-7);
-
-        // This week's stats
         var thisWeekEarnings = await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0 && t.Type == TransactionType.ChoreEarning)
             .Where(t => t.TransactionDate >= startOfThisWeek && t.TransactionDate <= today)
             .SumAsync(t => t.Amount);
 
-        var thisWeekChores = await context.ChoreLogs
-            .Include(cl => cl.ChoreDefinition)
-            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
-            .Where(cl => cl.Date >= startOfThisWeek && cl.Date <= today)
-            .Where(cl => cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved)
-            .CountAsync();
-
-        // Last week's stats
-        var endOfLastWeek = startOfThisWeek.AddDays(-1);
         var lastWeekEarnings = await context.LedgerTransactions
             .Where(t => t.UserId == userId && t.Amount > 0 && t.Type == TransactionType.ChoreEarning)
             .Where(t => t.TransactionDate >= startOfLastWeek && t.TransactionDate <= endOfLastWeek)
             .SumAsync(t => t.Amount);
-
-        var lastWeekChores = await context.ChoreLogs
-            .Include(cl => cl.ChoreDefinition)
-            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
-            .Where(cl => cl.Date >= startOfLastWeek && cl.Date <= endOfLastWeek)
-            .Where(cl => cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved)
-            .CountAsync();
 
         return new WeeklyComparison
         {
@@ -728,6 +792,47 @@ public class DashboardService : IDashboardService
             ThisWeekChoresCompleted = thisWeekChores,
             LastWeekChoresCompleted = lastWeekChores
         };
+    }
+
+    /// <summary>
+    /// Original CalculateStreaksAsync - kept for backward compatibility if called directly.
+    /// </summary>
+    private async Task<(int current, int best)> CalculateStreaksAsync(string userId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var today = _dateProvider.Today;
+        var startDate = today.AddDays(-365);
+        
+        // Load all chore logs for the user in the last 365 days
+        var allChoresInRange = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
+            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
+            .Where(cl => cl.Date >= startDate && cl.Date <= today)
+            .ToListAsync();
+
+        return CalculateStreaksFromLogs(allChoresInRange, today);
+    }
+
+    /// <summary>
+    /// Original GetWeeklyComparisonAsync - kept for backward compatibility if called directly.
+    /// </summary>
+    private async Task<WeeklyComparison> GetWeeklyComparisonAsync(string userId)
+    {
+        var today = _dateProvider.Today;
+        var startOfThisWeek = today.AddDays(-(int)today.DayOfWeek);
+        var startOfLastWeek = startOfThisWeek.AddDays(-7);
+        var streakStartDate = today.AddDays(-365);
+        
+        // Load logs for this call
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var allLogs = await context.ChoreLogs
+            .Include(cl => cl.ChoreDefinition)
+            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
+            .Where(cl => cl.Date >= startOfLastWeek && cl.Date <= today)
+            .ToListAsync();
+
+        return await GetWeeklyComparisonFromLogsAsync(userId, allLogs, today, startOfThisWeek, startOfLastWeek);
     }
 
     private async Task<decimal> GetLifetimeEarningsAsync(string userId)
