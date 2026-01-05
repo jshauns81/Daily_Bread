@@ -317,12 +317,6 @@ Console.WriteLine("Starting chore seeding...");
 await SeedChores.SeedDefaultChoresAsync(app.Services, app.Configuration);
 Console.WriteLine("Chore seeding completed.");
 
-// Seed development test data (only when Seed:DevData = true)
-if (app.Environment.IsDevelopment())
-{
-    await DevDataSeeder.SeedDevDataAsync(app.Services, app.Configuration);
-}
-
 // Configure HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
