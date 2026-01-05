@@ -133,11 +133,75 @@ public class ChoreChartService : IChoreChartService
         var weekEnd = weekStart.AddDays(6);
 
         var profiles = await _profileService.GetAllChildProfilesAsync();
-        var children = new List<ChildChoreChart>();
+        
+        if (profiles.Count == 0)
+        {
+            return new PrintableChoreChart
+            {
+                WeekStart = weekStart,
+                WeekEnd = weekEnd,
+                Children = []
+            };
+        }
 
+        // =============================================================================
+        // OPTIMIZATION: Batch load ALL data upfront to eliminate N+1 queries
+        // Previously: For each profile, called GenerateChildChartInternalAsync which
+        //             queried ChoreDefinitions and ChoreLogs separately per child
+        // Now: Single query for all ChoreDefinitions, single query for all ChoreLogs
+        // =============================================================================
+        
+        var today = _dateProvider.Today;
+        var userIds = profiles.Select(p => p.UserId).ToList();
+        
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        // Batch load ALL ChoreDefinitions for all children in ONE query
+        var allChores = await context.ChoreDefinitions
+            .AsNoTracking()
+            .Where(c => userIds.Contains(c.AssignedUserId!) && c.IsActive)
+            .Where(c => c.StartDate == null || c.StartDate <= weekEnd)
+            .Where(c => c.EndDate == null || c.EndDate >= weekStart)
+            .ToListAsync();
+        
+        // Group chores by userId for in-memory lookup
+        var choresByUser = allChores
+            .GroupBy(c => c.AssignedUserId!)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        
+        // Batch load ALL ChoreLogs for all children in ONE query
+        var choreIds = allChores.Select(c => c.Id).ToList();
+        var allLogs = await context.ChoreLogs
+            .AsNoTracking()
+            .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
+            .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
+            .ToListAsync();
+        
+        // Index logs by (Date, ChoreDefinitionId) for O(1) lookup
+        var logsByDateAndChore = allLogs
+            .GroupBy(cl => (cl.Date, cl.ChoreDefinitionId))
+            .ToDictionary(g => g.Key, g => g.First());
+        
+        // Group logs by choreDefinitionId for weekly progress calculation
+        var logsByChoreId = allLogs
+            .GroupBy(cl => cl.ChoreDefinitionId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Build charts for each child using pre-loaded data (NO database queries in loop)
+        var children = new List<ChildChoreChart>();
         foreach (var profile in profiles)
         {
-            var childChart = await GenerateChildChartInternalAsync(profile.ProfileId, profile.DisplayName, weekStart, weekEnd);
+            var childChart = GenerateChildChartFromPreloadedData(
+                profile.ProfileId,
+                profile.DisplayName,
+                profile.UserId,
+                weekStart,
+                weekEnd,
+                today,
+                choresByUser.GetValueOrDefault(profile.UserId) ?? [],
+                logsByDateAndChore,
+                logsByChoreId);
+            
             if (childChart != null)
             {
                 children.Add(childChart);
@@ -156,23 +220,8 @@ public class ChoreChartService : IChoreChartService
     {
         var weekStart = weekStartDate ?? GetWeekStart(_dateProvider.Today);
         var weekEnd = weekStart.AddDays(6);
+        var today = _dateProvider.Today;
 
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        
-        var profile = await context.ChildProfiles
-            .FirstOrDefaultAsync(p => p.Id == profileId);
-
-        if (profile == null) return null;
-
-        return await GenerateChildChartInternalAsync(profileId, profile.DisplayName, weekStart, weekEnd);
-    }
-
-    private async Task<ChildChoreChart?> GenerateChildChartInternalAsync(
-        int profileId,
-        string displayName,
-        DateOnly weekStart,
-        DateOnly weekEnd)
-    {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
         var profile = await context.ChildProfiles
@@ -181,27 +230,59 @@ public class ChoreChartService : IChoreChartService
         if (profile == null) return null;
 
         var userId = profile.UserId;
-        var today = _dateProvider.Today;
 
         // Get all chore definitions for this user
         var userChores = await context.ChoreDefinitions
+            .AsNoTracking()
             .Where(c => c.AssignedUserId == userId && c.IsActive)
             .Where(c => c.StartDate == null || c.StartDate <= weekEnd)
             .Where(c => c.EndDate == null || c.EndDate >= weekStart)
             .ToListAsync();
 
-        var dailyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.SpecificDays).ToList();
-        var weeklyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency).ToList();
-
         // Get all chore logs for the week
+        var choreIds = userChores.Select(c => c.Id).ToList();
         var choreLogs = await context.ChoreLogs
-            .Where(cl => cl.ChoreDefinition.AssignedUserId == userId)
+            .AsNoTracking()
+            .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
             .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
             .ToListAsync();
 
         var logsByDateAndChore = choreLogs
             .GroupBy(cl => (cl.Date, cl.ChoreDefinitionId))
             .ToDictionary(g => g.Key, g => g.First());
+        
+        var logsByChoreId = choreLogs
+            .GroupBy(cl => cl.ChoreDefinitionId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        return GenerateChildChartFromPreloadedData(
+            profileId,
+            profile.DisplayName,
+            userId,
+            weekStart,
+            weekEnd,
+            today,
+            userChores,
+            logsByDateAndChore,
+            logsByChoreId);
+    }
+
+    /// <summary>
+    /// Generates a child chart using pre-loaded data. NO database queries.
+    /// </summary>
+    private ChildChoreChart? GenerateChildChartFromPreloadedData(
+        int profileId,
+        string displayName,
+        string userId,
+        DateOnly weekStart,
+        DateOnly weekEnd,
+        DateOnly today,
+        List<ChoreDefinition> userChores,
+        Dictionary<(DateOnly, int), ChoreLog> logsByDateAndChore,
+        Dictionary<int, List<ChoreLog>> logsByChoreId)
+    {
+        var dailyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.SpecificDays).ToList();
+        var weeklyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency).ToList();
 
         // Build days
         var days = new List<ChoreChartDay>();
@@ -209,7 +290,7 @@ public class ChoreChartService : IChoreChartService
         {
             var dayChores = new List<ChoreChartEntry>();
 
-            // Add daily scheduled chores using shared helper
+            // Add daily scheduled chores
             foreach (var chore in dailyChores)
             {
                 var isScheduled = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
@@ -230,7 +311,7 @@ public class ChoreChartService : IChoreChartService
                 }
             }
 
-            // Add weekly frequency chores (they appear every available day) using shared helper
+            // Add weekly frequency chores
             foreach (var chore in weeklyChores)
             {
                 var isAvailableDay = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
@@ -238,8 +319,8 @@ public class ChoreChartService : IChoreChartService
 
                 if (isAvailableDay)
                 {
-                    // Get weekly completion count for context
-                    var weeklyLogs = choreLogs.Where(cl => cl.ChoreDefinitionId == chore.Id).ToList();
+                    // Get weekly completion count from pre-loaded data
+                    var weeklyLogs = logsByChoreId.GetValueOrDefault(chore.Id) ?? [];
                     var completedCount = weeklyLogs.Count(l => l.Status == ChoreStatus.Approved || l.Status == ChoreStatus.Completed);
 
                     dayChores.Add(new ChoreChartEntry
@@ -269,7 +350,7 @@ public class ChoreChartService : IChoreChartService
         // Build weekly frequency progress
         var weeklyProgress = weeklyChores.Select(chore =>
         {
-            var weeklyLogs = choreLogs.Where(cl => cl.ChoreDefinitionId == chore.Id).ToList();
+            var weeklyLogs = logsByChoreId.GetValueOrDefault(chore.Id) ?? [];
             return new WeeklyFrequencyChoreProgress
             {
                 ChoreDefinitionId = chore.Id,

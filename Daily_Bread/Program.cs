@@ -31,10 +31,40 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var connectionString = GetPostgresConnectionString(builder.Configuration);
 Console.WriteLine($"Database configured: PostgreSQL");
 
+// =============================================================================
+// Query Monitoring for Development - measures query counts per operation
+// Enable in appsettings.Development.json: "QueryMonitoring:Enabled": true
+// =============================================================================
+var enableQueryMonitoring = builder.Environment.IsDevelopment() && 
+    builder.Configuration.GetValue<bool>("QueryMonitoring:Enabled");
+
+if (enableQueryMonitoring)
+{
+    Console.WriteLine("Query monitoring ENABLED for development");
+    builder.Services.AddSingleton<IQueryMonitoringService, QueryMonitoringService>();
+    builder.Services.AddSingleton<QueryCountingInterceptor>();
+}
+else
+{
+    // Register a no-op implementation when monitoring is disabled
+    builder.Services.AddSingleton<IQueryMonitoringService, NullQueryMonitoringService>();
+}
+
 // Configure DbContext for PostgreSQL
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
 {
     options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+    
+    // Add query counting interceptor if monitoring is enabled
+    if (enableQueryMonitoring)
+    {
+        var interceptor = sp.GetService<QueryCountingInterceptor>();
+        if (interceptor != null)
+        {
+            options.AddInterceptors(interceptor);
+        }
+    }
+    
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
         npgsqlOptions.EnableRetryOnFailure(
@@ -45,9 +75,20 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 });
 
 // Add DbContext factory for Blazor Server (avoids concurrent access issues)
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+builder.Services.AddDbContextFactory<ApplicationDbContext>((sp, options) =>
 {
     options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+    
+    // Add query counting interceptor if monitoring is enabled
+    if (enableQueryMonitoring)
+    {
+        var interceptor = sp.GetService<QueryCountingInterceptor>();
+        if (interceptor != null)
+        {
+            options.AddInterceptors(interceptor);
+        }
+    }
+    
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
         npgsqlOptions.EnableRetryOnFailure(
@@ -275,6 +316,12 @@ Console.WriteLine("Data seeding completed.");
 Console.WriteLine("Starting chore seeding...");
 await SeedChores.SeedDefaultChoresAsync(app.Services, app.Configuration);
 Console.WriteLine("Chore seeding completed.");
+
+// Seed development test data (only when Seed:DevData = true)
+if (app.Environment.IsDevelopment())
+{
+    await DevDataSeeder.SeedDevDataAsync(app.Services, app.Configuration);
+}
 
 // Configure HTTP request pipeline
 if (!app.Environment.IsDevelopment())

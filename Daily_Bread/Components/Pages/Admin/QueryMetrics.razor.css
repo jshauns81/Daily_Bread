@@ -1,0 +1,42 @@
+/* Metrics table base styling */
+.metrics-table {
+    border-collapse: separate;
+    border-spacing: 0 2px;
+}
+
+/* Metrics result row backgrounds - using explicit colors for visibility */
+.metrics-row-optimal {
+    background-color: var(--ds-semantic-success, #28a745) !important;
+}
+
+.metrics-row-acceptable {
+    background-color: var(--ds-semantic-warning, #ffc107) !important;
+}
+
+.metrics-row-needs-work {
+    background-color: var(--ds-semantic-error, #dc3545) !important;
+}
+
+/* Force dark text on colored backgrounds */
+.metrics-row-optimal td,
+.metrics-row-acceptable td,
+.metrics-row-needs-work td {
+    color: var(--ds-bg-base, #1a1a2e) !important;
+    background-color: inherit !important;
+}
+
+/* Legend badges */
+.metrics-badge-optimal {
+    background-color: var(--ds-semantic-success, #28a745) !important;
+    color: var(--ds-bg-base, #1a1a2e) !important;
+}
+
+.metrics-badge-acceptable {
+    background-color: var(--ds-semantic-warning, #ffc107) !important;
+    color: var(--ds-bg-base, #1a1a2e) !important;
+}
+
+.metrics-badge-needs-work {
+    background-color: var(--ds-semantic-error, #dc3545) !important;
+    color: var(--ds-bg-base, #1a1a2e) !important;
+}
