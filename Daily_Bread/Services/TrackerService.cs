@@ -76,6 +76,14 @@ public interface ITrackerService
     Task<List<TrackerChoreItem>> GetTrackerItemsForUserOnDateAsync(string userId, DateOnly date);
 
     /// <summary>
+    /// Gets chores for a specific user on a date, using pre-loaded ChoreLogs to avoid re-querying.
+    /// </summary>
+    /// <param name="userId">The user ID to get chores for.</param>
+    /// <param name="date">The date to get chores for.</param>
+    /// <param name="preLoadedLogs">Pre-loaded ChoreLogs for the user (must include ChoreDefinition and ApprovedByUser).</param>
+    Task<List<TrackerChoreItem>> GetTrackerItemsForUserOnDateAsync(string userId, DateOnly date, IEnumerable<ChoreLog> preLoadedLogs);
+
+    /// <summary>
     /// Toggles chore completion status. Returns the new status.
     /// </summary>
     Task<ServiceResult<ChoreStatus>> ToggleChoreCompletionAsync(
@@ -114,9 +122,33 @@ public interface ITrackerService
     Task<ServiceResult> RequestHelpAsync(int choreDefinitionId, DateOnly date, string userId, string reason);
     
     /// <summary>
+    /// Gets help request details for a specific chore log.
+    /// Used by the global help response modal.
+    /// </summary>
+    Task<HelpRequestDetails?> GetHelpRequestDetailsAsync(int choreLogId);
+
+    /// <summary>
     /// Parent responds to a help request.
     /// </summary>
-    Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response);
+    /// <param name="choreLogId">The ChoreLog ID with the help request</param>
+    /// <param name="parentUserId">The parent user ID responding</param>
+    /// <param name="response">The response type (CompletedByParent, Excused, Denied)</param>
+    /// <param name="note">Optional note from parent to child</param>
+    Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response, string? note = null);
+}
+
+/// <summary>
+/// Details about a help request for displaying in the modal.
+/// </summary>
+public class HelpRequestDetails
+{
+    public int ChoreLogId { get; init; }
+    public required string ChoreName { get; init; }
+    public required string ChildName { get; init; }
+    public string? ChildUserId { get; init; }
+    public string? HelpReason { get; init; }
+    public DateTime? HelpRequestedAt { get; init; }
+    public decimal EarnValue { get; init; }
 }
 
 /// <summary>
@@ -142,6 +174,7 @@ public class TrackerService : ITrackerService
     private readonly IWeeklyProgressService _weeklyProgressService;
     private readonly IFamilySettingsService _familySettingsService;
     private readonly IAchievementService _achievementService;
+    private readonly IChoreNotificationService _choreNotificationService;
     private readonly IDateProvider _dateProvider;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<TrackerService> _logger;
@@ -155,6 +188,7 @@ public class TrackerService : ITrackerService
         IWeeklyProgressService weeklyProgressService,
         IFamilySettingsService familySettingsService,
         IAchievementService achievementService,
+        IChoreNotificationService choreNotificationService,
         IDateProvider dateProvider,
         UserManager<ApplicationUser> userManager,
         ILogger<TrackerService> logger)
@@ -167,6 +201,7 @@ public class TrackerService : ITrackerService
         _weeklyProgressService = weeklyProgressService;
         _familySettingsService = familySettingsService;
         _achievementService = achievementService;
+        _choreNotificationService = choreNotificationService;
         _dateProvider = dateProvider;
         _userManager = userManager;
         _logger = logger;
@@ -238,6 +273,41 @@ public class TrackerService : ITrackerService
     }
 
     /// <summary>
+    /// Gets chores for a specific user on a date, using pre-loaded ChoreLogs to avoid re-querying.
+    /// </summary>
+    public async Task<List<TrackerChoreItem>> GetTrackerItemsForUserOnDateAsync(
+        string userId, 
+        DateOnly date, 
+        IEnumerable<ChoreLog> preLoadedLogs)
+    {
+        var scheduledChores = await _scheduleService.GetChoresForUserOnDateAsync(userId, date);
+
+        // Filter pre-loaded logs for today's date and convert to dictionary
+        var existingLogs = preLoadedLogs
+            .Where(l => l.Date == date)
+            .ToDictionary(l => l.ChoreDefinitionId);
+
+        var weeklyChoreIds = scheduledChores
+            .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            .Select(c => c.Id)
+            .ToList();
+        
+        var weeklyProgress = await _weeklyProgressService.GetChoreProgressBatchAsync(weeklyChoreIds, date);
+
+        var items = new List<TrackerChoreItem>();
+
+        foreach (var chore in scheduledChores)
+        {
+            weeklyProgress.TryGetValue(chore.Id, out var progress);
+            items.Add(existingLogs.TryGetValue(chore.Id, out var log)
+                ? CreateTrackerItem(chore, log, progress)
+                : CreateTrackerItem(chore, null, progress));
+        }
+
+        return items.OrderBy(i => i.ChoreName).ToList();
+    }
+
+    /// <summary>
     /// Atomically updates chore status and reconciles ledger.
     /// All status changes that affect money go through this method.
     /// Also triggers achievement checks after successful completion/approval.
@@ -250,6 +320,15 @@ public class TrackerService : ITrackerService
         string? notes = null)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        // =============================================================================
+        // OPTIMIZATION: Capture data needed for post-success notifications BEFORE
+        // the transaction, eliminating the re-query after successful update
+        // Previously: After success, re-queried ChoreLog to get assignedUserId/choreName
+        // Now: Capture these values from the initial load inside the transaction
+        // =============================================================================
+        string? capturedAssignedUserId = null;
+        string? capturedChoreName = null;
         
         // Use execution strategy to handle retries with transactions
         var strategy = context.Database.CreateExecutionStrategy();
@@ -270,6 +349,10 @@ public class TrackerService : ITrackerService
                 {
                     return ServiceResult<ChoreStatus>.Fail("Chore log not found.");
                 }
+                
+                // Capture values for post-success notifications (before any modifications)
+                capturedAssignedUserId = choreLog.ChoreDefinition.AssignedUserId;
+                capturedChoreName = choreLog.ChoreDefinition.Name;
                 
                 // SERVER-SIDE AUTHORIZATION: verify role from database
                 if (requiresParent)
@@ -368,37 +451,70 @@ public class TrackerService : ITrackerService
             }
         });
 
-        // After successful status change, check for achievement unlocks (fire-and-forget)
-        // This runs outside the transaction so achievement failures don't affect chore updates
+        // After successful status change, use captured values (NO re-query needed)
         if (result.Success && (newStatus == ChoreStatus.Completed || newStatus == ChoreStatus.Approved))
         {
-            // Get the assigned user ID for achievement check
-            await using var ctx = await _contextFactory.CreateDbContextAsync();
-            var log = await ctx.ChoreLogs
-                .Include(c => c.ChoreDefinition)
-                .FirstOrDefaultAsync(c => c.Id == choreLogId);
-            
-            var assignedUserId = log?.ChoreDefinition?.AssignedUserId;
-            if (!string.IsNullOrEmpty(assignedUserId))
+            if (!string.IsNullOrEmpty(capturedAssignedUserId))
             {
+                // Broadcast dashboard change to affected users
+                var affectedUserIds = new HashSet<string> { actingUserId };
+                if (capturedAssignedUserId != actingUserId)
+                {
+                    affectedUserIds.Add(capturedAssignedUserId);
+                }
+                
+                // Exclude the acting user - they're already refreshing locally
+                _ = _choreNotificationService.NotifyDashboardChangedAsync(affectedUserIds.ToArray(), excludeUserId: actingUserId);
+                
+                // Achievement check (fire-and-forget)
+                var userIdForAchievement = capturedAssignedUserId; // Capture for closure
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        var newlyAwarded = await _achievementService.CheckAndAwardAchievementsAsync(assignedUserId);
+                        var newlyAwarded = await _achievementService.CheckAndAwardAchievementsAsync(userIdForAchievement);
                         if (newlyAwarded.Count > 0)
                         {
                             _logger.LogInformation(
                                 "User {UserId} earned {Count} achievement(s) after chore completion: {Codes}",
-                                assignedUserId, newlyAwarded.Count, 
+                                userIdForAchievement, newlyAwarded.Count, 
                                 string.Join(", ", newlyAwarded.Select(a => a.Code)));
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error checking achievements for user {UserId}", assignedUserId);
+                        _logger.LogError(ex, "Error checking achievements for user {UserId}", userIdForAchievement);
                     }
                 });
+            }
+        }
+        // Also notify on other status changes (Missed, Skipped, Pending reset)
+        else if (result.Success)
+        {
+            var affectedUserIds = new HashSet<string> { actingUserId };
+            if (!string.IsNullOrEmpty(capturedAssignedUserId) && capturedAssignedUserId != actingUserId)
+            {
+                affectedUserIds.Add(capturedAssignedUserId);
+            }
+            
+            // Exclude the acting user - they're already refreshing locally
+            _ = _choreNotificationService.NotifyDashboardChangedAsync(affectedUserIds.ToArray(), excludeUserId: actingUserId);
+            
+            // Check if this is an "undo" scenario
+            if (!string.IsNullOrEmpty(capturedAssignedUserId) && 
+                capturedAssignedUserId != actingUserId &&
+                !string.IsNullOrEmpty(capturedChoreName) &&
+                (newStatus == ChoreStatus.Pending || newStatus == ChoreStatus.Completed || newStatus == ChoreStatus.Missed))
+            {
+                // Get parent name for the notification
+                var parentUser = await _userManager.FindByIdAsync(actingUserId);
+                var parentName = parentUser?.UserName;
+                
+                _logger.LogInformation(
+                    "Sending ChoreUndone notification: ChildUserId={ChildUserId}, ChoreName={ChoreName}",
+                    capturedAssignedUserId, capturedChoreName);
+                
+                _ = _choreNotificationService.NotifyChoreUndoneAsync(capturedAssignedUserId, capturedChoreName, parentName);
             }
         }
 
@@ -567,16 +683,52 @@ public class TrackerService : ITrackerService
         var childName = choreDefinition?.AssignedUser?.UserName ?? "Your child";
         var choreName = choreDefinition?.Name ?? "a chore";
         
-        _ = _pushNotificationService.SendHelpRequestNotificationAsync(childName, choreName, reason);
+        // Push notification with choreLogId for deep linking
+        _ = _pushNotificationService.SendHelpRequestNotificationAsync(choreLog.Id, childName, choreName, reason);
+        
+        // SignalR real-time notification
+        _ = _choreNotificationService.NotifyHelpRequestedAsync(choreLog.Id, userId, choreName, childName);
+        
+        // Also notify dashboard changed so parents see updated help count
+        // Exclude the acting user (child) - they're already refreshing locally
+        _ = _choreNotificationService.NotifyDashboardChangedAsync(new[] { userId }, excludeUserId: userId);
         
         return ServiceResult.Ok();
     }
     
-    public async Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response)
+    public async Task<HelpRequestDetails?> GetHelpRequestDetailsAsync(int choreLogId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var choreLog = await context.ChoreLogs
+            .Include(c => c.ChoreDefinition)
+                .ThenInclude(cd => cd.AssignedUser)
+            .FirstOrDefaultAsync(c => c.Id == choreLogId);
+        
+        if (choreLog == null)
+        {
+            _logger.LogWarning("GetHelpRequestDetails: ChoreLog {ChoreLogId} not found", choreLogId);
+            return null;
+        }
+        
+        return new HelpRequestDetails
+        {
+            ChoreLogId = choreLog.Id,
+            ChoreName = choreLog.ChoreDefinition.Name,
+            ChildName = choreLog.ChoreDefinition.AssignedUser?.UserName ?? "Child",
+            ChildUserId = choreLog.ChoreDefinition.AssignedUserId,
+            HelpReason = choreLog.HelpReason,
+            HelpRequestedAt = choreLog.HelpRequestedAt,
+            EarnValue = choreLog.ChoreDefinition.EarnValue
+        };
+    }
+
+    public async Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response, string? note = null)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         var choreLog = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
+                .ThenInclude(cd => cd.AssignedUser)
             .FirstOrDefaultAsync(c => c.Id == choreLogId);
         
         if (choreLog == null)
@@ -589,6 +741,11 @@ public class TrackerService : ITrackerService
             return ServiceResult.Fail("This chore is not waiting for help.");
         }
 
+        // Capture child info before status change
+        var childUserId = choreLog.ChoreDefinition.AssignedUserId;
+        var choreName = choreLog.ChoreDefinition.Name;
+        var earnedAmount = choreLog.ChoreDefinition.EarnValue;
+
         ChoreStatus newStatus = response switch
         {
             HelpResponse.CompletedByParent => ChoreStatus.Approved,
@@ -598,8 +755,10 @@ public class TrackerService : ITrackerService
         };
 
         // For denied requests, we need to clear help fields as part of the update
-        // Pass notes to signal this (hacky but avoids refactoring UpdateStatusAtomicallyAsync)
-        string? notes = response == HelpResponse.Denied ? "__CLEAR_HELP_FIELDS__" : null;
+        // For other responses, save the parent's note if provided
+        string? notesToSave = response == HelpResponse.Denied 
+            ? "__CLEAR_HELP_FIELDS__" 
+            : note;
 
         // Parent-only action, verified server-side
         var result = await UpdateStatusAtomicallyAsync(
@@ -607,7 +766,7 @@ public class TrackerService : ITrackerService
             newStatus,
             parentUserId,
             requiresParent: true,
-            notes: notes);
+            notes: notesToSave);
 
         if (!result.Success)
         {
@@ -615,8 +774,45 @@ public class TrackerService : ITrackerService
         }
         
         _logger.LogInformation(
-            "Help response: ChoreLogId={ChoreLogId}, Response={Response}, NewStatus={NewStatus}",
-            choreLogId, response, newStatus);
+            "Help response: ChoreLogId={ChoreLogId}, Response={Response}, NewStatus={NewStatus}, ChildUserId={ChildUserId}, Note={Note}",
+            choreLogId, response, newStatus, childUserId ?? "null", note ?? "none");
+        
+        // Send notification to child about the help response
+        if (!string.IsNullOrEmpty(childUserId))
+        {
+            var parentUser = await _userManager.FindByIdAsync(parentUserId);
+            var parentName = parentUser?.UserName;
+            
+            _logger.LogInformation(
+                "Sending HelpResponded notification: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Response={Response}, Note={Note}",
+                childUserId, choreName, response, note ?? "none");
+            
+            // Await to ensure notification is sent before returning
+            await _choreNotificationService.NotifyHelpRespondedAsync(
+                childUserId,
+                choreName,
+                response.ToString(),
+                parentName,
+                note);
+            
+            // If the chore was completed by parent (approved), also send blessing notification
+            if (response == HelpResponse.CompletedByParent && earnedAmount > 0)
+            {
+                _logger.LogInformation(
+                    "Sending BlessingGranted notification: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Amount={Amount}",
+                    childUserId, choreName, earnedAmount);
+                
+                await _choreNotificationService.NotifyBlessingGrantedAsync(
+                    childUserId,
+                    choreName,
+                    earnedAmount,
+                    parentName);
+            }
+        }
+        else
+        {
+            _logger.LogWarning("Cannot send help response notification: childUserId is null for ChoreLogId={ChoreLogId}", choreLogId);
+        }
         
         return ServiceResult.Ok();
     }

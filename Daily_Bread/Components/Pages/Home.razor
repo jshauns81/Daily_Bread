@@ -730,7 +730,17 @@ else
             Logger.LogInformation("User authenticated: UserId={UserId}, IsParent={IsParent}, IsAdmin={IsAdmin}, IsAdminOnly={IsAdminOnly}", 
                 _userId, _isParent, _isAdmin, _isAdminOnly);
 
-            await LoadDashboardAsync();
+            // Subscribe to AppStateService events for real-time updates via SignalR
+            if (_isParent || _isAdmin)
+            {
+                AppState.OnParentDashboardChanged += OnParentDashboardStateChanged;
+            }
+            else
+            {
+                AppState.OnChildDashboardChanged += OnChildDashboardStateChanged;
+            }
+
+            await LoadDashboardAsync(forceRefresh: true);
 
             Logger.LogInformation("Dashboard loaded: ParentData={ParentData}, ChildData={ChildData}", 
                 _parentData != null, _childData != null);
@@ -767,6 +777,27 @@ else
         }
     }
 
+    private async void OnParentDashboardStateChanged()
+    {
+        // Refresh parent dashboard when SignalR notification triggers cache invalidation
+        await InvokeAsync(async () =>
+        {
+            await LoadDashboardAsync(forceRefresh: true);
+            StateHasChanged();
+        });
+    }
+
+    private async void OnChildDashboardStateChanged()
+    {
+        // Refresh child dashboard when SignalR notification triggers cache invalidation
+        await InvokeAsync(async () =>
+        {
+            await LoadDashboardAsync(forceRefresh: true);
+            CheckAndTriggerConfetti();
+            StateHasChanged();
+        });
+    }
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_initializationComplete && _isAuthenticated)
@@ -868,7 +899,9 @@ else
             {
                 if (result.Data.IsApproved)
                 {
-                    ToastService.ShowSuccess("Done!", $"+${chore.EarnValue:F2}");
+                    // Only show amount if it's greater than $0
+                    var message = chore.EarnValue > 0 ? $"+${chore.EarnValue:F2}" : null;
+                    ToastService.ShowSuccess("Done!", message);
                 }
                 else if (result.Data.IsCompleted)
                 {
@@ -940,12 +973,17 @@ else
     {
         if (string.IsNullOrEmpty(_userId)) return;
 
+        Logger.LogInformation("QuickApprove button clicked: ChoreLogId={ChoreLogId}, UserId={UserId}", choreLogId, _userId);
+
         _isApproving = true;
         _approvingId = choreLogId;
 
         try
         {
+            Logger.LogInformation("Calling DashboardService.QuickApproveAsync: ChoreLogId={ChoreLogId}", choreLogId);
             var result = await DashboardService.QuickApproveAsync(choreLogId, _userId);
+            Logger.LogInformation("QuickApproveAsync returned: Success={Success}, Error={Error}", result.Success, result.ErrorMessage ?? "none");
+            
             if (result.Success)
             {
                 ToastService.ShowSuccess("Blessed!", "Labor has been blessed and wages processed.");
@@ -960,6 +998,7 @@ else
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "QuickApprove exception: ChoreLogId={ChoreLogId}", choreLogId);
             ToastService.ShowError("Error", ex.Message);
         }
         finally
@@ -973,5 +1012,15 @@ else
     {
         _achievementCts?.Cancel();
         _achievementCts?.Dispose();
+        
+        // Unsubscribe from state change events
+        if (_isParent || _isAdmin)
+        {
+            AppState.OnParentDashboardChanged -= OnParentDashboardStateChanged;
+        }
+        else
+        {
+            AppState.OnChildDashboardChanged -= OnChildDashboardStateChanged;
+        }
     }
 }

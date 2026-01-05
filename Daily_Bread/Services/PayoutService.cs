@@ -1,6 +1,7 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Daily_Bread.Services;
 
@@ -67,11 +68,20 @@ public class PayoutService : IPayoutService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
+    private readonly IMemoryCache _cache;
+    
+    // Cache key and duration for CashOutThreshold
+    private const string CashOutThresholdCacheKey = "CashOutThreshold";
+    private static readonly TimeSpan CashOutThresholdCacheDuration = TimeSpan.FromMinutes(5);
 
-    public PayoutService(IDbContextFactory<ApplicationDbContext> contextFactory, IDateProvider dateProvider)
+    public PayoutService(
+        IDbContextFactory<ApplicationDbContext> contextFactory, 
+        IDateProvider dateProvider,
+        IMemoryCache cache)
     {
         _contextFactory = contextFactory;
         _dateProvider = dateProvider;
+        _cache = cache;
     }
 
     #region Account-based methods
@@ -80,9 +90,9 @@ public class PayoutService : IPayoutService
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
+        // Get account info without loading transactions
         var account = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
-            .Include(a => a.LedgerTransactions)
             .FirstOrDefaultAsync(a => a.Id == ledgerAccountId);
 
         if (account == null)
@@ -102,21 +112,25 @@ public class PayoutService : IPayoutService
             };
         }
 
-        var transactions = account.LedgerTransactions;
-
-        var totalEarned = transactions
-            .Where(t => t.Amount > 0 && t.Type != TransactionType.Adjustment && t.Type != TransactionType.Transfer)
-            .Sum(t => t.Amount);
-
-        var totalDeducted = transactions
-            .Where(t => t.Amount < 0 && t.Type != TransactionType.Payout && t.Type != TransactionType.Adjustment && t.Type != TransactionType.Transfer)
-            .Sum(t => Math.Abs(t.Amount));
-
-        var totalPaidOut = transactions
-            .Where(t => t.Type == TransactionType.Payout)
-            .Sum(t => Math.Abs(t.Amount));
-
-        var currentBalance = transactions.Sum(t => t.Amount);
+        // =============================================================================
+        // OPTIMIZATION: Calculate aggregates in SQL instead of loading all transactions
+        // Previously: Include(a => a.LedgerTransactions) then Sum in C#
+        // Now: GroupBy/Sum projection executed in SQL
+        // =============================================================================
+        var aggregates = await context.LedgerTransactions
+            .Where(t => t.LedgerAccountId == ledgerAccountId)
+            .GroupBy(t => t.LedgerAccountId)
+            .Select(g => new
+            {
+                CurrentBalance = g.Sum(t => t.Amount),
+                TotalEarned = g.Where(t => t.Amount > 0 && t.Type != TransactionType.Adjustment && t.Type != TransactionType.Transfer)
+                    .Sum(t => t.Amount),
+                TotalDeducted = g.Where(t => t.Amount < 0 && t.Type != TransactionType.Payout && t.Type != TransactionType.Adjustment && t.Type != TransactionType.Transfer)
+                    .Sum(t => -t.Amount), // Use -t.Amount instead of Math.Abs for SQL translation
+                TotalPaidOut = g.Where(t => t.Type == TransactionType.Payout)
+                    .Sum(t => -t.Amount) // Payouts are negative, so negate to get positive sum
+            })
+            .FirstOrDefaultAsync();
 
         return new AccountBalanceSummary
         {
@@ -125,10 +139,10 @@ public class PayoutService : IPayoutService
             ChildProfileId = account.ChildProfileId,
             ChildDisplayName = account.ChildProfile.DisplayName,
             UserId = account.ChildProfile.UserId,
-            CurrentBalance = currentBalance,
-            TotalEarned = totalEarned,
-            TotalDeducted = totalDeducted,
-            TotalPaidOut = totalPaidOut,
+            CurrentBalance = aggregates?.CurrentBalance ?? 0,
+            TotalEarned = aggregates?.TotalEarned ?? 0,
+            TotalDeducted = aggregates?.TotalDeducted ?? 0,
+            TotalPaidOut = aggregates?.TotalPaidOut ?? 0,
             CashOutThreshold = await GetCashOutThresholdAsync()
         };
     }
@@ -137,39 +151,65 @@ public class PayoutService : IPayoutService
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
+        // =============================================================================
+        // OPTIMIZATION: Calculate aggregates in SQL instead of loading all transactions
+        // Previously: Include(a => a.LedgerTransactions) for ALL accounts, iterate in C#
+        // Now: Single SQL query with GroupBy/Sum projection
+        // =============================================================================
+        
+        // Get all active accounts with their child profile info (no transactions)
         var accounts = await context.LedgerAccounts
             .Include(a => a.ChildProfile)
-            .Include(a => a.LedgerTransactions)
             .Where(a => a.IsActive && a.ChildProfile.IsActive)
+            .Select(a => new
+            {
+                a.Id,
+                a.Name,
+                a.ChildProfileId,
+                ChildDisplayName = a.ChildProfile.DisplayName,
+                UserId = a.ChildProfile.UserId
+            })
             .ToListAsync();
 
+        var accountIds = accounts.Select(a => a.Id).ToList();
+
+        // Calculate all aggregates in a single SQL query
+        var aggregates = await context.LedgerTransactions
+            .Where(t => accountIds.Contains(t.LedgerAccountId))
+            .GroupBy(t => t.LedgerAccountId)
+            .Select(g => new
+            {
+                AccountId = g.Key,
+                CurrentBalance = g.Sum(t => t.Amount),
+                TotalEarned = g.Where(t => t.Amount > 0 && t.Type != TransactionType.Adjustment && t.Type != TransactionType.Transfer)
+                    .Sum(t => t.Amount),
+                TotalDeducted = g.Where(t => t.Amount < 0 && t.Type != TransactionType.Payout && t.Type != TransactionType.Adjustment && t.Type != TransactionType.Transfer)
+                    .Sum(t => -t.Amount),
+                TotalPaidOut = g.Where(t => t.Type == TransactionType.Payout)
+                    .Sum(t => -t.Amount)
+            })
+            .ToDictionaryAsync(a => a.AccountId);
+
         var threshold = await GetCashOutThresholdAsync();
-        var summaries = new List<AccountBalanceSummary>();
 
-        foreach (var account in accounts)
+        // Join account info with aggregates in memory (just the IDs and computed sums)
+        var summaries = accounts.Select(account =>
         {
-            var transactions = account.LedgerTransactions;
-
-            summaries.Add(new AccountBalanceSummary
+            aggregates.TryGetValue(account.Id, out var agg);
+            return new AccountBalanceSummary
             {
                 AccountId = account.Id,
                 AccountName = account.Name,
                 ChildProfileId = account.ChildProfileId,
-                ChildDisplayName = account.ChildProfile.DisplayName,
-                UserId = account.ChildProfile.UserId,
-                CurrentBalance = transactions.Sum(t => t.Amount),
-                TotalEarned = transactions
-                    .Where(t => t.Amount > 0 && t.Type != TransactionType.Adjustment && t.Type != TransactionType.Transfer)
-                    .Sum(t => t.Amount),
-                TotalDeducted = transactions
-                    .Where(t => t.Amount < 0 && t.Type != TransactionType.Payout && t.Type != TransactionType.Adjustment && t.Type != TransactionType.Transfer)
-                    .Sum(t => Math.Abs(t.Amount)),
-                TotalPaidOut = transactions
-                    .Where(t => t.Type == TransactionType.Payout)
-                    .Sum(t => Math.Abs(t.Amount)),
+                ChildDisplayName = account.ChildDisplayName,
+                UserId = account.UserId,
+                CurrentBalance = agg?.CurrentBalance ?? 0,
+                TotalEarned = agg?.TotalEarned ?? 0,
+                TotalDeducted = agg?.TotalDeducted ?? 0,
+                TotalPaidOut = agg?.TotalPaidOut ?? 0,
                 CashOutThreshold = threshold
-            });
-        }
+            };
+        }).ToList();
 
         return summaries.OrderBy(s => s.ChildDisplayName).ThenBy(s => s.AccountName).ToList();
     }
@@ -459,17 +499,32 @@ public class PayoutService : IPayoutService
 
     public async Task<decimal> GetCashOutThresholdAsync()
     {
+        // =============================================================================
+        // OPTIMIZATION: Cache the threshold value to avoid repeated DB queries
+        // This value rarely changes but is called frequently (balance summaries, etc.)
+        // =============================================================================
+        if (_cache.TryGetValue(CashOutThresholdCacheKey, out decimal cachedThreshold))
+        {
+            return cachedThreshold;
+        }
+
         await using var context = await _contextFactory.CreateDbContextAsync();
         
         var setting = await context.AppSettings
             .FirstOrDefaultAsync(s => s.Key == AppSettingKeys.CashOutThreshold);
 
-        if (setting != null && decimal.TryParse(setting.Value, out var threshold))
+        decimal threshold;
+        if (setting != null && decimal.TryParse(setting.Value, out threshold))
         {
+            // Cache the value
+            _cache.Set(CashOutThresholdCacheKey, threshold, CashOutThresholdCacheDuration);
             return threshold;
         }
 
-        return AppSettingKeys.DefaultCashOutThreshold;
+        // Cache the default value
+        threshold = AppSettingKeys.DefaultCashOutThreshold;
+        _cache.Set(CashOutThresholdCacheKey, threshold, CashOutThresholdCacheDuration);
+        return threshold;
     }
 
     public async Task<ServiceResult> SetCashOutThresholdAsync(decimal threshold)
@@ -502,6 +557,12 @@ public class PayoutService : IPayoutService
         }
 
         await context.SaveChangesAsync();
+        
+        // =============================================================================
+        // OPTIMIZATION: Invalidate the cache when threshold is updated
+        // =============================================================================
+        _cache.Remove(CashOutThresholdCacheKey);
+        
         return ServiceResult.Ok();
     }
 

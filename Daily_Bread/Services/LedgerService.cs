@@ -259,22 +259,36 @@ public class LedgerService : ILedgerService
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
-        var accountIds = await context.ChildProfiles
+        // =============================================================================
+        // OPTIMIZATION: Single joined query instead of two separate queries
+        // Previously: Query ChildProfiles for accountIds, then query LedgerTransactions
+        // Now: Join ChildProfiles -> LedgerAccounts -> LedgerTransactions in single query
+        // =============================================================================
+        
+        // Check if user has active accounts via ChildProfile
+        var hasAccounts = await context.ChildProfiles
             .Where(p => p.UserId == userId)
             .SelectMany(p => p.LedgerAccounts)
             .Where(a => a.IsActive)
-            .Select(a => a.Id)
-            .ToListAsync();
+            .AnyAsync();
 
-        if (!accountIds.Any())
+        if (hasAccounts)
         {
+            // Single joined query: ChildProfiles -> LedgerAccounts -> LedgerTransactions
             return await context.LedgerTransactions
-                .Where(t => t.UserId == userId)
+                .Where(t => context.LedgerAccounts
+                    .Where(a => a.IsActive && context.ChildProfiles
+                        .Where(p => p.UserId == userId)
+                        .Select(p => p.Id)
+                        .Contains(a.ChildProfileId))
+                    .Select(a => a.Id)
+                    .Contains(t.LedgerAccountId))
                 .SumAsync(t => t.Amount);
         }
 
+        // Fallback for legacy data without accounts
         return await context.LedgerTransactions
-            .Where(t => accountIds.Contains(t.LedgerAccountId))
+            .Where(t => t.UserId == userId)
             .SumAsync(t => t.Amount);
     }
 

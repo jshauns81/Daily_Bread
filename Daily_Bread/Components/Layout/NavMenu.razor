@@ -1,8 +1,10 @@
 ﻿@using Daily_Bread.Services
 @using Daily_Bread.Components.Shared.Navigation
+@implements IDisposable
 @inject INavigationService NavigationService
-@inject IDashboardService DashboardService
+@inject IAppStateService AppState
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 @inject IJSRuntime JS
 
 <div class="nav-header">
@@ -79,17 +81,14 @@
         // Get navigation items from centralized service
         _navItems = NavigationService.GetDesktopNavItems(_isParent, _isChild, _isAdmin);
 
-        // Load pending count for parents
+        // For parents, get pending count from cached data (no DB query)
+        // The count will update when OnParentDashboardChanged fires
         if (_isParent)
         {
-            try
-            {
-                _pendingCount = await DashboardService.GetPendingApprovalsCountAsync();
-            }
-            catch
-            {
-                _pendingCount = 0;
-            }
+            RefreshPendingCountFromCache();
+            
+            // Subscribe to parent dashboard changes to refresh the badge
+            AppState.OnParentDashboardChanged += OnParentDashboardChanged;
         }
     }
 
@@ -110,6 +109,23 @@
         }
     }
 
+    /// <summary>
+    /// Gets the pending count from AppStateService's cached data.
+    /// Does NOT trigger a database query - uses data already loaded by Home page.
+    /// </summary>
+    private void RefreshPendingCountFromCache()
+    {
+        _pendingCount = AppState.CachedPendingApprovalsCount;
+    }
+    
+    private void OnParentDashboardChanged()
+    {
+        // When parent dashboard changes, the cache will have fresh data
+        // Just read the count from cache (no DB query)
+        RefreshPendingCountFromCache();
+        InvokeAsync(StateHasChanged);
+    }
+
     private async Task HandleNavigation()
     {
         if (OnNavigate.HasDelegate)
@@ -125,6 +141,15 @@
     private static NavLinkMatch GetNavLinkMatch(string route)
     {
         return route == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix;
+    }
+    
+    public void Dispose()
+    {
+        // Unsubscribe from events to prevent memory leaks
+        if (_isParent)
+        {
+            AppState.OnParentDashboardChanged -= OnParentDashboardChanged;
+        }
     }
 }
 
