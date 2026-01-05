@@ -4,6 +4,72 @@
    ============================================ */
 
 /* ===========================================
+   DRAG HANDLE STYLES
+   =========================================== */
+
+.grid-header .drag-header {
+    width: 40px;
+    min-width: 40px;
+}
+
+.drag-handle-cell {
+    width: 40px;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: var(--ds-text-muted);
+    cursor: grab;
+    border-radius: var(--ds-radius-sm);
+    transition: all var(--ds-duration-fast) ease;
+}
+
+.drag-handle:hover {
+    color: var(--ds-text-secondary);
+    background: var(--ds-bg-hover);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.drag-handle .bi {
+    font-size: 1.1rem;
+}
+
+/* Dragging state */
+.chore-row.dragging {
+    opacity: 0.5;
+    background: var(--ds-bg-muted) !important;
+}
+
+/* Drop target indicator */
+.chore-row.drop-target {
+    border-top: 2px solid var(--ds-accent-cyan) !important;
+    position: relative;
+}
+
+.chore-row.drop-target::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -2px;
+    height: 2px;
+    background: var(--ds-accent-cyan);
+    box-shadow: 0 0 8px var(--ds-accent-cyan);
+    z-index: 10;
+}
+
+/* ===========================================
    WAGE GRID
    =========================================== */
 
@@ -16,11 +82,16 @@
 
 .grid-header {
     display: grid;
-    grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
+    grid-template-columns: 40px minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
     gap: 2px;
     padding: var(--ds-space-2);
     background: var(--ds-bg-elevated);
     border-bottom: 2px solid var(--ds-bg-muted);
+}
+
+/* When drag header is not present (EnableReorder=false) */
+.grid-header:not(:has(.drag-header)) {
+    grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
 }
 
 .header-cell {
@@ -82,11 +153,16 @@
 
 .chore-row {
     display: grid;
-    grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
+    grid-template-columns: 40px minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
     gap: 2px;
     padding: var(--ds-space-2);
     border-bottom: 1px solid var(--ds-bg-muted);
     transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When drag handle cell is not present (EnableReorder=false) */
+.chore-row:not(:has(.drag-handle-cell)) {
+    grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
 }
 
 .chore-row:last-child {
@@ -273,6 +349,11 @@
 @media (max-width: 992px) {
     .grid-header,
     .chore-row {
+        grid-template-columns: 40px minmax(120px, 1.2fr) repeat(7, 1fr) minmax(60px, 0.6fr);
+    }
+    
+    .grid-header:not(:has(.drag-header)),
+    .chore-row:not(:has(.drag-handle-cell)) {
         grid-template-columns: minmax(120px, 1.2fr) repeat(7, 1fr) minmax(60px, 0.6fr);
     }
     
@@ -306,6 +387,12 @@
     
     .grid-header,
     .chore-row {
+        min-width: 640px;
+        grid-template-columns: 40px 100px repeat(7, 55px) 60px;
+    }
+    
+    .grid-header:not(:has(.drag-header)),
+    .chore-row:not(:has(.drag-handle-cell)) {
         min-width: 600px;
         grid-template-columns: 100px repeat(7, 55px) 60px;
     }
@@ -335,6 +422,16 @@
     .day-header .day-num {
         font-size: 0.95rem;
     }
+    
+    /* Larger drag handle on mobile for touch targets */
+    .drag-handle {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .drag-handle .bi {
+        font-size: 1.3rem;
+    }
 }
 
 /* ===========================================
@@ -344,6 +441,12 @@
 @media (max-width: 480px) {
     .grid-header,
     .chore-row {
+        min-width: 560px;
+        grid-template-columns: 40px 85px repeat(7, 48px) 50px;
+    }
+    
+    .grid-header:not(:has(.drag-header)),
+    .chore-row:not(:has(.drag-handle-cell)) {
         min-width: 520px;
         grid-template-columns: 85px repeat(7, 48px) 50px;
     }
@@ -370,6 +473,26 @@
 }
 
 /* ===========================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .drag-handle {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .drag-handle .bi {
+        font-size: 1.4rem;
+    }
+    
+    /* Always show drag handle clearly on touch */
+    .drag-handle {
+        color: var(--ds-text-secondary);
+    }
+}
+
+/* ===========================================
    PRINT STYLES
    =========================================== */
 
@@ -380,5 +503,15 @@
 
     .day-cell {
         border: 1px solid var(--ds-bg-muted) !important;
+    }
+    
+    .drag-handle-cell,
+    .drag-header {
+        display: none !important;
+    }
+    
+    .grid-header,
+    .chore-row {
+        grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr) !important;
     }
 }
