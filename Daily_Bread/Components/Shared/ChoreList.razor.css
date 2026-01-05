@@ -1,3 +1,67 @@
+.chore-list .drag-handle-header {
+    width: 40px;
+    min-width: 40px;
+}
+
+.chore-list .drag-handle-cell {
+    width: 40px;
+    min-width: 40px;
+    padding: var(--ds-space-2) var(--ds-space-1) !important;
+    vertical-align: middle;
+}
+
+.chore-list .drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: var(--ds-text-muted);
+    cursor: grab;
+    border-radius: var(--ds-radius-sm);
+    transition: all var(--ds-duration-fast) ease;
+}
+
+.chore-list .drag-handle:hover {
+    color: var(--ds-text-secondary);
+    background: var(--ds-bg-hover);
+}
+
+.chore-list .drag-handle:active {
+    cursor: grabbing;
+}
+
+.chore-list .drag-handle .bi {
+    font-size: 1.1rem;
+}
+
+/* Dragging state */
+.chore-list tr.dragging {
+    opacity: 0.5;
+    background: var(--ds-bg-muted) !important;
+}
+
+.chore-list tr.dragging td {
+    background: transparent !important;
+}
+
+/* Drop target indicator */
+.chore-list tr.drop-target {
+    border-top: 2px solid var(--ds-accent-cyan) !important;
+    position: relative;
+}
+
+.chore-list tr.drop-target::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -2px;
+    height: 2px;
+    background: var(--ds-accent-cyan);
+    box-shadow: 0 0 8px var(--ds-accent-cyan);
+}
+
 .chore-list .chore-name {
     color: var(--ds-text-primary);
 }
@@ -23,9 +87,18 @@
     }
     
     /* Hide less important columns on tablet */
-    .chore-list .table th:nth-child(4),
-    .chore-list .table td:nth-child(4) {
+    .chore-list .table th:nth-child(5),
+    .chore-list .table td:nth-child(5) {
         display: none;
+    }
+    
+    .chore-list .drag-handle-cell {
+        padding: var(--ds-space-1) !important;
+    }
+    
+    .chore-list .drag-handle {
+        width: 24px;
+        height: 24px;
     }
 }
 
@@ -45,13 +118,13 @@
         vertical-align: middle;
     }
     
-    /* Hide schedule and status columns on mobile */
-    .chore-list .table th:nth-child(3),
-    .chore-list .table td:nth-child(3),
+    /* Hide schedule and status columns on mobile (adjust indices for drag handle) */
     .chore-list .table th:nth-child(4),
     .chore-list .table td:nth-child(4),
     .chore-list .table th:nth-child(5),
-    .chore-list .table td:nth-child(5) {
+    .chore-list .table td:nth-child(5),
+    .chore-list .table th:nth-child(6),
+    .chore-list .table td:nth-child(6) {
         display: none;
     }
     
@@ -80,11 +153,17 @@
         font-size: var(--ds-text-xs);
         padding: 2px 4px;
     }
+    
+    /* Smaller drag handle on mobile */
+    .chore-list .drag-handle {
+        width: 32px;
+        height: 32px;
+    }
 }
 
 @media (max-width: 480px) {
-    .chore-list .table th:first-child,
-    .chore-list .table td:first-child {
+    .chore-list .table th:first-child + th,
+    .chore-list .table td:first-child + td {
         max-width: 120px;
     }
     
@@ -101,8 +180,8 @@
     }
     
     /* Hide assigned user on very small screens */
-    .chore-list .table th:nth-child(2),
-    .chore-list .table td:nth-child(2) {
+    .chore-list .table th:nth-child(3),
+    .chore-list .table td:nth-child(3) {
         display: none;
     }
     
@@ -119,5 +198,15 @@
     .chore-list .btn-group .btn {
         min-height: 40px;
         padding: var(--ds-space-2);
+    }
+    
+    /* Larger touch target for drag handle */
+    .chore-list .drag-handle {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .chore-list .drag-handle .bi {
+        font-size: 1.3rem;
     }
 }

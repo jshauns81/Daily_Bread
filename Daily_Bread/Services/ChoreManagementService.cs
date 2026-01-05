@@ -55,6 +55,12 @@ public interface IChoreManagementService
     Task<ServiceResult> DeleteChoreAsync(int id);
     Task<ServiceResult> ToggleActiveAsync(int id);
     Task<List<UserSelectItem>> GetAssignableUsersAsync();
+    
+    /// <summary>
+    /// Updates sort order for multiple chores in a single transaction.
+    /// Used for drag-and-drop reordering.
+    /// </summary>
+    Task<ServiceResult> UpdateSortOrderBatchAsync(List<(int ChoreId, int SortOrder)> updates);
 }
 
 public class ChoreManagementService : IChoreManagementService
@@ -317,5 +323,39 @@ public class ChoreManagementService : IChoreManagementService
             })
             .OrderBy(u => u.UserName)
             .ToList();
+    }
+
+    public async Task<ServiceResult> UpdateSortOrderBatchAsync(List<(int ChoreId, int SortOrder)> updates)
+    {
+        if (updates == null || updates.Count == 0)
+        {
+            return ServiceResult.Ok();
+        }
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var choreIds = updates.Select(u => u.ChoreId).ToList();
+        var chores = await context.ChoreDefinitions
+            .Where(c => choreIds.Contains(c.Id))
+            .ToListAsync();
+
+        if (chores.Count != updates.Count)
+        {
+            return ServiceResult.Fail("One or more chores not found.");
+        }
+
+        foreach (var (choreId, sortOrder) in updates)
+        {
+            var chore = chores.First(c => c.Id == choreId);
+            chore.SortOrder = sortOrder;
+            chore.ModifiedAt = DateTime.UtcNow;
+        }
+
+        await context.SaveChangesAsync();
+        
+        // Invalidate cache after reordering
+        _choreScheduleService.InvalidateChoreDefinitionsCache();
+        
+        return ServiceResult.Ok();
     }
 }

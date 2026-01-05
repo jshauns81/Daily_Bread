@@ -4,6 +4,71 @@
    ============================================ */
 
 /* ===========================================
+   DRAG HANDLE STYLES
+   =========================================== */
+
+.routines-header .drag-header {
+    width: 40px;
+    min-width: 40px;
+}
+
+.drag-handle-cell {
+    width: 40px;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: var(--ds-text-muted);
+    cursor: grab;
+    border-radius: var(--ds-radius-sm);
+    transition: all var(--ds-duration-fast) ease;
+}
+
+.drag-handle:hover {
+    color: var(--ds-text-secondary);
+    background: var(--ds-bg-hover);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.drag-handle .bi {
+    font-size: 1.1rem;
+}
+
+/* Dragging state */
+.routine-row.dragging {
+    opacity: 0.5;
+    background: var(--ds-bg-muted) !important;
+}
+
+/* Drop target indicator */
+.routine-row.drop-target {
+    border-top: 2px solid var(--ds-accent-cyan) !important;
+    position: relative;
+}
+
+.routine-row.drop-target::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -2px;
+    height: 2px;
+    background: var(--ds-accent-cyan);
+    box-shadow: 0 0 8px var(--ds-accent-cyan);
+}
+
+/* ===========================================
    ROUTINES LIST
    =========================================== */
 
@@ -16,7 +81,7 @@
 
 .routines-header {
     display: grid;
-    grid-template-columns: 1fr minmax(100px, auto) 70px;
+    grid-template-columns: 40px 1fr minmax(100px, auto) 70px;
     gap: var(--ds-space-6);
     padding: var(--ds-space-4) var(--ds-space-6);
     background: var(--ds-bg-elevated);
@@ -27,22 +92,32 @@
     letter-spacing: 0.5px;
 }
 
-.routines-header span:nth-child(2) {
+/* When drag handle header is not present (EnableReorder=false) */
+.routines-header:not(:has(.drag-header)) {
+    grid-template-columns: 1fr minmax(100px, auto) 70px;
+}
+
+.routines-header span:nth-last-child(2) {
     text-align: right;
 }
 
-.routines-header span:nth-child(3) {
+.routines-header span:last-child {
     text-align: center;
 }
 
 .routine-row {
     display: grid;
-    grid-template-columns: 1fr minmax(100px, auto) 70px;
+    grid-template-columns: 40px 1fr minmax(100px, auto) 70px;
     gap: var(--ds-space-6);
     align-items: center;
     padding: var(--ds-space-4) var(--ds-space-6);
     border-bottom: 1px solid var(--ds-bg-muted);
     transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When drag handle cell is not present (EnableReorder=false) */
+.routine-row:not(:has(.drag-handle-cell)) {
+    grid-template-columns: 1fr minmax(100px, auto) 70px;
 }
 
 .routine-row:last-child {
@@ -148,10 +223,41 @@
     }
     
     .routine-row {
+        grid-template-columns: 40px 1fr auto;
+    }
+    
+    .routine-row:not(:has(.drag-handle-cell)) {
         grid-template-columns: 1fr auto;
     }
     
     .routine-schedule {
         display: none;
+    }
+    
+    /* Larger drag handle on mobile for touch targets */
+    .drag-handle {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .drag-handle .bi {
+        font-size: 1.3rem;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .drag-handle {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .drag-handle .bi {
+        font-size: 1.4rem;
+    }
+    
+    /* Always show drag handle clearly on touch */
+    .drag-handle {
+        color: var(--ds-text-secondary);
     }
 }

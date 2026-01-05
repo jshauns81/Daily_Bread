@@ -121,7 +121,9 @@
             <ChoreList Chores="Chores"
                        OnEdit="HandleEdit"
                        OnDelete="HandleDelete"
-                       OnToggleActive="HandleToggleActive" />
+                       OnToggleActive="HandleToggleActive"
+                       EnableReorder="true"
+                       OnReorder="HandleReorder" />
         }
     }
     else if (_viewMode == ViewMode.WeekScheduler)
@@ -320,6 +322,22 @@
     {
         SuccessMessage = "Schedule updated!";
         StateHasChanged();
+    }
+
+    private async Task HandleReorder(List<(int ChoreId, int SortOrder)> updates)
+    {
+        ClearMessages();
+
+        var result = await ChoreService.UpdateSortOrderBatchAsync(updates);
+        
+        if (result.Success)
+        {
+            await LoadChoresAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
     }
 
     private void ClearMessages()
