@@ -1,13 +1,14 @@
-@inject IToastService ToastService
+﻿@inject IToastService ToastService
 @implements IDisposable
 
 <div class="toast-container" aria-live="polite" aria-atomic="true">
     @foreach (var toast in _toasts)
     {
-        <div class="toast @toast.CssClass @(toast.IsVisible ? "toast-show" : "toast-hide")" 
+        <div class="toast @toast.CssClass @(toast.IsVisible ? "toast-show" : "toast-hide") @(toast.IsClickable ? "toast-clickable" : "")" 
              role="alert" 
              aria-live="assertive" 
-             aria-atomic="true">
+             aria-atomic="true"
+             @onclick="() => HandleToastClick(toast)">
             <div class="toast-icon"><span class="bi @toast.IconClass"></span></div>
             <div class="toast-content">
                 <div class="toast-title">@toast.Title</div>
@@ -15,11 +16,16 @@
                 {
                     <div class="toast-message">@toast.Message</div>
                 }
+                @if (toast.IsClickable)
+                {
+                    <div class="toast-action-hint">Tap to respond</div>
+                }
             </div>
             <button type="button" 
                     class="toast-close" 
                     aria-label="Close"
-                    @onclick="() => Dismiss(toast.Id)">
+                    @onclick="() => Dismiss(toast.Id)"
+                    @onclick:stopPropagation="true">
                 <span class="bi bi-x-lg"></span>
             </button>
             @if (toast.DurationMs > 0)
@@ -43,6 +49,16 @@
     {
         _toasts = ToastService.Toasts;
         InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleToastClick(ToastMessage toast)
+    {
+        if (toast.IsClickable)
+        {
+            // Invoke the callback and dismiss the toast
+            toast.OnClick?.Invoke();
+            ToastService.Remove(toast.Id);
+        }
     }
 
     private void Dismiss(Guid toastId)

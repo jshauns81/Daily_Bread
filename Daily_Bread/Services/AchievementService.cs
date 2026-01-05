@@ -233,13 +233,30 @@ public class AchievementService : IAchievementService
             .Where(a => a.IsActive && !earnedAchievementIds.Contains(a.Id))
             .ToListAsync();
 
+        if (unearnedAchievements.Count == 0)
+        {
+            return newlyAwarded;
+        }
+
+        // =============================================================================
+        // OPTIMIZATION: Use EvaluateAllAsync to evaluate all achievements in one batch
+        // Previously: Called EvaluateAsync for EACH unearned achievement individually
+        // Now: Single batched evaluation that shares data loading across all checks
+        // =============================================================================
+        var evaluations = await _conditionEvaluator.EvaluateAllAsync(userId);
+
         foreach (var achievement in unearnedAchievements)
         {
             // Skip manual-only achievements
             if (achievement.UnlockConditionType == UnlockConditionType.Manual)
                 continue;
 
-            var evaluation = await _conditionEvaluator.EvaluateAsync(userId, achievement);
+            // Get evaluation from batch results (already computed)
+            if (!evaluations.TryGetValue(achievement.Id, out var evaluation))
+            {
+                // No evaluation result - skip
+                continue;
+            }
 
             if (evaluation.IsMet)
             {

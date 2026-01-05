@@ -9,6 +9,11 @@
     "DefaultConnection": "Data Source=DailyBread.db",
     "_PostgreSQL_Example": "Host=your-host.render.com;Database=dailybread;Username=user;Password=secret;SSL Mode=Require;Trust Server Certificate=true"
   },
+  "QueryMonitoring": {
+    "_Description": "Enable query monitoring to measure DB queries per operation. Only active in Development.",
+    "Enabled": true,
+    "LogQueries": false
+  },
   "SeedUsers": {
     "Parent1": {
       "UserName": "parent1",

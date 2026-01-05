@@ -61,13 +61,16 @@ public class ChoreManagementService : IChoreManagementService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IChoreScheduleService _choreScheduleService;
 
     public ChoreManagementService(
         IDbContextFactory<ApplicationDbContext> contextFactory,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IChoreScheduleService choreScheduleService)
     {
         _contextFactory = contextFactory;
         _userManager = userManager;
+        _choreScheduleService = choreScheduleService;
     }
 
     public async Task<List<ChoreDefinition>> GetAllChoresAsync(bool includeInactive = false)
@@ -163,6 +166,9 @@ public class ChoreManagementService : IChoreManagementService
         // Reload with navigation properties
         await context.Entry(chore).Reference(c => c.AssignedUser).LoadAsync();
 
+        // Invalidate cache after creating a new chore
+        _choreScheduleService.InvalidateChoreDefinitionsCache();
+
         return ServiceResult<ChoreDefinition>.Ok(chore);
     }
 
@@ -234,6 +240,10 @@ public class ChoreManagementService : IChoreManagementService
         chore.ModifiedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
+        
+        // Invalidate cache after updating a chore
+        _choreScheduleService.InvalidateChoreDefinitionsCache();
+        
         return ServiceResult.Ok();
     }
 
@@ -256,12 +266,20 @@ public class ChoreManagementService : IChoreManagementService
             chore.IsActive = false;
             chore.ModifiedAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
+            
+            // Invalidate cache after soft delete
+            _choreScheduleService.InvalidateChoreDefinitionsCache();
+            
             return ServiceResult.Ok();
         }
 
         // No logs, can hard delete
         context.ChoreDefinitions.Remove(chore);
         await context.SaveChangesAsync();
+        
+        // Invalidate cache after hard delete
+        _choreScheduleService.InvalidateChoreDefinitionsCache();
+        
         return ServiceResult.Ok();
     }
 
@@ -278,6 +296,10 @@ public class ChoreManagementService : IChoreManagementService
         chore.IsActive = !chore.IsActive;
         chore.ModifiedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
+        
+        // Invalidate cache after toggling active status
+        _choreScheduleService.InvalidateChoreDefinitionsCache();
+        
         return ServiceResult.Ok();
     }
 

@@ -1,6 +1,7 @@
 ﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Daily_Bread.Services;
 
@@ -73,6 +74,12 @@ public interface IChoreScheduleService
     /// Removes a schedule override.
     /// </summary>
     Task<ServiceResult> RemoveOverrideAsync(int overrideId);
+    
+    /// <summary>
+    /// Invalidates the cached ChoreDefinitions.
+    /// Call this when chore definitions are created, updated, or deleted.
+    /// </summary>
+    void InvalidateChoreDefinitionsCache();
 }
 
 /// <summary>
@@ -95,13 +102,23 @@ public class ChoreScheduleService : IChoreScheduleService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IFamilySettingsService _familySettingsService;
+    private readonly IMemoryCache _cache;
+    private readonly ILogger<ChoreScheduleService> _logger;
+    
+    // Cache keys and settings
+    private const string ActiveChoresCacheKey = "ChoreDefinitions_Active";
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
     public ChoreScheduleService(
         IDbContextFactory<ApplicationDbContext> contextFactory,
-        IFamilySettingsService familySettingsService)
+        IFamilySettingsService familySettingsService,
+        IMemoryCache cache,
+        ILogger<ChoreScheduleService> logger)
     {
         _contextFactory = contextFactory;
         _familySettingsService = familySettingsService;
+        _cache = cache;
+        _logger = logger;
     }
 
     public DateOnly GetWeekStartDate(DateOnly date)
@@ -116,24 +133,68 @@ public class ChoreScheduleService : IChoreScheduleService
         // Synchronous helper - uses default Monday start
         return ChoreScheduleHelper.GetWeekEndDate(date);
     }
+    
+    /// <summary>
+    /// Gets all active ChoreDefinitions from cache, or loads them from the database.
+    /// ChoreDefinitions rarely change, so we cache them for 5 minutes.
+    /// </summary>
+    private async Task<List<ChoreDefinition>> GetCachedActiveChoreDefinitionsAsync()
+    {
+        if (_cache.TryGetValue(ActiveChoresCacheKey, out List<ChoreDefinition>? cachedChores) && cachedChores != null)
+        {
+            _logger.LogDebug("ChoreDefinitions cache HIT - {Count} chores", cachedChores.Count);
+            return cachedChores;
+        }
+        
+        _logger.LogDebug("ChoreDefinitions cache MISS - loading from database");
+        
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var chores = await context.ChoreDefinitions
+            .Include(c => c.AssignedUser)
+            .Where(c => c.IsActive)
+            .ToListAsync();
+        
+        var cacheOptions = new MemoryCacheEntryOptions()
+            .SetAbsoluteExpiration(CacheDuration)
+            .SetSize(1); // Size for cache limiting if needed
+        
+        _cache.Set(ActiveChoresCacheKey, chores, cacheOptions);
+        
+        _logger.LogInformation("ChoreDefinitions cached - {Count} chores for {Duration} minutes", 
+            chores.Count, CacheDuration.TotalMinutes);
+        
+        return chores;
+    }
+    
+    /// <summary>
+    /// Invalidates the cached ChoreDefinitions.
+    /// </summary>
+    public void InvalidateChoreDefinitionsCache()
+    {
+        _cache.Remove(ActiveChoresCacheKey);
+        _logger.LogInformation("ChoreDefinitions cache invalidated");
+    }
 
     public async Task<List<ChoreDefinition>> GetChoresForDateAsync(DateOnly date)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        // Get cached active chores
+        var allActiveChores = await GetCachedActiveChoreDefinitionsAsync();
         
         var dayOfWeek = ChoreScheduleHelper.GetDayOfWeekFlag(date.DayOfWeek);
 
-        // Get base scheduled chores (both SpecificDays and WeeklyFrequency)
-        var baseChores = await context.ChoreDefinitions
-            .Where(c => c.IsActive)
+        // Filter in memory for chores scheduled on this day
+        var baseChores = allActiveChores
             .Where(c => (c.ActiveDays & dayOfWeek) == dayOfWeek)
             .Where(c => c.StartDate == null || c.StartDate <= date)
             .Where(c => c.EndDate == null || c.EndDate >= date)
-            .ToListAsync();
+            .ToList();
 
-        // Get overrides for this date
+        // Get overrides for this date (these change frequently, so no caching)
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var overrides = await context.ChoreScheduleOverrides
             .Include(o => o.ChoreDefinition)
+                .ThenInclude(cd => cd.AssignedUser)
             .Where(o => o.Date == date)
             .ToListAsync();
 
@@ -192,19 +253,17 @@ public class ChoreScheduleService : IChoreScheduleService
 
     public async Task<Dictionary<int, ChoreScheduleWeeklyProgress>> GetWeeklyProgressForUserAsync(string userId, DateOnly anyDateInWeek)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        
         var weekStart = GetWeekStartDate(anyDateInWeek);
         var weekEnd = GetWeekEndDate(anyDateInWeek);
 
-        // Get all weekly frequency chores for this user
-        var weeklyChores = await context.ChoreDefinitions
-            .Where(c => c.IsActive)
+        // Get weekly frequency chores from cache
+        var allActiveChores = await GetCachedActiveChoreDefinitionsAsync();
+        var weeklyChores = allActiveChores
             .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
             .Where(c => c.AssignedUserId == userId)
             .Where(c => c.StartDate == null || c.StartDate <= weekEnd)
             .Where(c => c.EndDate == null || c.EndDate >= weekStart)
-            .ToListAsync();
+            .ToList();
 
         if (weeklyChores.Count == 0)
         {
@@ -213,7 +272,8 @@ public class ChoreScheduleService : IChoreScheduleService
 
         var choreIds = weeklyChores.Select(c => c.Id).ToList();
 
-        // Get completion counts for the week
+        // Get completion counts for the week (ChoreLogs are not cached - they change frequently)
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var completionCounts = await context.ChoreLogs
             .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
             .Where(cl => cl.Date >= weekStart && cl.Date <= weekEnd)
@@ -251,9 +311,10 @@ public class ChoreScheduleService : IChoreScheduleService
 
     public async Task<bool> IsWeeklyTargetMetAsync(int choreDefinitionId, DateOnly anyDateInWeek)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        // Get chore from cache
+        var allActiveChores = await GetCachedActiveChoreDefinitionsAsync();
+        var chore = allActiveChores.FirstOrDefault(c => c.Id == choreDefinitionId);
         
-        var chore = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
         if (chore == null || chore.ScheduleType != ChoreScheduleType.WeeklyFrequency)
         {
             return false;

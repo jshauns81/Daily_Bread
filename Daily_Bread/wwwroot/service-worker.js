@@ -251,6 +251,15 @@ self.addEventListener('notificationclick', (event) => {
         url = `/tracker?approve=${data.choreLogId}`;
     }
     
+    // For help-request notifications, ensure the URL includes the helpRequestId
+    // The URL should already be set correctly from the push payload (e.g., /?helpRequestId=123)
+    // But if the user clicks "View" action, make sure we navigate correctly
+    if (data.type === 'help-request' && data.choreLogId && event.action === 'view') {
+        url = `/?helpRequestId=${data.choreLogId}`;
+    }
+    
+    console.log('[ServiceWorker] Navigating to:', url);
+    
     // Open or focus the app
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
@@ -260,6 +269,9 @@ self.addEventListener('notificationclick', (event) => {
                     if (client.url.includes(self.location.origin) && 'focus' in client) {
                         return client.focus().then((focusedClient) => {
                             if (focusedClient && url !== '/') {
+                                focusedClient.navigate(url);
+                            } else if (focusedClient && url.includes('?')) {
+                                // Even if base URL is '/', navigate if there are query params
                                 focusedClient.navigate(url);
                             }
                             return focusedClient;

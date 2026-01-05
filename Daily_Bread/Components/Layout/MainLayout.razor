@@ -2,11 +2,18 @@
 @using Daily_Bread.Services
 @using Daily_Bread.Components.Shared.Navigation
 @using Daily_Bread.Components.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.WebUtilities
+@using System.Security.Claims
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 @inject INavigationService NavService
-@implements IDisposable
+@inject IAppStateService AppState
+@inject IToastService ToastService
+@inject ITrackerService TrackerService
+@inject ILogger<MainLayout> Logger
+@implements IAsyncDisposable
 
 <div class="page @(_sidebarOpen ? "sidebar-open" : "") @(_showBottomNav ? "has-bottom-nav" : "")" id="page-container">
     <!-- Mobile Header -->
@@ -66,6 +73,20 @@
 <PwaInstallPrompt />
 <ModalHost />
 
+@* Global Help Response Modal - triggered by AppState.OpenHelpRequest() *@
+@if (_showHelpModal && _helpRequestDetails != null)
+{
+    <HelpResponseModal 
+        ChildName="@_helpRequestDetails.ChildName"
+        ChoreName="@_helpRequestDetails.ChoreName"
+        Reason="@_helpRequestDetails.HelpReason"
+        RequestedAt="@_helpRequestDetails.HelpRequestedAt"
+        EarnValue="@_helpRequestDetails.EarnValue"
+        IsProcessing="@_isProcessingHelpResponse"
+        OnSubmit="HandleHelpResponseSubmit"
+        OnCancel="HandleHelpResponseCancel" />
+}
+
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
@@ -105,11 +126,81 @@
     private bool _sidebarOpen = false;
     private bool _showBottomNav = false;
     private IReadOnlyList<NavItem> _mobileNavItems = [];
+    
+    // SignalR connection for real-time updates
+    private HubConnection? _hubConnection;
+    private string? _currentUserId;
+    private bool _isParent;
+    private bool _isChild;
+    private CancellationTokenSource? _reconnectCts;
+    private bool _signalRInitialized;
+    
+    // Global Help Response Modal state
+    private bool _showHelpModal;
+    private HelpRequestDetails? _helpRequestDetails;
+    private bool _isProcessingHelpResponse;
+    
+    // Track if we've already processed the deep link
+    private bool _deepLinkProcessed;
 
     protected override async Task OnInitializedAsync()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
+        AppState.OnHelpRequestOpened += HandleHelpRequestOpened;
         await CheckUserRoleAsync();
+        // Don't initialize SignalR here - wait for OnAfterRenderAsync when circuit is ready
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // DIAGNOSTIC: Log to browser console
+        await JS.InvokeVoidAsync("console.log", $">>> OnAfterRenderAsync called, firstRender={firstRender}, _signalRInitialized={_signalRInitialized}, _currentUserId={_currentUserId}");
+        
+        if (firstRender && !_signalRInitialized)
+        {
+            await JS.InvokeVoidAsync("console.log", ">>> Calling InitializeSignalRAsync from OnAfterRenderAsync");
+            await InitializeSignalRAsync();
+            
+            // Check for deep link query parameter after SignalR is ready
+            await CheckForHelpRequestDeepLinkAsync();
+        }
+    }
+
+    /// <summary>
+    /// Checks URL for ?helpRequestId=X query param and opens the help modal.
+    /// This supports deep linking from push notifications.
+    /// </summary>
+    private async Task CheckForHelpRequestDeepLinkAsync()
+    {
+        if (_deepLinkProcessed) return;
+        if (!_isParent) return; // Only parents can respond to help requests
+        
+        try
+        {
+            var uri = new Uri(NavigationManager.Uri);
+            var queryParams = QueryHelpers.ParseQuery(uri.Query);
+            
+            if (queryParams.TryGetValue("helpRequestId", out var helpRequestIdValue) &&
+                int.TryParse(helpRequestIdValue.FirstOrDefault(), out var choreLogId))
+            {
+                _deepLinkProcessed = true;
+                
+                Logger.LogInformation("Deep link detected: helpRequestId={ChoreLogId}", choreLogId);
+                await JS.InvokeVoidAsync("console.log", $">>> Deep link detected: helpRequestId={choreLogId}");
+                
+                // Open the help request modal via AppState
+                AppState.OpenHelpRequest(choreLogId);
+                
+                // Clear the query parameter from URL to prevent re-triggering
+                // Use replaceState to avoid adding to browser history
+                var cleanUrl = uri.GetLeftPart(UriPartial.Path);
+                await JS.InvokeVoidAsync("history.replaceState", null, "", cleanUrl);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Error processing help request deep link");
+        }
     }
 
     private async Task CheckUserRoleAsync()
@@ -121,19 +212,20 @@
             
             if (user.Identity?.IsAuthenticated == true)
             {
-                var isParent = user.IsInRole("Parent");
+                _currentUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+                _isParent = user.IsInRole("Parent");
+                _isChild = user.IsInRole("Child");
                 var isAdmin = user.IsInRole("Admin");
-                var isChild = user.IsInRole("Child");
                 
                 // Show bottom nav for Parents and Children on mobile
                 // Admin-only users (no Parent or Child role) don't get bottom nav
-                var isAdminOnly = isAdmin && !isParent && !isChild;
-                _showBottomNav = !isAdminOnly && (isParent || isChild);
+                var isAdminOnly = isAdmin && !_isParent && !_isChild;
+                _showBottomNav = !isAdminOnly && (_isParent || _isChild);
                 
                 // Get mobile nav items from centralized service
                 if (_showBottomNav)
                 {
-                    _mobileNavItems = NavService.GetMobileNavItems(isParent, isChild, isAdmin);
+                    _mobileNavItems = NavService.GetMobileNavItems(_isParent, _isChild, isAdmin);
                 }
             }
         }
@@ -142,6 +234,421 @@
             // Ignore auth errors during initialization
         }
     }
+
+    #region Global Help Response Modal
+
+    private async void HandleHelpRequestOpened(int choreLogId)
+    {
+        Logger.LogInformation("HandleHelpRequestOpened triggered for ChoreLogId={ChoreLogId}", choreLogId);
+        
+        try
+        {
+            // Load the help request details
+            var details = await TrackerService.GetHelpRequestDetailsAsync(choreLogId);
+            
+            if (details == null)
+            {
+                Logger.LogWarning("Help request details not found for ChoreLogId={ChoreLogId}", choreLogId);
+                ToastService.ShowError("Error", "Help request not found");
+                AppState.CloseHelpRequest();
+                return;
+            }
+            
+            await InvokeAsync(() =>
+            {
+                _helpRequestDetails = details;
+                _showHelpModal = true;
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading help request details for ChoreLogId={ChoreLogId}", choreLogId);
+            ToastService.ShowError("Error", "Failed to load help request");
+            AppState.CloseHelpRequest();
+        }
+    }
+
+    private async Task HandleHelpResponseSubmit((HelpResponse Response, string? Note) args)
+    {
+        if (_helpRequestDetails == null || string.IsNullOrEmpty(_currentUserId))
+            return;
+        
+        _isProcessingHelpResponse = true;
+        
+        try
+        {
+            var result = await TrackerService.RespondToHelpRequestAsync(
+                _helpRequestDetails.ChoreLogId,
+                _currentUserId,
+                args.Response,
+                args.Note);
+            
+            if (result.Success)
+            {
+                var message = args.Response switch
+                {
+                    HelpResponse.CompletedByParent => $"'{_helpRequestDetails.ChoreName}' fulfilled!",
+                    HelpResponse.Excused => $"'{_helpRequestDetails.ChoreName}' excused.",
+                    HelpResponse.Denied => $"'{_helpRequestDetails.ChoreName}' reset to pending.",
+                    _ => "Response sent."
+                };
+                
+                ToastService.ShowSuccess("Done!", message);
+                
+                // Invalidate caches to refresh data
+                AppState.InvalidateParentDashboard();
+                if (!string.IsNullOrEmpty(_helpRequestDetails.ChildUserId))
+                {
+                    AppState.InvalidateChildDashboard(_helpRequestDetails.ChildUserId);
+                    AppState.InvalidateTrackerCache(_helpRequestDetails.ChildUserId);
+                }
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to respond");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error responding to help request");
+            ToastService.ShowError("Error", ex.Message);
+        }
+        finally
+        {
+            _isProcessingHelpResponse = false;
+            _showHelpModal = false;
+            _helpRequestDetails = null;
+            AppState.CloseHelpRequest();
+        }
+    }
+
+    private void HandleHelpResponseCancel()
+    {
+        _showHelpModal = false;
+        _helpRequestDetails = null;
+        AppState.CloseHelpRequest();
+    }
+
+    #endregion
+
+    #region SignalR Connection Management
+
+    private async Task InitializeSignalRAsync()
+    {
+        // DIAGNOSTIC: Log to browser console
+        await JS.InvokeVoidAsync("console.log", $">>> InitializeSignalRAsync called. CurrentUserId={_currentUserId}");
+        Logger.LogWarning(">>> InitializeSignalRAsync called. CurrentUserId={CurrentUserId}", _currentUserId);
+
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            await JS.InvokeVoidAsync("console.warn", ">>> User not authenticated, skipping SignalR connection");
+            Logger.LogWarning(">>> User not authenticated, skipping SignalR connection");
+            return;
+        }
+
+        if (_signalRInitialized)
+        {
+            await JS.InvokeVoidAsync("console.log", ">>> SignalR already initialized, skipping");
+            return;
+        }
+
+        try
+        {
+            var hubUrl = NavigationManager.ToAbsoluteUri("/chorehub");
+            
+            // DIAGNOSTIC: Log the URL we're connecting to
+            await JS.InvokeVoidAsync("console.log", $">>> ChoreHub connecting to: {hubUrl}");
+            Logger.LogWarning(">>> ChoreHub connecting to: {HubUrl}", hubUrl);
+            
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl)
+                .WithAutomaticReconnect(new SignalRRetryPolicy())
+                .Build();
+
+            // Subscribe to events using individual parameters for reliable deserialization
+            // All events use primitive types instead of complex objects
+            
+            // DashboardChanged: string[] affectedUserIds, DateTime timestamp
+            _hubConnection.On<string[], DateTime>("DashboardChanged", 
+                (affectedUserIds, timestamp) => OnDashboardChanged(affectedUserIds, timestamp));
+            
+            // HelpAlert: int choreLogId, string requestingUserId, string choreName, string childName, DateTime timestamp
+            _hubConnection.On<int, string, string, string, DateTime>("HelpAlert", 
+                (choreLogId, requestingUserId, choreName, childName, timestamp) => 
+                    OnHelpAlert(choreLogId, requestingUserId, choreName, childName, timestamp));
+            
+            // BlessingGranted: string childUserId, string choreName, decimal earnedAmount, string parentName, DateTime timestamp
+            _hubConnection.On<string, string, decimal, string, DateTime>("BlessingGranted", 
+                (childUserId, choreName, earnedAmount, parentName, timestamp) => 
+                    OnBlessingGranted(childUserId, choreName, earnedAmount, parentName, timestamp));
+            
+            // HelpResponded: string childUserId, string choreName, string response, string parentName, string? note, DateTime timestamp
+            _hubConnection.On<string, string, string, string, string?, DateTime>("HelpResponded", 
+                (childUserId, choreName, response, parentName, note, timestamp) => 
+                    OnHelpResponded(childUserId, choreName, response, parentName, note, timestamp));
+
+            // ChoreUndone: string childUserId, string choreName, string parentName, DateTime timestamp
+            _hubConnection.On<string, string, string, DateTime>("ChoreUndone", 
+                (childUserId, choreName, parentName, timestamp) => 
+                    OnChoreUndone(childUserId, choreName, parentName, timestamp));
+
+            // DIAGNOSTIC: Log handler registration
+            await JS.InvokeVoidAsync("console.log", ">>> SignalR handlers registered: DashboardChanged, HelpAlert, BlessingGranted, HelpResponded, ChoreUndone");
+
+            // Handle connection lifecycle
+            _hubConnection.Closed += OnConnectionClosed;
+            _hubConnection.Reconnecting += OnReconnecting;
+            _hubConnection.Reconnected += OnReconnected;
+
+            await _hubConnection.StartAsync();
+            _signalRInitialized = true;
+            
+            // DIAGNOSTIC: Log successful connection
+            await JS.InvokeVoidAsync("console.log", $">>> ChoreHub connected! State={_hubConnection.State}, ConnectionId={_hubConnection.ConnectionId}");
+            Logger.LogWarning(">>> ChoreHub connected! State={State}, ConnectionId={ConnectionId}", 
+                _hubConnection.State, _hubConnection.ConnectionId);
+        }
+        catch (Exception ex)
+        {
+            // DIAGNOSTIC: Log connection failure with full details
+            await JS.InvokeVoidAsync("console.error", $">>> ChoreHub connection FAILED: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $">>> ChoreHub exception details: {ex}");
+            Logger.LogError(ex, ">>> ChoreHub connection FAILED: {Message}", ex.Message);
+            ScheduleReconnect();
+        }
+    }
+
+    private void OnDashboardChanged(string[]? affectedUserIds, DateTime timestamp)
+    {
+        // Check if this user is affected
+        if (affectedUserIds == null || affectedUserIds.Length == 0)
+            return;
+
+        var isAffected = affectedUserIds.Contains(_currentUserId);
+        
+        // Parents are always interested in child changes
+        if (_isParent || isAffected)
+        {
+            Logger.LogDebug("DashboardChanged received, invalidating caches");
+            
+            // Trigger existing AppStateService invalidation flow
+            // Components already subscribe to these events
+            if (_isParent)
+            {
+                AppState.InvalidateParentDashboard();
+            }
+            
+            if (isAffected)
+            {
+                AppState.InvalidateChildDashboard(_currentUserId);
+            }
+            
+            // Also invalidate tracker cache for affected users
+            foreach (var userId in affectedUserIds)
+            {
+                AppState.InvalidateTrackerCache(userId);
+            }
+        }
+    }
+
+    private async void OnHelpAlert(int choreLogId, string requestingUserId, string choreName, string childName, DateTime timestamp)
+    {
+        // Only parents need to see help alerts
+        if (!_isParent) return;
+
+        Logger.LogDebug("HelpAlert received: {ChildName} needs help with {ChoreName}, ChoreLogId={ChoreLogId}", 
+            childName, choreName, choreLogId);
+
+        // Show clickable toast notification that opens the modal
+        await InvokeAsync(() =>
+        {
+            ToastService.ShowHelpAlert(
+                "Help Requested",
+                $"{childName} needs help with '{choreName}'",
+                onClick: () => AppState.OpenHelpRequest(choreLogId));
+        });
+
+        // Also invalidate parent dashboard to update the help requests list
+        AppState.InvalidateParentDashboard();
+    }
+
+    private async void OnBlessingGranted(string childUserId, string choreName, decimal earnedAmount, string parentName, DateTime timestamp)
+    {
+        // Show notification if this event is for the current user
+        // (regardless of role - user might be both parent and child in test scenarios)
+        if (childUserId != _currentUserId) return;
+
+        Logger.LogDebug("BlessingGranted received: {ChoreName} earned ${Amount}", 
+            choreName, earnedAmount);
+
+        await InvokeAsync(() =>
+        {
+            ToastService.ShowSuccess(
+                "🎉 Blessed!",
+                $"'{choreName}' was blessed! +${earnedAmount:F2}");
+        });
+
+        // Invalidate child dashboard to refresh balance and chore status
+        AppState.InvalidateChildDashboard(_currentUserId);
+        AppState.InvalidateTrackerCache(_currentUserId);
+    }
+
+    private async void OnHelpResponded(string childUserId, string choreName, string response, string parentName, string? note, DateTime timestamp)
+    {
+        // Log to browser console
+        try
+        {
+            await JS.InvokeVoidAsync("console.log", $">>> HelpResponded RECEIVED: ChildUserId={childUserId}, ChoreName={choreName}, Response={response}, Note={note ?? "none"}, CurrentUserId={_currentUserId}");
+        }
+        catch { /* Ignore JS errors during logging */ }
+
+        // Show notification if this event is for the current user
+        if (childUserId != _currentUserId)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("console.log", $">>> HelpResponded SKIPPED: ChildUserId '{childUserId}' != CurrentUserId '{_currentUserId}'");
+            }
+            catch { /* Ignore JS errors */ }
+            return;
+        }
+
+        // Prepare the toast content - include note if provided
+        var (title, message) = response switch
+        {
+            "CompletedByParent" => ("✅ Help Received!", BuildHelpResponseMessage(choreName, parentName, "completed", note)),
+            "Excused" => ("🙏 Excused", BuildHelpResponseMessage(choreName, parentName, "excused", note)),
+            "Denied" => ("📋 Try Again", BuildHelpResponseMessage(choreName, parentName, "denied", note)),
+            _ => ("Response Received", $"'{choreName}' help request was addressed.")
+        };
+
+        // Show toast notification
+        await InvokeAsync(() =>
+        {
+            if (response == "Denied")
+            {
+                ToastService.ShowInfo(title, message);
+            }
+            else
+            {
+                ToastService.ShowSuccess(title, message);
+            }
+        });
+
+        // Invalidate child dashboard to refresh chore status
+        AppState.InvalidateChildDashboard(_currentUserId);
+        AppState.InvalidateTrackerCache(_currentUserId);
+    }
+
+    /// <summary>
+    /// Builds a help response message, optionally including the parent's note.
+    /// </summary>
+    private static string BuildHelpResponseMessage(string choreName, string parentName, string action, string? note)
+    {
+        var baseMessage = action switch
+        {
+            "completed" => $"'{choreName}' was completed by {parentName}. You got credit!",
+            "excused" => $"'{choreName}' has been excused for today.",
+            "denied" => $"'{choreName}' wasn't excused. Give it another try!",
+            _ => $"'{choreName}' help request was addressed."
+        };
+
+        // Append note if provided
+        if (!string.IsNullOrWhiteSpace(note))
+        {
+            return $"{baseMessage} Note: \"{note}\"";
+        }
+
+        return baseMessage;
+    }
+
+    private async void OnChoreUndone(string childUserId, string choreName, string parentName, DateTime timestamp)
+    {
+        // Log to browser console
+        try
+        {
+            await JS.InvokeVoidAsync("console.log", $">>> ChoreUndone RECEIVED: ChildUserId={childUserId}, ChoreName={choreName}, CurrentUserId={_currentUserId}");
+        }
+        catch { /* Ignore JS errors during logging */ }
+
+        // Show notification if this event is for the current user
+        if (childUserId != _currentUserId)
+        {
+            return;
+        }
+
+        Logger.LogDebug("ChoreUndone received: {ChoreName} was undone by {ParentName}", 
+            choreName, parentName);
+
+        // Show toast notification
+        await InvokeAsync(() =>
+        {
+            ToastService.ShowWarning(
+                "↩️ Undone",
+                $"'{choreName}' was marked incomplete by {parentName}.");
+        });
+
+        // Invalidate child dashboard to refresh chore status
+        AppState.InvalidateChildDashboard(_currentUserId);
+        AppState.InvalidateTrackerCache(_currentUserId);
+    }
+
+    private Task OnConnectionClosed(Exception? ex)
+    {
+        if (ex != null)
+        {
+            Logger.LogWarning(ex, "SignalR connection closed with error");
+        }
+        else
+        {
+            Logger.LogInformation("SignalR connection closed");
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task OnReconnecting(Exception? ex)
+    {
+        Logger.LogInformation("SignalR reconnecting... {Error}", ex?.Message);
+        return Task.CompletedTask;
+    }
+
+    private Task OnReconnected(string? connectionId)
+    {
+        Logger.LogInformation("SignalR reconnected: {ConnectionId}", connectionId);
+        
+        // Refresh data after reconnection in case we missed events
+        AppState.InvalidateAll();
+        
+        return Task.CompletedTask;
+    }
+
+    private void ScheduleReconnect()
+    {
+        _reconnectCts?.Cancel();
+        _reconnectCts = new CancellationTokenSource();
+        var token = _reconnectCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(5000, token);
+                if (!token.IsCancellationRequested)
+                {
+                    await InvokeAsync(async () => await InitializeSignalRAsync());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected on dispose
+            }
+        }, token);
+    }
+
+    #endregion
+
+    #region Navigation Helpers
 
     private bool IsCurrentPage(string href)
     {
@@ -190,8 +697,56 @@
         }
     }
 
-    public void Dispose()
+    #endregion
+
+    #region Retry Policy
+
+    /// <summary>
+    /// Custom retry policy with exponential backoff.
+    /// </summary>
+    private sealed class SignalRRetryPolicy : IRetryPolicy
+    {
+        private static readonly TimeSpan[] RetryDelays =
+        [
+            TimeSpan.FromSeconds(0),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(10),
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromSeconds(60)
+        ];
+
+        public TimeSpan? NextRetryDelay(RetryContext retryContext)
+        {
+            var index = Math.Min(retryContext.PreviousRetryCount, RetryDelays.Length - 1);
+            return RetryDelays[index];
+        }
+    }
+
+    #endregion
+
+    public async ValueTask DisposeAsync()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+        AppState.OnHelpRequestOpened -= HandleHelpRequestOpened;
+        
+        _reconnectCts?.Cancel();
+        _reconnectCts?.Dispose();
+        
+        if (_hubConnection != null)
+        {
+            _hubConnection.Closed -= OnConnectionClosed;
+            _hubConnection.Reconnecting -= OnReconnecting;
+            _hubConnection.Reconnected -= OnReconnected;
+            
+            try
+            {
+                await _hubConnection.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error disposing SignalR connection");
+            }
+        }
     }
 }
