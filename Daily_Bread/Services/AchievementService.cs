@@ -980,7 +980,7 @@ public class AchievementService : IAchievementService
         });
 
         // ═══════════════════════════════════════════════════════════════
-        // MASTERY (Category 11) - Achievement achievements
+        // MASTERY (Category 11) - Achievement achievements 
         // ═══════════════════════════════════════════════════════════════
         achievements.AddRange(new[]
         {
