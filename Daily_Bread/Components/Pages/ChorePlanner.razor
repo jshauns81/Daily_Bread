@@ -130,7 +130,9 @@
                     SelectedUserId="_selectedUserId"
                     UpdatingCellKey="_updatingCellKey"
                     OnEditChore="ShowEditChoreForm"
-                    OnCellClick="HandleCellClickFromGrid" />
+                    OnCellClick="HandleCellClickFromGrid"
+                    EnableReorder="@(!string.IsNullOrEmpty(_selectedUserId))"
+                    OnReorder="HandleWageReorder" />
 
                 <!-- Weekly Summary -->
                 <div class="weekly-summary">
@@ -197,7 +199,9 @@
                     RoutineChores="_routineChores"
                     SelectedUserId="_selectedUserId"
                     OnEditChore="ShowEditChoreForm"
-                    OnAddRoutine="ShowCreateRoutineForm" />
+                    OnAddRoutine="ShowCreateRoutineForm"
+                    EnableReorder="@(!string.IsNullOrEmpty(_selectedUserId))"
+                    OnReorder="HandleRoutineReorder" />
             }
         }
     }
@@ -510,6 +514,38 @@
             HideChoreForm();
             await LoadDataAsync();
             ClearMessageAfterDelay();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+
+    private async Task HandleRoutineReorder(List<(int ChoreId, int SortOrder)> updates)
+    {
+        _errorMessage = null;
+
+        var result = await ChoreManagementService.UpdateSortOrderBatchAsync(updates);
+        
+        if (result.Success)
+        {
+            await LoadDataAsync();
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+
+    private async Task HandleWageReorder(List<(int ChoreId, int SortOrder)> updates)
+    {
+        _errorMessage = null;
+
+        var result = await ChoreManagementService.UpdateSortOrderBatchAsync(updates);
+        
+        if (result.Success)
+        {
+            await LoadDataAsync();
         }
         else
         {
