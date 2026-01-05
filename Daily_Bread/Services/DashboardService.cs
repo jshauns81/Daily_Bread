@@ -389,7 +389,7 @@ public class DashboardService : IDashboardService
         var streakStartDate = today.AddDays(-365);
         
         // Load ALL ChoreLogs for this user from 365 days ago to today
-        // This single query replaces: TrackerService, StreaksAsync, WeeklyComparison
+        // This single query replaces: TrackerService ChoreLogs query, StreaksAsync, WeeklyComparison
         await using var context = await _contextFactory.CreateDbContextAsync();
         var allUserLogs = await context.ChoreLogs
             .Include(cl => cl.ChoreDefinition)
@@ -410,16 +410,10 @@ public class DashboardService : IDashboardService
         var balance = await _ledgerService.GetUserBalanceAsync(userId);
         var balanceSummary = await _payoutService.GetBalanceSummaryAsync(userId);
 
-        // =============================================================================
-        // Filter in memory for different data needs
-        // =============================================================================
-        
-        // Today's logs
-        var todayLogs = allUserLogs.Where(cl => cl.Date == today).ToList();
-        
-        // Get today's chores using TrackerService (still needed for ChoreDefinitions + schedule logic)
-        // But the ChoreLogs part is already loaded
-        var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, today);
+        // OPTIMIZATION: Pass pre-loaded ChoreLogs to TrackerService
+        // Previously: TrackerService would re-query ChoreLogs from database
+        // Now: Uses pre-loaded logs, eliminating duplicate query
+        var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, today, allUserLogs);
 
         // Get weekly progress for weekly flexible chores
         var weeklyProgress = await _weeklyProgressService.GetWeeklyProgressForUserAsync(userId, today);
@@ -433,22 +427,35 @@ public class DashboardService : IDashboardService
             .Sum(c => c.Value);
         var todayPotential = todayChores.Sum(c => c.Value);
 
-        // Get primary savings goal (still needs separate query - different table)
-        var primaryGoal = await _savingsGoalService.GetPrimaryGoalAsync(userId);
+        // =============================================================================
+        // OPTIMIZATION: Pass pre-fetched balance to SavingsGoalService
+        // Previously: GetPrimaryGoalAsync would re-query the balance from LedgerTransactions
+        // Now: Uses balance we already fetched above, eliminating duplicate query
+        // =============================================================================
+        var primaryGoal = await _savingsGoalService.GetPrimaryGoalAsync(userId, balance);
 
         // Check and award any new achievements (still needs service call)
         var newAchievements = await _achievementService.CheckAndAwardAchievementsAsync(userId);
 
-        // Get recently earned achievements (last 5)
-        var earnedAchievements = await _achievementService.GetEarnedAchievementsAsync(userId);
+        // =============================================================================
+        // OPTIMIZATION: Get all achievements once and filter in memory
+        // Previously: GetEarnedAchievementsAsync (calls GetAllAchievementsAsync internally)
+        //             then GetAllAchievementsAsync again = 2 queries
+        // Now: Single call, filter earned/unearned in memory
+        // =============================================================================
+        var allAchievements = await _achievementService.GetAllAchievementsAsync(userId);
+        
+        // Filter earned achievements from the already-loaded list
+        var earnedAchievements = allAchievements.Where(a => a.IsEarned).ToList();
+        
+        // Get recently earned achievements (last 5) - filtered in memory
         var recentAchievements = earnedAchievements
             .OrderByDescending(a => a.EarnedAt)
             .Take(5)
             .ToList();
 
-        // Get total achievements stats
-        var allAchievements = await _achievementService.GetAllAchievementsAsync(userId);
-        var totalPoints = await _achievementService.GetTotalPointsAsync(userId);
+        // Get total achievements stats - calculated from already-loaded data
+        var totalPoints = earnedAchievements.Sum(a => a.Points);
 
         // Calculate weekly comparison from pre-loaded data (in memory)
         var weeklyStats = await GetWeeklyComparisonFromLogsAsync(userId, allUserLogs, today, startOfThisWeek, startOfLastWeek);

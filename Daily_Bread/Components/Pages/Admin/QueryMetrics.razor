@@ -1,0 +1,333 @@
+﻿@page "/admin/query-metrics"
+@attribute [Authorize(Roles = "Admin,Parent")]
+@inject IQueryMonitoringService QueryMonitor
+@inject IDashboardService DashboardService
+@inject IChoreChartService ChoreChartService
+@inject IChorePlannerService ChorePlannerService
+@inject IPayoutService PayoutService
+@inject ILedgerService LedgerService
+@inject IChildProfileService ProfileService
+@inject IDateProvider DateProvider
+
+<PageTitle>Query Metrics - Daily Bread</PageTitle>
+
+<div class="container py-4">
+    <h1>Query Performance Metrics</h1>
+    <p class="text-muted">
+        This page helps verify database query optimizations.
+        Click a test to measure query counts for various operations.
+    </p>
+
+    @if (!_isAvailable)
+    {
+        <div class="alert alert-warning">
+            <strong>Query Monitoring Not Available</strong><br />
+            Query monitoring is only available in Development environment.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Settings</h5>
+                <div class="d-flex gap-4 flex-wrap">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="enableMonitoring" 
+                               checked="@_isEnabled" @onchange="ToggleMonitoring">
+                        <label class="form-check-label" for="enableMonitoring">
+                            Enable Query Monitoring
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="logQueries" 
+                               checked="@_logQueries" @onchange="ToggleLogQueries">
+                        <label class="form-check-label" for="logQueries">
+                            Log SQL Queries
+                        </label>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2">
+                    Settings persist for current app session only.
+                </small>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Dashboard Load</h5>
+                        <p class="card-text text-muted small">
+                            Tests GetParentDashboardAsync - loads chores, logs, profiles
+                        </p>
+                        <button class="btn btn-primary" @onclick="TestDashboard" disabled="@(_isRunning || !_isEnabled)">
+                            @if (_isRunning && _currentTest == "dashboard")
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Run Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Weekly Chart</h5>
+                        <p class="card-text text-muted small">
+                            Tests GenerateWeeklyChartAsync - loads all children's charts
+                        </p>
+                        <button class="btn btn-primary" @onclick="TestWeeklyChart" disabled="@(_isRunning || !_isEnabled)">
+                            @if (_isRunning && _currentTest == "chart")
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Run Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Printable Planner</h5>
+                        <p class="card-text text-muted small">
+                            Tests GetPrintableChartAsync - loads all children's planners
+                        </p>
+                        <button class="btn btn-primary" @onclick="TestPrintablePlanner" disabled="@(_isRunning || !_isEnabled)">
+                            @if (_isRunning && _currentTest == "planner")
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Run Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Balance Summary</h5>
+                        <p class="card-text text-muted small">
+                            Tests GetAllAccountBalancesAsync - SQL aggregation
+                        </p>
+                        <button class="btn btn-primary" @onclick="TestBalances" disabled="@(_isRunning || !_isEnabled)">
+                            @if (_isRunning && _currentTest == "balances")
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Run Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">User Balance</h5>
+                        <p class="card-text text-muted small">
+                            Tests GetUserBalanceAsync - single joined query
+                        </p>
+                        <button class="btn btn-primary" @onclick="TestUserBalance" disabled="@(_isRunning || !_isEnabled)">
+                            @if (_isRunning && _currentTest == "userbalance")
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Run Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Clear Metrics</h5>
+                        <p class="card-text text-muted small">
+                            Clear all recorded metrics
+                        </p>
+                        <button class="btn btn-secondary" @onclick="ClearMetrics" disabled="@_isRunning">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Results</h2>
+        
+        @if (_metrics.Count == 0)
+        {
+            <div class="alert alert-info">
+                No metrics recorded yet. Run a test to see results.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th class="text-end">Queries</th>
+                            <th class="text-end">Duration</th>
+                            <th>Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var metric in _metrics.OrderByDescending(m => m.CompletedAt))
+                        {
+                            var rowClass = metric.QueryCount <= 5 ? "metrics-row-optimal" : metric.QueryCount <= 10 ? "metrics-row-acceptable" : "metrics-row-needs-work";
+                            <tr class="@rowClass">
+                                <td>@metric.OperationName</td>
+                                <td class="text-end">
+                                    <strong>@metric.QueryCount</strong>
+                                </td>
+                                <td class="text-end">@metric.Duration.TotalMilliseconds.ToString("F1") ms</td>
+                                <td>@metric.CompletedAt.ToString("HH:mm:ss.fff")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3">
+                <h5>Legend</h5>
+                <ul class="list-unstyled">
+                    <li><span class="badge metrics-badge-optimal">Green</span> - Optimal (≤5 queries)</li>
+                    <li><span class="badge metrics-badge-acceptable">Yellow</span> - Acceptable (6-10 queries)</li>
+                    <li><span class="badge metrics-badge-needs-work">Red</span> - Needs optimization (>10 queries)</li>
+                </ul>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool _isAvailable;
+    private bool _isEnabled;
+    private bool _logQueries;
+    private bool _isRunning;
+    private string _currentTest = "";
+    private List<Services.QueryMetrics> _metrics = new();
+
+    protected override void OnInitialized()
+    {
+        // Check if the real monitoring service is available (not NullQueryMonitoringService)
+        _isAvailable = QueryMonitor.GetType() != typeof(Services.NullQueryMonitoringService);
+        
+        if (_isAvailable)
+        {
+            _isEnabled = QueryMonitor.IsEnabled;
+            _logQueries = QueryMonitor.LogQueries;
+            _metrics = QueryMonitor.GetCompletedMetrics().ToList();
+        }
+    }
+
+    private void ToggleMonitoring(ChangeEventArgs e)
+    {
+        _isEnabled = (bool)(e.Value ?? false);
+        QueryMonitor.IsEnabled = _isEnabled;
+    }
+
+    private void ToggleLogQueries(ChangeEventArgs e)
+    {
+        _logQueries = (bool)(e.Value ?? false);
+        QueryMonitor.LogQueries = _logQueries;
+    }
+
+    private async Task TestDashboard()
+    {
+        _isRunning = true;
+        _currentTest = "dashboard";
+        StateHasChanged();
+
+        using (QueryMonitor.BeginScope("DashboardService.GetParentDashboardAsync"))
+        {
+            await DashboardService.GetParentDashboardAsync();
+        }
+
+        RefreshMetrics();
+        _isRunning = false;
+    }
+
+    private async Task TestWeeklyChart()
+    {
+        _isRunning = true;
+        _currentTest = "chart";
+        StateHasChanged();
+
+        using (QueryMonitor.BeginScope("ChoreChartService.GenerateWeeklyChartAsync"))
+        {
+            await ChoreChartService.GenerateWeeklyChartAsync();
+        }
+
+        RefreshMetrics();
+        _isRunning = false;
+    }
+
+    private async Task TestPrintablePlanner()
+    {
+        _isRunning = true;
+        _currentTest = "planner";
+        StateHasChanged();
+
+        using (QueryMonitor.BeginScope("ChorePlannerService.GetPrintableChartAsync"))
+        {
+            await ChorePlannerService.GetPrintableChartAsync();
+        }
+
+        RefreshMetrics();
+        _isRunning = false;
+    }
+
+    private async Task TestBalances()
+    {
+        _isRunning = true;
+        _currentTest = "balances";
+        StateHasChanged();
+
+        using (QueryMonitor.BeginScope("PayoutService.GetAllAccountBalancesAsync"))
+        {
+            await PayoutService.GetAllAccountBalancesAsync();
+        }
+
+        RefreshMetrics();
+        _isRunning = false;
+    }
+
+    private async Task TestUserBalance()
+    {
+        _isRunning = true;
+        _currentTest = "userbalance";
+        StateHasChanged();
+
+        // Get a child profile to test with
+        var profiles = await ProfileService.GetAllChildProfilesAsync();
+        if (profiles.Count > 0)
+        {
+            using (QueryMonitor.BeginScope("LedgerService.GetUserBalanceAsync"))
+            {
+                await LedgerService.GetUserBalanceAsync(profiles[0].UserId);
+            }
+        }
+
+        RefreshMetrics();
+        _isRunning = false;
+    }
+
+    private void ClearMetrics()
+    {
+        QueryMonitor.ClearMetrics();
+        _metrics.Clear();
+    }
+
+    private void RefreshMetrics()
+    {
+        _metrics = QueryMonitor.GetCompletedMetrics().ToList();
+    }
+}

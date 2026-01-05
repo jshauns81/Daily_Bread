@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,7 +28,7 @@ public enum ChoreCellStatus
 }
 
 /// <summary>
-/// Represents a single cell in the chore planner matrix (chore � day).
+/// Represents a single cell in the chore planner matrix (chore × day).
 /// </summary>
 public class ChorePlannerCell
 {
@@ -631,47 +631,125 @@ public class ChorePlannerService : IChorePlannerService
         var end = start.AddDays(6);
 
         var profiles = await _profileService.GetAllChildProfilesAsync();
-        var children = new List<PrintableChildChart>();
+        
+        if (profiles.Count == 0)
+        {
+            return new PrintablePlannerChart
+            {
+                WeekStart = start,
+                WeekEnd = end,
+                Children = []
+            };
+        }
 
+        // =============================================================================
+        // OPTIMIZATION: Batch load ALL data upfront to eliminate N+1 queries
+        // Previously: For each profile, called GetPlannerDataAsync which queried
+        //             ChoreDefinitions, ChoreLogs, and Overrides separately per child
+        // Now: Single query for each data type, process per-child in memory
+        // =============================================================================
+        
+        var userIds = profiles.Select(p => p.UserId).ToList();
+        
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        
+        // Batch load ALL ChoreDefinitions for all children in ONE query
+        var allChores = await context.ChoreDefinitions
+            .AsNoTracking()
+            .Include(c => c.AssignedUser)
+            .Where(c => c.IsActive)
+            .Where(c => c.StartDate == null || c.StartDate <= end)
+            .Where(c => c.EndDate == null || c.EndDate >= start)
+            .Where(c => userIds.Contains(c.AssignedUserId!))
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync();
+        
+        // Group chores by userId for in-memory lookup
+        var choresByUser = allChores
+            .GroupBy(c => c.AssignedUserId!)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        
+        var choreIds = allChores.Select(c => c.Id).ToList();
+        
+        // Batch load ALL ChoreLogs for all children in ONE query
+        var allLogs = await context.ChoreLogs
+            .AsNoTracking()
+            .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
+            .Where(cl => cl.Date >= start && cl.Date <= end)
+            .ToListAsync();
+        
+        var logsByChoreAndDate = allLogs
+            .GroupBy(l => (l.ChoreDefinitionId, l.Date))
+            .ToDictionary(g => g.Key, g => g.First());
+        
+        // Batch load ALL Overrides for all children in ONE query
+        var allOverrides = await context.ChoreScheduleOverrides
+            .AsNoTracking()
+            .Include(o => o.ChoreDefinition)
+            .Include(o => o.CreatedByUser)
+            .Where(o => o.Date >= start && o.Date <= end)
+            .Where(o => choreIds.Contains(o.ChoreDefinitionId))
+            .ToListAsync();
+        
+        var overridesByChoreAndDate = allOverrides
+            .GroupBy(o => (o.ChoreDefinitionId, o.Date))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Build charts for each child using pre-loaded data (NO database queries in loop)
+        var children = new List<PrintableChildChart>();
         foreach (var profile in profiles)
         {
-            var plannerData = await GetPlannerDataAsync(start, profile.UserId);
+            var userChores = choresByUser.GetValueOrDefault(profile.UserId) ?? [];
             
-            // For printing, we want to show empty checkboxes for future dates
-            // and strip completion status
-            var printGroups = plannerData.Groups.Select(g => new ChorePlannerGroup
+            if (userChores.Count == 0)
             {
-                GroupName = g.GroupName,
-                GroupKey = g.GroupKey,
-                IsCollapsible = false,
-                IsCollapsedByDefault = false,
-                Chores = g.Chores.Select(c => new ChorePlannerRow
+                // Add empty chart for child with no chores
+                var emptyDayColumns = BuildDayColumns(start, today, [], []);
+                children.Add(new PrintableChildChart
                 {
-                    ChoreDefinitionId = c.ChoreDefinitionId,
-                    ChoreName = c.ChoreName,
-                    Description = c.Description,
-                    Icon = c.Icon,
-                    Value = c.Value,
-                    ScheduleType = c.ScheduleType,
-                    ActiveDays = c.ActiveDays,
-                    WeeklyTargetCount = c.WeeklyTargetCount,
-                    AssignedUserId = c.AssignedUserId,
-                    AssignedUserName = c.AssignedUserName,
-                    WeeklyCompletedCount = 0,
-                    WeeklyApprovedCount = 0,
-                    Cells = c.Cells.Select(cell => new ChorePlannerCell
-                    {
-                        Date = cell.Date,
-                        Status = cell.IsScheduled ? ChoreCellStatus.Scheduled : ChoreCellStatus.NotScheduled,
-                        IsScheduled = cell.IsScheduled,
-                        HasOverride = cell.HasOverride,
-                        OverrideType = cell.OverrideType,
-                        IsToday = cell.IsToday,
-                        IsPast = false,
-                        EarnedAmount = null
-                    }).ToList()
-                }).ToList()
-            }).ToList();
+                    ChildUserId = profile.UserId,
+                    ChildName = profile.DisplayName,
+                    WeekStart = start,
+                    WeekEnd = end,
+                    Groups = [],
+                    DayColumns = emptyDayColumns,
+                    Overrides = [],
+                    TotalWeeklyPotential = 0
+                });
+                continue;
+            }
+            
+            // Build rows for this child
+            var rows = BuildPlannerRowsFromPreloadedData(
+                userChores, 
+                start, 
+                today, 
+                logsByChoreAndDate, 
+                overridesByChoreAndDate);
+            
+            // Group chores
+            var groups = GroupChoresForPrint(rows);
+            
+            // Build day columns
+            var dayColumns = BuildDayColumns(start, today, rows, []);
+            
+            // Build override summaries for this child's chores
+            var childChoreIds = userChores.Select(c => c.Id).ToHashSet();
+            var childOverrides = allOverrides
+                .Where(o => childChoreIds.Contains(o.ChoreDefinitionId))
+                .Where(o => o.Type != ScheduleOverrideType.Remove)
+                .Select(o => new OverrideSummary
+                {
+                    ChoreDefinitionId = o.ChoreDefinitionId,
+                    ChoreName = o.ChoreDefinition.Name,
+                    Date = o.Date,
+                    Type = o.Type,
+                    CreatedByUserName = o.CreatedByUser?.UserName
+                })
+                .ToList();
+            
+            var totalPotential = groups.Sum(g => g.WeeklyPotential);
 
             children.Add(new PrintableChildChart
             {
@@ -679,10 +757,10 @@ public class ChorePlannerService : IChorePlannerService
                 ChildName = profile.DisplayName,
                 WeekStart = start,
                 WeekEnd = end,
-                Groups = printGroups,
-                DayColumns = plannerData.DayColumns,
-                Overrides = plannerData.Overrides.Where(o => o.Type != ScheduleOverrideType.Remove).ToList(),
-                TotalWeeklyPotential = plannerData.TotalWeeklyPotential
+                Groups = groups,
+                DayColumns = dayColumns,
+                Overrides = childOverrides,
+                TotalWeeklyPotential = totalPotential
             });
         }
 
@@ -692,6 +770,147 @@ public class ChorePlannerService : IChorePlannerService
             WeekEnd = end,
             Children = children
         };
+    }
+
+    /// <summary>
+    /// Builds planner rows from pre-loaded data. NO database queries.
+    /// </summary>
+    private List<ChorePlannerRow> BuildPlannerRowsFromPreloadedData(
+        List<ChoreDefinition> chores,
+        DateOnly start,
+        DateOnly today,
+        Dictionary<(int, DateOnly), ChoreLog> logsByChoreAndDate,
+        Dictionary<(int, DateOnly), ChoreScheduleOverride> overridesByChoreAndDate)
+    {
+        var rows = new List<ChorePlannerRow>(chores.Count);
+        
+        foreach (var chore in chores)
+        {
+            var cells = new List<ChorePlannerCell>(7);
+
+            for (int i = 0; i < 7; i++)
+            {
+                var date = start.AddDays(i);
+                
+                // Check base schedule
+                var isBaseScheduled = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
+                
+                // Check for overrides
+                overridesByChoreAndDate.TryGetValue((chore.Id, date), out var choreOverride);
+                var hasOverride = choreOverride != null;
+                
+                // Determine effective schedule
+                bool isEffectivelyScheduled = isBaseScheduled;
+                if (hasOverride)
+                {
+                    isEffectivelyScheduled = choreOverride!.Type == ScheduleOverrideType.Add || 
+                                              choreOverride.Type == ScheduleOverrideType.Move;
+                }
+
+                // For printing, show empty checkboxes - no completion status
+                var cellStatus = isEffectivelyScheduled ? ChoreCellStatus.Scheduled : ChoreCellStatus.NotScheduled;
+
+                cells.Add(new ChorePlannerCell
+                {
+                    Date = date,
+                    Status = cellStatus,
+                    IsScheduled = isEffectivelyScheduled,
+                    HasOverride = hasOverride,
+                    OverrideType = choreOverride?.Type,
+                    IsToday = date == today,
+                    IsPast = false, // For printing, don't show as past
+                    EarnedAmount = null
+                });
+            }
+
+            rows.Add(new ChorePlannerRow
+            {
+                ChoreDefinitionId = chore.Id,
+                ChoreName = chore.Name,
+                Description = chore.Description,
+                Icon = chore.Icon,
+                Value = chore.EarnValue,
+                ScheduleType = chore.ScheduleType,
+                ActiveDays = chore.ActiveDays,
+                WeeklyTargetCount = chore.WeeklyTargetCount,
+                AssignedUserId = chore.AssignedUserId,
+                AssignedUserName = chore.AssignedUser?.UserName,
+                Cells = cells,
+                WeeklyCompletedCount = 0,
+                WeeklyApprovedCount = 0
+            });
+        }
+
+        return rows;
+    }
+
+    /// <summary>
+    /// Groups chores for printable output.
+    /// </summary>
+    private static List<ChorePlannerGroup> GroupChoresForPrint(List<ChorePlannerRow> rows)
+    {
+        var groups = new List<ChorePlannerGroup>();
+
+        var earningChores = rows.Where(r => r.IsEarningChore).ToList();
+        if (earningChores.Count > 0)
+        {
+            groups.Add(new ChorePlannerGroup
+            {
+                GroupName = "Earning Chores",
+                GroupKey = "earning",
+                Chores = earningChores,
+                IsCollapsible = false,
+                IsCollapsedByDefault = false
+            });
+        }
+
+        var expectationChores = rows.Where(r => !r.IsEarningChore).ToList();
+        if (expectationChores.Count > 0)
+        {
+            groups.Add(new ChorePlannerGroup
+            {
+                GroupName = "Daily Expectations",
+                GroupKey = "expectations",
+                Chores = expectationChores,
+                IsCollapsible = false,
+                IsCollapsedByDefault = false
+            });
+        }
+
+        return groups;
+    }
+
+    /// <summary>
+    /// Builds day column headers.
+    /// </summary>
+    private static List<ChorePlannerDayColumn> BuildDayColumns(
+        DateOnly start, 
+        DateOnly today, 
+        List<ChorePlannerRow> rows,
+        List<ChorePlannerCell> unusedCells)
+    {
+        var dayColumns = new List<ChorePlannerDayColumn>(7);
+        
+        for (int i = 0; i < 7; i++)
+        {
+            var date = start.AddDays(i);
+            var scheduledCount = rows.Count(r => r.Cells.Count > i && r.Cells[i].IsScheduled);
+            
+            dayColumns.Add(new ChorePlannerDayColumn
+            {
+                Date = date,
+                DayOfWeek = date.DayOfWeek,
+                IsToday = date == today,
+                IsPast = false, // For printing
+                Status = DayColumnStatus.Future,
+                TotalChores = scheduledCount,
+                CompletedChores = 0,
+                EarnedAmount = 0,
+                PotentialAmount = rows.Where(r => r.Cells.Count > i && r.Cells[i].IsScheduled).Sum(r => r.Value)
+            });
+        }
+
+        return dayColumns;
     }
 
     public async Task<ServiceResult> ToggleDayScheduleAsync(int choreDefinitionId, DayOfWeek dayOfWeek, string modifiedByUserId)

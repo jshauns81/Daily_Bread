@@ -1,4 +1,4 @@
-using Daily_Bread.Data;
+﻿using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -61,16 +61,31 @@ public interface ISavingsGoalService
     /// Gets all active savings goals for a user with progress.
     /// </summary>
     Task<List<SavingsGoalProgress>> GetGoalsWithProgressAsync(string userId);
+    
+    /// <summary>
+    /// Gets all active savings goals for a user with progress, using a pre-fetched balance.
+    /// </summary>
+    Task<List<SavingsGoalProgress>> GetGoalsWithProgressAsync(string userId, decimal preloadedBalance);
 
     /// <summary>
     /// Gets the primary savings goal for a user.
     /// </summary>
     Task<SavingsGoalProgress?> GetPrimaryGoalAsync(string userId);
+    
+    /// <summary>
+    /// Gets the primary savings goal for a user, using a pre-fetched balance.
+    /// </summary>
+    Task<SavingsGoalProgress?> GetPrimaryGoalAsync(string userId, decimal preloadedBalance);
 
     /// <summary>
     /// Gets a specific goal by ID.
     /// </summary>
     Task<SavingsGoalProgress?> GetGoalByIdAsync(int goalId, string userId);
+    
+    /// <summary>
+    /// Gets a specific goal by ID, using a pre-fetched balance.
+    /// </summary>
+    Task<SavingsGoalProgress?> GetGoalByIdAsync(int goalId, string userId, decimal preloadedBalance);
 
     /// <summary>
     /// Creates a new savings goal.
@@ -120,7 +135,15 @@ public class SavingsGoalService : ISavingsGoalService
     public async Task<List<SavingsGoalProgress>> GetGoalsWithProgressAsync(string userId)
     {
         var balance = await _ledgerService.GetUserBalanceAsync(userId);
+        return await GetGoalsWithProgressAsync(userId, balance);
+    }
 
+    /// <summary>
+    /// Gets all active savings goals for a user with progress, using a pre-fetched balance.
+    /// This avoids re-querying the balance when it's already known.
+    /// </summary>
+    public async Task<List<SavingsGoalProgress>> GetGoalsWithProgressAsync(string userId, decimal preloadedBalance)
+    {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
         var goals = await context.SavingsGoals
@@ -129,13 +152,21 @@ public class SavingsGoalService : ISavingsGoalService
             .ThenBy(g => g.CreatedAt)
             .ToListAsync();
 
-        return goals.Select(g => MapToProgress(g, balance)).ToList();
+        return goals.Select(g => MapToProgress(g, preloadedBalance)).ToList();
     }
 
     public async Task<SavingsGoalProgress?> GetPrimaryGoalAsync(string userId)
     {
         var balance = await _ledgerService.GetUserBalanceAsync(userId);
+        return await GetPrimaryGoalAsync(userId, balance);
+    }
 
+    /// <summary>
+    /// Gets the primary savings goal for a user, using a pre-fetched balance.
+    /// This avoids re-querying the balance when it's already known.
+    /// </summary>
+    public async Task<SavingsGoalProgress?> GetPrimaryGoalAsync(string userId, decimal preloadedBalance)
+    {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
         var goal = await context.SavingsGoals
@@ -148,20 +179,28 @@ public class SavingsGoalService : ISavingsGoalService
             .OrderBy(g => g.Priority)
             .FirstOrDefaultAsync();
 
-        return goal != null ? MapToProgress(goal, balance) : null;
+        return goal != null ? MapToProgress(goal, preloadedBalance) : null;
     }
 
     public async Task<SavingsGoalProgress?> GetGoalByIdAsync(int goalId, string userId)
     {
         var balance = await _ledgerService.GetUserBalanceAsync(userId);
+        return await GetGoalByIdAsync(goalId, userId, balance);
+    }
 
+    /// <summary>
+    /// Gets a specific goal by ID, using a pre-fetched balance.
+    /// This avoids re-querying the balance when it's already known.
+    /// </summary>
+    public async Task<SavingsGoalProgress?> GetGoalByIdAsync(int goalId, string userId, decimal preloadedBalance)
+    {
         await using var context = await _contextFactory.CreateDbContextAsync();
         
         var goal = await context.SavingsGoals
             .Where(g => g.Id == goalId && g.UserId == userId)
             .FirstOrDefaultAsync();
 
-        return goal != null ? MapToProgress(goal, balance) : null;
+        return goal != null ? MapToProgress(goal, preloadedBalance) : null;
     }
 
     public async Task<ServiceResult<int>> CreateGoalAsync(string userId, SavingsGoalDto dto)

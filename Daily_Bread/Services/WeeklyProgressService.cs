@@ -237,38 +237,12 @@ public class WeeklyProgressService : IWeeklyProgressService
 
     public async Task<WeeklyChoreProgress?> GetChoreProgressAsync(int choreDefinitionId, DateOnly? asOfDate = null)
     {
-        var date = asOfDate ?? _dateProvider.Today;
-        var weekStart = await _familySettingsService.GetWeekStartForDateAsync(date);
-        var weekEnd = await _familySettingsService.GetWeekEndForDateAsync(date);
-        
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        
-        var chore = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
-        if (chore == null || chore.ScheduleType != ChoreScheduleType.WeeklyFrequency)
-        {
-            return null;
-        }
-        
-        var choreLogs = await context.ChoreLogs
-            .Where(l => l.ChoreDefinitionId == choreDefinitionId)
-            .Where(l => l.Date >= weekStart && l.Date <= weekEnd)
-            .Where(l => l.Status == ChoreStatus.Approved || l.Status == ChoreStatus.Completed)
-            .ToListAsync();
-        
-        var completedCount = choreLogs.Count;
-        var (earnedAmount, bonusAmount) = CalculateEarnings(chore, completedCount);
-        
-        return new WeeklyChoreProgress
-        {
-            ChoreDefinition = chore,
-            CompletedCount = completedCount,
-            TargetCount = chore.WeeklyTargetCount,
-            EarnedAmount = earnedAmount,
-            BonusAmount = bonusAmount,
-            PotentialEarnings = chore.EarnValue * chore.WeeklyTargetCount,
-            NextBonusValue = CalculateNextBonusValue(chore, completedCount),
-            WeekLogs = choreLogs
-        };
+        // =============================================================================
+        // OPTIMIZATION: Delegate to batch method for consistent query execution
+        // This ensures a single code path and can benefit from any batch optimizations
+        // =============================================================================
+        var results = await GetChoreProgressBatchAsync([choreDefinitionId], asOfDate);
+        return results.TryGetValue(choreDefinitionId, out var progress) ? progress : null;
     }
 
     /// <summary>
@@ -386,7 +360,7 @@ public class WeeklyProgressService : IWeeklyProgressService
             return true;
         }
         
-        // Weekly flexible chores
+        // Weekly flexible chores - use GetChoreProgressAsync which delegates to batch
         var progress = await GetChoreProgressAsync(choreDefinitionId, date);
         if (progress == null)
         {
