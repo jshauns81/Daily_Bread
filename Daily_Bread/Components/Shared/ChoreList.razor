@@ -1,4 +1,4 @@
-@using Daily_Bread.Data.Models
+﻿@using Daily_Bread.Data.Models
 
 <div class="chore-list">
     @if (Chores == null || Chores.Count == 0)
@@ -13,6 +13,10 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
+                        @if (EnableReorder)
+                        {
+                            <th class="drag-handle-header" style="width: 40px;"></th>
+                        }
                         <th>Name</th>
                         <th>Assigned To</th>
                         <th>Value</th>
@@ -24,7 +28,25 @@
                 <tbody>
                     @foreach (var chore in Chores)
                     {
-                        <tr class="@(chore.IsActive ? "" : "table-secondary")">
+                        var isBeingDragged = _draggedChore?.Id == chore.Id;
+                        var isDropTarget = _dropTargetChore?.Id == chore.Id && !isBeingDragged;
+                        
+                        <tr class="@GetRowClass(chore, isBeingDragged, isDropTarget)"
+                            draggable="@(EnableReorder ? "true" : "false")"
+                            @ondragstart="() => HandleDragStart(chore)"
+                            @ondragend="HandleDragEnd"
+                            @ondragover="() => HandleDragOver(chore)"
+                            @ondragover:preventDefault="@EnableReorder"
+                            @ondrop="() => HandleDrop(chore)"
+                            @ondrop:preventDefault="@EnableReorder">
+                            @if (EnableReorder)
+                            {
+                                <td class="drag-handle-cell">
+                                    <span class="drag-handle" title="Drag to reorder">
+                                        <span class="bi bi-grip-vertical"></span>
+                                    </span>
+                                </td>
+                            }
                             <td>
                                 <strong class="chore-name">@chore.Name</strong>
                                 @if (chore.AutoApprove)
@@ -107,13 +129,109 @@
     [Parameter]
     public EventCallback<ChoreDefinition> OnToggleActive { get; set; }
 
+    /// <summary>
+    /// Enable drag-and-drop reordering. When true, shows drag handles.
+    /// </summary>
+    [Parameter]
+    public bool EnableReorder { get; set; } = true;
+
+    /// <summary>
+    /// Called when chores are reordered via drag-and-drop.
+    /// Returns list of (ChoreId, NewSortOrder) tuples.
+    /// </summary>
+    [Parameter]
+    public EventCallback<List<(int ChoreId, int SortOrder)>> OnReorder { get; set; }
+
+    private ChoreDefinition? _draggedChore;
+    private ChoreDefinition? _dropTargetChore;
+
+    private string GetRowClass(ChoreDefinition chore, bool isBeingDragged, bool isDropTarget)
+    {
+        var classes = new List<string>();
+        
+        if (!chore.IsActive)
+            classes.Add("table-secondary");
+        
+        if (isBeingDragged)
+            classes.Add("dragging");
+        
+        if (isDropTarget)
+            classes.Add("drop-target");
+        
+        return string.Join(" ", classes);
+    }
+
+    private void HandleDragStart(ChoreDefinition chore)
+    {
+        if (!EnableReorder) return;
+        _draggedChore = chore;
+    }
+
+    private void HandleDragEnd()
+    {
+        _draggedChore = null;
+        _dropTargetChore = null;
+    }
+
+    private void HandleDragOver(ChoreDefinition chore)
+    {
+        if (!EnableReorder || _draggedChore == null || _draggedChore.Id == chore.Id) return;
+        _dropTargetChore = chore;
+    }
+
+    private async Task HandleDrop(ChoreDefinition targetChore)
+    {
+        if (!EnableReorder || _draggedChore == null || _draggedChore.Id == targetChore.Id)
+        {
+            HandleDragEnd();
+            return;
+        }
+
+        // Calculate new sort orders
+        var updates = CalculateNewSortOrders(_draggedChore, targetChore);
+        
+        HandleDragEnd();
+        
+        if (updates.Count > 0)
+        {
+            await OnReorder.InvokeAsync(updates);
+        }
+    }
+
+    private List<(int ChoreId, int SortOrder)> CalculateNewSortOrders(ChoreDefinition draggedChore, ChoreDefinition targetChore)
+    {
+        var updates = new List<(int ChoreId, int SortOrder)>();
+        
+        var choreList = Chores.ToList();
+        var draggedIndex = choreList.FindIndex(c => c.Id == draggedChore.Id);
+        var targetIndex = choreList.FindIndex(c => c.Id == targetChore.Id);
+        
+        if (draggedIndex == -1 || targetIndex == -1 || draggedIndex == targetIndex)
+            return updates;
+
+        // Remove from old position and insert at new position
+        choreList.RemoveAt(draggedIndex);
+        choreList.Insert(targetIndex, draggedChore);
+
+        // Assign new sort orders (multiply by 10 to leave gaps for future insertions)
+        for (int i = 0; i < choreList.Count; i++)
+        {
+            var newSortOrder = (i + 1) * 10;
+            if (choreList[i].SortOrder != newSortOrder)
+            {
+                updates.Add((choreList[i].Id, newSortOrder));
+            }
+        }
+
+        return updates;
+    }
+
     private string FormatSchedule(ChoreDefinition chore)
     {
         string scheduleText;
         
         if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
         {
-            // For weekly frequency, show "3x/week" format
             var daysText = chore.ActiveDays == DaysOfWeek.All 
                 ? "any day" 
                 : $"on {FormatDays(chore.ActiveDays)}";
@@ -121,7 +239,6 @@
         }
         else
         {
-            // For specific days, show the days
             scheduleText = FormatDays(chore.ActiveDays);
         }
         

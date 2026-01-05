@@ -5,6 +5,10 @@
 <div class="wage-grid">
     <!-- Day Headers -->
     <div class="grid-header">
+        @if (EnableReorder)
+        {
+            <div class="header-cell drag-header"></div>
+        }
         <div class="header-cell job-header">Job</div>
         @foreach (var day in PlannerData.DayColumns)
         {
@@ -19,7 +23,26 @@
     <!-- Chore Rows -->
     @foreach (var chore in EarningChores)
     {
-        <div class="chore-row" @key="chore.ChoreDefinitionId">
+        var isBeingDragged = _draggedChore?.ChoreDefinitionId == chore.ChoreDefinitionId;
+        var isDropTarget = _dropTargetChore?.ChoreDefinitionId == chore.ChoreDefinitionId && !isBeingDragged;
+        
+        <div class="chore-row @(isBeingDragged ? "dragging" : "") @(isDropTarget ? "drop-target" : "")" 
+             @key="chore.ChoreDefinitionId"
+             draggable="@(EnableReorder ? "true" : "false")"
+             @ondragstart="() => HandleDragStart(chore)"
+             @ondragend="HandleDragEnd"
+             @ondragover="() => HandleDragOver(chore)"
+             @ondragover:preventDefault="@EnableReorder"
+             @ondrop="() => HandleDrop(chore)"
+             @ondrop:preventDefault="@EnableReorder">
+            @if (EnableReorder)
+            {
+                <div class="drag-handle-cell">
+                    <span class="drag-handle" title="Drag to reorder">
+                        <span class="bi bi-grip-vertical"></span>
+                    </span>
+                </div>
+            }
             <!-- Job Info -->
             <div class="job-cell" @onclick="() => OnEditChore.InvokeAsync(chore)">
                 <span class="job-emoji">@(chore.Icon ?? "✨")</span>
@@ -104,6 +127,20 @@
     [Parameter] public string? UpdatingCellKey { get; set; }
     [Parameter] public EventCallback<ChorePlannerRow> OnEditChore { get; set; }
     [Parameter] public EventCallback<(ChorePlannerRow Chore, ChorePlannerCell Cell)> OnCellClick { get; set; }
+    
+    /// <summary>
+    /// Enable drag-and-drop reordering. When true, shows drag handles.
+    /// </summary>
+    [Parameter] public bool EnableReorder { get; set; } = true;
+    
+    /// <summary>
+    /// Called when chores are reordered via drag-and-drop.
+    /// Returns list of (ChoreId, NewSortOrder) tuples.
+    /// </summary>
+    [Parameter] public EventCallback<List<(int ChoreId, int SortOrder)>> OnReorder { get; set; }
+
+    private ChorePlannerRow? _draggedChore;
+    private ChorePlannerRow? _dropTargetChore;
 
     private string GetCellClasses(ChorePlannerCell cell)
     {
@@ -121,5 +158,67 @@
     {
         var action = cell.IsScheduled ? "Remove from" : "Add to";
         return $"{cell.Date:dddd, MMM d} — Click to {action.ToLower()} this day";
+    }
+
+    private void HandleDragStart(ChorePlannerRow chore)
+    {
+        if (!EnableReorder) return;
+        _draggedChore = chore;
+    }
+
+    private void HandleDragEnd()
+    {
+        _draggedChore = null;
+        _dropTargetChore = null;
+    }
+
+    private void HandleDragOver(ChorePlannerRow chore)
+    {
+        if (!EnableReorder || _draggedChore == null || _draggedChore.ChoreDefinitionId == chore.ChoreDefinitionId) return;
+        _dropTargetChore = chore;
+    }
+
+    private async Task HandleDrop(ChorePlannerRow targetChore)
+    {
+        if (!EnableReorder || _draggedChore == null || _draggedChore.ChoreDefinitionId == targetChore.ChoreDefinitionId)
+        {
+            HandleDragEnd();
+            return;
+        }
+
+        // Calculate new sort orders
+        var updates = CalculateNewSortOrders(_draggedChore, targetChore);
+        
+        HandleDragEnd();
+        
+        if (updates.Count > 0)
+        {
+            await OnReorder.InvokeAsync(updates);
+        }
+    }
+
+    private List<(int ChoreId, int SortOrder)> CalculateNewSortOrders(ChorePlannerRow draggedChore, ChorePlannerRow targetChore)
+    {
+        var updates = new List<(int ChoreId, int SortOrder)>();
+        
+        var choreList = EarningChores.ToList();
+        var draggedIndex = choreList.FindIndex(c => c.ChoreDefinitionId == draggedChore.ChoreDefinitionId);
+        var targetIndex = choreList.FindIndex(c => c.ChoreDefinitionId == targetChore.ChoreDefinitionId);
+        
+        if (draggedIndex == -1 || targetIndex == -1 || draggedIndex == targetIndex)
+            return updates;
+
+        // Remove from old position and insert at new position
+        choreList.RemoveAt(draggedIndex);
+        choreList.Insert(targetIndex, draggedChore);
+
+        // Assign new sort orders (multiply by 10 to leave gaps for future insertions)
+        for (int i = 0; i < choreList.Count; i++)
+        {
+            var newSortOrder = (i + 1) * 10;
+            updates.Add((choreList[i].ChoreDefinitionId, newSortOrder));
+        }
+
+        return updates;
     }
 }
