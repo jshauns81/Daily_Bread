@@ -61,8 +61,8 @@
             color: #ECEFF4;
             margin: 0;
             padding: 0;
-            /* Use dynamic viewport height that responds to browser chrome */
-            min-height: 100vh; /* Fallback for older browsers */
+            /* Standard viewport height with modern fallback */
+            min-height: 100vh;
             min-height: 100dvh;
             /* Allow content scrolling but prevent overscroll bounce */
             overflow-x: hidden;
@@ -73,14 +73,24 @@
         .page {
             display: flex;
             flex-direction: column;
-            /* Use dynamic viewport height that responds to browser chrome */
-            height: 100vh; /* Fallback for older browsers */
+            /* Standard viewport height with modern fallback */
+            height: 100vh;
             height: 100dvh;
             background-color: #2E3440;
             /* Safe area insets applied via padding on left/right only */
             /* Top is handled by mobile-header, bottom by content area */
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
+        }
+        
+        /* iOS Safari/PWA specific fix - only apply when supported */
+        @@supports (-webkit-touch-callout: none) {
+            html, body {
+                min-height: -webkit-fill-available;
+            }
+            .page {
+                height: -webkit-fill-available;
+            }
         }
         
         .sidebar {
@@ -178,10 +188,33 @@
                 document.documentElement.style.setProperty('--safe-right', 'env(safe-area-inset-right, 0px)');
             }
             
+            // Force layout recalculation - fixes iOS PWA viewport issues after navigation
+            function forceLayoutRecalc() {
+                // Only needed for iOS PWA mode
+                var isIOSPwa = (window.navigator.standalone === true) || 
+                               (window.matchMedia('(display-mode: standalone)').matches && 
+                                /iPhone|iPad|iPod/.test(navigator.userAgent));
+                
+                if (isIOSPwa) {
+                    // Force a reflow by temporarily modifying a layout property
+                    var page = document.querySelector('.page');
+                    if (page) {
+                        // Read then write to force layout recalculation
+                        void page.offsetHeight;
+                        page.style.minHeight = window.innerHeight + 'px';
+                        // Reset after a frame to let the proper CSS take over
+                        requestAnimationFrame(function() {
+                            page.style.minHeight = '';
+                        });
+                    }
+                }
+            }
+            
             // Combined function for resize/orientation handlers
             function setViewportHeight() {
                 setViewportVars();
                 setSafeAreaInsets();
+                forceLayoutRecalc();
             }
             
             // Set viewport vars immediately (safe - only uses documentElement)
@@ -219,6 +252,14 @@
             // Update when page becomes visible (handles iOS tab switching)
             document.addEventListener('visibilitychange', function() {
                 if (document.visibilityState === 'visible') {
+                    setViewportHeight();
+                }
+            });
+            
+            // iOS PWA: Also trigger on pageshow (handles back/forward cache)
+            window.addEventListener('pageshow', function(event) {
+                // persisted = true means page was restored from bfcache
+                if (event.persisted) {
                     setViewportHeight();
                 }
             });
@@ -437,13 +478,49 @@
         }
         
         // Re-calculate viewport on Blazor page changes
-        if (window.Blazor) {
-            window.Blazor.addEventListener('enhancedload', function() {
+        // This is CRITICAL for iOS PWA after login - must wait for Blazor properly
+        (function() {
+            function setupBlazorViewportHandler() {
+                if (window.Blazor && window.Blazor.addEventListener) {
+                    window.Blazor.addEventListener('enhancedload', function() {
+                        if (window.updateViewportHeight) {
+                            // Small delay to let Blazor finish rendering
+                            setTimeout(window.updateViewportHeight, 50);
+                        }
+                    });
+                    return true;
+                }
+                return false;
+            }
+            
+            // Try immediately
+            if (!setupBlazorViewportHandler()) {
+                // If Blazor isn't ready, poll for it
+                var checkInterval = setInterval(function() {
+                    if (setupBlazorViewportHandler()) {
+                        clearInterval(checkInterval);
+                    }
+                }, 100);
+                
+                // Stop checking after 15 seconds
+                setTimeout(function() { clearInterval(checkInterval); }, 15000);
+            }
+            
+            // Also recalculate when DOM content is fully loaded (catches initial page load after login redirect)
+            document.addEventListener('DOMContentLoaded', function() {
                 if (window.updateViewportHeight) {
-                    window.updateViewportHeight();
+                    // Delay to ensure Blazor has rendered
+                    setTimeout(window.updateViewportHeight, 100);
                 }
             });
-        }
+            
+            // And on window load (catches everything including lazy assets)
+            window.addEventListener('load', function() {
+                if (window.updateViewportHeight) {
+                    setTimeout(window.updateViewportHeight, 200);
+                }
+            });
+        })();
     </script>
 </body>
 
