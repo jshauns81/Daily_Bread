@@ -348,3 +348,404 @@
         transition: none;
     }
 }
+
+/* ===========================================
+   TRACKER CHORE CARD - Mobile View
+   Redesigned for clarity - matches desktop design
+   =========================================== */
+
+.tracker-card {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+    padding: var(--ds-space-4);
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    transition: all var(--ds-duration-fast) ease;
+    min-height: 64px;
+}
+
+/* ===========================================
+   CARD STATE VARIANTS
+   Status-based backgrounds matching desktop
+   =========================================== */
+
+/* Pending - Default calm state */
+.tracker-card.card-pending {
+    background: var(--ds-bg-elevated);
+    border-color: var(--ds-bg-muted);
+}
+
+/* Awaiting Review - Light green, needs attention */
+.tracker-card.card-awaiting {
+    background: rgba(163, 190, 140, 0.12);
+    border-color: rgba(163, 190, 140, 0.4);
+}
+
+/* Approved - Muted/faded, task complete */
+.tracker-card.card-approved {
+    background: rgba(163, 190, 140, 0.06);
+    border-color: rgba(163, 190, 140, 0.2);
+    opacity: 0.75;
+}
+
+/* Needs Help - Yellow/orange attention state */
+.tracker-card.card-help {
+    background: rgba(235, 203, 139, 0.15);
+    border-color: var(--ds-semantic-highlight);
+    border-left-width: 3px;
+}
+
+/* Missed - Light red, error state */
+.tracker-card.card-missed {
+    background: rgba(191, 97, 106, 0.08);
+    border-color: rgba(191, 97, 106, 0.3);
+    opacity: 0.7;
+}
+
+/* Excused/Skipped - Gray muted */
+.tracker-card.card-excused {
+    background: rgba(76, 86, 106, 0.08);
+    border-color: var(--ds-bg-muted);
+    opacity: 0.65;
+}
+
+/* ===========================================
+   STATUS INDICATOR BUTTON
+   =========================================== */
+
+.card-indicator {
+    flex-shrink: 0;
+}
+
+.status-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--ds-bg-muted);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: var(--ds-text-primary);
+    transition: all var(--ds-duration-fast) ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.status-button:hover:not(:disabled) {
+    border-color: var(--ds-accent-cyan);
+    background: rgba(136, 192, 208, 0.1);
+}
+
+.status-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Indicator States */
+.status-button.indicator-pending {
+    border-color: var(--ds-bg-muted);
+    color: var(--ds-text-muted);
+}
+
+.status-button.indicator-awaiting {
+    border-color: var(--ds-accent-cyan);
+    background: rgba(136, 192, 208, 0.15);
+    color: var(--ds-accent-cyan);
+}
+
+.status-button.indicator-done {
+    border-color: var(--ds-semantic-success);
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
+}
+
+.status-button.indicator-help {
+    border-color: var(--ds-semantic-highlight);
+    background: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
+}
+
+.status-button.indicator-missed {
+    border-color: var(--ds-semantic-error);
+    background: rgba(191, 97, 106, 0.15);
+    color: var(--ds-semantic-error);
+}
+
+.status-button.indicator-skipped {
+    border-color: var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-muted);
+}
+
+/* ===========================================
+   CARD CONTENT
+   =========================================== */
+
+.card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.chore-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.chore-name {
+    font-weight: var(--ds-font-semibold);
+    font-size: var(--ds-text-base);
+    color: var(--ds-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+/* Approved cards get slightly muted text (no strikethrough) */
+.tracker-card.card-approved .chore-name {
+    color: var(--ds-text-secondary);
+}
+
+.chore-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    flex-wrap: wrap;
+}
+
+.chore-meta .user-name {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
+    text-transform: capitalize;
+}
+
+.meta-separator {
+    color: var(--ds-bg-muted);
+    font-size: var(--ds-text-sm);
+}
+
+.help-reason {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-semantic-highlight);
+    font-style: italic;
+    margin-top: 2px;
+}
+
+/* ===========================================
+   STATUS BADGE (Inline in meta)
+   =========================================== */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--ds-radius-sm);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.status-badge.badge-pending {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-muted);
+}
+
+.status-badge.badge-awaiting {
+    background: rgba(136, 192, 208, 0.2);
+    color: var(--ds-accent-cyan);
+}
+
+.status-badge.badge-approved {
+    background: rgba(163, 190, 140, 0.2);
+    color: var(--ds-semantic-success);
+}
+
+.status-badge.badge-missed {
+    background: rgba(191, 97, 106, 0.15);
+    color: var(--ds-semantic-error);
+}
+
+.status-badge.badge-excused {
+    background: rgba(76, 86, 106, 0.15);
+    color: var(--ds-text-muted);
+}
+
+.status-badge.badge-help {
+    background: rgba(235, 203, 139, 0.2);
+    color: #c9a227;
+}
+
+/* ===========================================
+   RIGHT SIDE - VALUE & ACTIONS
+   =========================================== */
+
+.card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--ds-space-2);
+    flex-shrink: 0;
+}
+
+.value-amount {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-weight: var(--ds-font-bold);
+    font-size: var(--ds-text-base);
+    color: var(--ds-text-secondary);
+}
+
+.value-amount.earned {
+    color: var(--ds-semantic-success);
+}
+
+.value-amount.penalty {
+    color: var(--ds-semantic-error);
+}
+
+/* Dim value for muted states */
+.tracker-card.card-approved .value-amount,
+.tracker-card.card-missed .value-amount,
+.tracker-card.card-excused .value-amount {
+    opacity: 0.6;
+}
+
+/* ===========================================
+   ACTION BUTTONS & LINKS
+   =========================================== */
+
+.card-actions {
+    display: flex;
+    gap: var(--ds-space-1);
+}
+
+/* Primary action buttons */
+.action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--ds-radius-md);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--ds-duration-fast) ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.action-btn.action-approve {
+    background: var(--ds-semantic-success);
+    color: var(--ds-bg-base);
+}
+
+.action-btn.action-approve:hover {
+    background: #9fc896;
+    transform: scale(1.05);
+}
+
+.action-btn.action-respond {
+    background: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
+}
+
+.action-btn.action-respond:hover {
+    background: #e6c173;
+    transform: scale(1.05);
+}
+
+.action-btn:active {
+    transform: scale(0.95);
+}
+
+/* Text links for secondary actions */
+.action-link {
+    background: none;
+    border: none;
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-sm);
+    cursor: pointer;
+    padding: var(--ds-space-2);
+    transition: color 0.15s;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+}
+
+.action-link:hover {
+    color: var(--ds-accent-cyan);
+    text-decoration-color: var(--ds-accent-cyan);
+}
+
+/* ===========================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .tracker-card {
+        padding: var(--ds-space-4);
+        min-height: 72px;
+    }
+    
+    .status-button {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .action-btn {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .action-link {
+        padding: var(--ds-space-3);
+        font-size: var(--ds-text-base);
+    }
+}
+
+/* ===========================================
+   SMALL SCREENS
+   =========================================== */
+
+@media (max-width: 480px) {
+    .tracker-card {
+        padding: var(--ds-space-3);
+        gap: var(--ds-space-2);
+    }
+    
+    .chore-name {
+        font-size: var(--ds-text-sm);
+    }
+    
+    .value-amount {
+        font-size: var(--ds-text-sm);
+    }
+    
+    .status-button {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    
+    .action-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* ===========================================
+   REDUCED MOTION
+   =========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .tracker-card,
+    .status-button,
+    .action-btn,
+    .action-link {
+        transition: none;
+    }
+}

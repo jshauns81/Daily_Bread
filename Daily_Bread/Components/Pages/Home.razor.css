@@ -536,10 +536,13 @@
     display: grid;
     grid-template-columns: 1fr auto;
     gap: var(--ds-space-4);
+    align-items: stretch;
 }
 
 .achievement-widget {
-    min-height: 80px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
 }
 
 .achievement-widget.recent {
@@ -676,6 +679,11 @@
     .widget-row.achievements {
         grid-template-columns: 1fr 70px;
         gap: var(--ds-space-2);
+        align-items: stretch;
+    }
+    
+    .achievement-widget {
+        min-height: 90px;
     }
     
     .achievement-badge-icon {
@@ -700,6 +708,11 @@
 @media (min-width: 768px) {
     .widget-row.achievements {
         grid-template-columns: 1fr 120px;
+        align-items: stretch;
+    }
+    
+    .achievement-widget {
+        min-height: 110px;
     }
     
     .achievement-widget.progress {

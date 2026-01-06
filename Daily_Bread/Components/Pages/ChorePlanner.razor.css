@@ -1,5 +1,5 @@
 /* ============================================
-   WAGE BOARD - CHORE PLANNER PAGE SHELL
+   LABOR PLANNER - CHORE PLANNER PAGE SHELL
    Container, Header, Navigation, Summary, Toasts
    ============================================ */
 
@@ -7,7 +7,7 @@
    CSS CUSTOM PROPERTIES
    =========================================== */
 
-.wage-board {
+.labor-planner {
     --board-bg: var(--ds-bg-elevated);
     --board-surface: var(--ds-bg-hover);
     --board-border: var(--ds-bg-muted);
@@ -629,48 +629,9 @@
         display: block !important;
     }
 
-    .wage-board {
+    .labor-planner {
         max-width: none;
         padding: 0;
-    }
-
-    .print-header {
-        display: block !important;
-        text-align: center;
-        margin-bottom: 20px;
-        padding: 16px;
-        background: var(--board-accent) !important;
-        color: white !important;
-        border-radius: 8px;
-    }
-
-    .print-header h1 {
-        margin: 0;
-        font-size: 1.5rem;
-    }
-
-    .print-week {
-        margin-top: 4px;
-        opacity: 0.9;
-    }
-
-    .print-footer {
-        display: flex !important;
-        justify-content: space-between;
-        margin-top: 20px;
-        padding: 12px 16px;
-        background: rgba(163, 190, 140, 0.15) !important;
-        border-radius: 8px;
-        border: 1px solid var(--board-success);
-    }
-
-    .print-potential {
-        color: var(--board-success);
-    }
-
-    .print-date {
-        color: var(--board-muted);
-        font-size: 0.85rem;
     }
 
     .toast-message,
@@ -684,7 +645,7 @@
    =========================================== */
 
 @media (max-width: 992px) {
-    .wage-board {
+    .labor-planner {
         padding: var(--ds-space-2);
     }
 }
@@ -759,7 +720,7 @@
    =========================================== */
 
 @media (max-width: 480px) {
-    .wage-board {
+    .labor-planner {
         padding: var(--ds-space-1);
     }
     

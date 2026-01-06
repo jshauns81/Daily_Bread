@@ -973,23 +973,27 @@ else
     {
         if (string.IsNullOrEmpty(_userId)) return;
 
-        Logger.LogInformation("QuickApprove button clicked: ChoreLogId={ChoreLogId}, UserId={UserId}", choreLogId, _userId);
-
         _isApproving = true;
         _approvingId = choreLogId;
+        StateHasChanged(); // Show spinner immediately
 
         try
         {
-            Logger.LogInformation("Calling DashboardService.QuickApproveAsync: ChoreLogId={ChoreLogId}", choreLogId);
             var result = await DashboardService.QuickApproveAsync(choreLogId, _userId);
-            Logger.LogInformation("QuickApproveAsync returned: Success={Success}, Error={Error}", result.Success, result.ErrorMessage ?? "none");
             
             if (result.Success)
             {
                 ToastService.ShowSuccess("Blessed!", "Labor has been blessed and wages processed.");
+                
+                // Invalidate caches and reload fresh data
                 AppState.InvalidateParentDashboard();
                 AppState.InvalidateChildDashboard();
+                
+                // Reload dashboard with fresh data
                 await LoadDashboardAsync(forceRefresh: true);
+                
+                // Force re-render with updated _parentData
+                StateHasChanged();
             }
             else
             {
@@ -1005,6 +1009,7 @@ else
         {
             _isApproving = false;
             _approvingId = null;
+            StateHasChanged(); // Reset button state
         }
     }
 
