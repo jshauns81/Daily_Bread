@@ -188,6 +188,40 @@
     <!-- Viewport Height Calculation Script - Must run early -->
     <script>
         (function() {
+            // ===========================================
+            // iOS PWA COLD START FIX
+            // Brute-force reflow to fix viewport issues
+            // ===========================================
+            var isIosPwa = window.navigator.standalone === true;
+            
+            if (isIosPwa) {
+                // Force reflow on initial load
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(function() {
+                        window.scrollTo(0, 1);
+                        window.scrollTo(0, 0);
+                        // Force a full repaint
+                        document.body.style.display = 'none';
+                        void document.body.offsetHeight; // Trigger reflow
+                        document.body.style.display = '';
+                    }, 50);
+                });
+                
+                // Handle resume from background
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden) {
+                        setTimeout(function() {
+                            window.scrollTo(0, 1);
+                            window.scrollTo(0, 0);
+                        }, 50);
+                    }
+                });
+            }
+            
+            // ===========================================
+            // VIEWPORT HEIGHT CALCULATIONS
+            // ===========================================
+            
             // Set viewport height variables (doesn't need document.body)
             function setViewportVars() {
                 var vh = window.innerHeight * 0.01;
