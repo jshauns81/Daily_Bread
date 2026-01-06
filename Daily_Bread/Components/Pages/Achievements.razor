@@ -98,8 +98,8 @@
     }
     else if (_unseenAchievements.Count > 0)
     {
-        <!-- New Achievements Celebration -->
-        <div class="new-achievements-banner mb-4">
+        <!-- Desktop: New Achievements Celebration -->
+        <div class="new-achievements-banner new-achievements-desktop mb-4">
             <div class="text-center">
                 <h3>@EmojiConstants.Party New Achievement@(_unseenAchievements.Count > 1 ? "s" : "") Unlocked!</h3>
                 <div class="d-flex flex-wrap justify-content-center gap-3 mt-3">
@@ -122,31 +122,89 @@
                 </button>
             </div>
         </div>
+
+        <!-- Mobile: Compact New Achievements Banner -->
+        <div class="new-achievements-mobile mb-3">
+            <div class="new-banner-header @(_mobileNewExpanded ? "expanded" : "")" @onclick="ToggleMobileNewBanner">
+                <div class="new-banner-content">
+                    <span class="new-banner-glow"></span>
+                    <span class="new-banner-text">@EmojiConstants.Party @_unseenAchievements.Count new achievement@(_unseenAchievements.Count > 1 ? "s" : "")!</span>
+                </div>
+                <div class="new-banner-icons">
+                    @foreach (var achievement in _unseenAchievements.Take(5))
+                    {
+                        <span class="new-icon-preview" @onclick:stopPropagation="true" @onclick="() => ScrollToAchievement(achievement)">@achievement.Icon</span>
+                    }
+                    @if (_unseenAchievements.Count > 5)
+                    {
+                        <span class="new-icon-more">+@(_unseenAchievements.Count - 5)</span>
+                    }
+                </div>
+                <span class="bi bi-chevron-@(_mobileNewExpanded ? "up" : "down") expand-icon"></span>
+            </div>
+            @if (_mobileNewExpanded)
+            {
+                <div class="new-banner-expanded">
+                    @foreach (var achievement in _unseenAchievements)
+                    {
+                        <div class="new-achievement-row @GetRarityClass(achievement.Rarity)" @onclick="() => ScrollToAchievement(achievement)">
+                            <span class="new-row-icon">@achievement.Icon</span>
+                            <div class="new-row-info">
+                                <span class="new-row-name">@achievement.Name</span>
+                                <span class="new-row-desc">@achievement.Description</span>
+                            </div>
+                            <span class="badge @GetRarityBadgeClass(achievement.Rarity)">+@achievement.Points</span>
+                        </div>
+                    }
+                    <button class="btn btn-success btn-sm w-100 mt-2" @onclick="MarkAllSeen">
+                        @EmojiConstants.CheckMark Dismiss All
+                    </button>
+                </div>
+            }
+        </div>
     }
 
-    <!-- Category Tabs -->
-    <ul class="nav nav-pills mb-4 flex-nowrap overflow-auto">
-        <li class="nav-item">
-            <button class="nav-link @(_selectedCategory == null ? "active" : "")" 
-                    @onclick="() => _selectedCategory = null">
-                All (@_achievements.Count)
-            </button>
-        </li>
-        @foreach (var category in GetCategories())
-        {
-            var count = _achievements.Count(a => a.Category == category);
-            var earned = _achievements.Count(a => a.Category == category && a.IsEarned);
+    <!-- Category Tabs (Desktop) / Dropdown (Mobile) -->
+    <div class="category-tabs-wrapper">
+        <!-- Desktop: Horizontal tabs -->
+        <ul class="nav nav-pills mb-4 flex-nowrap overflow-auto category-tabs-desktop">
             <li class="nav-item">
-                <button class="nav-link @(_selectedCategory == category ? "active" : "")" 
-                        @onclick="() => _selectedCategory = category">
-                    @GetCategoryName(category) (@earned/@count)
+                <button class="nav-link @(_selectedCategory == null ? "active" : "")" 
+                        @onclick="() => _selectedCategory = null">
+                    All (@_achievements.Count)
                 </button>
             </li>
-        }
-    </ul>
+            @foreach (var category in GetCategories())
+            {
+                var count = _achievements.Count(a => a.Category == category);
+                var earned = _achievements.Count(a => a.Category == category && a.IsEarned);
+                <li class="nav-item">
+                    <button class="nav-link @(_selectedCategory == category ? "active" : "")" 
+                            @onclick="() => _selectedCategory = category">
+                        @GetCategoryName(category) (@earned/@count)
+                    </button>
+                </li>
+            }
+        </ul>
+        
+        <!-- Mobile: Dropdown filter -->
+        <div class="category-dropdown-mobile">
+            <select class="form-select category-select" 
+                    value="@(_selectedCategory?.ToString() ?? "")"
+                    @onchange="OnCategoryDropdownChange">
+                <option value="">All (@_achievements.Count)</option>
+                @foreach (var category in GetCategories())
+                {
+                    var count = _achievements.Count(a => a.Category == category);
+                    var earned = _achievements.Count(a => a.Category == category && a.IsEarned);
+                    <option value="@category">@GetCategoryName(category) (@earned/@count)</option>
+                }
+            </select>
+        </div>
+    </div>
 
-    <!-- Achievement Grid -->
-    <div class="achievement-grid">
+    <!-- Desktop: Achievement Grid (Card Layout) -->
+    <div class="achievement-grid achievement-grid-desktop">
         @foreach (var achievement in GetFilteredAchievements())
         {
             <div class="achievement-card @(achievement.IsEarned ? "earned" : "locked") @(achievement.IsLegendary ? "legendary" : "") @GetRarityClass(achievement.Rarity)"
@@ -189,6 +247,78 @@
         }
     </div>
 
+    <!-- Mobile: Compact Achievement List -->
+    <div class="achievement-list-mobile">
+        @foreach (var achievement in GetFilteredAchievements())
+        {
+            var isExpanded = _expandedAchievementId == achievement.Id;
+            <div class="achievement-row-wrapper" id="achievement-@achievement.Id">
+                <div class="achievement-row @(achievement.IsEarned ? "earned" : "locked") @(achievement.IsLegendary ? "legendary" : "") @GetRarityClass(achievement.Rarity) @(isExpanded ? "expanded" : "")"
+                     @onclick="() => ToggleAchievementExpand(achievement)">
+                    <span class="row-icon @(achievement.IsEarned ? "" : "locked-icon")">@achievement.Icon</span>
+                    <div class="row-content">
+                        <span class="row-name">@achievement.Name</span>
+                        @if (achievement.IsEarned)
+                        {
+                            <span class="row-status earned">@EmojiConstants.CheckMark Unlocked</span>
+                        }
+                        else if (achievement.ShowProgress)
+                        {
+                            <span class="row-status progress-text">@achievement.CurrentProgress/@achievement.TargetProgress</span>
+                        }
+                        else if (achievement.IsHidden)
+                        {
+                            <span class="row-status secret">@EmojiConstants.QuestionMark Secret</span>
+                        }
+                        else
+                        {
+                            <span class="row-status locked-status">Locked</span>
+                        }
+                    </div>
+                    <span class="row-points badge @GetRarityBadgeClass(achievement.Rarity)">@achievement.Points</span>
+                    <span class="bi bi-chevron-@(isExpanded ? "up" : "down") row-expand-icon"></span>
+                </div>
+                
+                @if (isExpanded)
+                {
+                    <div class="achievement-row-detail @GetRarityClass(achievement.Rarity)">
+                        <p class="detail-description">@achievement.Description</p>
+                        
+                        @if (achievement.ShowProgress && !achievement.IsEarned)
+                        {
+                            <div class="detail-progress">
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: @achievement.ProgressPercent%"></div>
+                                </div>
+                                <span class="progress-label">@achievement.ProgressPercent% complete</span>
+                            </div>
+                        }
+                        
+                        @if (achievement.IsEarned && achievement.EarnedAt.HasValue)
+                        {
+                            <div class="detail-earned">
+                                <span class="bi bi-calendar-check"></span>
+                                Earned on @achievement.EarnedAt.Value.ToString("MMM d, yyyy")
+                            </div>
+                        }
+                        
+                        @if (achievement.HasBonus)
+                        {
+                            <div class="detail-bonus">
+                                <span>@EmojiConstants.Gift</span>
+                                <span>@achievement.BonusDescription</span>
+                            </div>
+                        }
+                        
+                        <div class="detail-rarity">
+                            <span class="badge @GetRarityBadgeClass(achievement.Rarity)">@GetRarityName(achievement.Rarity)</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
     @if (_stats != null && _stats.HiddenRemaining > 0)
     {
         <div class="text-center mt-4">
@@ -199,10 +329,10 @@
     }
 </div>
 
-<!-- Achievement Detail Modal -->
+<!-- Achievement Detail Modal (Desktop only) -->
 @if (_selectedAchievement != null)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.7);">
+    <div class="modal fade show d-block achievement-modal-desktop" tabindex="-1" style="background-color: rgba(0,0,0,0.7);">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content @GetRarityClass(_selectedAchievement.Rarity)">
                 <div class="modal-header border-0">
@@ -265,6 +395,10 @@
     private AchievementCategory? _selectedCategory;
     private bool _isLoading = true;
     private bool _showBonusPanel;
+    
+    // Mobile-specific state
+    private bool _mobileNewExpanded;
+    private int? _expandedAchievementId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -306,6 +440,7 @@
 
         await AchievementService.MarkAchievementsAsSeenAsync(_userId);
         _unseenAchievements.Clear();
+        _mobileNewExpanded = false;
         
         // Refresh to update the IsNew flags
         _achievements = await AchievementService.GetAllAchievementsAsync(_userId);
@@ -314,6 +449,44 @@
     private void ShowAchievementDetail(AchievementDisplay achievement)
     {
         _selectedAchievement = achievement;
+    }
+    
+    private void ToggleMobileNewBanner()
+    {
+        _mobileNewExpanded = !_mobileNewExpanded;
+    }
+    
+    private void ToggleAchievementExpand(AchievementDisplay achievement)
+    {
+        if (_expandedAchievementId == achievement.Id)
+        {
+            _expandedAchievementId = null;
+        }
+        else
+        {
+            _expandedAchievementId = achievement.Id;
+        }
+    }
+    
+    private void ScrollToAchievement(AchievementDisplay achievement)
+    {
+        // Close the banner and expand the achievement in the list
+        _mobileNewExpanded = false;
+        _expandedAchievementId = achievement.Id;
+        _selectedCategory = null; // Show all to ensure achievement is visible
+    }
+    
+    private void OnCategoryDropdownChange(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        if (string.IsNullOrEmpty(value))
+        {
+            _selectedCategory = null;
+        }
+        else if (Enum.TryParse<AchievementCategory>(value, out var category))
+        {
+            _selectedCategory = category;
+        }
     }
 
     private IEnumerable<AchievementCategory> GetCategories()

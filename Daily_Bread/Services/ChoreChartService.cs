@@ -19,6 +19,7 @@ public class ChoreChartEntry
     public bool IsWeeklyFrequency { get; init; }
     public int? WeeklyTargetCount { get; init; }
     public int? WeeklyCompletedCount { get; init; }
+    public int SortOrder { get; init; }
 }
 
 /// <summary>
@@ -281,8 +282,17 @@ public class ChoreChartService : IChoreChartService
         Dictionary<(DateOnly, int), ChoreLog> logsByDateAndChore,
         Dictionary<int, List<ChoreLog>> logsByChoreId)
     {
-        var dailyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.SpecificDays).ToList();
-        var weeklyChores = userChores.Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency).ToList();
+        // Sort chores by SortOrder then Name to respect parent's reordering
+        var dailyChores = userChores
+            .Where(c => c.ScheduleType == ChoreScheduleType.SpecificDays)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
+            .ToList();
+        var weeklyChores = userChores
+            .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
+            .ToList();
 
         // Build days
         var days = new List<ChoreChartDay>();
@@ -306,7 +316,8 @@ public class ChoreChartService : IChoreChartService
                         PenaltyValue = chore.PenaltyValue,
                         Status = log?.Status,
                         IsScheduled = isScheduled,
-                        IsWeeklyFrequency = false
+                        IsWeeklyFrequency = false,
+                        SortOrder = chore.SortOrder
                     });
                 }
             }
@@ -333,7 +344,8 @@ public class ChoreChartService : IChoreChartService
                         IsScheduled = true,
                         IsWeeklyFrequency = true,
                         WeeklyTargetCount = chore.WeeklyTargetCount,
-                        WeeklyCompletedCount = completedCount
+                        WeeklyCompletedCount = completedCount,
+                        SortOrder = chore.SortOrder
                     });
                 }
             }
@@ -343,11 +355,12 @@ public class ChoreChartService : IChoreChartService
                 Date = date,
                 IsToday = date == today,
                 IsPast = date < today,
-                Chores = dayChores.OrderBy(c => c.ChoreName).ToList()
+                // Preserve parent's sort order instead of alphabetical
+                Chores = dayChores.OrderBy(c => c.SortOrder).ThenBy(c => c.ChoreName).ToList()
             });
         }
 
-        // Build weekly frequency progress
+        // Build weekly frequency progress (already sorted by foreach loop order)
         var weeklyProgress = weeklyChores.Select(chore =>
         {
             var weeklyLogs = logsByChoreId.GetValueOrDefault(chore.Id) ?? [];

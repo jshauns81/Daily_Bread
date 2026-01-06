@@ -57,27 +57,57 @@ public static class ChoreDisplayHelper
     /// </summary>
     public static string GetStatusBadgeClass(ChoreStatus status) => status switch
     {
-        ChoreStatus.Pending => "bg-warning text-dark",
-        ChoreStatus.Completed => "bg-info",
-        ChoreStatus.Approved => "bg-success",
-        ChoreStatus.Missed => "bg-danger",
-        ChoreStatus.Skipped => "bg-secondary",
-        ChoreStatus.Help => "bg-warning",
-        _ => "bg-secondary"
+        ChoreStatus.Pending => "badge-pending",
+        ChoreStatus.Completed => "badge-awaiting",
+        ChoreStatus.Approved => "badge-approved",
+        ChoreStatus.Missed => "badge-missed",
+        ChoreStatus.Skipped => "badge-excused",
+        ChoreStatus.Help => "badge-help",
+        _ => "badge-default"
     };
 
     /// <summary>
     /// Gets the display text for a chore status.
+    /// Clear, action-oriented language that tells parents exactly what's happening.
     /// </summary>
     public static string GetStatusDisplay(ChoreStatus status) => status switch
     {
-        ChoreStatus.Pending => "Pending",
-        ChoreStatus.Completed => "Completed",
+        ChoreStatus.Pending => "Not Started",
+        ChoreStatus.Completed => "Awaiting Review",
         ChoreStatus.Approved => "Approved",
+        ChoreStatus.Missed => "Not Completed",
+        ChoreStatus.Skipped => "Excused",
+        ChoreStatus.Help => "Needs Help",
+        _ => status.ToString()
+    };
+
+    /// <summary>
+    /// Gets a short badge label for status (used in compact views).
+    /// </summary>
+    public static string GetStatusBadgeText(ChoreStatus status) => status switch
+    {
+        ChoreStatus.Pending => "Pending",
+        ChoreStatus.Completed => "Review",
+        ChoreStatus.Approved => "Done",
         ChoreStatus.Missed => "Missed",
-        ChoreStatus.Skipped => "Skipped",
+        ChoreStatus.Skipped => "Excused",
         ChoreStatus.Help => "Help",
         _ => status.ToString()
+    };
+
+    /// <summary>
+    /// Gets the icon for a status indicator.
+    /// Uses clear, meaningful icons instead of confusing circles.
+    /// </summary>
+    public static string GetStatusIcon(ChoreStatus status) => status switch
+    {
+        ChoreStatus.Pending => "bi-circle",
+        ChoreStatus.Completed => "bi-clock-history",  // Clock = awaiting review
+        ChoreStatus.Approved => "bi-check2-all",      // Double check = fully approved
+        ChoreStatus.Missed => "bi-x-circle",
+        ChoreStatus.Skipped => "bi-dash-circle",
+        ChoreStatus.Help => "bi-question-circle-fill",
+        _ => "bi-circle"
     };
 
     /// <summary>

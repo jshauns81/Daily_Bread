@@ -12,7 +12,6 @@
     flex-shrink: 0;
 }
 
-/* Nav header brand styling */
 .nav-brand {
     display: flex;
     align-items: center;
@@ -21,7 +20,6 @@
     text-decoration: none;
     font-weight: 600;
     font-size: 1.25rem;
-    position: relative;
 }
 
 .nav-brand-icon {
@@ -41,7 +39,6 @@
     white-space: nowrap;
 }
 
-/* Hide header on mobile (shown in MainLayout mobile header) */
 @media (max-width: 767px) {
     .nav-header {
         display: none;
@@ -58,35 +55,40 @@
     overflow-x: hidden;
     padding: 0.5rem 0;
     -webkit-overflow-scrolling: touch;
-    /* Prevent content from being cut off */
     min-height: 0;
-    /* Scrollbar styling for mobile */
     scrollbar-width: thin;
     scrollbar-color: var(--ds-bg-muted) transparent;
 }
 
-/* Section labels - subtle gradient text */
+/* Section divider - subtle line before management section */
+.nav-section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--ds-bg-muted) 20%, var(--ds-bg-muted) 80%, transparent 100%);
+    margin: var(--ds-space-4) var(--ds-space-4) 0 var(--ds-space-4);
+}
+
+/* Section labels */
 .nav-section-label {
-    padding: 1rem 1rem 0.5rem 1rem;
-    font-size: 0.7rem;
+    padding: var(--ds-space-3) 1rem var(--ds-space-2) 1rem;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    color: var(--ds-text-muted); /* Fallback for browsers without background-clip support */
+    color: var(--ds-text-muted);
     background: linear-gradient(90deg, var(--ds-text-muted) 0%, var(--ds-accent-cyan) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    /* Don't let it shrink */
     flex-shrink: 0;
 }
 
 /* ===========================================
-   NAV LINKS
+   NAV LINKS - Simple inline layout
    =========================================== */
 
 .nav-link {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1rem;
@@ -94,107 +96,78 @@
     color: var(--ds-text-muted);
     text-decoration: none;
     border-radius: var(--ds-radius-md);
-    transition: all var(--ds-duration-fast) ease;
     font-size: 0.95rem;
     font-weight: 500;
-    position: relative;
-    -webkit-tap-highlight-color: transparent;
-    /* Ensure minimum touch target */
     min-height: 48px;
     box-sizing: border-box;
-    /* Prevent text overflow */
-    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    /* Active indicator border */
+    border-left: 3px solid transparent;
+    /* Smooth transitions */
+    transition: background-color var(--ds-duration-fast) var(--ds-ease-default),
+                color var(--ds-duration-fast) var(--ds-ease-default),
+                border-color var(--ds-duration-fast) var(--ds-ease-default);
 }
 
+/* Icon - inline, fixed width */
+.nav-link .bi {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+    transition: color var(--ds-duration-fast) var(--ds-ease-default);
+}
+
+/* Text - grows to fill space */
 .nav-link-text {
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-width: 0; /* Allow text to shrink */
 }
 
-/* Hover state with glow */
-.nav-link:hover {
-    background: rgba(136, 192, 208, 0.08);
-    color: var(--ds-text-primary);
-    transform: translateX(4px);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Icon animations */
-.nav-link .bi {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-    width: 24px;
-    text-align: center;
-    transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.nav-link:hover .bi {
-    transform: scale(1.15);
-    color: var(--ds-accent-cyan);
-}
-
-/* Active state - Discord-style indicator pill */
-.nav-link.active {
-    background: linear-gradient(135deg, rgba(136, 192, 208, 0.15) 0%, rgba(143, 188, 187, 0.1) 100%);
-    color: var(--ds-accent-cyan);
-    position: relative;
-}
-
-.nav-link.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 4px;
-    height: 60%;
-    background: linear-gradient(180deg, var(--ds-accent-cyan) 0%, var(--ds-accent-teal) 100%);
-    border-radius: 0 4px 4px 0;
-    box-shadow: 0 0 8px rgba(136, 192, 208, 0.5);
-}
-
-.nav-link.active .bi {
-    color: var(--ds-accent-cyan);
-    filter: drop-shadow(0 0 4px rgba(136, 192, 208, 0.4));
-}
-
-/* Alert link (pending approvals) */
-.nav-link-alert {
-    color: var(--ds-semantic-highlight);
-}
-
-.nav-link-alert .bi {
-    color: var(--ds-semantic-highlight);
-}
-
-.nav-link-alert:hover {
-    background-color: rgba(235, 203, 139, 0.15);
-}
-
-/* Badge for counts */
+/* Badge - stays at end */
 .nav-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
-    height: 22px;
+    min-width: 20px;
+    height: 20px;
     padding: 0 6px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    background-color: var(--ds-semantic-highlight);
+    background: var(--ds-semantic-highlight);
     color: var(--ds-bg-base);
-    border-radius: 11px;
+    border-radius: 10px;
     flex-shrink: 0;
     animation: badge-pulse 2s ease-in-out infinite;
-    will-change: transform; /* Performance optimization for animation */
+    margin-left: var(--ds-space-2);
 }
 
 @keyframes badge-pulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.1); }
+}
+
+/* Hover state */
+.nav-link:hover {
+    background-color: rgba(136, 192, 208, 0.1);
+    color: var(--ds-text-primary);
+}
+
+.nav-link:hover .bi {
+    color: var(--ds-accent-cyan);
+}
+
+/* Active state - left border indicator */
+.nav-link.active {
+    background-color: rgba(136, 192, 208, 0.12);
+    color: var(--ds-text-primary);
+    border-left-color: var(--ds-accent-cyan);
+}
+
+.nav-link.active .bi {
+    color: var(--ds-accent-cyan);
 }
 
 /* ===========================================
@@ -203,11 +176,9 @@
 
 .nav-footer {
     padding: 0.75rem 1rem;
-    border-top: none;
     flex-shrink: 0;
 }
 
-/* Kid mode link - make it pop */
 .kid-mode-link {
     display: flex;
     align-items: center;
@@ -217,18 +188,15 @@
     color: var(--ds-text-primary);
     text-decoration: none;
     background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
-    border: none;
     box-shadow: 0 2px 8px rgba(94, 129, 172, 0.3);
     border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 500;
-    transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--ds-duration-fast) var(--ds-ease-default),
+                box-shadow var(--ds-duration-fast) var(--ds-ease-default);
 }
 
 .kid-mode-link:hover {
-    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
-    color: var(--ds-text-primary);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(94, 129, 172, 0.4);
 }
@@ -243,14 +211,12 @@
 
 @media (max-width: 767px) {
     .nav-menu {
-        /* Extra padding at bottom for better scrolling */
         padding-bottom: 1rem;
     }
     
     .nav-link {
         padding: 1rem;
-        min-height: 48px;
-        margin: 0.25rem 0.5rem;
+        min-height: 52px;
         font-size: 1rem;
     }
     
@@ -261,7 +227,11 @@
     
     .nav-section-label {
         padding: 1.25rem 1rem 0.5rem 1rem;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
+    }
+    
+    .nav-section-divider {
+        margin-top: var(--ds-space-5);
     }
     
     .nav-footer {
@@ -280,37 +250,32 @@
 
 @media (hover: none) and (pointer: coarse) {
     .nav-link {
-        padding: 1rem;
-        min-height: 52px; /* Larger touch targets */
+        min-height: 52px;
     }
     
     .nav-link:active {
-        background: rgba(136, 192, 208, 0.15);
-        transform: scale(0.98);
+        background-color: rgba(136, 192, 208, 0.15);
     }
     
-    /* Disable hover effects that don't work on touch */
+    /* Disable hover effects on touch */
     .nav-link:hover {
-        transform: none;
-        background: transparent;
+        background-color: transparent;
     }
     
     .nav-link:hover .bi {
-        transform: none;
+        color: inherit;
     }
     
-    .nav-link.active:active {
-        background: linear-gradient(135deg, rgba(136, 192, 208, 0.2) 0%, rgba(143, 188, 187, 0.15) 100%);
-    }
-    
-    .kid-mode-link:active {
-        background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
-        transform: scale(0.98);
+    .nav-link.active:hover {
+        background-color: rgba(136, 192, 208, 0.12);
     }
     
     .kid-mode-link:hover {
         transform: none;
-        box-shadow: 0 2px 8px rgba(94, 129, 172, 0.3);
+    }
+    
+    .kid-mode-link:active {
+        transform: scale(0.98);
     }
 }
 
@@ -319,47 +284,18 @@
    =========================================== */
 
 @media (prefers-reduced-motion: reduce) {
-    .nav-link {
-        transition: none;
-    }
-    
-    .nav-link:active {
-        transform: none;
-    }
-    
-    .nav-link:hover {
-        transform: none;
-    }
-    
-    .nav-link .bi {
-        transition: none;
-    }
-    
-    .nav-link:hover .bi {
-        transform: none;
-    }
-    
-    .nav-badge {
-        animation: none;
-        will-change: auto; /* Reset will-change when animations are disabled */
-    }
-    
+    .nav-link,
+    .nav-link .bi,
+    .kid-mode-link,
     .nav-brand-icon {
         transition: none;
     }
     
-    .nav-brand:hover .nav-brand-icon {
-        transform: none;
+    .nav-badge {
+        animation: none;
     }
     
-    .kid-mode-link {
-        transition: none;
-    }
-    
-    .kid-mode-link:active {
-        transform: none;
-    }
-    
+    .nav-brand:hover .nav-brand-icon,
     .kid-mode-link:hover {
         transform: none;
     }
@@ -386,7 +322,6 @@
     background-color: var(--ds-text-muted);
 }
 
-/* Hide scrollbar on mobile but keep functionality */
 @media (max-width: 767px) {
     .nav-menu {
         scrollbar-width: none;
