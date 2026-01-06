@@ -1,8 +1,12 @@
 /* ===========================================
-   TRACKER CHORE ROW - Component Styles
+   TRACKER CHORE ROW - Redesigned for Clarity
+   Clear status-based styling, no strikethrough
    =========================================== */
 
-/* Row States */
+/* ===========================================
+   ROW BASE & STATES
+   =========================================== */
+
 .chore-row {
     transition: background 0.15s;
 }
@@ -12,44 +16,68 @@
     vertical-align: middle;
 }
 
-.chore-row.row-default {
+/* Pending - Default calm state */
+.chore-row.row-pending {
     background: transparent;
 }
 
-.chore-row.row-default:hover {
+.chore-row.row-pending:hover {
     background: rgba(136, 192, 208, 0.05);
 }
 
-.chore-row.row-done {
-    background: rgba(163, 190, 140, 0.08);
+/* Awaiting Review - Light green, needs attention */
+.chore-row.row-awaiting {
+    background: rgba(163, 190, 140, 0.12);
 }
 
-.chore-row.row-muted {
-    opacity: 0.5;
+.chore-row.row-awaiting:hover {
+    background: rgba(163, 190, 140, 0.18);
 }
 
-.chore-row.row-muted:hover {
-    opacity: 0.8;
+/* Approved - Muted/faded, task complete */
+.chore-row.row-approved {
+    background: rgba(163, 190, 140, 0.06);
+    opacity: 0.7;
 }
 
-/* Exception Rows */
-.chore-row.row-exception {
-    background: var(--ds-bg-elevated);
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.chore-row.row-approved:hover {
+    opacity: 0.85;
 }
 
+/* Needs Help - Yellow/orange attention state */
 .chore-row.row-help {
-    background: linear-gradient(90deg, rgba(235, 203, 139, 0.15) 0%, rgba(235, 203, 139, 0.08) 100%);
+    background: rgba(235, 203, 139, 0.15);
     border-left: 3px solid var(--ds-semantic-highlight);
 }
 
-.chore-row.row-awaiting {
-    background: linear-gradient(90deg, rgba(136, 192, 208, 0.12) 0%, rgba(136, 192, 208, 0.06) 100%);
-    border-left: 3px solid var(--ds-accent-cyan);
+.chore-row.row-help:hover {
+    background: rgba(235, 203, 139, 0.22);
 }
 
-/* Status Cell */
+/* Missed - Light red, error state */
+.chore-row.row-missed {
+    background: rgba(191, 97, 106, 0.08);
+    opacity: 0.65;
+}
+
+.chore-row.row-missed:hover {
+    opacity: 0.8;
+}
+
+/* Excused/Skipped - Gray muted */
+.chore-row.row-excused {
+    background: rgba(76, 86, 106, 0.08);
+    opacity: 0.6;
+}
+
+.chore-row.row-excused:hover {
+    opacity: 0.75;
+}
+
+/* ===========================================
+   STATUS INDICATOR BUTTON
+   =========================================== */
+
 .status-cell {
     width: 48px;
     text-align: center;
@@ -81,6 +109,7 @@
     cursor: not-allowed;
 }
 
+/* Indicator state colors */
 .status-indicator.indicator-pending {
     border-color: var(--ds-bg-muted);
     color: var(--ds-text-muted);
@@ -122,7 +151,10 @@
     50% { box-shadow: 0 0 0 4px rgba(235, 203, 139, 0); }
 }
 
-/* Chore Cell */
+/* ===========================================
+   CHORE CONTENT
+   =========================================== */
+
 .chore-cell {
     min-width: 200px;
 }
@@ -139,9 +171,9 @@
     font-size: 0.9rem;
 }
 
-.chore-name.done {
-    color: var(--ds-text-muted);
-    text-decoration: line-through;
+/* Approved rows get slightly muted text (no strikethrough) */
+.chore-row.row-approved .chore-name {
+    color: var(--ds-text-secondary);
 }
 
 .chore-description {
@@ -155,7 +187,59 @@
     font-style: italic;
 }
 
-/* Assignee Cell */
+/* ===========================================
+   STATUS BADGE
+   =========================================== */
+
+.status-badge-cell {
+    width: 100px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--ds-radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.status-badge.badge-pending {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-muted);
+}
+
+.status-badge.badge-awaiting {
+    background: rgba(136, 192, 208, 0.2);
+    color: var(--ds-accent-cyan);
+}
+
+.status-badge.badge-approved {
+    background: rgba(163, 190, 140, 0.2);
+    color: var(--ds-semantic-success);
+}
+
+.status-badge.badge-missed {
+    background: rgba(191, 97, 106, 0.15);
+    color: var(--ds-semantic-error);
+}
+
+.status-badge.badge-excused {
+    background: rgba(76, 86, 106, 0.15);
+    color: var(--ds-text-muted);
+}
+
+.status-badge.badge-help {
+    background: rgba(235, 203, 139, 0.2);
+    color: #c9a227;
+}
+
+/* ===========================================
+   ASSIGNEE CELL
+   =========================================== */
+
 .assignee-cell {
     width: 100px;
 }
@@ -163,9 +247,13 @@
 .assignee {
     font-size: 0.8rem;
     color: var(--ds-text-muted);
+    text-transform: capitalize;
 }
 
-/* Value Cell */
+/* ===========================================
+   VALUE CELL
+   =========================================== */
+
 .value-cell {
     width: 80px;
     text-align: right;
@@ -180,13 +268,21 @@
 
 .value.earned {
     color: var(--ds-semantic-success);
+    font-weight: 600;
+}
+
+.value.penalty {
+    color: var(--ds-semantic-error);
 }
 
 .value.muted {
     color: var(--ds-bg-muted);
 }
 
-/* Action Cell */
+/* ===========================================
+   ACTION BUTTONS & LINKS
+   =========================================== */
+
 .action-cell {
     width: 150px;
     text-align: right;
@@ -199,60 +295,135 @@
     gap: 0.375rem;
 }
 
-.action-group.subtle {
-    opacity: 0.3;
+.action-group-subtle {
+    opacity: 0.4;
     transition: opacity 0.15s;
 }
 
-.chore-row:hover .action-group.subtle {
+.chore-row:hover .action-group-subtle {
     opacity: 1;
 }
 
+/* Primary action buttons */
 .action-btn {
     border: none;
-    border-radius: 4px;
-    padding: 0.35rem 0.65rem;
+    border-radius: var(--ds-radius-sm);
+    padding: 0.4rem 0.75rem;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.3rem;
     transition: all 0.15s;
     white-space: nowrap;
 }
 
-.action-btn.primary {
+.action-btn.action-approve {
     background: var(--ds-semantic-success);
     color: var(--ds-bg-base);
 }
 
-.action-btn.primary:hover {
-    background: #8fbc8f;
+.action-btn.action-approve:hover {
+    background: #9fc896;
+    transform: translateY(-1px);
 }
 
-.action-btn.secondary {
-    background: var(--ds-bg-hover);
-    color: var(--ds-text-secondary);
-    border: 1px solid var(--ds-bg-muted);
-}
-
-.action-btn.secondary:hover {
-    background: var(--ds-bg-muted);
-    color: var(--ds-text-primary);
-}
-
-.action-btn.muted {
+.action-btn.action-reject {
     background: transparent;
+    color: var(--ds-semantic-error);
+    border: 1px solid rgba(191, 97, 106, 0.3);
+    padding: 0.4rem 0.5rem;
+}
+
+.action-btn.action-reject:hover {
+    background: rgba(191, 97, 106, 0.1);
+    border-color: var(--ds-semantic-error);
+}
+
+.action-btn.action-respond {
+    background: var(--ds-semantic-highlight);
+    color: var(--ds-bg-base);
+}
+
+.action-btn.action-respond:hover {
+    background: #e6c173;
+    transform: translateY(-1px);
+}
+
+/* Text links for secondary actions */
+.action-link {
+    background: none;
+    border: none;
     color: var(--ds-text-muted);
-    border: 1px solid var(--ds-bg-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.15s;
+    text-decoration: underline;
+    text-decoration-color: transparent;
 }
 
-.action-btn.muted:hover {
-    background: var(--ds-bg-hover);
-    color: var(--ds-text-primary);
+.action-link:hover {
+    color: var(--ds-accent-cyan);
+    text-decoration-color: var(--ds-accent-cyan);
 }
 
-.action-btn.small {
-    padding: 0.25rem 0.4rem;
+/* ===========================================
+   RESPONSIVE
+   =========================================== */
+
+@media (max-width: 992px) {
+    .status-badge-cell {
+        width: 80px;
+    }
+    
+    .status-badge {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.65rem;
+    }
+    
+    .action-btn {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.7rem;
+    }
+}
+
+/* ===========================================
+   TOUCH OPTIMIZATIONS
+   =========================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .status-indicator {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .action-btn {
+        min-height: 36px;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .action-group-subtle {
+        opacity: 1;
+    }
+    
+    .action-link {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* ===========================================
+   REDUCED MOTION
+   =========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .status-indicator,
+    .chore-row,
+    .action-btn,
+    .action-link {
+        animation: none;
+        transition: none;
+    }
 }

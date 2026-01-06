@@ -17,31 +17,23 @@
 <nav class="nav-menu" role="navigation">
     <AuthorizeView>
         <Authorized>
-            @{
-                string? currentSection = null;
-            }
+            @{ var lastSection = (string?)null; }
             @foreach (var item in _navItems)
             {
-                @* Render section label if it changes *@
-                @if (item.Section != currentSection && !string.IsNullOrEmpty(item.Section))
+                @if (!string.IsNullOrEmpty(item.Section) && item.Section != lastSection)
                 {
-                    currentSection = item.Section;
+                    lastSection = item.Section;
+                    <div class="nav-section-divider"></div>
                     <div class="nav-section-label">@item.Section</div>
                 }
                 
                 <NavLink class="nav-link" href="@item.Route.TrimStart('/')" Match="@GetNavLinkMatch(item.Route)" @onclick="HandleNavigation">
                     <span class="bi @item.Icon" aria-hidden="true"></span>
                     <span class="nav-link-text">@item.Label</span>
-                </NavLink>
-            }
-            
-            @* Pending approvals alert - shown for parents when there are pending items *@
-            @if (_isParent && _pendingCount > 0)
-            {
-                <NavLink class="nav-link nav-link-alert" href="" Match="NavLinkMatch.All" @onclick="HandleNavigation">
-                    <span class="bi bi-exclamation-circle-fill" aria-hidden="true"></span>
-                    <span class="nav-link-text">Blessings</span>
-                    <span class="nav-badge">@_pendingCount</span>
+                    @if (HasPendingBadge(item))
+                    {
+                        <span class="nav-badge">@_pendingCount</span>
+                    }
                 </NavLink>
             }
         </Authorized>
@@ -106,6 +98,25 @@
                 // JS interop not available (e.g., prerendering), default to false
                 _isStandalone = false;
             }
+            
+            // For parents, if cache doesn't have data yet, load it proactively
+            // This ensures the badge shows even when navigating directly to non-home pages
+            if (_isParent && _pendingCount == 0)
+            {
+                try
+                {
+                    var data = await AppState.GetParentDashboardAsync(forceRefresh: false);
+                    if (data != null)
+                    {
+                        _pendingCount = data.PendingApprovals.Count;
+                        StateHasChanged();
+                    }
+                }
+                catch
+                {
+                    // Silent fail - not critical if badge doesn't show initially
+                }
+            }
         }
     }
 
@@ -141,6 +152,15 @@
     private static NavLinkMatch GetNavLinkMatch(string route)
     {
         return route == "/" ? NavLinkMatch.All : NavLinkMatch.Prefix;
+    }
+    
+    /// <summary>
+    /// Checks if a nav item should show the pending approvals badge.
+    /// Only shows on Book of Deeds for parents with pending items.
+    /// </summary>
+    private bool HasPendingBadge(NavItem item)
+    {
+        return _isParent && _pendingCount > 0 && item.Route == "/tracker";
     }
     
     public void Dispose()

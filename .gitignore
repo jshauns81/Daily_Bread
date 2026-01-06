@@ -446,3 +446,6 @@ railway.toml
 
 # Git backup folders
 .git-rebase-backup/
+
+# Claude AI settings
+.claude/

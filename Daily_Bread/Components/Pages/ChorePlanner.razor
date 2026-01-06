@@ -16,16 +16,16 @@
 @inject NavigationManager Navigation
 @inject ModalService ModalService
 
-<PageTitle>Wage Board</PageTitle>
+<PageTitle>Labor Planner</PageTitle>
 
-<div class="wage-board">
+<div class="labor-planner">
     <!-- Header -->
     <header class="board-header no-print">
         <div class="header-content">
             <div class="header-left">
                 <h1 class="board-title">
-                    <span class="title-icon">💰</span>
-                    <span>Wage Board</span>
+                    <span class="title-icon">📋</span>
+                    <span>Labor Planner</span>
                 </h1>
                 @if (_childProfiles.Count > 1)
                 {
@@ -41,9 +41,6 @@
                 }
             </div>
             <div class="header-actions">
-                <button type="button" class="action-btn print-btn" onclick="window.print()" title="Print wage board">
-                    <span class="bi bi-printer"></span>
-                </button>
                 <button class="action-btn add-btn" @onclick="ShowCreateChoreForm" title="Add new labor">
                     <span class="bi bi-plus-lg"></span>
                     <span class="btn-text">Add</span>
@@ -92,7 +89,7 @@
     {
         <div class="loading-state">
             <div class="loading-spinner"></div>
-            <p>Loading wage board...</p>
+            <p>Loading labor planner...</p>
         </div>
     }
     else if (_plannerData == null)
@@ -205,20 +202,6 @@
             }
         }
     }
-
-    <!-- Print Header (only visible when printing) -->
-    <div class="print-header print-only">
-        <h1>@(_plannerData?.ChildName ?? "Family") Wage Board</h1>
-        <div class="print-week">@_plannerData?.WeekLabel</div>
-    </div>
-
-    <!-- Print Footer -->
-    <div class="print-footer print-only">
-        <div class="print-potential">
-            Earn up to: <strong>$@(_plannerData?.TotalWeeklyPotential.ToString("F2") ?? "0.00")</strong> this week!
-        </div>
-        <div class="print-date">Printed: @DateTime.Now.ToString("MMM d, yyyy")</div>
-    </div>
 </div>
 
 <!-- Toast Messages -->

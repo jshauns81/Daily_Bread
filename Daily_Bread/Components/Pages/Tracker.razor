@@ -10,6 +10,7 @@
 
 @inject IAppStateService AppState
 @inject ITrackerService TrackerService
+@inject IChildProfileService ProfileService
 @inject IDateProvider DateProvider
 @inject ILedgerService LedgerService
 @inject IToastService ToastService
@@ -24,11 +25,26 @@
     <div class="tracker-header">
         <h1>Book of Deeds</h1>
 
-        <DateNavigator SelectedDate="SelectedDate"
-                       SelectedDateChanged="OnDateChanged"
-                       Today="Today"
-                       AllowPastNavigation="IsParent"
-                       AllowFutureNavigation="IsParent" />
+        <div class="tracker-controls">
+            <DateNavigator SelectedDate="SelectedDate"
+                           SelectedDateChanged="OnDateChanged"
+                           Today="Today"
+                           AllowPastNavigation="IsParent"
+                           AllowFutureNavigation="IsParent" />
+
+            @if (IsParent && _childProfiles.Count > 0)
+            {
+                <div class="child-filter">
+                    <select class="child-filter-select" @bind="_selectedChildUserId" @bind:after="OnChildFilterChanged">
+                        <option value="">All Children</option>
+                        @foreach (var child in _childProfiles)
+                        {
+                            <option value="@child.UserId" class="user-name">@child.DisplayName</option>
+                        }
+                    </select>
+                </div>
+            }
+        </div>
 
         @if (!string.IsNullOrEmpty(UserId))
         {
@@ -50,7 +66,7 @@
             <div class="skeleton-row"></div>
         </div>
     }
-    else if (ChoreItems.Count == 0)
+    else if (FilteredChoreItems.Count == 0)
     {
         @if (IsParent)
         {
@@ -75,57 +91,147 @@
     {
         @* Mobile Card View *@
         <div class="chore-cards d-md-none">
-            @foreach (var item in ChoreItems)
+            @if (IsParent && string.IsNullOrEmpty(_selectedChildUserId) && _childProfiles.Count > 1)
             {
-                <TrackerChoreCard Item="item"
-                                  IsDisabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
-                                  ShowAssignee="IsParent"
-                                  ShowActions="IsParent"
-                                  OnToggle="ToggleChore"
-                                  OnApprove="ApproveChore"
-                                  OnSkip="ShowSkipConfirmation"
-                                  OnReset="ResetToPending"
-                                  OnRespondToHelp="ShowHelpResponseModal" />
+                @* Grouped by child view *@
+                @foreach (var group in GroupedChoreItems)
+                {
+                    <div class="child-group">
+                        <button class="child-group-header" @onclick="() => ToggleChildGroup(group.Key)">
+                            <span class="child-group-name">@GetChildDisplayName(group.Key)</span>
+                            <span class="child-group-count">@group.Value.Count labors</span>
+                            <span class="bi @(_collapsedChildren.Contains(group.Key) ? "bi-chevron-down" : "bi-chevron-up")"></span>
+                        </button>
+                        @if (!_collapsedChildren.Contains(group.Key))
+                        {
+                            <div class="child-group-items">
+                                @foreach (var item in group.Value)
+                                {
+                                    <TrackerChoreCard Item="item"
+                                                      IsDisabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
+                                                      ShowAssignee="false"
+                                                      ShowActions="IsParent"
+                                                      OnToggle="ToggleChore"
+                                                      OnApprove="ApproveChore"
+                                                      OnSkip="ShowSkipConfirmation"
+                                                      OnReset="ResetToPending"
+                                                      OnRespondToHelp="ShowHelpResponseModal" />
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                @foreach (var item in FilteredChoreItems)
+                {
+                    <TrackerChoreCard Item="item"
+                                      IsDisabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
+                                      ShowAssignee="@(IsParent && _childProfiles.Count > 1)"
+                                      ShowActions="IsParent"
+                                      OnToggle="ToggleChore"
+                                      OnApprove="ApproveChore"
+                                      OnSkip="ShowSkipConfirmation"
+                                      OnReset="ResetToPending"
+                                      OnRespondToHelp="ShowHelpResponseModal" />
+                }
             }
         </div>
 
         @* Desktop Table View - Redesigned Ledger *@
         <div class="d-none d-md-block">
-            <table class="chore-table">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Chore</th>
-                        @if (IsParent)
+            @if (IsParent && string.IsNullOrEmpty(_selectedChildUserId) && _childProfiles.Count > 1)
+            {
+                @* Grouped by child view *@
+                @foreach (var group in GroupedChoreItems)
+                {
+                    <div class="child-group-section">
+                        <button class="child-group-header-desktop" @onclick="() => ToggleChildGroup(group.Key)">
+                            <span class="child-group-name">@GetChildDisplayName(group.Key)</span>
+                            <span class="child-group-stats">
+                                <span class="stat-completed">@group.Value.Count(i => i.IsCompleted || i.IsApproved) done</span>
+                                <span class="stat-separator">•</span>
+                                <span class="stat-pending">@group.Value.Count(i => i.IsPending) pending</span>
+                                @if (group.Value.Any(i => i.IsHelp))
+                                {
+                                    <span class="stat-separator">•</span>
+                                    <span class="stat-help">@group.Value.Count(i => i.IsHelp) needs help</span>
+                                }
+                            </span>
+                            <span class="bi @(_collapsedChildren.Contains(group.Key) ? "bi-chevron-down" : "bi-chevron-up") collapse-icon"></span>
+                        </button>
+                        @if (!_collapsedChildren.Contains(group.Key))
                         {
-                            <th>Assigned</th>
+                            <table class="chore-table">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Chore</th>
+                                        <th>Status</th>
+                                        <th>Value</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in group.Value)
+                                    {
+                                        <TrackerChoreRow Item="item"
+                                                         IsDisabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
+                                                         ShowAssignee="false"
+                                                         ShowActions="IsParent"
+                                                         OnToggle="ToggleChore"
+                                                         OnApprove="ApproveChore"
+                                                         OnMiss="ShowMissConfirmation"
+                                                         OnSkip="ShowSkipConfirmation"
+                                                         OnReset="ResetToPending"
+                                                         OnRespondToHelp="ShowHelpResponseModal" />
+                                    }
+                                </tbody>
+                            </table>
                         }
-                        <th>Value</th>
-                        @if (IsParent)
-                        {
+                    </div>
+                }
+            }
+            else
+            {
+                <table class="chore-table">
+                    <thead>
+                        <tr>
                             <th></th>
+                            <th>Chore</th>
+                            @if (IsParent && _childProfiles.Count > 1)
+                            {
+                                <th>Assigned</th>
+                            }
+                            <th>Status</th>
+                            <th>Value</th>
+                            @if (IsParent)
+                            {
+                                <th></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in FilteredChoreItems)
+                        {
+                            <TrackerChoreRow Item="item"
+                                             IsDisabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
+                                             ShowAssignee="@(IsParent && _childProfiles.Count > 1)"
+                                             ShowActions="IsParent"
+                                             OnToggle="ToggleChore"
+                                             OnApprove="ApproveChore"
+                                             OnMiss="ShowMissConfirmation"
+                                             OnSkip="ShowSkipConfirmation"
+                                             OnReset="ResetToPending"
+                                             OnRespondToHelp="ShowHelpResponseModal" />
                         }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in ChoreItems)
-                    {
-                        <TrackerChoreRow Item="item"
-                                         IsDisabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
-                                         ShowAssignee="IsParent"
-                                         ShowActions="IsParent"
-                                         OnToggle="ToggleChore"
-                                         OnApprove="ApproveChore"
-                                         OnMiss="ShowMissConfirmation"
-                                         OnSkip="ShowSkipConfirmation"
-                                         OnReset="ResetToPending"
-                                         OnRespondToHelp="ShowHelpResponseModal" />
-                    }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            }
         </div>
 
-        <TrackerSummary Items="ChoreItems" />
+        <TrackerSummary Items="FilteredChoreItems" />
     }
 </div>
 
@@ -187,13 +293,23 @@
     private bool IsParent { get; set; }
     private decimal Balance { get; set; }
 
+    private List<ChildProfileSummary> _childProfiles = [];
+    private string? _selectedChildUserId;
+    private HashSet<string> _collapsedChildren = [];
+
+    private List<TrackerChoreItem> FilteredChoreItems => string.IsNullOrEmpty(_selectedChildUserId)
+        ? ChoreItems
+        : ChoreItems.Where(c => c.AssignedUserId == _selectedChildUserId).ToList();
+
+    private Dictionary<string, List<TrackerChoreItem>> GroupedChoreItems => ChoreItems
+        .Where(c => !string.IsNullOrEmpty(c.AssignedUserId))
+        .GroupBy(c => c.AssignedUserId!)
+        .ToDictionary(g => g.Key, g => g.ToList());
+
     private bool _showConfetti;
     private int _previousCompletedCount;
-    
-    // Track which item is being processed (for individual loading states)
     private int? _processingItemId;
     
-    // Confirmation modal state
     private bool _showMissConfirmation;
     private bool _showSkipConfirmation;
     private bool _showHelpResponseModal;
@@ -201,7 +317,6 @@
     private TrackerChoreItem? _helpRequestItem;
     private bool _isProcessingAction;
 
-    // Cancellation support for async date navigation
     private CancellationTokenSource? _loadCts;
     private readonly object _loadLock = new();
 
@@ -213,7 +328,6 @@
         UserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
         IsParent = user.IsInRole("Parent");
 
-        // Parse date from route or use today
         if (!string.IsNullOrEmpty(DateParam) && DateOnly.TryParse(DateParam, out var parsedDate))
         {
             SelectedDate = parsedDate;
@@ -223,7 +337,11 @@
             SelectedDate = Today;
         }
 
-        // Subscribe to state changes from SignalR notifications
+        if (IsParent)
+        {
+            _childProfiles = await ProfileService.GetAllChildProfilesAsync();
+        }
+
         AppState.OnTrackerChanged += OnTrackerStateChanged;
         AppState.OnChildDashboardChanged += OnChildDashboardStateChanged;
         if (IsParent)
@@ -234,9 +352,27 @@
         await LoadDataAsync();
     }
 
+    private string GetChildDisplayName(string userId)
+    {
+        return _childProfiles.FirstOrDefault(c => c.UserId == userId)?.DisplayName ?? "Unknown";
+    }
+
+    private void ToggleChildGroup(string userId)
+    {
+        if (_collapsedChildren.Contains(userId))
+            _collapsedChildren.Remove(userId);
+        else
+            _collapsedChildren.Add(userId);
+    }
+
+    private async Task OnChildFilterChanged()
+    {
+        await Task.CompletedTask;
+        StateHasChanged();
+    }
+
     private async void OnTrackerStateChanged()
     {
-        // Refresh data when tracker cache is invalidated (e.g., from SignalR)
         await InvokeAsync(async () =>
         {
             await RefreshDataAsync();
@@ -246,7 +382,6 @@
 
     private async void OnChildDashboardStateChanged()
     {
-        // Refresh data when child dashboard changes (e.g., blessing received)
         if (!IsParent)
         {
             await InvokeAsync(async () =>
@@ -259,7 +394,6 @@
 
     private async void OnParentDashboardStateChanged()
     {
-        // Refresh data when parent dashboard changes (e.g., help requests)
         if (IsParent)
         {
             await InvokeAsync(async () =>
@@ -278,7 +412,6 @@
 
     private async Task LoadDataAsync()
     {
-        // Cancel any in-flight load and create new token
         CancellationToken ct;
         lock (_loadLock)
         {
@@ -288,9 +421,7 @@
             ct = _loadCts.Token;
         }
 
-        // Capture the date we're loading for (to verify response matches)
         var loadingForDate = SelectedDate;
-
         IsLoading = true;
         StateHasChanged();
 
@@ -298,13 +429,11 @@
 
         try
         {
-            // Check cancellation before expensive DB calls
             ct.ThrowIfCancellationRequested();
 
             List<TrackerChoreItem> items;
             decimal balance = 0;
 
-            // Parents see all chores, children see only their own
             if (IsParent)
             {
                 items = await TrackerService.GetTrackerItemsForDateAsync(loadingForDate);
@@ -318,36 +447,27 @@
                 items = [];
             }
 
-            // Check cancellation after DB call - don't apply stale data
             ct.ThrowIfCancellationRequested();
 
-            // Verify we're still showing the same date (double-check against races)
             if (loadingForDate != SelectedDate)
             {
-                return; // Discard stale response
+                return;
             }
 
-            // Load balance for current user
             if (!string.IsNullOrEmpty(UserId))
             {
                 balance = await LedgerService.GetUserBalanceAsync(UserId);
             }
 
-            // Final cancellation check before updating UI
             ct.ThrowIfCancellationRequested();
 
-            // Apply results
             ChoreItems = items;
             Balance = balance;
 
-            // Check if all chores just became completed (trigger confetti)
             var currentCompleted = ChoreItems.Count(c => c.IsCompleted);
             var totalChores = ChoreItems.Count;
 
-            if (totalChores > 0 &&
-                currentCompleted == totalChores &&
-                previousCount < totalChores &&
-                _previousCompletedCount < totalChores)
+            if (totalChores > 0 && currentCompleted == totalChores && previousCount < totalChores && _previousCompletedCount < totalChores)
             {
                 _showConfetti = true;
             }
@@ -356,12 +476,10 @@
         }
         catch (OperationCanceledException)
         {
-            // Expected when user navigates quickly - don't show error
             return;
         }
         catch (Exception ex)
         {
-            // Only show error if not cancelled
             if (!ct.IsCancellationRequested)
             {
                 ToastService.ShowError("Error", $"Failed to load chores: {ex.Message}");
@@ -369,7 +487,6 @@
         }
         finally
         {
-            // Only update loading state if this is still the current request
             if (!ct.IsCancellationRequested)
             {
                 IsLoading = false;
@@ -378,9 +495,6 @@
         }
     }
 
-    /// <summary>
-    /// Refresh data without showing the loading skeleton (for after item updates)
-    /// </summary>
     private async Task RefreshDataAsync()
     {
         try
@@ -410,13 +524,10 @@
             ChoreItems = items;
             Balance = balance;
 
-            // Check if all chores just became completed (trigger confetti)
             var currentCompleted = ChoreItems.Count(c => c.IsCompleted);
             var totalChores = ChoreItems.Count;
 
-            if (totalChores > 0 &&
-                currentCompleted == totalChores &&
-                previousCount < totalChores)
+            if (totalChores > 0 && currentCompleted == totalChores && previousCount < totalChores)
             {
                 _showConfetti = true;
             }
@@ -439,30 +550,21 @@
     private async Task ToggleChore(TrackerChoreItem item)
     {
         if (string.IsNullOrEmpty(UserId)) return;
-        if (_processingItemId.HasValue) return; // Prevent double-clicks
+        if (_processingItemId.HasValue) return;
 
         _processingItemId = item.ChoreDefinitionId;
         StateHasChanged();
 
-        // Capture the original status to determine if this was a completion or undo
-        var originalStatus = item.Status;
-
         try
         {
-            var result = await TrackerService.ToggleChoreCompletionAsync(
-                item.ChoreDefinitionId,
-                SelectedDate,
-                UserId,
-                IsParent);
+            var result = await TrackerService.ToggleChoreCompletionAsync(item.ChoreDefinitionId, SelectedDate, UserId, IsParent);
 
             if (result.Success)
             {
                 var newStatus = result.Data;
                 
-                // Determine appropriate toast based on status transition
                 if (newStatus == ChoreStatus.Approved || newStatus == ChoreStatus.Completed)
                 {
-                    // Completion - show "Done!" with amount if applicable
                     var message = item.EarnValue > 0 
                         ? $"'{item.ChoreName}' +${item.EarnValue:F2}" 
                         : $"'{item.ChoreName}' marked as complete.";
@@ -470,12 +572,10 @@
                 }
                 else if (newStatus == ChoreStatus.Pending)
                 {
-                    // Undo - show "Undone" message
                     ToastService.ShowInfo("Undone", $"'{item.ChoreName}' has been reset.");
                 }
                 else
                 {
-                    // Fallback for any other status change
                     ToastService.ShowInfo("Updated", $"'{item.ChoreName}' status changed.");
                 }
                 
@@ -503,20 +603,16 @@
 
         try
         {
-            var result = await TrackerService.SetChoreStatusAsync(
-                item.ChoreDefinitionId,
-                SelectedDate,
-                ChoreStatus.Approved,
-                UserId);
+            var result = await TrackerService.SetChoreStatusAsync(item.ChoreDefinitionId, SelectedDate, ChoreStatus.Approved, UserId);
 
             if (result.Success)
             {
-                ToastService.ShowSuccess("Blessed!", $"'{item.ChoreName}' blessed - ${item.Value:F2} wages earned!");
+                ToastService.ShowSuccess("Approved!", $"'{item.ChoreName}' approved - ${item.Value:F2} wages earned!");
                 await RefreshDataAsync();
             }
             else
             {
-                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to bless labor.");
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to approve labor.");
             }
         }
         finally
@@ -526,7 +622,6 @@
         }
     }
 
-    // Show confirmation before marking as missed
     private void ShowMissConfirmation(TrackerChoreItem item)
     {
         _confirmingItem = item;
@@ -535,10 +630,7 @@
     
     private List<string> GetMissConsequences()
     {
-        var consequences = new List<string>
-        {
-            "Labor will be recorded as not completed"
-        };
+        var consequences = new List<string> { "Labor will be recorded as not completed" };
         
         if (_confirmingItem?.PenaltyValue > 0)
         {
@@ -546,7 +638,6 @@
         }
         
         consequences.Add("This can be undone later");
-        
         return consequences;
     }
 
@@ -558,10 +649,7 @@
         
         try
         {
-            var result = await TrackerService.MarkChoreMissedAsync(
-                _confirmingItem.ChoreDefinitionId,
-                SelectedDate,
-                UserId);
+            var result = await TrackerService.MarkChoreMissedAsync(_confirmingItem.ChoreDefinitionId, SelectedDate, UserId);
 
             if (result.Success)
             {
@@ -580,7 +668,6 @@
         }
     }
 
-    // Show confirmation before skipping
     private void ShowSkipConfirmation(TrackerChoreItem item)
     {
         _confirmingItem = item;
@@ -595,10 +682,7 @@
         
         try
         {
-            var result = await TrackerService.MarkChoreSkippedAsync(
-                _confirmingItem.ChoreDefinitionId,
-                SelectedDate,
-                UserId);
+            var result = await TrackerService.MarkChoreSkippedAsync(_confirmingItem.ChoreDefinitionId, SelectedDate, UserId);
 
             if (result.Success)
             {
@@ -617,7 +701,6 @@
         }
     }
 
-    // Show help response modal
     private void ShowHelpResponseModal(TrackerChoreItem item)
     {
         _helpRequestItem = item;
@@ -632,30 +715,20 @@
         
         try
         {
-            var result = await TrackerService.RespondToHelpRequestAsync(
-                _helpRequestItem.ChoreLogId.Value,
-                UserId,
-                args.Response,
-                args.Note);
+            var result = await TrackerService.RespondToHelpRequestAsync(_helpRequestItem.ChoreLogId.Value, UserId, args.Response, args.Note);
 
             if (result.Success)
             {
+                var choreName = _helpRequestItem.ChoreName;
                 var message = args.Response switch
                 {
-                    HelpResponse.CompletedByParent => $"'{_helpRequestItem.ChoreName}' fulfilled and blessed!",
-                    HelpResponse.Excused => $"'{_helpRequestItem.ChoreName}' excused for today.",
-                    HelpResponse.Denied => $"'{_helpRequestItem.ChoreName}' reset - they'll need to try again.",
+                    HelpResponse.CompletedByParent => $"'{choreName}' fulfilled and approved!",
+                    HelpResponse.Excused => $"'{choreName}' excused for today.",
+                    HelpResponse.Denied => $"'{choreName}' reset - they'll need to try again.",
                     _ => "Help request resolved."
                 };
                 
-                var toastType = args.Response switch
-                {
-                    HelpResponse.CompletedByParent => "success",
-                    HelpResponse.Excused => "info",
-                    _ => "info"
-                };
-                
-                if (toastType == "success")
+                if (args.Response == HelpResponse.CompletedByParent)
                     ToastService.ShowSuccess("Resolved!", message);
                 else
                     ToastService.ShowInfo("Resolved", message);
@@ -684,10 +757,7 @@
 
         try
         {
-            var result = await TrackerService.ResetChoreToPendingAsync(
-                item.ChoreDefinitionId,
-                SelectedDate,
-                UserId);
+            var result = await TrackerService.ResetChoreToPendingAsync(item.ChoreDefinitionId, SelectedDate, UserId);
 
             if (result.Success)
             {
@@ -717,15 +787,11 @@
 
     private bool IsCheckboxDisabled(TrackerChoreItem item)
     {
-        // Parents can always toggle
         if (IsParent) return false;
-
-        // Children can only toggle today's pending or completed chores
         if (!IsToday) return true;
         if (item.Status == ChoreStatus.Approved) return true;
         if (item.Status == ChoreStatus.Missed) return true;
         if (item.Status == ChoreStatus.Skipped) return true;
-
         return false;
     }
 
@@ -734,7 +800,6 @@
         _loadCts?.Cancel();
         _loadCts?.Dispose();
         
-        // Unsubscribe from state change events
         AppState.OnTrackerChanged -= OnTrackerStateChanged;
         AppState.OnChildDashboardChanged -= OnChildDashboardStateChanged;
         if (IsParent)
