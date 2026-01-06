@@ -137,7 +137,19 @@ This project is licensed under the terms specified in the repository.
 
 ## 📋 Version History
 
-### 1.0.0 (Current)
+### 1.0.10 (Current)
+- ✨ Redesigned NavMenu sidebar with active page indicators
+- ✨ Added section divider before Management section
+- ✨ Moved pending blessings badge to Book of Deeds nav item
+- 🐛 Fixed section label duplication bug on re-renders
+- 🎨 Various UI/UX improvements across components
+
+### 1.0.5
+- 🔄 Drag and drop chore reordering
+- 🐛 Password input fixes
+- 📝 Debug information improvements
+
+### 1.0.0
 - 🎉 **First stable release**
 - ✅ Complete design system with `--ds-*` tokens
 - ✅ Core chore management with daily expectations and earning chores
