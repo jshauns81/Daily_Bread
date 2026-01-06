@@ -45,19 +45,29 @@
     padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* iOS Safari specific fix - only apply when -webkit-fill-available is supported */
-@supports (-webkit-touch-callout: none) {
-    .page {
-        /* This specifically targets iOS Safari/PWA viewport issues */
-        height: -webkit-fill-available;
-    }
+/* 
+ * iOS PWA standalone mode fix
+ * Use fixed positioning to ensure full viewport coverage
+ * This prevents the grey gap at the bottom on iOS PWA
+ * CRITICAL: Must maintain height for flexbox children to scroll properly
+ */
+:global(body.pwa-standalone.ios-device) .page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Use 100% instead of auto to maintain proper height for flex children */
+    height: 100%;
+    /* Ensure overflow is still hidden at page level */
+    overflow: hidden;
 }
 
 main {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Allow flex shrinking */
+    min-height: 0; /* Allow flex shrinking - CRITICAL for scroll to work */
     background-color: var(--ds-bg-base);
     /* Ensure main content doesn't overlap mobile header */
     position: relative;
@@ -356,17 +366,10 @@ main.has-bottom-nav {
     z-index: 1050; /* Above everything except sidebar */
     opacity: 1;
     animation: fadeIn 0.25s ease-out;
-    /* Use dynamic viewport dimensions for full coverage */
+    /* Use fixed positioning for full coverage */
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-}
-
-/* iOS Safari specific fix */
-@supports (-webkit-touch-callout: none) {
-    .sidebar-overlay {
-        height: -webkit-fill-available;
-    }
 }
 
 @keyframes fadeIn {

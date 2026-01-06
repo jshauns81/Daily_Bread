@@ -81,16 +81,23 @@
             /* Top is handled by mobile-header, bottom by content area */
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
+            overflow: hidden;
         }
         
-        /* iOS Safari/PWA specific fix - only apply when supported */
-        @@supports (-webkit-touch-callout: none) {
-            html, body {
-                min-height: -webkit-fill-available;
-            }
-            .page {
-                height: -webkit-fill-available;
-            }
+        /* 
+         * iOS PWA standalone mode fix
+         * Use fixed positioning to ensure full viewport coverage
+         * This prevents the grey gap at the bottom on iOS PWA
+         * CRITICAL: height: 100% maintains flexbox for scrolling
+         */
+        body.pwa-standalone.ios-device .page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100%;
+            overflow: hidden;
         }
         
         .sidebar {
@@ -100,6 +107,8 @@
         main {
             background-color: #2E3440;
             flex: 1;
+            /* CRITICAL: min-height: 0 allows flex item to shrink and enables scrolling */
+            min-height: 0;
             /* Main content is the scroll container */
             overflow-y: auto;
             overflow-x: hidden;
@@ -165,6 +174,13 @@
             
             .mobile-header::before {
                 display: none;
+            }
+            
+            /* Desktop doesn't need the iOS PWA fix */
+            body.pwa-standalone.ios-device .page {
+                position: relative;
+                height: 100vh;
+                height: 100dvh;
             }
         }
     </style>
