@@ -15,6 +15,14 @@
 @inject ILogger<MainLayout> Logger
 @implements IAsyncDisposable
 
+<!-- Sidebar Overlay (mobile) - OUTSIDE .page to avoid clipping in iOS PWA -->
+<div class="sidebar-overlay @(_sidebarOpen ? "" : "d-none")" onclick="window.closeSidebar()"></div>
+
+<!-- Sidebar - OUTSIDE .page to avoid clipping in iOS PWA -->
+<aside class="sidebar @(_sidebarOpen ? "open" : "")" id="sidebar">
+    <NavMenu OnNavigate="CloseSidebar" />
+</aside>
+
 <div class="page @(_sidebarOpen ? "sidebar-open" : "") @(_showBottomNav ? "has-bottom-nav" : "")" id="page-container">
     <!-- Mobile Header -->
     <header class="mobile-header">
@@ -33,14 +41,6 @@
             <LoginDisplay />
         </div>
     </header>
-
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay @(_sidebarOpen ? "" : "d-none")" onclick="window.closeSidebar()"></div>
-
-    <!-- Sidebar -->
-    <aside class="sidebar @(_sidebarOpen ? "open" : "")" id="sidebar">
-        <NavMenu OnNavigate="CloseSidebar" />
-    </aside>
 
     <!-- Main Content -->
     <main class="@(_showBottomNav ? "has-bottom-nav" : "")">

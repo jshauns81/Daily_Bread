@@ -287,7 +287,8 @@
             
             // Force layout recalculation
             function forceLayoutRecalc() {
-                if (isIosPwa || (isIosDevice && window.matchMedia('(display-mode: standalone)').matches)) {
+                // STRICT: Only for iOS PWA standalone mode
+                if (isIosPwa) {
                     var page = document.querySelector('.page');
                     if (page) {
                         void page.offsetHeight;
@@ -542,26 +543,50 @@
         }
         
         // Detect standalone mode (installed PWA)
+        // STRICT: Only use window.navigator.standalone for iOS PWA detection
         window.isRunningStandalone = function() {
-            return (window.matchMedia('(display-mode: standalone)').matches) ||
-                   (window.navigator.standalone) ||
-                   document.referrer.includes('android-app://');
+            // iOS PWA standalone mode - this is the most reliable check
+            if (window.navigator.standalone === true) {
+                return true;
+            }
+            // Android TWA
+            if (document.referrer.includes('android-app://')) {
+                return true;
+            }
+            // Android PWA - use display-mode media query
+            if (/Android/.test(navigator.userAgent) && 
+                window.matchMedia('(display-mode: standalone)').matches) {
+                return true;
+            }
+            return false;
         };
         
-        // Add class to body if running as PWA
-        if (window.isRunningStandalone()) {
-            document.body.classList.add('pwa-standalone');
-        }
-        
-        // Handle iOS status bar
-        if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
-            document.body.classList.add('ios-device');
-        }
-        
-        // Handle Android Chrome
-        if (/Android/.test(navigator.userAgent)) {
-            document.body.classList.add('android-device');
-        }
+        // Add class to body ONLY if truly running as installed PWA
+        // IMPORTANT: For iOS, only window.navigator.standalone === true counts
+        // Do NOT add pwa-standalone for regular Safari browser
+        (function() {
+            var isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            var isIosPwaStandalone = window.navigator.standalone === true;
+            var isAndroidPwa = /Android/.test(navigator.userAgent) && 
+                               window.matchMedia('(display-mode: standalone)').matches;
+            var isAndroidTwa = document.referrer.includes('android-app://');
+            
+            // Add ios-device class for all iOS devices (browser or PWA)
+            if (isIosDevice) {
+                document.body.classList.add('ios-device');
+            }
+            
+            // Add android-device class for all Android devices
+            if (/Android/.test(navigator.userAgent)) {
+                document.body.classList.add('android-device');
+            }
+            
+            // Add pwa-standalone ONLY for actual installed PWA modes
+            if (isIosPwaStandalone || isAndroidPwa || isAndroidTwa) {
+                document.body.classList.add('pwa-standalone');
+                console.log('PWA standalone mode detected');
+            }
+        })();
         
         // Re-calculate viewport on Blazor page changes
         // This is CRITICAL for iOS PWA after login - must wait for Blazor properly
