@@ -412,6 +412,12 @@ main.has-bottom-nav {
     overflow: hidden;
 }
 
+/* Sidebar visible when .open class is added */
+.sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+}
+
 /* iOS Safari specific fix */
 @supports (-webkit-touch-callout: none) {
     .sidebar {
