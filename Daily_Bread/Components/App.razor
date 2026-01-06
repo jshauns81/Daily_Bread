@@ -7,9 +7,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#2E3440" />
+    <meta name="theme-color" content="#3B4252" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Daily Bread" />
     <meta name="application-name" content="Daily Bread" />
     <meta name="description" content="A family chore tracker that helps kids earn their daily bread" />
@@ -189,32 +189,79 @@
     <script>
         (function() {
             // ===========================================
-            // iOS PWA COLD START FIX
-            // Brute-force reflow to fix viewport issues
+            // iOS PWA VIEWPORT FIX
+            // Multiple approaches to force correct rendering
             // ===========================================
             var isIosPwa = window.navigator.standalone === true;
+            var isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            
+            // Aggressive viewport fix function
+            function forceIosViewportFix() {
+                // Method 1: Scroll trick
+                window.scrollTo(0, 1);
+                window.scrollTo(0, 0);
+                
+                // Method 2: Force repaint on body
+                if (document.body) {
+                    document.body.style.display = 'none';
+                    void document.body.offsetHeight;
+                    document.body.style.display = '';
+                }
+                
+                // Method 3: Force repaint on .page element
+                var page = document.querySelector('.page');
+                if (page) {
+                    // Force height recalculation
+                    page.style.height = 'auto';
+                    void page.offsetHeight;
+                    page.style.height = '';
+                    
+                    // Also try forcing with explicit pixel value
+                    var vh = window.innerHeight;
+                    page.style.minHeight = vh + 'px';
+                    void page.offsetHeight;
+                    page.style.minHeight = '';
+                }
+                
+                // Method 4: Dispatch resize event to trigger any listeners
+                window.dispatchEvent(new Event('resize'));
+            }
             
             if (isIosPwa) {
-                // Force reflow on initial load
+                // Run immediately when script loads (in case body exists)
+                if (document.body) {
+                    forceIosViewportFix();
+                }
+                
+                // Run on DOMContentLoaded
                 document.addEventListener('DOMContentLoaded', function() {
-                    setTimeout(function() {
-                        window.scrollTo(0, 1);
-                        window.scrollTo(0, 0);
-                        // Force a full repaint
-                        document.body.style.display = 'none';
-                        void document.body.offsetHeight; // Trigger reflow
-                        document.body.style.display = '';
-                    }, 50);
+                    forceIosViewportFix();
+                    // Also run with delays to catch Blazor render
+                    setTimeout(forceIosViewportFix, 50);
+                    setTimeout(forceIosViewportFix, 150);
+                    setTimeout(forceIosViewportFix, 300);
+                    setTimeout(forceIosViewportFix, 500);
+                });
+                
+                // Run on window load (after all resources)
+                window.addEventListener('load', function() {
+                    forceIosViewportFix();
+                    setTimeout(forceIosViewportFix, 100);
+                    setTimeout(forceIosViewportFix, 300);
                 });
                 
                 // Handle resume from background
                 document.addEventListener('visibilitychange', function() {
                     if (!document.hidden) {
-                        setTimeout(function() {
-                            window.scrollTo(0, 1);
-                            window.scrollTo(0, 0);
-                        }, 50);
+                        forceIosViewportFix();
+                        setTimeout(forceIosViewportFix, 100);
                     }
+                });
+                
+                // Handle pageshow (back/forward cache)
+                window.addEventListener('pageshow', function(e) {
+                    forceIosViewportFix();
+                    setTimeout(forceIosViewportFix, 100);
                 });
             }
             
@@ -238,21 +285,13 @@
                 document.documentElement.style.setProperty('--safe-right', 'env(safe-area-inset-right, 0px)');
             }
             
-            // Force layout recalculation - fixes iOS PWA viewport issues after navigation
+            // Force layout recalculation
             function forceLayoutRecalc() {
-                // Only needed for iOS PWA mode
-                var isIOSPwa = (window.navigator.standalone === true) || 
-                               (window.matchMedia('(display-mode: standalone)').matches && 
-                                /iPhone|iPad|iPod/.test(navigator.userAgent));
-                
-                if (isIOSPwa) {
-                    // Force a reflow by temporarily modifying a layout property
+                if (isIosPwa || (isIosDevice && window.matchMedia('(display-mode: standalone)').matches)) {
                     var page = document.querySelector('.page');
                     if (page) {
-                        // Read then write to force layout recalculation
                         void page.offsetHeight;
                         page.style.minHeight = window.innerHeight + 'px';
-                        // Reset after a frame to let the proper CSS take over
                         requestAnimationFrame(function() {
                             page.style.minHeight = '';
                         });
@@ -274,7 +313,6 @@
             if (document.body) {
                 setSafeAreaInsets();
             } else {
-                // Wait for body to be available using requestAnimationFrame
                 function waitForBody() {
                     if (document.body) {
                         setSafeAreaInsets();
@@ -285,30 +323,27 @@
                 requestAnimationFrame(waitForBody);
             }
             
-            // Update on resize (handles orientation change, keyboard open, etc.)
+            // Update on resize
             var resizeTimeout;
             window.addEventListener('resize', function() {
-                // Debounce to avoid performance issues
                 clearTimeout(resizeTimeout);
                 resizeTimeout = setTimeout(setViewportHeight, 100);
             });
             
             // Update on orientation change
             window.addEventListener('orientationchange', function() {
-                // Delay slightly for iOS to complete orientation animation
                 setTimeout(setViewportHeight, 200);
             });
             
-            // Update when page becomes visible (handles iOS tab switching)
+            // Update when page becomes visible
             document.addEventListener('visibilitychange', function() {
                 if (document.visibilityState === 'visible') {
                     setViewportHeight();
                 }
             });
             
-            // iOS PWA: Also trigger on pageshow (handles back/forward cache)
+            // Handle pageshow
             window.addEventListener('pageshow', function(event) {
-                // persisted = true means page was restored from bfcache
                 if (event.persisted) {
                     setViewportHeight();
                 }
@@ -316,6 +351,7 @@
             
             // Store for later access
             window.updateViewportHeight = setViewportHeight;
+            window.forceIosViewportFix = isIosPwa ? forceIosViewportFix : function() {};
         })();
     </script>
     
@@ -434,7 +470,7 @@
                                 menu.style.display = 'none';
                                 menu.classList.remove('show');
                                 var menuBtn = document.getElementById('user-menu-btn');
-                                if (menuBtn) {
+                                if menuBtn) {
                                     menuBtn.setAttribute('aria-expanded', 'false');
                                 }
                             }
@@ -534,8 +570,12 @@
                 if (window.Blazor && window.Blazor.addEventListener) {
                     window.Blazor.addEventListener('enhancedload', function() {
                         if (window.updateViewportHeight) {
-                            // Small delay to let Blazor finish rendering
                             setTimeout(window.updateViewportHeight, 50);
+                        }
+                        // Also run iOS-specific fix
+                        if (window.forceIosViewportFix) {
+                            setTimeout(window.forceIosViewportFix, 100);
+                            setTimeout(window.forceIosViewportFix, 300);
                         }
                     });
                     return true;
@@ -545,29 +585,36 @@
             
             // Try immediately
             if (!setupBlazorViewportHandler()) {
-                // If Blazor isn't ready, poll for it
                 var checkInterval = setInterval(function() {
                     if (setupBlazorViewportHandler()) {
                         clearInterval(checkInterval);
+                        // Blazor just became available - run the fix
+                        if (window.forceIosViewportFix) {
+                            window.forceIosViewportFix();
+                            setTimeout(window.forceIosViewportFix, 100);
+                        }
                     }
                 }, 100);
                 
-                // Stop checking after 15 seconds
                 setTimeout(function() { clearInterval(checkInterval); }, 15000);
             }
             
-            // Also recalculate when DOM content is fully loaded (catches initial page load after login redirect)
+            // Run viewport fix when DOM is ready
             document.addEventListener('DOMContentLoaded', function() {
                 if (window.updateViewportHeight) {
-                    // Delay to ensure Blazor has rendered
                     setTimeout(window.updateViewportHeight, 100);
                 }
             });
             
-            // And on window load (catches everything including lazy assets)
+            // Run on window load
             window.addEventListener('load', function() {
                 if (window.updateViewportHeight) {
                     setTimeout(window.updateViewportHeight, 200);
+                }
+                // Final iOS fix attempt after everything loads
+                if (window.forceIosViewportFix) {
+                    setTimeout(window.forceIosViewportFix, 500);
+                    setTimeout(window.forceIosViewportFix, 1000);
                 }
             });
         })();
