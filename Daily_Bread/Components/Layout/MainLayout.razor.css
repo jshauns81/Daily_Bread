@@ -33,8 +33,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    /* Use dynamic viewport height that responds to browser chrome */
-    height: 100vh; /* Fallback for older browsers */
+    /* Standard viewport height */
+    height: 100vh;
+    /* Modern dynamic viewport height (overrides 100vh where supported) */
     height: 100dvh;
     background-color: var(--ds-bg-base);
     overflow: hidden; /* Prevent page-level scrolling */
@@ -42,6 +43,14 @@
     /* Top is handled by mobile-header, bottom by content/footer */
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* iOS Safari specific fix - only apply when -webkit-fill-available is supported */
+@supports (-webkit-touch-callout: none) {
+    .page {
+        /* This specifically targets iOS Safari/PWA viewport issues */
+        height: -webkit-fill-available;
+    }
 }
 
 main {
@@ -349,8 +358,15 @@ main.has-bottom-nav {
     animation: fadeIn 0.25s ease-out;
     /* Use dynamic viewport dimensions for full coverage */
     width: 100vw;
-    height: 100vh; /* Fallback for older browsers */
+    height: 100vh;
     height: 100dvh;
+}
+
+/* iOS Safari specific fix */
+@supports (-webkit-touch-callout: none) {
+    .sidebar-overlay {
+        height: -webkit-fill-available;
+    }
 }
 
 @keyframes fadeIn {
@@ -387,20 +403,17 @@ main.has-bottom-nav {
     will-change: transform;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    /* Use dynamic viewport height */
-    height: 100vh; /* Fallback for older browsers */
+    /* Dynamic viewport height */
+    height: 100vh;
     height: 100dvh;
     overflow: hidden;
 }
 
-.sidebar.open {
-    transform: translateX(0);
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
-}
-
-/* Prevent body scroll when sidebar is open */
-.sidebar-open {
-    overflow: hidden;
+/* iOS Safari specific fix */
+@supports (-webkit-touch-callout: none) {
+    .sidebar {
+        height: -webkit-fill-available;
+    }
 }
 
 /* ===========================================
@@ -468,7 +481,7 @@ main.has-bottom-nav {
         position: fixed;
         top: 0;
         left: 0;
-        height: 100vh; /* Fallback for older browsers */
+        height: 100vh;
         height: 100dvh;
         transform: translateX(0);
         flex-shrink: 0;
