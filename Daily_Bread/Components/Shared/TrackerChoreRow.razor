@@ -10,14 +10,14 @@
                 disabled="@IsDisabled"
                 @onclick="OnToggleClicked"
                 title="@GetTooltip()">
-            <span class="bi @GetIndicatorIcon()"></span>
+            <span class="bi @ChoreDisplayHelper.GetStatusIcon(Item.Status)"></span>
         </button>
     </td>
     
     @* Chore Details - Name, description, context *@
     <td class="chore-cell">
         <div class="chore-content">
-            <span class="chore-name @(Item.IsApproved ? "done" : "")">
+            <span class="chore-name">
                 @Item.ChoreName
             </span>
             @if (!string.IsNullOrEmpty(Item.Description))
@@ -36,16 +36,23 @@
     @if (ShowAssignee)
     {
         <td class="assignee-cell">
-            <span class="assignee">@(Item.AssignedUserName ?? "—")</span>
+            <span class="assignee user-name">@(Item.AssignedUserName ?? "—")</span>
         </td>
     }
+
+    @* Status Badge - Clear visual indicator *@
+    <td class="status-badge-cell">
+        <span class="status-badge @ChoreDisplayHelper.GetStatusBadgeClass(Item.Status)">
+            @ChoreDisplayHelper.GetStatusBadgeText(Item.Status)
+        </span>
+    </td>
     
     @* Value - Subtle unless it matters *@
     <td class="value-cell">
         @if (Item.Value > 0)
         {
-            <span class="value @(Item.IsApproved ? "earned" : "")">
-                $@Item.Value.ToString("F2")
+            <span class="value @GetValueClass()">
+                @(Item.IsApproved ? "+" : "")$@Item.Value.ToString("F2")
             </span>
         }
         else
@@ -54,50 +61,52 @@
         }
     </td>
     
-    @* Actions - Single primary action, overflow for rest *@
+    @* Actions - Primary buttons for main actions, text links for undo/restore *@
     @if (ShowActions)
     {
         <td class="action-cell">
             @switch (Item.Status)
             {
                 case ChoreStatus.Completed:
-                    @* Awaiting blessing - primary action is to bless *@
-                    <button class="action-btn primary" @onclick="OnApproveClicked" title="Bless this labor">
-                        <span class="bi bi-check2-circle"></span> Bless
-                    </button>
+                    @* Awaiting blessing - primary action is to approve *@
+                    <div class="action-group">
+                        <button class="action-btn action-approve" @onclick="OnApproveClicked" title="Approve this labor">
+                            <span class="bi bi-check2-circle"></span> Approve
+                        </button>
+                        <button class="action-btn action-reject" @onclick="OnMissClicked" title="Reject - mark as not done">
+                            <span class="bi bi-x-lg"></span>
+                        </button>
+                    </div>
                     break;
                     
                 case ChoreStatus.Help:
-                    @* Help request - show button to open modal *@
-                    <button class="action-btn primary help-action" @onclick="OnRespondToHelpClicked" title="Respond to help request">
+                    @* Help request - primary action to respond *@
+                    <button class="action-btn action-respond" @onclick="OnRespondToHelpClicked" title="Respond to help request">
                         <span class="bi bi-chat-heart"></span> Respond
                     </button>
                     break;
                     
                 case ChoreStatus.Pending:
-                    @* Pending - rarely need action, keep subtle *@
-                    <div class="action-group subtle">
-                        <button class="action-btn muted" @onclick="OnMissClicked" title="Mark as not completed">
-                            <span class="bi bi-x-circle"></span> Undone
-                        </button>
-                        <button class="action-btn muted" @onclick="OnSkipClicked" title="Excuse for today">
-                            <span class="bi bi-dash-circle"></span> Excuse
+                    @* Pending - subtle actions *@
+                    <div class="action-group action-group-subtle">
+                        <button class="action-link" @onclick="OnSkipClicked" title="Excuse for today">
+                            Excuse
                         </button>
                     </div>
                     break;
                     
                 case ChoreStatus.Approved:
-                    @* Done - minimal, only undo available *@
-                    <button class="action-btn muted small" @onclick="OnResetClicked" title="Undo blessing">
-                        <span class="bi bi-arrow-counterclockwise"></span> Undo
+                    @* Approved - only undo as text link *@
+                    <button class="action-link" @onclick="OnResetClicked" title="Undo approval">
+                        Undo
                     </button>
                     break;
                     
                 case ChoreStatus.Missed:
                 case ChoreStatus.Skipped:
-                    @* Past - can reset *@
-                    <button class="action-btn muted" @onclick="OnResetClicked" title="Restore to pending">
-                        <span class="bi bi-arrow-counterclockwise"></span> Restore
+                    @* Past states - restore as text link *@
+                    <button class="action-link" @onclick="OnResetClicked" title="Restore to pending">
+                        Restore
                     </button>
                     break;
             }
@@ -138,12 +147,12 @@
 
     private string GetRowClass() => Item.Status switch
     {
-        ChoreStatus.Help => "row-exception row-help",
-        ChoreStatus.Completed => "row-exception row-awaiting",
-        ChoreStatus.Approved => "row-done",
-        ChoreStatus.Missed => "row-muted row-missed",
-        ChoreStatus.Skipped => "row-muted row-skipped",
-        _ => "row-default"
+        ChoreStatus.Help => "row-help",
+        ChoreStatus.Completed => "row-awaiting",
+        ChoreStatus.Approved => "row-approved",
+        ChoreStatus.Missed => "row-missed",
+        ChoreStatus.Skipped => "row-excused",
+        _ => "row-pending"
     };
 
     private string GetIndicatorClass() => Item.Status switch
@@ -156,20 +165,17 @@
         _ => "indicator-pending"
     };
 
-    private string GetIndicatorIcon() => Item.Status switch
+    private string GetValueClass() => Item.Status switch
     {
-        ChoreStatus.Approved => "bi-check-circle-fill",
-        ChoreStatus.Completed => "bi-check-lg",
-        ChoreStatus.Help => "bi-question-circle-fill",
-        ChoreStatus.Missed => "bi-x-circle",
-        ChoreStatus.Skipped => "bi-dash-circle",
-        _ => "bi-circle"
+        ChoreStatus.Approved => "earned",
+        ChoreStatus.Missed => "penalty",
+        _ => ""
     };
 
     private string GetTooltip() => Item.Status switch
     {
-        ChoreStatus.Approved => "Blessed",
-        ChoreStatus.Completed => "Done - awaiting blessing",
+        ChoreStatus.Approved => "Approved ✓✓",
+        ChoreStatus.Completed => "Awaiting review",
         ChoreStatus.Help => "Help requested",
         ChoreStatus.Missed => "Not completed",
         ChoreStatus.Skipped => "Excused",

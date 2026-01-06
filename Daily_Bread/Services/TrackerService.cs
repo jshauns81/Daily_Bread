@@ -236,7 +236,10 @@ public class TrackerService : ITrackerService
                 : CreateTrackerItem(chore, null, progress));
         }
 
-        return items.OrderBy(i => i.ChoreName).ToList();
+        // Preserve sort order from ChoreScheduleService (SortOrder then Name)
+        // ChoreDefinition doesn't have SortOrder in TrackerChoreItem, so we maintain
+        // the order from scheduledChores which is already correctly sorted
+        return items;
     }
 
     public async Task<List<TrackerChoreItem>> GetTrackerItemsForUserOnDateAsync(string userId, DateOnly date)
@@ -269,7 +272,8 @@ public class TrackerService : ITrackerService
                 : CreateTrackerItem(chore, null, progress));
         }
 
-        return items.OrderBy(i => i.ChoreName).ToList();
+        // Preserve sort order from ChoreScheduleService (SortOrder then Name)
+        return items;
     }
 
     /// <summary>
@@ -304,7 +308,8 @@ public class TrackerService : ITrackerService
                 : CreateTrackerItem(chore, null, progress));
         }
 
-        return items.OrderBy(i => i.ChoreName).ToList();
+        // Preserve sort order from ChoreScheduleService (SortOrder then Name)
+        return items;
     }
 
     /// <summary>

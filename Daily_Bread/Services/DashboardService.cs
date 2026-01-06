@@ -267,7 +267,9 @@ public class DashboardService : IDashboardService
         // - All with Status == Help (help requests - any date)
         // - All for today (for stats)
         // - Recent completed/approved (for activity feed)
+        // IMPORTANT: Use AsNoTracking() to ensure we get fresh data from database
         var allRelevantLogs = await context.ChoreLogs
+            .AsNoTracking()
             .Include(cl => cl.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Include(cl => cl.ApprovedByUser)
@@ -285,10 +287,11 @@ public class DashboardService : IDashboardService
         // =============================================================================
 
         // Pending approvals (completed but not approved chores)
+        // Note: Don't limit with Take() here - we need the full count for the badge
+        // The UI can limit display if needed
         var pendingApprovals = allRelevantLogs
             .Where(cl => cl.Status == ChoreStatus.Completed)
             .OrderByDescending(cl => cl.CompletedAt)
-            .Take(20)
             .Select(cl => new PendingApprovalItem
             {
                 ChoreLogId = cl.Id,
