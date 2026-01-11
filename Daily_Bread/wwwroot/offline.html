@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#2E3440" />
     <title>Offline - Daily Bread</title>
     <style>
@@ -34,7 +34,7 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
             text-align: center;
         }
         
@@ -110,7 +110,7 @@
         
         .brand {
             position: absolute;
-            bottom: 2rem;
+            bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
             display: flex;
             align-items: center;
             gap: 0.5rem;
