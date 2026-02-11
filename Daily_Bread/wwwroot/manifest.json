@@ -10,6 +10,7 @@
   "scope": "/",
   "lang": "en-US",
   "categories": ["productivity", "lifestyle", "family"],
+  "id": "/",
   "icons": [
     {
       "src": "/favicon-96x96.png",
@@ -23,10 +24,22 @@
       "purpose": "any"
     },
     {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/apple-touch-icon.png",
@@ -40,15 +53,21 @@
       "name": "My Chores",
       "short_name": "Chores",
       "description": "View and complete today's chores",
-      "url": "/tracker"
+      "url": "/tracker",
+      "icons": [{ "src": "/favicon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "My Balance",
       "short_name": "Balance",
       "description": "Check your current balance",
-      "url": "/my-balance"
+      "url": "/my-balance",
+      "icons": [{ "src": "/favicon-96x96.png", "sizes": "96x96" }]
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "auto"
+  }
 }

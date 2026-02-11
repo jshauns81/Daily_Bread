@@ -99,6 +99,104 @@
     transform: translateY(0);
 }
 
+/* ========================================
+   iOS Install Instructions Styles
+   ======================================== */
+
+.pwa-install-prompt.ios-prompt {
+    padding: var(--ds-space-5);
+    padding-bottom: max(var(--ds-space-5), calc(env(safe-area-inset-bottom, 0px) + var(--ds-space-2)));
+}
+
+.pwa-install-close {
+    position: absolute;
+    top: var(--ds-space-3);
+    right: var(--ds-space-3);
+    background: transparent;
+    border: none;
+    color: var(--ds-text-muted);
+    padding: var(--ds-space-2);
+    cursor: pointer;
+    border-radius: var(--ds-radius-full);
+    transition: background-color var(--ds-duration-fast) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pwa-install-close:hover {
+    background-color: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+.ios-content {
+    margin-bottom: var(--ds-space-5);
+    padding-right: var(--ds-space-8);
+}
+
+.ios-instructions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-4);
+    margin-bottom: var(--ds-space-5);
+}
+
+.ios-step {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+}
+
+.ios-step-number {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--ds-radius-full);
+    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
+    color: var(--ds-text-primary);
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-semibold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ios-step-content {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ds-space-1);
+    color: var(--ds-text-secondary);
+    font-size: var(--ds-text-sm);
+    line-height: 1.5;
+}
+
+.ios-step-content strong {
+    color: var(--ds-text-primary);
+    font-weight: var(--ds-font-semibold);
+}
+
+.ios-share-icon,
+.ios-add-icon {
+    color: var(--ds-accent-blue);
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.ios-got-it {
+    width: 100%;
+    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
+    color: var(--ds-text-primary);
+    font-weight: var(--ds-font-semibold);
+    padding: var(--ds-space-3) var(--ds-space-4);
+}
+
+.ios-got-it:hover {
+    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
+    color: var(--ds-text-primary);
+    opacity: 0.9;
+}
+
 /* Desktop: show as a smaller banner */
 @media (min-width: 768px) {
     .pwa-install-prompt {
@@ -109,6 +207,11 @@
         border-radius: var(--ds-radius-lg);
         border: 1px solid var(--ds-bg-muted);
         padding-bottom: var(--ds-space-4);
+    }
+    
+    .pwa-install-prompt.ios-prompt {
+        width: 400px;
+        padding-bottom: var(--ds-space-5);
     }
 }
 
