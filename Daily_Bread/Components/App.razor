@@ -535,11 +535,8 @@
                     });
             });
             
-            // Handle service worker updates
-            navigator.serviceWorker.addEventListener('controllerchange', function() {
-                // New service worker activated, reload for fresh content
-                window.location.reload();
-            });
+            // Note: Service worker updates are handled by PwaUpdateBanner component
+            // which provides a user-friendly "Update Available" notification
         }
         
         // Detect standalone mode (installed PWA)

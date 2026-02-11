@@ -3,24 +3,81 @@
 
 @if (_showPrompt)
 {
-    <div class="pwa-install-prompt @(_isVisible ? "visible" : "")">
-        <div class="pwa-install-content">
-            <img src="images/bread-icon.png" alt="" class="pwa-install-icon" />
-            <div class="pwa-install-text">
-                <strong>Install Daily Bread</strong>
-                <span>Add to your home screen for quick access</span>
+    <div class="pwa-install-prompt @(_isVisible ? "visible" : "") @(_isIos ? "ios-prompt" : "")">
+        @if (_isIos)
+        {
+            @* iOS Install Instructions *@
+            <button class="pwa-install-close" @onclick="Dismiss" aria-label="Close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="pwa-install-content ios-content">
+                <img src="images/bread-icon.png" alt="" class="pwa-install-icon" />
+                <div class="pwa-install-text">
+                    <strong>Install Daily Bread</strong>
+                    <span>Add to your home screen for the best experience</span>
+                </div>
             </div>
-        </div>
-        <div class="pwa-install-actions">
-            <button class="pwa-install-dismiss" @onclick="Dismiss">Not now</button>
-            <button class="pwa-install-btn" @onclick="Install">Install</button>
-        </div>
+            <div class="ios-instructions">
+                <div class="ios-step">
+                    <div class="ios-step-number">1</div>
+                    <div class="ios-step-content">
+                        <span>Tap the</span>
+                        <svg class="ios-share-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Share button</span>
+                    </div>
+                </div>
+                <div class="ios-step">
+                    <div class="ios-step-number">2</div>
+                    <div class="ios-step-content">
+                        <span>Scroll down and tap</span>
+                        <strong>"Add to Home Screen"</strong>
+                        <svg class="ios-add-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ios-step">
+                    <div class="ios-step-number">3</div>
+                    <div class="ios-step-content">
+                        <span>Tap</span>
+                        <strong>"Add"</strong>
+                        <span>in the top right</span>
+                    </div>
+                </div>
+            </div>
+            <button class="pwa-install-dismiss ios-got-it" @onclick="Dismiss">Got it</button>
+        }
+        else
+        {
+            @* Android/Desktop Install Prompt *@
+            <div class="pwa-install-content">
+                <img src="images/bread-icon.png" alt="" class="pwa-install-icon" />
+                <div class="pwa-install-text">
+                    <strong>Install Daily Bread</strong>
+                    <span>Add to your home screen for quick access</span>
+                </div>
+            </div>
+            <div class="pwa-install-actions">
+                <button class="pwa-install-dismiss" @onclick="Dismiss">Not now</button>
+                <button class="pwa-install-btn" @onclick="Install">Install</button>
+            </div>
+        }
     </div>
 }
 
 @code {
     private bool _showPrompt = false;
     private bool _isVisible = false;
+    private bool _isIos = false;
     private bool _disposed = false;
     private IJSObjectReference? _module;
     private DotNetObjectReference<PwaInstallPrompt>? _dotNetRef;
@@ -53,8 +110,20 @@
     [JSInvokable]
     public void ShowInstallPrompt()
     {
+        ShowPromptInternal(isIos: false);
+    }
+
+    [JSInvokable]
+    public void ShowIosInstallInstructions()
+    {
+        ShowPromptInternal(isIos: true);
+    }
+
+    private void ShowPromptInternal(bool isIos)
+    {
         if (_disposed) return;
         
+        _isIos = isIos;
         _showPrompt = true;
         StateHasChanged();
         
@@ -105,6 +174,7 @@
         _isVisible = false;
         await Task.Delay(300); // Wait for animation
         _showPrompt = false;
+        _isIos = false;
         if (!_disposed)
         {
             StateHasChanged();

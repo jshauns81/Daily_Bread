@@ -4,18 +4,34 @@
 let deferredPrompt = null;
 let dotNetHelper = null;
 
+// Debug mode - set via console: window.pwaDebug = true
+// Then call: window.pwaShowIosPrompt() or window.pwaShowInstallPrompt()
+window.pwaDebug = false;
+
 export function initialize(helper) {
     dotNetHelper = helper;
     
+    // Expose debug functions to window for testing
+    window.pwaShowIosPrompt = () => {
+        if (dotNetHelper) {
+            dotNetHelper.invokeMethodAsync('ShowIosInstallInstructions');
+        }
+    };
+    window.pwaShowInstallPrompt = () => {
+        if (dotNetHelper) {
+            dotNetHelper.invokeMethodAsync('ShowInstallPrompt');
+        }
+    };
+    
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (isInStandaloneMode()) {
         console.log('PWA: Already installed');
         return;
     }
     
     // Check if user has dismissed before (within last 7 days)
     const dismissedAt = localStorage.getItem('pwa-install-dismissed');
-    if (dismissedAt) {
+    if (dismissedAt && !window.pwaDebug) {
         const dismissedDate = new Date(parseInt(dismissedAt));
         const daysSinceDismissed = (Date.now() - dismissedDate) / (1000 * 60 * 60 * 24);
         if (daysSinceDismissed < 7) {
@@ -24,7 +40,19 @@ export function initialize(helper) {
         }
     }
     
-    // Listen for the beforeinstallprompt event
+    // Check for iOS - show instructions since beforeinstallprompt isn't supported
+    if (isIOS()) {
+        console.log('PWA: iOS detected, will show install instructions');
+        // Show iOS instructions after a delay
+        setTimeout(() => {
+            if (dotNetHelper && !isInStandaloneMode()) {
+                dotNetHelper.invokeMethodAsync('ShowIosInstallInstructions');
+            }
+        }, 5000); // 5 second delay
+        return;
+    }
+    
+    // Listen for the beforeinstallprompt event (Android/Desktop)
     window.addEventListener('beforeinstallprompt', (e) => {
         // Prevent Chrome 67 and earlier from automatically showing the prompt
         e.preventDefault();

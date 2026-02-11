@@ -1,0 +1,119 @@
+﻿@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@if (_showBanner)
+{
+    <div class="pwa-update-banner @(_isVisible ? "visible" : "")">
+        <div class="pwa-update-content">
+            <svg class="pwa-update-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                <path d="M16 16h5v5"></path>
+            </svg>
+            <div class="pwa-update-text">
+                <strong>Update Available</strong>
+                <span>A new version of Daily Bread is ready</span>
+            </div>
+        </div>
+        <div class="pwa-update-actions">
+            <button class="pwa-update-dismiss" @onclick="Dismiss">Later</button>
+            <button class="pwa-update-btn" @onclick="Update">Update Now</button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _showBanner = false;
+    private bool _isVisible = false;
+    private bool _disposed = false;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<PwaUpdateBanner>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_disposed)
+        {
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/pwa-update.js");
+                await _module.InvokeVoidAsync("initialize", _dotNetRef);
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit disconnected, ignore
+            }
+            catch (TaskCanceledException)
+            {
+                // Operation cancelled, ignore
+            }
+            catch (ObjectDisposedException)
+            {
+                // Object disposed, ignore
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void ShowUpdateBanner()
+    {
+        if (_disposed) return;
+        
+        _showBanner = true;
+        StateHasChanged();
+        
+        // Animate in
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(50);
+            if (_disposed) return;
+            _isVisible = true;
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task Update()
+    {
+        if (_module != null && !_disposed)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("applyUpdate");
+            }
+            catch
+            {
+                // Ignore JS errors - page will reload anyway
+            }
+        }
+    }
+
+    private async Task Dismiss()
+    {
+        _isVisible = false;
+        await Task.Delay(300); // Wait for animation
+        _showBanner = false;
+        if (!_disposed)
+        {
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        
+        if (_module != null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch
+            {
+                // Swallow all exceptions during disposal
+            }
+        }
+        _dotNetRef?.Dispose();
+    }
+}
