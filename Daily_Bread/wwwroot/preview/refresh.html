@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="guadalupe" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Bread — Refresh Preview</title>
+<style>
+/* ---------- PALETTES ---------- */
+/* Shared per-mode tokens: gold (bread) + glow (blessing) + wine (Help alert) stay
+   consistent across every theme; each theme only re-tints bg/text/accent below. */
+[data-mode="dark"]{
+  --gold:#D7A23F; --glow:#EAC468; --wine:#C25563;
+  --on-accent:#15181C; --shadow:0 8px 30px rgba(0,0,0,.48);
+  --blessing-glow:0 0 26px rgba(234,196,104,.35);
+}
+[data-mode="light"]{
+  --gold:#D99514; --glow:#F2B705; --wine:#D33B4E;
+  --on-accent:#FFFFFF; --shadow:0 10px 30px rgba(20,30,40,.10);
+  --blessing-glow:0 0 24px rgba(242,183,5,.40);
+}
+
+/* ----- GUADALUPE · teal-blue (default) ----- */
+[data-theme="guadalupe"][data-mode="dark"]{
+  --bg:#141E27;--bg2:#1D2A35;--bg3:#293945;--line:rgba(225,232,240,.09);
+  --text:#F0E8D6;--text2:#B7BEC4;--text3:#7E8790;--sage:#4DA8C6;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(215,162,63,.07),transparent 60%),#0F1922;}
+[data-theme="guadalupe"][data-mode="light"]{
+  --bg:#FAFBFC;--bg2:#FFFFFF;--bg3:#EEF1F4;--line:rgba(20,30,45,.10);
+  --text:#1E2530;--text2:#566069;--text3:#8A929A;--sage:#0E8FC4;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(14,143,196,.06),transparent 60%),#FAFBFC;}
+
+/* ----- MARIAN · cobalt blue ----- */
+[data-theme="marian"][data-mode="dark"]{
+  --bg:#161A2C;--bg2:#1F2440;--bg3:#2C3358;--line:rgba(225,228,245,.09);
+  --text:#ECE9DA;--text2:#B6BAD0;--text3:#7C7F9A;--sage:#6A82E6;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(215,162,63,.06),transparent 60%),#101226;}
+[data-theme="marian"][data-mode="light"]{
+  --bg:#FAFBFE;--bg2:#FFFFFF;--bg3:#EEF0FA;--line:rgba(20,25,60,.10);
+  --text:#1F2438;--text2:#565C75;--text3:#888EA8;--sage:#3A5BD0;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(58,91,208,.06),transparent 60%),#FAFBFE;}
+
+/* ----- SION · Ordinary Time green ----- */
+[data-theme="sion"][data-mode="dark"]{
+  --bg:#15211A;--bg2:#1E2D24;--bg3:#2A3D31;--line:rgba(228,235,222,.09);
+  --text:#EEEAD7;--text2:#B6C0B0;--text3:#7E8878;--sage:#5AAE7B;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(215,162,63,.06),transparent 60%),#0F1A14;}
+[data-theme="sion"][data-mode="light"]{
+  --bg:#FAFCFA;--bg2:#FFFFFF;--bg3:#EDF3EE;--line:rgba(20,40,28,.10);
+  --text:#1F2A22;--text2:#54635A;--text3:#869287;--sage:#2E9E63;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(46,158,99,.06),transparent 60%),#FAFCFA;}
+
+/* ----- ADVENT · royal violet ----- */
+[data-theme="advent"][data-mode="dark"]{
+  --bg:#1C1726;--bg2:#272036;--bg3:#352B49;--line:rgba(232,226,242,.09);
+  --text:#EFE9DA;--text2:#BDB6C8;--text3:#867E94;--sage:#9B7BE0;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(215,162,63,.06),transparent 60%),#150F20;}
+[data-theme="advent"][data-mode="light"]{
+  --bg:#FCFAFE;--bg2:#FFFFFF;--bg3:#F2EEF8;--line:rgba(35,20,55,.10);
+  --text:#271F33;--text2:#5E5570;--text3:#8E869C;--sage:#7A4FD0;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(122,79,208,.06),transparent 60%),#FCFAFE;}
+
+/* ----- ROSA MYSTICA · rose (deeper alert so Help stays distinct) ----- */
+[data-theme="rosa"][data-mode="dark"]{
+  --bg:#231720;--bg2:#30212C;--bg3:#412C3A;--line:rgba(242,228,236,.09);
+  --text:#F1E7DC;--text2:#C6B3BE;--text3:#8E7E88;--sage:#E08AA6;--wine:#9E3350;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(215,162,63,.06),transparent 60%),#1B1019;}
+[data-theme="rosa"][data-mode="light"]{
+  --bg:#FEFAFC;--bg2:#FFFFFF;--bg3:#F8EEF3;--line:rgba(55,20,40,.10);
+  --text:#2E1F28;--text2:#6E5660;--text3:#9C8690;--sage:#D14E7E;--wine:#A8123F;
+  --page:radial-gradient(1200px 600px at 75% -10%,rgba(209,78,126,.06),transparent 60%),#FEFAFC;}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--page);color:var(--text);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  transition:background .4s ease,color .4s ease;-webkit-font-smoothing:antialiased}
+body{padding:0 0 80px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+
+/* ---------- THEME SWITCHER ---------- */
+.switcher{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+  background:color-mix(in srgb,var(--bg) 78%,transparent);
+  border-bottom:1px solid var(--line);padding:12px 0;margin-bottom:8px}
+.switcher .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.switcher b{font-size:13px;color:var(--text2);font-weight:600;letter-spacing:.02em}
+.switcher small{color:var(--text3);font-size:12px;margin-left:auto}
+/* theme picker dots */
+.picker{display:flex;gap:9px;align-items:center}
+.dot{width:28px;height:28px;border-radius:999px;border:2px solid transparent;cursor:pointer;
+  background:var(--c);transition:transform .2s,box-shadow .2s,border-color .2s;padding:0}
+.dot:hover{transform:scale(1.1)}
+.dot.active{border-color:var(--text);transform:scale(1.15);box-shadow:0 0 12px var(--c)}
+/* sun/moon toggle */
+.toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:6px;
+  transition:all .3s}
+.toggle .knob{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;
+  font-size:15px;background:var(--bg3);transition:all .3s}
+.toggle .knob.on{background:var(--gold);color:var(--on-accent)}
+.toggle .lbl{font-size:13px;font-weight:600;color:var(--text2);padding-right:8px}
+
+/* ---------- TOP BAR ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:22px 0 8px}
+.brand{display:flex;align-items:center;gap:12px}
+.loaf{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--gold),var(--glow));font-size:20px;
+  box-shadow:var(--blessing-glow)}
+.brand .name{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.brand .sub{font-size:12px;color:var(--text3)}
+.topbar .right{display:flex;align-items:center;gap:14px}
+.date{font-size:13px;color:var(--text2)}
+.avatar{width:38px;height:38px;border-radius:999px;background:var(--bg3);
+  display:grid;place-items:center;font-weight:700;font-size:14px;border:1px solid var(--line)}
+
+/* ---------- GREETING ---------- */
+.greet{padding:18px 0 6px}
+.greet h1{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.greet h1 .accent{color:var(--gold)}
+.greet p{color:var(--text3);font-size:14px;margin-top:4px}
+
+/* ---------- GRID ---------- */
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin-top:18px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:18px;
+  padding:20px;box-shadow:var(--shadow)}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--text3);font-weight:700;margin-bottom:14px}
+
+/* child hero */
+.child{display:flex;align-items:center;gap:18px}
+.ring{--p:67;width:84px;height:84px;border-radius:999px;flex:0 0 auto;
+  background:conic-gradient(var(--sage) calc(var(--p)*1%),var(--bg3) 0);
+  display:grid;place-items:center;position:relative}
+.ring::after{content:"";position:absolute;inset:8px;border-radius:999px;background:var(--bg2)}
+.ring span{position:relative;z-index:1;font-weight:700;font-size:15px}
+.child .who{flex:1}
+.child .who .nm{font-size:22px;font-weight:700}
+.child .who .lab{color:var(--text3);font-size:13px;margin-top:2px}
+.basket{text-align:right}
+.basket .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3)}
+.basket .amt{font-size:30px;font-weight:800;color:var(--gold);line-height:1.1}
+.basket .amt small{font-size:16px;font-weight:700;opacity:.8}
+
+/* blessing moment */
+.blessing{background:linear-gradient(135deg,
+   color-mix(in srgb,var(--glow) 16%,var(--bg2)), var(--bg2));
+  border:1px solid color-mix(in srgb,var(--glow) 35%,var(--line));
+  box-shadow:var(--shadow),var(--blessing-glow);position:relative;overflow:hidden}
+.blessing .halo{position:absolute;right:-40px;top:-40px;width:160px;height:160px;
+  border-radius:999px;background:radial-gradient(closest-side,var(--glow),transparent);
+  opacity:.25;filter:blur(6px)}
+.blessing .row{display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative}
+.blessing .task{font-size:17px;font-weight:700}
+.blessing .meta{color:var(--text2);font-size:13px;margin-top:3px}
+.blessing .meta b{color:var(--gold)}
+.btn-bless{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:15px;
+  padding:13px 22px;border-radius:14px;white-space:nowrap;
+  background:linear-gradient(135deg,var(--gold),var(--glow));color:var(--on-accent);
+  box-shadow:var(--blessing-glow);transition:transform .15s}
+.btn-bless:hover{transform:translateY(-2px)}
+
+/* labors list */
+.labor{display:flex;align-items:center;gap:14px;padding:13px 4px;border-bottom:1px solid var(--line)}
+.labor:last-child{border-bottom:0}
+.dot{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
+.dot.done{background:color-mix(in srgb,var(--sage) 24%,transparent);color:var(--sage)}
+.dot.wait{background:color-mix(in srgb,var(--glow) 22%,transparent);color:var(--glow)}
+.dot.help{background:color-mix(in srgb,var(--wine) 26%,transparent);color:var(--wine)}
+.dot.todo{background:var(--bg3);color:var(--text3)}
+.labor .t{flex:1}
+.labor .t .nm{font-weight:600;font-size:15px}
+.labor .t .st{font-size:12px;color:var(--text3)}
+.labor .val{font-weight:700;color:var(--gold);font-size:15px}
+.tag{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+.tag.help{background:var(--wine);color:#fff}
+.tag.wait{background:color-mix(in srgb,var(--glow) 28%,transparent);color:var(--glow)}
+
+/* the table strip */
+.table-strip{display:flex;gap:10px;margin-top:4px}
+.day{flex:1;text-align:center;background:var(--bg3);border-radius:12px;padding:12px 6px}
+.day .d{font-size:11px;color:var(--text3);font-weight:600}
+.day .v{font-size:13px;font-weight:700;margin-top:4px}
+.day.on{background:color-mix(in srgb,var(--gold) 18%,var(--bg3))}
+.day.on .v{color:var(--gold)}
+
+/* ---------- YEAR HEATMAP ---------- */
+.year{margin-top:18px}
+.year .head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+.year .head .sub{color:var(--text3);font-size:13px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px;
+  overflow-x:auto;padding:6px 2px 10px}
+.cell{width:13px;height:13px;border-radius:3px;background:var(--bg3)}
+.cell.glow{box-shadow:0 0 8px 1px currentColor}
+.months{display:flex;gap:0;margin-top:2px;color:var(--text3);font-size:11px}
+.legend{display:flex;align-items:center;gap:8px;color:var(--text3);font-size:12px;margin-top:6px;justify-content:flex-end}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.foot{text-align:center;color:var(--text3);font-size:12px;margin-top:26px}
+</style>
+</head>
+<body>
+
+<div class="switcher"><div class="wrap">
+  <b>Theme</b>
+  <div class="picker" id="picker">
+    <button class="dot active" data-theme="guadalupe" style="--c:#4DA8C6" title="Guadalupe"></button>
+    <button class="dot" data-theme="marian" style="--c:#6A82E6" title="Sea"></button>
+    <button class="dot" data-theme="sion" style="--c:#5AAE7B" title="Garden"></button>
+    <button class="dot" data-theme="advent" style="--c:#9B7BE0" title="Violet"></button>
+    <button class="dot" data-theme="rosa" style="--c:#E08AA6" title="Rose"></button>
+  </div>
+  <div class="toggle" id="toggle">
+    <span class="lbl" id="mode">Dark</span>
+    <span class="knob on" id="moon">🌙</span>
+    <span class="knob" id="sun">☀️</span>
+  </div>
+  <small id="themeName">Guadalupe · Dark</small>
+</div></div>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="loaf">🍞</div>
+      <div><div class="name">Daily Bread</div><div class="sub">Give us this day…</div></div>
+    </div>
+    <div class="right">
+      <div class="date">Friday, June 19</div>
+      <div class="avatar">C</div>
+    </div>
+  </div>
+
+  <div class="greet">
+    <h1>Good morning, <span class="accent">Jamie</span></h1>
+    <p>Kid has gathered most of today's bread — one Labor is awaiting your blessing.</p>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT COLUMN -->
+    <div class="ds-stack" style="display:flex;flex-direction:column;gap:18px">
+      <div class="card">
+        <h2>Today</h2>
+        <div class="child">
+          <div class="ring"><span>4/6</span></div>
+          <div class="who">
+            <div class="nm">Kid</div>
+            <div class="lab">4 of 6 Labors gathered • 1 awaiting blessing</div>
+          </div>
+          <div class="basket">
+            <div class="lbl">Bread Basket</div>
+            <div class="amt"><small>$</small>43<small>.50</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card blessing">
+        <div class="halo"></div>
+        <h2>Awaiting Blessing</h2>
+        <div class="row">
+          <div>
+            <div class="task">Clean the kitchen</div>
+            <div class="meta">Finished 18 min ago • worth <b>$3.00</b> of bread</div>
+          </div>
+          <button class="btn-bless">✦ Give Blessing</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Today's Labors</h2>
+        <div class="labor">
+          <div class="dot done">✓</div>
+          <div class="t"><div class="nm">Make the bed</div><div class="st">Gathered • blessed this morning</div></div>
+          <div class="val">$1.00</div>
+        </div>
+        <div class="labor">
+          <div class="dot wait">✦</div>
+          <div class="t"><div class="nm">Clean the kitchen</div><div class="st">Done — awaiting your blessing</div></div>
+          <span class="tag wait">Awaiting</span>
+        </div>
+        <div class="labor">
+          <div class="dot help">!</div>
+          <div class="t"><div class="nm">Fix the bike chain</div><div class="st">Kid raised his hand for help</div></div>
+          <span class="tag help">Help</span>
+        </div>
+        <div class="labor">
+          <div class="dot done">✓</div>
+          <div class="t"><div class="nm">Homework</div><div class="st">Gathered</div></div>
+          <div class="val">$2.00</div>
+        </div>
+        <div class="labor">
+          <div class="dot todo">○</div>
+          <div class="t"><div class="nm">Take out trash</div><div class="st">Not yet</div></div>
+          <div class="val" style="color:var(--text3)">$1.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="ds-stack" style="display:flex;flex-direction:column;gap:18px">
+      <div class="card">
+        <h2>The Table — this week</h2>
+        <div class="table-strip">
+          <div class="day on"><div class="d">Mon</div><div class="v">$6</div></div>
+          <div class="day on"><div class="d">Tue</div><div class="v">$5</div></div>
+          <div class="day on"><div class="d">Wed</div><div class="v">$6</div></div>
+          <div class="day on"><div class="d">Thu</div><div class="v">$4</div></div>
+          <div class="day on"><div class="d">Fri</div><div class="v">$3</div></div>
+          <div class="day"><div class="d">Sat</div><div class="v">—</div></div>
+          <div class="day"><div class="d">Sun</div><div class="v">—</div></div>
+        </div>
+        <p style="color:var(--text3);font-size:13px;margin-top:14px">
+          <b style="color:var(--gold)">$24.00</b> of bread gathered this week — Breaking Bread on Sunday.</p>
+      </div>
+
+      <div class="card year">
+        <div class="head">
+          <h2 style="margin:0">Book of Deeds — Kid's year</h2>
+          <span class="sub">2026</span>
+        </div>
+        <div class="heat" id="heat"></div>
+        <div class="legend">
+          <span>less</span><i style="background:var(--bg3)"></i>
+          <i style="background:color-mix(in srgb,var(--gold) 35%,var(--bg3))"></i>
+          <i style="background:color-mix(in srgb,var(--gold) 65%,var(--bg3))"></i>
+          <i style="background:var(--gold)"></i><span>more</span>
+        </div>
+        <p style="color:var(--text3);font-size:13px;margin-top:10px">
+          Each glowing square is a full day — every Labor gathered. Tap any day to open its Book of Deeds.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">Daily Bread — refresh preview • toggle the palette above</div>
+</div>
+
+<script>
+// theme picker + light/dark toggle (the real model)
+const root=document.documentElement, modeLbl=document.getElementById('mode'),
+      moon=document.getElementById('moon'), sun=document.getElementById('sun'),
+      nameLbl=document.getElementById('themeName');
+const NAMES={guadalupe:'Guadalupe',marian:'Sea',sion:'Garden',advent:'Violet',rosa:'Rose'};
+function refresh(){
+  const t=root.getAttribute('data-theme'), m=root.getAttribute('data-mode');
+  const cap=m==='light'?'Light':'Dark';
+  modeLbl.textContent=cap;
+  nameLbl.textContent=NAMES[t]+' · '+cap;
+  moon.classList.toggle('on', m!=='light');
+  sun.classList.toggle('on', m==='light');
+}
+document.querySelectorAll('.dot').forEach(d=>{
+  d.onclick=()=>{
+    root.setAttribute('data-theme', d.dataset.theme);
+    document.querySelectorAll('.dot').forEach(x=>x.classList.remove('active'));
+    d.classList.add('active');
+    refresh();
+  };
+});
+document.getElementById('toggle').onclick=()=>{
+  root.setAttribute('data-mode', root.getAttribute('data-mode')==='light'?'dark':'light');
+  refresh();
+};
+refresh();
+// build heatmap: 53 weeks x 7 days, month-tinted, growth over the year, glow on full days
+const heat=document.getElementById('heat');
+const start=new Date(2026,0,1);
+for(let w=0;w<53;w++){
+  for(let d=0;d<7;d++){
+    const day=new Date(start); day.setDate(day.getDate()+w*7+d);
+    if(day.getFullYear()!==2026){const e=document.createElement('div');e.className='cell';e.style.visibility='hidden';heat.appendChild(e);continue;}
+    const c=document.createElement('div'); c.className='cell';
+    const month=day.getMonth();
+    // completion trends upward across the year (his progress) with some noise
+    const base=Math.min(.95,.25+month*0.06);
+    const r=Math.random();
+    let comp=Math.max(0,Math.min(1,base+(r-0.5)*0.7));
+    if(day>new Date(2026,5,19)) comp=0; // future = empty
+    // hue per month so months are distinguishable, on a warm wheel
+    const hue=[28,16,200,150,95,45,40,35,300,20,8,55][month];
+    if(comp<=0){c.style.background='var(--bg3)';}
+    else{
+      const light=22+comp*34;
+      const sat=comp>0?55:0;
+      c.style.background=`hsl(${hue} ${sat}% ${light}%)`;
+      if(comp>0.92){c.classList.add('glow'); c.style.color=`hsl(${hue} 70% 60%)`;}
+    }
+    heat.appendChild(c);
+  }
+}
+</script>
+</body>
+</html>

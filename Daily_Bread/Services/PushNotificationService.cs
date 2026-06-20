@@ -136,7 +136,7 @@ public class PushNotificationService : IPushNotificationService
         
         settingsEntity.VapidPublicKey = vapidKeys.PublicKey;
         settingsEntity.VapidPrivateKey = vapidKeys.PrivateKey;
-        settingsEntity.VapidSubject = _configuration["Vapid:Subject"] ?? "mailto:admin@dailybread.app";
+        settingsEntity.VapidSubject = _configuration["Vapid:Subject"] ?? "mailto:jshauns@gmail.com";
         settingsEntity.ModifiedAt = DateTime.UtcNow;
         
         await context.SaveChangesAsync();
@@ -319,7 +319,7 @@ public class PushNotificationService : IPushNotificationService
             var webPushClient = new WebPushClient();
             
             var vapidDetails = new VapidDetails(
-                settings.VapidSubject ?? "mailto:admin@dailybread.app",
+                settings.VapidSubject ?? "mailto:jshauns@gmail.com",
                 settings.VapidPublicKey,
                 settings.VapidPrivateKey);
             

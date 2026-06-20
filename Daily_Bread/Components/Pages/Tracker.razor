@@ -16,14 +16,14 @@
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Book of Deeds</PageTitle>
+<PageTitle>Activity</PageTitle>
 
 @* Confetti celebration when all labors complete *@
 <Confetti IsActive="_showConfetti" OnComplete="() => _showConfetti = false" ParticleCount="60" />
 
 <div class="tracker-container">
     <div class="tracker-header">
-        <h1>Book of Deeds</h1>
+        <h1>Activity</h1>
 
         <div class="tracker-controls">
             <DateNavigator SelectedDate="SelectedDate"
@@ -72,7 +72,7 @@
         {
             <EmptyState Type="EmptyStateType.NoChores"
                         Icon="📜"
-                        Title="No Labors Scheduled"
+                        Title="No Tasks Scheduled"
                         Message="@GetEmptyMessage()">
                 <ActionButton>
                     <a href="/manage-chores" class="btn btn-primary">Create Labors</a>
@@ -83,7 +83,7 @@
         {
             <EmptyState Type="EmptyStateType.NoChores"
                         Icon="📜"
-                        Title="No Labors Scheduled"
+                        Title="No Tasks Scheduled"
                         Message="@GetEmptyMessage()" />
         }
     }
@@ -239,7 +239,7 @@
 @if (_showMissConfirmation && _confirmingItem != null)
 {
     <ConfirmationModal 
-        Title="Mark Labor as Not Completed"
+        Title="Mark Task as Not Completed"
         Icon="❌"
         Message="@($"Mark '{_confirmingItem.ChoreName}' as not completed?")"
         Consequences="@GetMissConsequences()"
@@ -254,7 +254,7 @@
 @if (_showSkipConfirmation && _confirmingItem != null)
 {
     <ConfirmationModal 
-        Title="Excuse Labor for Today"
+        Title="Excuse Task for Today"
         Icon="🙏"
         Message="@($"Grant dispensation for '{_confirmingItem.ChoreName}'?")"
         Consequences="@(["No penalty will be applied", "No earning for this chore today", "This can be undone later"])"
@@ -543,8 +543,8 @@
     private string GetEmptyMessage()
     {
         if (IsToday)
-            return "There are no labors scheduled for today.";
-        return $"There are no labors scheduled for {SelectedDate:MMMM d}.";
+            return "There are no tasks scheduled for today.";
+        return $"There are no tasks scheduled for {SelectedDate:MMMM d}.";
     }
 
     private async Task ToggleChore(TrackerChoreItem item)
@@ -607,12 +607,12 @@
 
             if (result.Success)
             {
-                ToastService.ShowSuccess("Approved!", $"'{item.ChoreName}' approved - ${item.Value:F2} wages earned!");
+                ToastService.ShowSuccess("Approved!", $"'{item.ChoreName}' approved - ${item.Value:F2} earned!");
                 await RefreshDataAsync();
             }
             else
             {
-                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to approve labor.");
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to approve task.");
             }
         }
         finally
@@ -630,7 +630,7 @@
     
     private List<string> GetMissConsequences()
     {
-        var consequences = new List<string> { "Labor will be recorded as not completed" };
+        var consequences = new List<string> { "Task will be recorded as not completed" };
         
         if (_confirmingItem?.PenaltyValue > 0)
         {

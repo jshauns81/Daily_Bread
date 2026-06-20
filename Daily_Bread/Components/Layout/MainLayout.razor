@@ -38,15 +38,22 @@
             <span>Daily Bread</span>
         </a>
         <div class="mobile-header-actions">
+            <button class="quick-theme" data-theme-toggle type="button" title="Toggle light / dark">🌙</button>
             <LoginDisplay />
         </div>
     </header>
 
     <!-- Main Content -->
     <main class="@(_showBottomNav ? "has-bottom-nav" : "")">
-        <!-- Desktop Header - LoginDisplay moved here via CSS on desktop -->
+        <!-- Desktop Top Bar -->
         <div class="desktop-header">
-            <!-- Empty - LoginDisplay is positioned here via CSS on desktop -->
+            <div class="page-title">
+                <span class="page-title-icon" aria-hidden="true">@_currentPageIcon</span>
+                <span class="page-title-text">@_currentPageTitle</span>
+            </div>
+            <div class="desktop-header-actions">
+                <button class="quick-theme" data-theme-toggle type="button" title="Toggle light / dark">🌙</button>
+            </div>
         </div>
 
         <article class="content">
@@ -61,7 +68,7 @@
             @foreach (var item in _mobileNavItems)
             {
                 <a href="@item.Route" class="bottom-nav-item @(IsCurrentPage(item.Route) ? "active" : "")">
-                    <span class="bi @item.Icon"></span>
+                    <span class="nav-ico" aria-hidden="true">@item.Icon</span>
                     <span>@GetMobileLabel(item.Label)</span>
                 </a>
             }
@@ -126,6 +133,9 @@
     private bool _sidebarOpen = false;
     private bool _showBottomNav = false;
     private IReadOnlyList<NavItem> _mobileNavItems = [];
+    private IReadOnlyList<NavItem> _allNavItems = [];
+    private string _currentPageTitle = "Daily Bread";
+    private string _currentPageIcon = "🏠";
     
     // SignalR connection for real-time updates
     private HubConnection? _hubConnection;
@@ -148,6 +158,7 @@
         NavigationManager.LocationChanged += OnLocationChanged;
         AppState.OnHelpRequestOpened += HandleHelpRequestOpened;
         await CheckUserRoleAsync();
+        UpdatePageTitle();
         // Don't initialize SignalR here - wait for OnAfterRenderAsync when circuit is ready
     }
 
@@ -227,6 +238,9 @@
                 {
                     _mobileNavItems = NavService.GetMobileNavItems(_isParent, _isChild, isAdmin);
                 }
+
+                // All nav items (used to derive the current page title for the top bar)
+                _allNavItems = NavService.GetNavItems(_isParent, _isChild, isAdmin);
             }
         }
         catch
@@ -338,12 +352,12 @@
     {
         // DIAGNOSTIC: Log to browser console
         await JS.InvokeVoidAsync("console.log", $">>> InitializeSignalRAsync called. CurrentUserId={_currentUserId}");
-        Logger.LogWarning(">>> InitializeSignalRAsync called. CurrentUserId={CurrentUserId}", _currentUserId);
+        Logger.LogDebug("InitializeSignalRAsync called. CurrentUserId={CurrentUserId}", _currentUserId);
 
         if (string.IsNullOrEmpty(_currentUserId))
         {
             await JS.InvokeVoidAsync("console.warn", ">>> User not authenticated, skipping SignalR connection");
-            Logger.LogWarning(">>> User not authenticated, skipping SignalR connection");
+            Logger.LogDebug("User not authenticated, skipping SignalR connection");
             return;
         }
 
@@ -359,7 +373,7 @@
             
             // DIAGNOSTIC: Log the URL we're connecting to
             await JS.InvokeVoidAsync("console.log", $">>> ChoreHub connecting to: {hubUrl}");
-            Logger.LogWarning(">>> ChoreHub connecting to: {HubUrl}", hubUrl);
+            Logger.LogDebug("ChoreHub connecting to: {HubUrl}", hubUrl);
             
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl)
@@ -406,7 +420,7 @@
             
             // DIAGNOSTIC: Log successful connection
             await JS.InvokeVoidAsync("console.log", $">>> ChoreHub connected! State={_hubConnection.State}, ConnectionId={_hubConnection.ConnectionId}");
-            Logger.LogWarning(">>> ChoreHub connected! State={State}, ConnectionId={ConnectionId}", 
+            Logger.LogDebug("ChoreHub connected! State={State}, ConnectionId={ConnectionId}", 
                 _hubConnection.State, _hubConnection.ConnectionId);
         }
         catch (Exception ex)
@@ -414,7 +428,7 @@
             // DIAGNOSTIC: Log connection failure with full details
             await JS.InvokeVoidAsync("console.error", $">>> ChoreHub connection FAILED: {ex.Message}");
             await JS.InvokeVoidAsync("console.error", $">>> ChoreHub exception details: {ex}");
-            Logger.LogError(ex, ">>> ChoreHub connection FAILED: {Message}", ex.Message);
+            Logger.LogError(ex, "ChoreHub connection FAILED: {Message}", ex.Message);
             ScheduleReconnect();
         }
     }
@@ -485,8 +499,8 @@
         await InvokeAsync(() =>
         {
             ToastService.ShowSuccess(
-                "🎉 Blessed!",
-                $"'{choreName}' was blessed! +${earnedAmount:F2}");
+                "🎉 Approved!",
+                $"'{choreName}' was approved! +${earnedAmount:F2}");
         });
 
         // Invalidate child dashboard to refresh balance and chore status
@@ -672,9 +686,6 @@
         return label switch
         {
             "Achievements" => "Badges",
-            "My Balance" => "Balance",
-            "Book of Deeds" => "Tracker",
-            "Labor Planner" => "Planner",
             _ => label
         };
     }
@@ -688,12 +699,55 @@
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        // Update the top-bar page title for the new route
+        UpdatePageTitle();
+
         // Close sidebar on navigation (mobile)
         if (_sidebarOpen)
         {
             _sidebarOpen = false;
             _ = JS.InvokeVoidAsync("closeSidebar");
-            InvokeAsync(StateHasChanged);
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Derives the top-bar page title + icon from the current route, using the
+    /// navigation items as the single source of truth (no per-page plumbing).
+    /// </summary>
+    private void UpdatePageTitle()
+    {
+        var path = new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/');
+        if (string.IsNullOrEmpty(path)) path = "/";
+
+        NavItem? match = null;
+        foreach (var item in _allNavItems)
+        {
+            var route = item.Route.TrimEnd('/');
+            if (string.IsNullOrEmpty(route)) route = "/";
+
+            if (route == "/")
+            {
+                if (path == "/") { match = item; break; }
+            }
+            else if (path.Equals(route, StringComparison.OrdinalIgnoreCase)
+                     || path.StartsWith(route + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                match = item;
+                break;
+            }
+        }
+
+        if (match != null)
+        {
+            _currentPageTitle = match.Label;
+            _currentPageIcon = match.Icon;
+        }
+        else
+        {
+            _currentPageTitle = "Daily Bread";
+            _currentPageIcon = "🏠";
         }
     }
 

@@ -88,12 +88,12 @@
 /* Help Alert toast - special styling for help requests */
 .toast.toast-help-alert {
     background: linear-gradient(135deg, rgba(180, 142, 173, 0.2) 0%, var(--ds-bg-elevated) 100%);
-    border-color: var(--ds-accent-purple, #b48ead);
-    border-left: 4px solid var(--ds-accent-purple, #b48ead);
+    border-color: var(--ds-semantic-special, #b48ead);
+    border-left: 4px solid var(--ds-semantic-special, #b48ead);
 }
 
 .toast.toast-help-alert .toast-icon {
-    color: var(--ds-accent-purple, #b48ead);
+    color: var(--ds-semantic-special, #b48ead);
     animation: pulse-icon 2s ease-in-out infinite;
 }
 
@@ -120,7 +120,7 @@
 /* Action hint for clickable toasts */
 .toast-action-hint {
     font-size: var(--ds-text-xs);
-    color: var(--ds-accent-purple, #b48ead);
+    color: var(--ds-semantic-special, #b48ead);
     margin-top: var(--ds-space-1);
     font-weight: var(--ds-font-medium);
     display: flex;

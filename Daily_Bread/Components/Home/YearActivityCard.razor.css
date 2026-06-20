@@ -4,14 +4,14 @@
    ========================================================================== */
 
 .year-activity-hero {
-    background: linear-gradient(160deg, #1a1f2e 0%, #252d3f 50%, #1e2636 100%);
-    border: 2px solid rgba(136, 192, 208, 0.3);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--ds-accent-primary) 10%, var(--ds-bg-elevated)) 0%, var(--ds-bg-elevated) 55%);
+    border: 1px solid color-mix(in srgb, var(--ds-accent-primary) 28%, var(--ds-bg-muted));
     border-radius: var(--ds-radius-xl);
     padding: var(--ds-space-6);
     display: flex;
     flex-direction: column;
     gap: var(--ds-space-4);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 14px 40px -16px rgba(0, 0, 0, 0.55), 0 0 30px -10px color-mix(in srgb, var(--ds-accent-primary) 40%, transparent);
     position: relative;
     overflow: hidden;
 }
@@ -23,8 +23,80 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle at 30% 30%, rgba(136, 192, 208, 0.08) 0%, transparent 50%);
+    background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--ds-accent-primary) 10%, transparent) 0%, transparent 50%);
     pointer-events: none;
+}
+
+/* ==========================================================================
+   Compact variant (parent dashboard right rail)
+   Slim heatmap: no year-nav / day labels / month labels, small cells,
+   a quiet heading, a tiny legend and a perfect-days note.
+   ========================================================================== */
+
+.year-activity-hero.compact {
+    padding: var(--ds-space-5);
+    gap: var(--ds-space-3);
+}
+
+.year-activity-hero.compact .compact-head {
+    position: relative;
+    z-index: 1;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ds-text-muted);
+    font-weight: var(--ds-font-bold);
+}
+
+/* Keep the heatmap within the card width; scroll horizontally if needed */
+.year-activity-hero.compact .weeks-container {
+    gap: 2px;
+    overflow-x: auto;
+}
+
+.year-activity-hero.compact .week-column {
+    gap: 2px;
+}
+
+.year-activity-hero.compact .day-cell {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+}
+
+.year-activity-hero.compact .compact-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+}
+
+.year-activity-hero.compact .compact-legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: var(--ds-text-muted);
+}
+
+.year-activity-hero.compact .compact-legend .legend-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.year-activity-hero.compact .compact-note {
+    font-size: 0.75rem;
+    color: var(--ds-text-muted);
+    margin: 0;
+}
+
+.year-activity-hero.compact .compact-note b {
+    color: var(--ds-semantic-highlight);
+    font-weight: var(--ds-font-bold);
 }
 
 /* ==========================================================================
@@ -51,19 +123,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(136, 192, 208, 0.1);
-    border: 1px solid rgba(136, 192, 208, 0.2);
+    background: color-mix(in srgb, var(--ds-accent-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ds-accent-primary) 25%, transparent);
     border-radius: var(--ds-radius-full);
     color: var(--ds-text-muted);
-    font-size: var(--ds-font-size-xl);
+    font-size: var(--ds-text-xl);
     cursor: pointer;
-    transition: all var(--ds-transition-fast);
+    transition: all var(--ds-duration-fast);
 }
 
 .nav-btn:hover:not(:disabled) {
-    background: rgba(136, 192, 208, 0.2);
+    background: color-mix(in srgb, var(--ds-accent-primary) 22%, transparent);
     color: var(--ds-text-primary);
-    border-color: rgba(136, 192, 208, 0.4);
+    border-color: color-mix(in srgb, var(--ds-accent-primary) 42%, transparent);
 }
 
 .nav-btn:active:not(:disabled) {
@@ -76,8 +148,8 @@
 }
 
 .activity-title {
-    font-size: var(--ds-font-size-xl);
-    font-weight: var(--ds-font-weight-bold);
+    font-size: var(--ds-text-xl);
+    font-weight: var(--ds-font-bold);
     color: var(--ds-text-primary);
     min-width: 60px;
     text-align: center;
@@ -87,7 +159,7 @@
     display: flex;
     align-items: center;
     gap: var(--ds-space-1);
-    font-size: var(--ds-font-size-xs);
+    font-size: var(--ds-text-xs);
     color: var(--ds-text-muted);
 }
 
@@ -131,7 +203,7 @@
 .day-labels span {
     height: 12px;
     font-size: 9px;
-    font-weight: var(--ds-font-weight-medium);
+    font-weight: var(--ds-font-medium);
     color: var(--ds-text-muted);
     display: flex;
     align-items: center;
@@ -145,22 +217,29 @@
 .weeks-container {
     display: flex;
     flex: 1;
-    justify-content: space-between;
-    gap: 2px;
+    justify-content: flex-start;
+    gap: 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.weeks-container::-webkit-scrollbar {
+    display: none;
 }
 
 .week-column {
     display: flex;
     flex-direction: column;
     gap: 3px;
-    flex: 1;
     align-items: center;
+    flex: 0 0 auto;
 }
 
 .month-label {
     height: 14px;
     font-size: 8px;
-    font-weight: var(--ds-font-weight-medium);
+    font-weight: var(--ds-font-medium);
     color: var(--ds-text-muted);
     white-space: nowrap;
 }
@@ -173,7 +252,7 @@
     width: 12px;
     height: 12px;
     border-radius: 2px;
-    transition: transform var(--ds-transition-fast);
+    transition: transform var(--ds-duration-fast);
     box-sizing: border-box;
 }
 
@@ -194,18 +273,18 @@
 /* Future days - hollow outline */
 .day-cell.future {
     background: transparent;
-    border: 1px solid rgba(136, 192, 208, 0.2);
+    border: 1px solid color-mix(in srgb, var(--ds-accent-primary) 25%, transparent);
 }
 
 .day-cell.future.clickable:hover {
-    border-color: rgba(136, 192, 208, 0.4);
+    border-color: color-mix(in srgb, var(--ds-accent-primary) 42%, transparent);
     transform: scale(1.4);
     z-index: 10;
 }
 
 /* No progress - grey */
 .day-cell.no-progress {
-    background: rgba(76, 86, 106, 0.3);
+    background: var(--ds-bg-hover);
 }
 
 /* Has progress - colored by month, opacity set via inline style */
@@ -230,7 +309,7 @@
     .nav-btn {
         width: 28px;
         height: 28px;
-        font-size: var(--ds-font-size-lg);
+        font-size: var(--ds-text-lg);
     }
 
     .year-nav {
@@ -238,7 +317,7 @@
     }
 
     .activity-title {
-        font-size: var(--ds-font-size-lg);
+        font-size: var(--ds-text-lg);
     }
 
     .legend-cell {

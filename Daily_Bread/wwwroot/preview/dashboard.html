@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="guadalupe" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Bread — Dashboard Concept</title>
+<style>
+/* ---------- PALETTES ---------- */
+[data-mode="dark"]{ --gold:#D7A23F; --glow:#EAC468; --wine:#C25563; --on-accent:#15181C; }
+[data-mode="light"]{ --gold:#D99514; --glow:#F2B705; --wine:#D33B4E; --on-accent:#FFFFFF; }
+[data-theme="guadalupe"][data-mode="dark"]{ --bg:#0F1922;--bg2:#1D2A35;--bg3:#293945;--line:rgba(225,232,240,.10);--text:#F0E8D6;--text2:#B7BEC4;--text3:#7E8790;--accent:#4DA8C6;--page:#0C141B; }
+[data-theme="guadalupe"][data-mode="light"]{ --bg:#FAFBFC;--bg2:#FFFFFF;--bg3:#EEF1F4;--line:rgba(20,30,45,.10);--text:#1E2530;--text2:#566069;--text3:#8A929A;--accent:#0E8FC4;--page:#EEF2F5; }
+[data-theme="marian"][data-mode="dark"]{ --bg:#101226;--bg2:#1F2440;--bg3:#2C3358;--line:rgba(225,228,245,.10);--text:#ECE9DA;--text2:#B6BAD0;--text3:#7C7F9A;--accent:#6A82E6;--page:#0B0C1B; }
+[data-theme="marian"][data-mode="light"]{ --bg:#FAFBFE;--bg2:#FFFFFF;--bg3:#EEF0FA;--line:rgba(20,25,60,.10);--text:#1F2438;--text2:#565C75;--text3:#888EA8;--accent:#3A5BD0;--page:#EDEFF8; }
+[data-theme="sion"][data-mode="dark"]{ --bg:#0F1A14;--bg2:#1E2D24;--bg3:#2A3D31;--line:rgba(228,235,222,.10);--text:#EEEAD7;--text2:#B6C0B0;--text3:#7E8878;--accent:#5AAE7B;--page:#0A130E; }
+[data-theme="sion"][data-mode="light"]{ --bg:#FAFCFA;--bg2:#FFFFFF;--bg3:#EDF3EE;--line:rgba(20,40,28,.10);--text:#1F2A22;--text2:#54635A;--text3:#869287;--accent:#2E9E63;--page:#EBF2EC; }
+[data-theme="advent"][data-mode="dark"]{ --bg:#150F20;--bg2:#272036;--bg3:#352B49;--line:rgba(232,226,242,.10);--text:#EFE9DA;--text2:#BDB6C8;--text3:#867E94;--accent:#9B7BE0;--page:#100B18; }
+[data-theme="advent"][data-mode="light"]{ --bg:#FCFAFE;--bg2:#FFFFFF;--bg3:#F2EEF8;--line:rgba(35,20,55,.10);--text:#271F33;--text2:#5E5570;--text3:#8E869C;--accent:#7A4FD0;--page:#F1ECF8; }
+[data-theme="rosa"][data-mode="dark"]{ --bg:#1B1019;--bg2:#30212C;--bg3:#412C3A;--line:rgba(242,228,236,.10);--text:#F1E7DC;--text2:#C6B3BE;--text3:#8E7E88;--accent:#E08AA6;--wine:#9E3350;--page:#140B11; }
+[data-theme="rosa"][data-mode="light"]{ --bg:#FEFAFC;--bg2:#FFFFFF;--bg3:#F8EEF3;--line:rgba(55,20,40,.10);--text:#2E1F28;--text2:#6E5660;--text3:#9C8690;--accent:#D14E7E;--wine:#A8123F;--page:#F7ECF1; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--page);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased;transition:background .4s,color .4s}
+
+.switcher{position:sticky;top:0;z-index:80;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 22px;backdrop-filter:blur(14px);background:color-mix(in srgb,var(--page) 72%,transparent);border-bottom:1px solid var(--line)}
+.switcher b{font-size:13px;color:var(--text2);font-weight:600}
+.picker{display:flex;gap:8px}
+.dot{width:24px;height:24px;border-radius:999px;border:2px solid transparent;cursor:pointer;background:var(--c);transition:.2s;padding:0}
+.dot.active{border-color:var(--text);box-shadow:0 0 10px var(--c)}
+.toggle{margin-left:auto;display:inline-flex;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:5px}
+.toggle button{border:0;background:transparent;color:var(--text2);font:inherit;font-size:12px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer}
+.toggle button.on{background:var(--accent);color:var(--on-accent)}
+
+.app{display:flex;gap:18px;padding:18px;min-height:calc(100vh - 46px)}
+/* pill sidebar */
+.sidebar{width:248px;flex:0 0 248px;position:sticky;top:64px;align-self:flex-start;height:calc(100vh - 82px);background:var(--bg2);border:1px solid var(--line);border-radius:26px;box-shadow:0 18px 50px -14px rgba(0,0,0,.55);display:flex;flex-direction:column;padding:18px 14px;overflow:hidden}
+.brand{display:flex;align-items:center;gap:12px;padding:8px 10px 18px}
+.brand .loaf{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:21px;background:linear-gradient(135deg,var(--gold),var(--glow));box-shadow:0 0 22px color-mix(in srgb,var(--glow) 45%,transparent)}
+.brand .nm{font-weight:700;font-size:18px}
+.brand .sub{font-size:11px;color:var(--text3)}
+.nav{display:flex;flex-direction:column;gap:4px;flex:1}
+.nav .sec{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);font-weight:700;padding:14px 12px 6px}
+.nav a{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:14px;color:var(--text2);text-decoration:none;font-size:14px;font-weight:600;border:1px solid transparent;cursor:pointer}
+.nav a .ic{font-size:17px;width:22px;text-align:center}
+.nav a:hover{background:var(--bg3);color:var(--text)}
+.nav a.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);border-color:color-mix(in srgb,var(--accent) 30%,transparent);box-shadow:0 6px 18px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
+.nav a .badge{margin-left:auto;background:var(--gold);color:var(--on-accent);font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.side-foot{border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.profile{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:16px;background:var(--bg3);cursor:pointer}
+.profile .av{width:36px;height:36px;border-radius:999px;display:grid;place-items:center;font-weight:700;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--glow)));color:var(--on-accent)}
+.profile .p1{font-size:13px;font-weight:700}
+.profile .p2{font-size:11px;color:var(--text3)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column;gap:18px}
+.topbar{display:flex;align-items:center;gap:16px}
+.title{display:flex;align-items:center;gap:12px}
+.title .tic{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-size:20px;background:var(--bg2);border:1px solid var(--line)}
+.title h1{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.tb-actions{margin-left:auto;display:flex;align-items:center;gap:10px}
+.icon-btn{width:42px;height:42px;border-radius:13px;background:var(--bg2);border:1px solid var(--line);color:var(--text2);display:grid;place-items:center;cursor:pointer;font-size:17px}
+
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 14px 40px -16px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04) inset;transition:transform .25s,box-shadow .25s}
+.card:hover{transform:translateY(-3px);box-shadow:0 22px 55px -16px rgba(0,0,0,.6)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.count-chip{background:var(--gold);color:var(--on-accent);font-size:11px;font-weight:800;border-radius:999px;padding:2px 9px}
+
+/* HERO HEADER */
+.hero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,var(--bg2)),var(--bg2) 62%)}
+.hero::after{content:"";position:absolute;right:-50px;top:-70px;width:230px;height:230px;border-radius:999px;background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 55%,transparent),transparent);opacity:.5;filter:blur(6px)}
+.hero .hi{position:relative}
+.hero h3{font-size:27px;font-weight:800;letter-spacing:-.02em}
+.hero h3 .ac{color:var(--accent)}
+.hero .sumline{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+.sumtag{font-size:13px;font-weight:600;padding:5px 11px;border-radius:999px;background:var(--bg3);color:var(--text2);display:inline-flex;gap:6px;align-items:center}
+.sumtag.warn{background:color-mix(in srgb,var(--gold) 18%,var(--bg2));color:var(--gold)}
+.sumtag.help{background:color-mix(in srgb,var(--wine) 20%,var(--bg2));color:var(--wine)}
+.hero .date{position:relative;color:var(--text3);font-size:13px;white-space:nowrap;align-self:flex-start}
+
+/* STAT PILLS */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 10px 30px -18px rgba(0,0,0,.5)}
+.stat .chip{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:20px;flex:0 0 auto}
+.stat.gold .chip{background:color-mix(in srgb,var(--gold) 20%,transparent)}
+.stat.acc .chip{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.stat.ok .chip{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.stat .v{font-size:26px;font-weight:800;line-height:1}
+.stat.gold .v{color:var(--gold);text-shadow:0 0 16px color-mix(in srgb,var(--gold) 35%,transparent)}
+.stat.acc .v{color:var(--accent);text-shadow:0 0 16px color-mix(in srgb,var(--accent) 35%,transparent)}
+.stat .l{font-size:12px;color:var(--text3);margin-top:3px}
+
+/* ASYMMETRIC GRID */
+.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;align-items:start}
+@media(max-width:1050px){.grid{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:18px}
+
+/* glowing approvals */
+.approvals{border-color:color-mix(in srgb,var(--gold) 32%,var(--line));box-shadow:0 14px 40px -16px rgba(0,0,0,.55), 0 0 30px -8px color-mix(in srgb,var(--gold) 42%,transparent)}
+.appr{display:flex;align-items:center;gap:14px;padding:13px 6px;border-bottom:1px solid var(--line)}
+.appr:last-child{border-bottom:0}
+.appr .ava{width:34px;height:34px;border-radius:11px;flex:0 0 auto;display:grid;place-items:center;font-weight:700;font-size:13px;background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
+.appr .info{flex:1;min-width:0}
+.appr .info .t{font-weight:700;font-size:15px}
+.appr .info .m{font-size:12px;color:var(--text3);margin-top:2px}
+.appr .amt{font-weight:800;color:var(--gold);font-size:15px;margin-right:4px}
+.btn-ap{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:13px;padding:9px 16px;border-radius:11px;background:linear-gradient(135deg,var(--gold),var(--glow));color:var(--on-accent);box-shadow:0 6px 16px -5px color-mix(in srgb,var(--gold) 70%,transparent);white-space:nowrap}
+.viewall{display:block;text-align:center;margin-top:12px;color:var(--accent);font-size:13px;font-weight:700;text-decoration:none}
+
+/* balances list w/ selection */
+.bal{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-radius:14px;border:1px solid transparent;cursor:pointer;transition:.15s}
+.bal:hover{background:var(--bg3)}
+.bal.selected{background:color-mix(in srgb,var(--accent) 14%,transparent);border-color:color-mix(in srgb,var(--accent) 32%,transparent);box-shadow:0 6px 18px -8px color-mix(in srgb,var(--accent) 55%,transparent)}
+.bal .who{display:flex;align-items:center;gap:11px}
+.bal .who .a{width:32px;height:32px;border-radius:999px;display:grid;place-items:center;font-weight:700;font-size:12px;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--glow)));color:var(--on-accent)}
+.bal .nm{font-weight:700;font-size:14px}
+.bal .ready{font-size:10px;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:999px;padding:2px 7px;margin-left:6px}
+.bal .amt{font-weight:800;color:var(--gold);font-size:17px}
+
+/* week mini */
+.week{display:flex;gap:7px}
+.day{flex:1;text-align:center;background:var(--bg3);border-radius:11px;padding:11px 4px}
+.day .d{font-size:10px;color:var(--text3);font-weight:700}
+.day .v{font-size:12px;font-weight:800;margin-top:4px}
+.day.on{background:color-mix(in srgb,var(--gold) 16%,var(--bg3))}
+.day.on .v{color:var(--gold)}
+
+/* year portrait (narrow, tight, scrolls) */
+.heatwrap{overflow-x:auto;padding-bottom:6px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:2px;width:max-content}
+.cell{width:10px;height:10px;border-radius:2px;background:var(--bg3)}
+.cell.glow{box-shadow:0 0 7px 1px currentColor}
+.legend{display:flex;align-items:center;gap:6px;color:var(--text3);font-size:11px;margin-top:8px;justify-content:flex-end}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.note{color:var(--text3);font-size:12px;margin-top:10px}
+.note b{color:var(--gold)}
+
+/* selection demo: tabs */
+.tabs{display:inline-flex;background:var(--bg3);border-radius:13px;padding:4px;gap:4px;margin-bottom:14px}
+.tab{border:0;background:transparent;color:var(--text2);font:inherit;font-size:13px;font-weight:700;padding:8px 16px;border-radius:10px;cursor:pointer}
+.tab.sel{background:var(--bg2);color:var(--accent);box-shadow:0 4px 12px -4px color-mix(in srgb,var(--accent) 50%,transparent)}
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <b>Dashboard concept</b>
+  <div class="picker" id="picker">
+    <button class="dot active" data-theme="guadalupe" style="--c:#4DA8C6"></button>
+    <button class="dot" data-theme="marian" style="--c:#6A82E6"></button>
+    <button class="dot" data-theme="sion" style="--c:#5AAE7B"></button>
+    <button class="dot" data-theme="advent" style="--c:#9B7BE0"></button>
+    <button class="dot" data-theme="rosa" style="--c:#E08AA6"></button>
+  </div>
+  <div class="toggle" id="toggle"><button class="on" data-m="dark">🌙 Dark</button><button data-m="light">☀️ Light</button></div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="loaf">🍞</div><div><div class="nm">Daily Bread</div><div class="sub">give us this day</div></div></div>
+    <nav class="nav">
+      <a class="active"><span class="ic">🏠</span> Home</a>
+      <a><span class="ic">📊</span> Activity <span class="badge">3</span></a>
+      <a><span class="ic">📅</span> Calendar</a>
+      <div class="sec">Manage</div>
+      <a><span class="ic">🗂️</span> Planner</a>
+      <a><span class="ic">💳</span> History</a>
+      <a><span class="ic">⚙️</span> Settings</a>
+    </nav>
+    <div class="side-foot"><div class="profile"><div class="av">C</div><div><div class="p1">Jamie</div><div class="p2">Parent</div></div></div></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="title"><div class="tic">🏠</div><h1>Home</h1></div>
+      <div class="tb-actions"><button class="icon-btn">🌓</button></div>
+    </div>
+
+    <!-- HERO HEADER -->
+    <div class="card hero">
+      <div class="hi">
+        <h3>Good morning, <span class="ac">Jamie</span></h3>
+        <div class="sumline">
+          <span class="sumtag warn">✦ 3 awaiting approval</span>
+          <span class="sumtag">✓ 5 done today</span>
+          <span class="sumtag help">! 1 needs help</span>
+        </div>
+      </div>
+      <div class="date">Friday, June 20</div>
+    </div>
+
+    <!-- STAT PILLS -->
+    <div class="stats">
+      <div class="stat gold"><div class="chip">✦</div><div><div class="v">3</div><div class="l">Awaiting approval</div></div></div>
+      <div class="stat acc"><div class="chip">✓</div><div><div class="v">5</div><div class="l">Done today</div></div></div>
+      <div class="stat ok"><div class="chip">💰</div><div><div class="v">$24</div><div class="l">Earned this week</div></div></div>
+    </div>
+
+    <!-- ASYMMETRIC GRID -->
+    <div class="grid">
+      <!-- action column -->
+      <div class="col">
+        <div class="card approvals">
+          <h2>Pending approvals <span class="count-chip">3</span></h2>
+          <div class="appr">
+            <div class="ava">V</div>
+            <div class="info"><div class="t">Clean the kitchen</div><div class="m">Kid • 18 min ago</div></div>
+            <span class="amt">$3.00</span><button class="btn-ap">✓ Approve</button>
+          </div>
+          <div class="appr">
+            <div class="ava">V</div>
+            <div class="info"><div class="t">Homework</div><div class="m">Kid • 1 hr ago</div></div>
+            <span class="amt">$2.00</span><button class="btn-ap">✓ Approve</button>
+          </div>
+          <div class="appr">
+            <div class="ava">V</div>
+            <div class="info"><div class="t">Make the bed</div><div class="m">Kid • 2 hr ago</div></div>
+            <span class="amt">$1.00</span><button class="btn-ap">✓ Approve</button>
+          </div>
+          <a class="viewall" href="#">View all in Activity →</a>
+        </div>
+
+        <div class="card">
+          <h2>Quick view</h2>
+          <div class="tabs">
+            <button class="tab sel">Today</button>
+            <button class="tab">This week</button>
+            <button class="tab">Everyone</button>
+          </div>
+          <div class="week">
+            <div class="day on"><div class="d">M</div><div class="v">$6</div></div>
+            <div class="day on"><div class="d">T</div><div class="v">$5</div></div>
+            <div class="day on"><div class="d">W</div><div class="v">$6</div></div>
+            <div class="day on"><div class="d">T</div><div class="v">$4</div></div>
+            <div class="day on"><div class="d">F</div><div class="v">$3</div></div>
+            <div class="day"><div class="d">S</div><div class="v">—</div></div>
+            <div class="day"><div class="d">S</div><div class="v">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- right rail -->
+      <div class="col">
+        <div class="card">
+          <h2>Children</h2>
+          <div class="bal selected">
+            <div class="who"><div class="a">V</div><div><span class="nm">Kid</span><span class="ready">Cash out ready</span></div></div>
+            <span class="amt">$43.50</span>
+          </div>
+          <div class="bal">
+            <div class="who"><div class="a">L</div><span class="nm">Lucy</span></div>
+            <span class="amt">$12.00</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Kid's year</h2>
+          <div class="heatwrap"><div class="heat" id="heat"></div></div>
+          <div class="legend"><span>less</span><i style="background:var(--bg3)"></i><i style="background:color-mix(in srgb,var(--accent) 35%,var(--bg3))"></i><i style="background:color-mix(in srgb,var(--accent) 65%,var(--bg3))"></i><i style="background:var(--accent)"></i><span>more</span></div>
+          <p class="note"><b>18</b> perfect days this year ✨</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const root=document.documentElement;
+document.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{root.setAttribute('data-theme',d.dataset.theme);document.querySelectorAll('.dot').forEach(x=>x.classList.remove('active'));d.classList.add('active');});
+document.querySelectorAll('.toggle button').forEach(b=>b.onclick=()=>{root.setAttribute('data-mode',b.dataset.m);document.querySelectorAll('.toggle button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+const heat=document.getElementById('heat'),start=new Date(2026,0,1);
+for(let w=0;w<53;w++)for(let d=0;d<7;d++){
+  const day=new Date(start);day.setDate(day.getDate()+w*7+d);
+  if(day.getFullYear()!==2026){const e=document.createElement('div');e.className='cell';e.style.visibility='hidden';heat.appendChild(e);continue;}
+  const c=document.createElement('div');c.className='cell';const m=day.getMonth();
+  const base=Math.min(.95,.25+m*0.06),r=Math.random();let comp=Math.max(0,Math.min(1,base+(r-0.5)*0.7));
+  if(day>new Date(2026,5,20))comp=0;
+  const hue=[200,205,150,160,95,45,40,35,300,20,8,210][m];
+  if(comp<=0)c.style.background='var(--bg3)';
+  else{c.style.background=`hsl(${hue} 55% ${24+comp*34}%)`;if(comp>0.92){c.classList.add('glow');c.style.color=`hsl(${hue} 70% 62%)`;}}
+  heat.appendChild(c);
+}
+</script>
+</body>
+</html>

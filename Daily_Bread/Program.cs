@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Daily_Bread.Components;
 using Daily_Bread.Components.Account;
 using Daily_Bread.Data;
@@ -26,6 +27,21 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
+
+// Persist DataProtection keys to a mounted volume so auth cookies (and the
+// upcoming OIDC correlation/nonce cookies) survive container redeploys.
+// Without this, keys regenerate on every restart and all users are logged out.
+// Path defaults to /keys (bind-mounted in docker-compose); skipped in dev when
+// the path is unavailable so the developer keeps ephemeral in-memory keys.
+var dataProtectionKeysPath = Environment.GetEnvironmentVariable("DATAPROTECTION_KEYS_PATH") ?? "/keys";
+if (Directory.Exists(dataProtectionKeysPath) || builder.Environment.IsProduction())
+{
+    Directory.CreateDirectory(dataProtectionKeysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .SetApplicationName("DailyBread");
+    Console.WriteLine($"DataProtection keys persisted to: {dataProtectionKeysPath}");
+}
 
 // Build PostgreSQL connection string from Railway environment variables
 var connectionString = GetPostgresConnectionString(builder.Configuration);
@@ -111,6 +127,58 @@ builder.Services.AddAuthentication(options =>
 })
 .AddIdentityCookies();
 
+// Authentik OIDC for parents. Wired as an external login provider
+// that feeds ASP.NET Identity, so SSO logins and local password logins both end
+// up holding the same .DailyBread.Auth cookie. The kid keeps local password login
+// and never touches this path. Disabled automatically if env vars are absent.
+var oidcAuthority = Environment.GetEnvironmentVariable("OIDC_AUTHORITY");
+var oidcClientId = Environment.GetEnvironmentVariable("OIDC_CLIENT_ID");
+var oidcClientSecret = Environment.GetEnvironmentVariable("OIDC_CLIENT_SECRET");
+var oidcEnabled = !string.IsNullOrEmpty(oidcAuthority)
+    && !string.IsNullOrEmpty(oidcClientId)
+    && !string.IsNullOrEmpty(oidcClientSecret);
+
+if (oidcEnabled)
+{
+    builder.Services.AddAuthentication().AddOpenIdConnect("Authentik", options =>
+    {
+        options.Authority = oidcAuthority;
+        options.ClientId = oidcClientId;
+        options.ClientSecret = oidcClientSecret;
+        options.ResponseType = "code";
+        options.UsePkce = true;
+
+        // Sign into Identity's external scheme so the callback can link/provision
+        // the local user and then issue the normal application cookie.
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+
+        options.CallbackPath = "/signin-oidc";
+        options.SignedOutCallbackPath = "/signout-callback-oidc";
+        options.SaveTokens = true;
+        options.GetClaimsFromUserInfoEndpoint = true;
+        options.MapInboundClaims = false; // keep raw claim names: sub, email, groups
+
+        options.Scope.Clear();
+        options.Scope.Add("openid");
+        options.Scope.Add("profile");
+        options.Scope.Add("email");
+        options.Scope.Add("offline_access");
+
+        // auth.example.com and dailybread.example.com are same-site (eTLD+1
+        // example.com), so Lax correlation/nonce cookies survive the round trip.
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.NonceCookie.SameSite = SameSiteMode.Lax;
+
+        options.TokenValidationParameters.NameClaimType = "preferred_username";
+        options.TokenValidationParameters.RoleClaimType = "groups";
+    });
+    Console.WriteLine($"OIDC (Authentik) enabled: authority={oidcAuthority}");
+}
+else
+{
+    Console.WriteLine("OIDC (Authentik) not configured - SSO button hidden, local login only.");
+}
+
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
 {
     options.Password.RequireDigit = true;
@@ -140,9 +208,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
     
-    // Session duration - 7 days with sliding expiration
-    // Each authenticated request extends the session by this duration
-    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    // Session duration - 60 days with sliding expiration.
+    // Each authenticated request slides the window forward, so with near-daily
+    // use (e.g. the kid's PWA on his phone) the session effectively never expires.
+    options.ExpireTimeSpan = TimeSpan.FromDays(60);
     options.SlidingExpiration = true;
     
     // Cookie name - customize to avoid fingerprinting default ASP.NET cookies
@@ -158,14 +227,13 @@ builder.Services.ConfigureApplicationCookie(options =>
     // - None: Cookie sent for all requests (requires Secure, allows CSRF)
     options.Cookie.SameSite = SameSiteMode.Lax;
     
-    // SecurePolicy = SameAsRequest allows HTTP locally, HTTPS in production
-    // When behind a reverse proxy with HTTPS termination (Railway, Azure, etc.),
-    // UseForwardedHeaders() ensures the app sees the original HTTPS scheme,
-    // so cookies will be marked Secure automatically.
-    //
-    // For HTTPS-only deployments without a proxy, change to:
-    // options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    // SecurePolicy: force Secure cookies in Production (always HTTPS via the
+    // Cloudflare tunnel; UseForwardedHeaders surfaces the original https scheme),
+    // but fall back to SameAsRequest in Development so local http://localhost
+    // login still works without TLS.
+    options.Cookie.SecurePolicy = builder.Environment.IsProduction()
+        ? CookieSecurePolicy.Always
+        : CookieSecurePolicy.SameAsRequest;
     
     // IsEssential = true means this cookie is required for the app to function
     // and won't be blocked by cookie consent policies
@@ -220,11 +288,11 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<ISavingsGoalService, SavingsGoalService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
-builder.Services.AddScoped<IKidModeService, KidModeService>();
 builder.Services.AddScoped<IChoreChartService, ChoreChartService>();
 builder.Services.AddScoped<IChorePlannerService, ChorePlannerService>();
 builder.Services.AddScoped<IFamilySettingsService, FamilySettingsService>();
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+builder.Services.AddHttpClient<INtfyAlertService, NtfyAlertService>();
 builder.Services.AddScoped<IWeeklyProgressService, WeeklyProgressService>();
 builder.Services.AddScoped<IWeeklyReconciliationService, WeeklyReconciliationService>();
 builder.Services.AddScoped<IBiometricAuthService, BiometricAuthService>();
@@ -388,8 +456,6 @@ app.Use(async (context, next) =>
     
     // Allow specific anonymous pages
     if (context.Request.Path.StartsWithSegments("/Account", StringComparison.OrdinalIgnoreCase) ||
-        context.Request.Path.StartsWithSegments("/kid", StringComparison.OrdinalIgnoreCase) ||
-        context.Request.Path.StartsWithSegments("/auth", StringComparison.OrdinalIgnoreCase) ||
         context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase) ||
         context.Request.Path.StartsWithSegments("/not-found", StringComparison.OrdinalIgnoreCase))
     {
@@ -419,56 +485,6 @@ app.Use(async (context, next) =>
 // Map endpoints - these run AFTER the middleware above
 app.MapHealthChecks("/health").AllowAnonymous();
 
-// PIN authentication endpoint - handles Kid Mode sign-in via HTTP POST
-// This allows the auth cookie to be set properly via HTTP response
-app.MapPost("/auth/pin", async (
-    HttpContext context,
-    Daily_Bread.Services.IAuthenticationService authService,
-    ILogger<Program> logger) =>
-{
-    try
-    {
-        // Read JSON body
-        var body = await context.Request.ReadFromJsonAsync<PinLoginRequest>();
-        
-        if (body == null || string.IsNullOrEmpty(body.Pin))
-        {
-            return Results.Json(new { message = "PIN is required." }, statusCode: 400);
-        }
-        
-        // Validate PIN format
-        if (body.Pin.Length != 4 || !body.Pin.All(char.IsDigit))
-        {
-            return Results.Json(new { message = "Invalid PIN format." }, statusCode: 400);
-        }
-        
-        // Use the centralized authentication service
-        var credential = new Daily_Bread.Services.PinCredential
-        {
-            Pin = body.Pin,
-            RememberDevice = true
-        };
-        
-        var result = await authService.SignInAsync(credential);
-        
-        if (result.Success)
-        {
-            logger.LogInformation("PIN login successful for user {UserId}", result.User?.UserId);
-            return Results.Ok(new { success = true, userName = result.User?.UserName });
-        }
-        else
-        {
-            logger.LogWarning("PIN login failed: {ErrorCode}", result.ErrorCode);
-            return Results.Json(new { message = result.UserFacingMessage ?? "Invalid PIN. Please try again." }, statusCode: 401);
-        }
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Exception during PIN authentication endpoint");
-        return Results.Json(new { message = "An error occurred. Please try again." }, statusCode: 500);
-    }
-}).AllowAnonymous();
-
 // MapStaticAssets serves fingerprinted assets generated by @Assets[] directive
 // MUST allow anonymous access since these are CSS/JS files needed before login
 app.MapStaticAssets().AllowAnonymous();
@@ -479,121 +495,6 @@ app.MapRazorComponents<App>()
 
 // Map additional Identity endpoints
 app.MapAdditionalIdentityEndpoints();
-
-// ============================================================================
-// ENDPOINT DEBUGGING: Print ALL endpoints related to Account/Identity/Login
-// ============================================================================
-Console.WriteLine("\n========================================");
-Console.WriteLine("ENDPOINT ROUTE ANALYSIS (COMPREHENSIVE)");
-Console.WriteLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
-Console.WriteLine("========================================\n");
-
-var endpointDataSource = app.Services.GetRequiredService<EndpointDataSource>();
-
-// Get ALL endpoints that might be related to authentication
-var relevantEndpoints = endpointDataSource.Endpoints
-    .Where(e => 
-    {
-        var displayName = e.DisplayName ?? "";
-        var routePattern = (e as RouteEndpoint)?.RoutePattern.RawText ?? "";
-        
-        return displayName.Contains("Account", StringComparison.OrdinalIgnoreCase) ||
-               displayName.Contains("Identity", StringComparison.OrdinalIgnoreCase) ||
-               displayName.Contains("Login", StringComparison.OrdinalIgnoreCase) ||
-               displayName.Contains("Logout", StringComparison.OrdinalIgnoreCase) ||
-               routePattern.Contains("Account", StringComparison.OrdinalIgnoreCase) ||
-               routePattern.Contains("Login", StringComparison.OrdinalIgnoreCase);
-    })
-    .ToList();
-
-Console.WriteLine($"Found {relevantEndpoints.Count} endpoint(s) matching Account/Identity/Login patterns:\n");
-
-var loginEndpoints = new List<(string Pattern, string HttpMethods, string Type)>();
-
-foreach (var endpoint in relevantEndpoints)
-{
-    Console.WriteLine($"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    Console.WriteLine($"Display Name: {endpoint.DisplayName}");
-    
-    // Try to get route pattern
-    var routeEndpoint = endpoint as RouteEndpoint;
-    var pattern = routeEndpoint?.RoutePattern.RawText ?? "(no pattern)";
-    Console.WriteLine($"  Route Pattern: {pattern}");
-    Console.WriteLine($"  Order: {routeEndpoint?.Order ?? -1}");
-    
-    // Get HTTP methods
-    var httpMethodMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Routing.HttpMethodMetadata>();
-    var methods = httpMethodMetadata?.HttpMethods != null 
-        ? string.Join(", ", httpMethodMetadata.HttpMethods)
-        : "ALL (no restriction)";
-    Console.WriteLine($"  HTTP Methods: {methods}");
-    
-    // Check for component metadata (Blazor)
-    var componentMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Components.Endpoints.ComponentTypeMetadata>();
-    if (componentMetadata != null)
-    {
-        Console.WriteLine($"  ✓ Blazor Component: {componentMetadata.Type.FullName}");
-    }
-    
-    // Check for Razor Pages
-    var pageMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.RazorPages.PageActionDescriptor>();
-    if (pageMetadata != null)
-    {
-        Console.WriteLine($"  ⚠ Razor Page: {pageMetadata.RelativePath}");
-        Console.WriteLine($"  ⚠ Page Route: {pageMetadata.RouteValues["page"]}");
-    }
-    
-    // Check for antiforgery
-    var antiforgeryMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Antiforgery.IAntiforgeryMetadata>();
-    if (antiforgeryMetadata != null)
-    {
-        Console.WriteLine($"  Antiforgery Required: {antiforgeryMetadata.RequiresValidation}");
-    }
-    
-    // Check for authorization
-    var authMetadata = endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Authorization.IAllowAnonymous>();
-    if (authMetadata != null)
-    {
-        Console.WriteLine($"  Authorization: [AllowAnonymous]");
-    }
-    
-    // Track /Account/Login endpoints specifically
-    if (pattern.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase))
-    {
-        var type = componentMetadata != null ? "Blazor" : (pageMetadata != null ? "RazorPages" : "MinimalAPI");
-        loginEndpoints.Add((pattern, methods, type));
-    }
-    
-    Console.WriteLine();
-}
-
-// Summary for /Account/Login
-Console.WriteLine("========================================");
-Console.WriteLine("ROUTE COLLISION CHECK: /Account/Login");
-Console.WriteLine("========================================");
-
-if (loginEndpoints.Count == 0)
-{
-    Console.WriteLine("⚠ WARNING: No endpoint found for /Account/Login!");
-    Console.WriteLine("  Login will be handled by the Blazor catch-all route via MapRazorComponents.");
-}
-else if (loginEndpoints.Count == 1)
-{
-    var ep = loginEndpoints[0];
-    Console.WriteLine($"✓ Single handler found: {ep.Type}");
-    Console.WriteLine($"  Pattern: {ep.Pattern}");
-    Console.WriteLine($"  Methods: {ep.HttpMethods}");
-}
-else
-{
-    Console.WriteLine($"⚠ COLLISION DETECTED: {loginEndpoints.Count} handlers for /Account/Login!");
-    foreach (var ep in loginEndpoints)
-    {
-        Console.WriteLine($"  - {ep.Type}: {ep.Pattern} [{ep.HttpMethods}]");
-    }
-}
-
-Console.WriteLine("\n========================================\n");
 
 app.Run();
 
@@ -771,11 +672,72 @@ internal static class IdentityEndpointsExtensions
             return Results.LocalRedirect("~/Account/Login");
         }).DisableAntiforgery();
 
+        // External login (Authentik SSO) - challenge endpoint.
+        // Must run as a plain HTTP endpoint, not inside a Blazor interactive
+        // circuit, so the OIDC redirect can be issued cleanly.
+        group.MapGet("/ExternalLogin", (string? returnUrl, SignInManager<ApplicationUser> signInManager) =>
+        {
+            var redirectUrl = $"/Account/ExternalLoginCallback?returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}";
+            // ConfigureExternalAuthenticationProperties stamps the LoginProvider marker
+            // that GetExternalLoginInfoAsync() needs to reconstruct the login on callback.
+            var props = signInManager.ConfigureExternalAuthenticationProperties("Authentik", redirectUrl);
+            return Results.Challenge(props, new[] { "Authentik" });
+        }).AllowAnonymous();
+
+        // External login callback - after Authentik authenticates the user and the
+        // OIDC middleware establishes the external cookie, link the Authentik
+        // identity to the matching local account (by email) and issue the normal
+        // application cookie. Access is already restricted to the
+        // dailybread-parents group in Authentik, so only parents reach here.
+        group.MapGet("/ExternalLoginCallback", async (
+            string? returnUrl,
+            SignInManager<ApplicationUser> signInManager,
+            UserManager<ApplicationUser> userManager,
+            ILogger<Program> logger) =>
+        {
+            var info = await signInManager.GetExternalLoginInfoAsync();
+            if (info is null)
+            {
+                logger.LogWarning("External login callback with no external login info");
+                return Results.LocalRedirect("~/Account/Login?error=external");
+            }
+
+            var email = info.Principal.FindFirst("email")?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                logger.LogWarning("External login missing email claim");
+                return Results.LocalRedirect("~/Account/Login?error=external");
+            }
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user is null)
+            {
+                logger.LogWarning("OIDC login for {Email} has no matching local account", email);
+                return Results.LocalRedirect("~/Account/Login?error=notauthorized");
+            }
+
+            // Link the Authentik identity to the local account if not already linked.
+            var logins = await userManager.GetLoginsAsync(user);
+            if (!logins.Any(l => l.LoginProvider == info.LoginProvider && l.ProviderKey == info.ProviderKey))
+            {
+                await userManager.AddLoginAsync(user, info);
+            }
+
+            // Roles follow Authentik group membership.
+            var groups = info.Principal.FindAll("groups").Select(c => c.Value).ToHashSet(StringComparer.Ordinal);
+            if (groups.Contains("authentik Admins") && !await userManager.IsInRoleAsync(user, "Admin"))
+                await userManager.AddToRoleAsync(user, "Admin");
+            if (groups.Contains("dailybread-parents") && !await userManager.IsInRoleAsync(user, "Parent"))
+                await userManager.AddToRoleAsync(user, "Parent");
+
+            // Persistent sign-in so parents stay logged in across the 60-day window.
+            await signInManager.SignInAsync(user, isPersistent: true);
+            logger.LogInformation("OIDC login: {Email} -> {User}", email, user.UserName);
+
+            var dest = string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl;
+            return Results.LocalRedirect($"~{dest}");
+        }).AllowAnonymous();
+
         return group;
     }
 }
-
-/// <summary>
-/// Request body for PIN-based authentication.
-/// </summary>
-internal record PinLoginRequest(string? Pin);

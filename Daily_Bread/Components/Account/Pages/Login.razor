@@ -25,6 +25,18 @@
                 Your account has been locked due to too many failed attempts. Please try again later.
             </div>
         }
+        else if (Error == "notauthorized")
+        {
+            <div class="alert alert-danger" role="alert">
+                That account isn't set up for Daily Bread. Please contact a parent.
+            </div>
+        }
+        else if (Error == "external")
+        {
+            <div class="alert alert-danger" role="alert">
+                Sign-in with Authentik didn't complete. Please try again.
+            </div>
+        }
 
         <form method="post" action="/Account/PerformLogin@(string.IsNullOrEmpty(ReturnUrl) ? "" : $"?ReturnUrl={Uri.EscapeDataString(ReturnUrl)}")">
             <div class="mb-4">
@@ -62,12 +74,17 @@
                 <span>Sign In</span>
             </button>
         </form>
-        
-        <div class="login-footer">
-            <a href="/kid" class="kid-mode-link">
-                <span class="bi bi-emoji-smile me-2"></span>Kid Mode (PIN Login)
+
+        @if (OidcEnabled)
+        {
+            <div class="login-or"><span>or</span></div>
+            <a href="/Account/ExternalLogin@(string.IsNullOrEmpty(ReturnUrl) ? "" : $"?returnUrl={Uri.EscapeDataString(ReturnUrl)}")"
+               class="btn btn-secondary btn-login">
+                <span class="bi bi-shield-lock me-2"></span>
+                <span>Sign in with Authentik</span>
             </a>
-        </div>
+        }
+
     </div>
 </div>
 
@@ -77,4 +94,7 @@
 
     [SupplyParameterFromQuery(Name = "error")]
     private string? Error { get; set; }
+
+    // Only show the Authentik button when SSO is configured for this deployment.
+    private bool OidcEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OIDC_AUTHORITY"));
 }

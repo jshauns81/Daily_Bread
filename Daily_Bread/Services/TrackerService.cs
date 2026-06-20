@@ -171,6 +171,7 @@ public class TrackerService : ITrackerService
     private readonly IChoreLogService _choreLogService;
     private readonly ILedgerService _ledgerService;
     private readonly IPushNotificationService _pushNotificationService;
+    private readonly INtfyAlertService _ntfyAlertService;
     private readonly IWeeklyProgressService _weeklyProgressService;
     private readonly IFamilySettingsService _familySettingsService;
     private readonly IAchievementService _achievementService;
@@ -185,6 +186,7 @@ public class TrackerService : ITrackerService
         IChoreLogService choreLogService,
         ILedgerService ledgerService,
         IPushNotificationService pushNotificationService,
+        INtfyAlertService ntfyAlertService,
         IWeeklyProgressService weeklyProgressService,
         IFamilySettingsService familySettingsService,
         IAchievementService achievementService,
@@ -198,6 +200,7 @@ public class TrackerService : ITrackerService
         _choreLogService = choreLogService;
         _ledgerService = ledgerService;
         _pushNotificationService = pushNotificationService;
+        _ntfyAlertService = ntfyAlertService;
         _weeklyProgressService = weeklyProgressService;
         _familySettingsService = familySettingsService;
         _achievementService = achievementService;
@@ -688,7 +691,10 @@ public class TrackerService : ITrackerService
         var childName = choreDefinition?.AssignedUser?.UserName ?? "Your child";
         var choreName = choreDefinition?.Name ?? "a chore";
         
-        // Push notification with choreLogId for deep linking
+        // ntfy: reliable native push to parents' phones - the alert that must land.
+        _ = _ntfyAlertService.SendHelpAlertAsync(childName, choreName, reason, choreLog.Id);
+
+        // Web push (best-effort, esp. on iOS) with choreLogId for deep linking
         _ = _pushNotificationService.SendHelpRequestNotificationAsync(choreLog.Id, childName, choreName, reason);
         
         // SignalR real-time notification

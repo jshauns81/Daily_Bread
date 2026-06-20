@@ -16,7 +16,7 @@
 </div>
 
 @code {
-    [Parameter] public string Title { get; set; } = "Add Labor";
+    [Parameter] public string Title { get; set; } = "Add Task";
     [Parameter] public ChoreDefinitionDto? Chore { get; set; }
     [Parameter] public List<UserSelectItem> Users { get; set; } = [];
     [Parameter] public EventCallback<ChoreDefinitionDto> OnSubmit { get; set; }

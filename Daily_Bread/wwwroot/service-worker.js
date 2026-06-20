@@ -1,12 +1,11 @@
 // Daily Bread Service Worker
 // Provides offline caching and PWA functionality
 
-const CACHE_NAME = 'daily-bread-v1';
+const CACHE_NAME = 'daily-bread-v3';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
 const PRECACHE_ASSETS = [
-    '/',
     '/offline.html',
     '/images/bread-icon.png',
     '/lib/bootstrap/dist/css/bootstrap.min.css',
@@ -141,11 +140,14 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Helper function to identify static assets
+// Helper function to identify cache-first static assets.
+// NOTE: .css and .js are deliberately EXCLUDED so they use the default
+// network-first strategy below — this guarantees style/script updates land
+// immediately after a deploy instead of being served stale from cache.
 function isStaticAsset(pathname) {
     const staticExtensions = [
-        '.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico',
-        '.woff', '.woff2', '.ttf', '.eot', '.json'
+        '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico',
+        '.woff', '.woff2', '.ttf', '.eot'
     ];
     return staticExtensions.some(ext => pathname.endsWith(ext));
 }

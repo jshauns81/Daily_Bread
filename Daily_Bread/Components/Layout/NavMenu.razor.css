@@ -7,7 +7,9 @@
    =========================================== */
 
 .nav-header {
-    padding: 1rem;
+    /* Left gutter (1.5rem) matches the nav-link icon column:
+       0.5rem link margin + 1rem link padding = 1.5rem. */
+    padding: 1rem 1rem 1rem 1.5rem;
     border-bottom: none;
     flex-shrink: 0;
 }
@@ -22,20 +24,42 @@
     font-size: 1.25rem;
 }
 
-.nav-brand-icon {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
+/* Logo tile: bread glyph in a rounded gold gradient square (matches preview) */
+.nav-brand-logo {
+    width: 42px;
+    height: 42px;
     flex-shrink: 0;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    line-height: 1;
+    /* Color-emoji font so the bread glyph renders in full color */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    background: linear-gradient(135deg, var(--ds-semantic-highlight), color-mix(in srgb, var(--ds-semantic-highlight) 55%, #fff));
+    box-shadow: 0 0 22px color-mix(in srgb, var(--ds-semantic-highlight) 40%, transparent);
     transition: transform 0.3s ease;
 }
 
-.nav-brand:hover .nav-brand-icon {
-    transform: rotate(-10deg) scale(1.1);
+.nav-brand:hover .nav-brand-logo {
+    transform: rotate(-8deg) scale(1.06);
+}
+
+.nav-brand-titles {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
 }
 
 .nav-brand-text {
+    white-space: nowrap;
+}
+
+.nav-brand-sub {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--ds-text-muted);
     white-space: nowrap;
 }
 
@@ -69,16 +93,13 @@
 
 /* Section labels */
 .nav-section-label {
-    padding: var(--ds-space-3) 1rem var(--ds-space-2) 1rem;
+    /* Quiet, muted label on the shared 1.5rem gutter (matches preview's "MANAGE") */
+    padding: var(--ds-space-3) 1.5rem var(--ds-space-2) 1.5rem;
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.15em;
     color: var(--ds-text-muted);
-    background: linear-gradient(90deg, var(--ds-text-muted) 0%, var(--ds-accent-cyan) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
     flex-shrink: 0;
 }
 
@@ -101,21 +122,24 @@
     min-height: 48px;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
-    /* Active indicator border */
-    border-left: 3px solid transparent;
+    border: 1px solid transparent;
     /* Smooth transitions */
     transition: background-color var(--ds-duration-fast) var(--ds-ease-default),
                 color var(--ds-duration-fast) var(--ds-ease-default),
-                border-color var(--ds-duration-fast) var(--ds-ease-default);
+                border-color var(--ds-duration-fast) var(--ds-ease-default),
+                box-shadow var(--ds-duration-fast) var(--ds-ease-default);
 }
 
-/* Icon - inline, fixed width */
-.nav-link .bi {
+/* Icon - inline, fixed width (emoji) */
+.nav-link .nav-ico {
     font-size: 1.25rem;
     width: 24px;
     text-align: center;
     flex-shrink: 0;
-    transition: color var(--ds-duration-fast) var(--ds-ease-default);
+    line-height: 1;
+    opacity: 1;
+    /* Color-emoji font so nav glyphs render in full color, not faint mono glyphs */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 }
 
 /* Text - grows to fill space */
@@ -151,23 +175,24 @@
 
 /* Hover state */
 .nav-link:hover {
-    background-color: rgba(136, 192, 208, 0.1);
+    background-color: color-mix(in srgb, var(--ds-accent-primary) 10%, transparent);
     color: var(--ds-text-primary);
 }
 
 .nav-link:hover .bi {
-    color: var(--ds-accent-cyan);
+    color: var(--ds-accent-primary);
 }
 
-/* Active state - left border indicator */
+/* Active state - glowing accent pill */
 .nav-link.active {
-    background-color: rgba(136, 192, 208, 0.12);
-    color: var(--ds-text-primary);
-    border-left-color: var(--ds-accent-cyan);
+    background: color-mix(in srgb, var(--ds-accent-primary) 16%, transparent);
+    color: var(--ds-accent-primary);
+    border-color: color-mix(in srgb, var(--ds-accent-primary) 30%, transparent);
+    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--ds-accent-primary) 60%, transparent);
 }
 
 .nav-link.active .bi {
-    color: var(--ds-accent-cyan);
+    color: var(--ds-accent-primary);
 }
 
 /* ===========================================
@@ -177,6 +202,128 @@
 .nav-footer {
     padding: 0.75rem 1rem;
     flex-shrink: 0;
+    position: relative;
+}
+
+/* Profile pill (sidebar footer) */
+.nav-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--ds-bg-muted);
+    background: var(--ds-bg-hover);
+    border-radius: 16px;
+    cursor: pointer;
+    color: var(--ds-text-primary);
+    text-align: left;
+    transition: border-color var(--ds-duration-fast) ease, transform var(--ds-duration-fast) ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-profile:hover {
+    border-color: color-mix(in srgb, var(--ds-accent-primary) 45%, var(--ds-bg-muted));
+}
+
+.nav-profile-av {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--ds-on-accent, #fff);
+    background: linear-gradient(135deg, var(--ds-accent-primary), color-mix(in srgb, var(--ds-accent-primary) 45%, var(--ds-semantic-highlight)));
+}
+
+.nav-profile-who {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.nav-profile-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-profile-role {
+    font-size: 0.72rem;
+    color: var(--ds-text-muted);
+}
+
+.nav-profile-cv {
+    color: var(--ds-text-muted);
+    font-size: 0.7rem;
+    flex: 0 0 auto;
+}
+
+/* Upward-opening user menu */
+.nav-user-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1150;
+}
+
+.nav-user-menu {
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: calc(100% - 0.35rem);
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md);
+    box-shadow: var(--ds-shadow-lg);
+    padding: var(--ds-space-2) 0;
+    z-index: 1200;
+}
+
+.nav-user-menu form {
+    margin: 0;
+}
+
+.nav-user-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--ds-text-primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    text-align: left;
+    transition: background-color var(--ds-duration-fast) ease;
+}
+
+.nav-user-item:hover {
+    background: var(--ds-bg-hover);
+}
+
+.nav-user-item .bi {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.nav-user-item-danger {
+    color: var(--ds-semantic-error);
+}
+
+.nav-user-divider {
+    margin: 0.4rem 0;
+    border: 0;
+    border-top: 1px solid var(--ds-bg-muted);
+    opacity: 0.5;
 }
 
 .kid-mode-link {
@@ -220,7 +367,7 @@
         font-size: 1rem;
     }
     
-    .nav-link .bi {
+    .nav-link .nav-ico {
         font-size: 1.35rem;
         width: 28px;
     }
@@ -254,20 +401,20 @@
     }
     
     .nav-link:active {
-        background-color: rgba(136, 192, 208, 0.15);
+        background-color: color-mix(in srgb, var(--ds-accent-primary) 15%, transparent);
     }
-    
+
     /* Disable hover effects on touch */
     .nav-link:hover {
         background-color: transparent;
     }
-    
+
     .nav-link:hover .bi {
         color: inherit;
     }
-    
+
     .nav-link.active:hover {
-        background-color: rgba(136, 192, 208, 0.12);
+        background-color: color-mix(in srgb, var(--ds-accent-primary) 16%, transparent);
     }
     
     .kid-mode-link:hover {
@@ -287,15 +434,15 @@
     .nav-link,
     .nav-link .bi,
     .kid-mode-link,
-    .nav-brand-icon {
+    .nav-brand-logo {
         transition: none;
     }
-    
+
     .nav-badge {
         animation: none;
     }
-    
-    .nav-brand:hover .nav-brand-icon,
+
+    .nav-brand:hover .nav-brand-logo,
     .kid-mode-link:hover {
         transform: none;
     }

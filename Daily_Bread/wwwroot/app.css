@@ -214,7 +214,7 @@ code {
 
 /* UNIFIED: Focus ring uses --ds-accent-primary (blue) */
 .btn:focus, .btn:active:focus {
-    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.4);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ds-accent-primary) 40%, transparent);
 }
 
 /* Primary */
@@ -373,7 +373,7 @@ code {
     background-color: var(--ds-bg-hover);
     border-color: var(--ds-accent-primary);
     color: var(--ds-text-primary);
-    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.25);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ds-accent-primary) 28%, transparent);
     outline: none;
 }
 
@@ -418,7 +418,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     border-color: var(--ds-accent-primary);
 }
 .form-check-input:focus {
-    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.25);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ds-accent-primary) 28%, transparent);
     border-color: var(--ds-accent-primary);
 }
 .form-check-label { color: var(--ds-text-muted); }
@@ -441,17 +441,18 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .card {
     background-color: var(--ds-bg-elevated);
-    border: none;
-    border-radius: var(--ds-radius-lg);
-    box-shadow: var(--ds-shadow-sm);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: 20px;
+    box-shadow: var(--ds-card-shadow, var(--ds-shadow-md));
     transition: box-shadow var(--ds-duration-normal) ease, transform var(--ds-duration-normal) ease;
     overflow: hidden;
     position: relative;
 }
 
-.card:hover { 
-    box-shadow: var(--ds-shadow-md);
-    transform: translateY(-1px);
+.card:hover {
+    /* Lift via shadow only. A translateY here moves the card out from under the
+       cursor at its bottom edge, causing a hover/unhover pulse on small cards. */
+    box-shadow: var(--ds-card-shadow-hover, var(--ds-shadow-lg));
 }
 
 .card-header {
@@ -465,7 +466,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .card-body {
     color: var(--ds-text-muted);
-    padding: var(--ds-space-4);
+    padding: var(--ds-space-5);
     overflow: visible;
 }
 
@@ -626,7 +627,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 }
 
 .alert-primary {
-    background-color: rgba(94, 129, 172, 0.2);
+    background-color: color-mix(in srgb, var(--ds-accent-primary) 22%, transparent);
     color: var(--ds-accent-cyan);
     border-left: 4px solid var(--ds-accent-primary);
 }
@@ -698,7 +699,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .bg-danger-subtle { background-color: rgba(191, 97, 106, 0.15) !important; }
 .bg-warning-subtle { background-color: rgba(235, 203, 139, 0.15) !important; }
 .bg-info-subtle { background-color: rgba(136, 192, 208, 0.15) !important; }
-.bg-primary-subtle { background-color: rgba(94, 129, 172, 0.15) !important; }
+.bg-primary-subtle { background-color: color-mix(in srgb, var(--ds-accent-primary) 16%, transparent) !important; }
 .bg-secondary-subtle { background-color: rgba(76, 86, 106, 0.3) !important; }
 
 /* ===========================================
@@ -817,7 +818,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 
 .nav-tabs .nav-link:hover {
     color: var(--ds-text-primary);
-    background: rgba(94, 129, 172, 0.1);
+    background: color-mix(in srgb, var(--ds-accent-primary) 12%, transparent);
 }
 
 .nav-tabs .nav-link.active {
@@ -866,6 +867,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     font-size: var(--ds-text-xl);
     font-weight: var(--ds-font-bold);
     color: var(--ds-accent-cyan);
+    text-shadow: 0 0 16px color-mix(in srgb, currentColor 30%, transparent);
 }
 
 .summary-label,
@@ -978,4 +980,21 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
     height: auto;
     min-height: auto;
     padding: 0;
+}
+
+/* ===========================================
+   19. POLISH - entrance + motion
+   =========================================== */
+@keyframes db-content-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.content {
+    animation: db-content-in 0.4s var(--ds-ease-default, ease) both;
+}
+main { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+    .content { animation: none; }
+    main { scroll-behavior: auto; }
 }
