@@ -116,6 +116,19 @@ public class ParentDashboardData
     public int TodayApprovedCount { get; init; }
     public int TodayHelpCount { get; init; }
     public int TodayTotalChores { get; init; }
+    public decimal ThisWeekEarnings { get; init; }
+
+    /// <summary>Per-day earnings for the current week (7 entries, week start first).</summary>
+    public List<DailyEarning> WeekEarnings { get; init; } = [];
+}
+
+/// <summary>
+/// Earnings total for a single day, used by the dashboard "Quick view" strip.
+/// </summary>
+public class DailyEarning
+{
+    public DateOnly Date { get; init; }
+    public decimal Amount { get; init; }
 }
 
 /// <summary>
@@ -337,6 +350,27 @@ public class DashboardService : IDashboardService
             CanCashOut = p.TotalBalance >= DefaultCashOutThreshold
         }).ToList();
 
+        // Earned this week, per day: positive chore-earning ledger entries within the
+        // current week, across all children (mirrors the child weekly-earnings calc).
+        var startOfThisWeek = today.AddDays(-(int)today.DayOfWeek);
+        var weekEarningsByDate = await context.LedgerTransactions
+            .Where(t => t.Amount > 0 && t.Type == TransactionType.ChoreEarning)
+            .Where(t => t.TransactionDate >= startOfThisWeek && t.TransactionDate <= today)
+            .GroupBy(t => t.TransactionDate)
+            .Select(g => new { Date = g.Key, Amount = g.Sum(x => x.Amount) })
+            .ToListAsync();
+
+        // Materialise all 7 days of the week (days with no earnings show as 0).
+        var weekEarnings = Enumerable.Range(0, 7)
+            .Select(i => startOfThisWeek.AddDays(i))
+            .Select(d => new DailyEarning
+            {
+                Date = d,
+                Amount = weekEarningsByDate.FirstOrDefault(r => r.Date == d)?.Amount ?? 0m
+            })
+            .ToList();
+        var thisWeekEarnings = weekEarnings.Sum(d => d.Amount);
+
         // Get recent activity - pass pre-loaded logs to avoid re-querying
         var recentActivity = await GetRecentActivityAsync(10, allRelevantLogs);
 
@@ -371,7 +405,9 @@ public class DashboardService : IDashboardService
             TodayPendingCount = todayLogs.Count(l => l.Status == ChoreStatus.Pending),
             TodayApprovedCount = todayLogs.Count(l => l.Status == ChoreStatus.Approved),
             TodayHelpCount = todayLogs.Count(l => l.Status == ChoreStatus.Help),
-            TodayTotalChores = todayLogs.Count
+            TodayTotalChores = todayLogs.Count,
+            ThisWeekEarnings = thisWeekEarnings,
+            WeekEarnings = weekEarnings
         };
     }
 

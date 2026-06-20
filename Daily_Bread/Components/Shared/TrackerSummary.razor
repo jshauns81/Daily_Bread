@@ -4,7 +4,7 @@
 <div class="tracker-summary mt-3">
     <div class="row g-3">
         <div class="col-md-3 col-6">
-            <StatCard Value="@TotalCount" Label="Total Labors" />
+            <StatCard Value="@TotalCount" Label="Total Tasks" />
         </div>
         <div class="col-md-3 col-6">
             <StatCard Value="@CompletedCount" Label="Completed" Color="StatColor.Success" />
@@ -13,7 +13,7 @@
             <StatCard Value="@PendingCount" Label="Pending" Color="StatColor.Warning" />
         </div>
         <div class="col-md-3 col-6">
-            <StatCard Value="@EarnedToday.ToString("F2")" Label="Wages Today" Prefix="$" Color="StatColor.Success" />
+            <StatCard Value="@EarnedToday.ToString("F2")" Label="Earnings Today" Prefix="$" Color="StatColor.Success" />
         </div>
     </div>
 </div>

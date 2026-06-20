@@ -9,8 +9,11 @@
 
 <div class="nav-header">
     <a class="nav-brand" href="">
-        <img src="images/bread-icon.png" alt="" class="nav-brand-icon" />
-        <span class="nav-brand-text">Daily Bread</span>
+        <span class="nav-brand-logo" aria-hidden="true">🍞</span>
+        <span class="nav-brand-titles">
+            <span class="nav-brand-text">Daily Bread</span>
+            <span class="nav-brand-sub">give us this day</span>
+        </span>
     </a>
 </div>
 
@@ -28,7 +31,7 @@
                 }
                 
                 <NavLink class="nav-link" href="@item.Route.TrimStart('/')" Match="@GetNavLinkMatch(item.Route)" @onclick="HandleNavigation">
-                    <span class="bi @item.Icon" aria-hidden="true"></span>
+                    <span class="nav-ico" aria-hidden="true">@item.Icon</span>
                     <span class="nav-link-text">@item.Label</span>
                     @if (HasPendingBadge(item))
                     {
@@ -40,15 +43,45 @@
     </AuthorizeView>
 </nav>
 
-@if (_isStandalone)
-{
-    <div class="nav-footer">
-        <a href="/kid" class="kid-mode-link" @onclick="HandleNavigation">
-            <span class="bi bi-phone" aria-hidden="true"></span>
-            <span>Quick PIN Login</span>
-        </a>
-    </div>
-}
+<AuthorizeView>
+    <Authorized>
+        <div class="nav-footer">
+            @if (_userMenuOpen)
+            {
+                <div class="nav-user-backdrop" @onclick="CloseUserMenu"></div>
+                <div class="nav-user-menu" role="menu">
+                    @if (_isParent)
+                    {
+                        <a href="/settings" class="nav-user-item" role="menuitem" @onclick="CloseUserMenu">
+                            <span class="bi bi-gear-fill" aria-hidden="true"></span> Settings
+                        </a>
+                    }
+                    <a href="/appearance" class="nav-user-item" role="menuitem" @onclick="CloseUserMenu">
+                        <span class="bi bi-palette-fill" aria-hidden="true"></span> Appearance
+                    </a>
+                    <a href="/account/change-password" class="nav-user-item" role="menuitem" @onclick="CloseUserMenu">
+                        <span class="bi bi-key" aria-hidden="true"></span> Change Password
+                    </a>
+                    <hr class="nav-user-divider" />
+                    <form method="post" action="/Account/Logout">
+                        <AntiforgeryToken />
+                        <button type="submit" class="nav-user-item nav-user-item-danger" role="menuitem">
+                            <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Logout
+                        </button>
+                    </form>
+                </div>
+            }
+            <button class="nav-profile" type="button" @onclick="ToggleUserMenu" aria-haspopup="true" aria-expanded="@_userMenuOpen">
+                <span class="nav-profile-av">@_userInitial</span>
+                <span class="nav-profile-who">
+                    <span class="nav-profile-name">@_userName</span>
+                    <span class="nav-profile-role">@_roleLabel</span>
+                </span>
+                <span class="bi bi-chevron-up nav-profile-cv" aria-hidden="true"></span>
+            </button>
+        </div>
+    </Authorized>
+</AuthorizeView>
 
 @code {
     [Parameter]
@@ -60,6 +93,13 @@
     private bool _isChild;
     private bool _isAdmin;
     private bool _isStandalone;
+    private bool _userMenuOpen;
+    private string _userName = "Account";
+    private string _roleLabel = "";
+    private string _userInitial = "?";
+
+    private void ToggleUserMenu() => _userMenuOpen = !_userMenuOpen;
+    private void CloseUserMenu() => _userMenuOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,7 +109,11 @@
         _isParent = user.IsInRole("Parent");
         _isChild = user.IsInRole("Child");
         _isAdmin = user.IsInRole("Admin");
-        
+
+        _userName = user.Identity?.Name ?? "Account";
+        _userInitial = string.IsNullOrWhiteSpace(_userName) ? "?" : _userName.Trim()[..1].ToUpperInvariant();
+        _roleLabel = _isParent ? "Parent" : _isAdmin ? "Admin" : _isChild ? "Child" : "Member";
+
         // Get navigation items from centralized service
         _navItems = NavigationService.GetDesktopNavItems(_isParent, _isChild, _isAdmin);
 

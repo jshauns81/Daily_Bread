@@ -1,0 +1,84 @@
+@inject IJSRuntime JS
+
+<div class="theme-picker">
+    <div class="tp-section-label">Color</div>
+    <div class="tp-dots" role="radiogroup" aria-label="App color theme">
+        @foreach (var t in Themes)
+        {
+            <button type="button"
+                    class="tp-dot @(t.Key == _theme ? "active" : "")"
+                    style="--c:@t.Color"
+                    title="@t.Name"
+                    aria-label="@t.Name"
+                    aria-pressed="@(t.Key == _theme)"
+                    @onclick="() => SetTheme(t.Key)">
+                @if (t.Key == _theme)
+                {
+                    <span class="bi bi-check-lg"></span>
+                }
+            </button>
+        }
+    </div>
+    <div class="tp-name">@CurrentName</div>
+
+    <div class="tp-section-label">Mode</div>
+    <div class="tp-mode-toggle">
+        <button type="button" class="tp-mode @(_mode == "dark" ? "active" : "")" @onclick='() => SetMode("dark")'>
+            <span class="bi bi-moon-stars-fill"></span> Dark
+        </button>
+        <button type="button" class="tp-mode @(_mode == "light" ? "active" : "")" @onclick='() => SetMode("light")'>
+            <span class="bi bi-sun-fill"></span> Light
+        </button>
+    </div>
+</div>
+
+@code {
+    private record ThemeOption(string Key, string Name, string Color);
+
+    private static readonly ThemeOption[] Themes =
+    [
+        new("guadalupe", "Guadalupe", "#4DA8C6"),
+        new("marian",    "Sea",       "#6A82E6"),
+        new("sion",      "Garden",    "#5AAE7B"),
+        new("advent",    "Violet",    "#9B7BE0"),
+        new("rosa",      "Rose",      "#E08AA6"),
+    ];
+
+    private string _theme = "guadalupe";
+    private string _mode = "dark";
+
+    private string CurrentName => Themes.FirstOrDefault(t => t.Key == _theme)?.Name ?? "Guadalupe";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var current = await JS.InvokeAsync<string[]>("DBTheme.get");
+                if (current is { Length: 2 })
+                {
+                    _theme = current[0];
+                    _mode = current[1];
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // JS not ready — keep defaults
+            }
+        }
+    }
+
+    private async Task SetTheme(string key)
+    {
+        _theme = key;
+        await JS.InvokeVoidAsync("DBTheme.setTheme", key);
+    }
+
+    private async Task SetMode(string mode)
+    {
+        _mode = mode;
+        await JS.InvokeVoidAsync("DBTheme.setMode", mode);
+    }
+}

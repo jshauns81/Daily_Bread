@@ -52,47 +52,54 @@ public class NavigationService : INavigationService
         // ============================================
         
         // Home - visible to all, position 1 in mobile for everyone
-        new("/", "bi-house-door-fill", "Home", NavVisibility.All, MobileOrder: 1),
-        
-        // Book of Deeds / Tracker - visible to parents and children
+        new("/", "🏠", "Home", NavVisibility.All, MobileOrder: 1),
+
+        // Activity (the daily tracker / history) - visible to parents and children
         // Position 4 for parents on mobile, hidden for children (they use swipe cards on home)
-        new("/tracker", "bi-check2-square", "Book of Deeds", NavVisibility.Parent | NavVisibility.Child, MobileOrder: 4),
-        
+        new("/tracker", "📊", "Activity", NavVisibility.Parent | NavVisibility.Child, MobileOrder: 4),
+
         // Calendar - visible to parents and children, in overflow menu
-        new("/calendar", "bi-calendar3", "Calendar", NavVisibility.Parent | NavVisibility.Child, MobileOrder: 6, ShowInMobile: false),
-        
+        new("/calendar", "📅", "Calendar", NavVisibility.Parent | NavVisibility.Child, MobileOrder: 6, ShowInMobile: false),
+
         // ============================================
         // CHILD-ONLY NAVIGATION
         // ============================================
-        
-        // My Balance - child-only, position 2 in mobile
-        new("/my-balance", "bi-wallet2", "My Balance", NavVisibility.Child, MobileOrder: 2),
-        
+
+        // Balance - child-only, position 2 in mobile
+        new("/my-balance", "💰", "Balance", NavVisibility.Child, MobileOrder: 2),
+
         // Achievements - child-only, position 3 in mobile
-        new("/achievements", "bi-trophy-fill", "Achievements", NavVisibility.Child, MobileOrder: 3),
-        
+        new("/achievements", "🏆", "Achievements", NavVisibility.Child, MobileOrder: 3),
+
         // Goals - child-only, position 4 in mobile
-        new("/goals", "bi-bullseye", "Goals", NavVisibility.Child, MobileOrder: 4),
-        
+        new("/goals", "🎯", "Goals", NavVisibility.Child, MobileOrder: 4),
+
         // ============================================
         // PARENT MANAGEMENT (Section: "Management")
         // ============================================
-        
-        // Labor Planner - parent-only, position 2 in mobile
-        new("/chore-planner", "bi-calendar-check", "Labor Planner", NavVisibility.Parent, MobileOrder: 2, Section: "Management"),
-        
-        // Treasury / Ledger - parent-only, position 3 in mobile
-        new("/ledger", "bi-journal-text", "Treasury", NavVisibility.Parent, MobileOrder: 3, Section: "Management"),
-        
+
+        // Planner - parent-only, position 2 in mobile
+        new("/chore-planner", "🗂️", "Planner", NavVisibility.Parent, MobileOrder: 2, Section: "Manage"),
+
+        // History (transactions / ledger) - parent-only, position 3 in mobile
+        new("/ledger", "💳", "History", NavVisibility.Parent, MobileOrder: 3, Section: "Manage"),
+
         // Settings - parent-only, in overflow (position 5)
-        new("/settings", "bi-gear-fill", "Settings", NavVisibility.Parent, MobileOrder: 5, Section: "Management"),
-        
+        new("/settings", "⚙️", "Settings", NavVisibility.Parent, MobileOrder: 5, ShowInDesktop: false, Section: "Manage"),
+
         // ============================================
         // ADMIN NAVIGATION (Section: "Admin")
         // ============================================
-        
+
         // Users - admin-only, not in mobile nav
-        new("/admin/users", "bi-people-fill", "Users", NavVisibility.Admin, MobileOrder: 99, ShowInMobile: false, Section: "Admin"),
+        new("/admin/users", "👥", "Users", NavVisibility.Admin, MobileOrder: 99, ShowInMobile: false, Section: "Manage"),
+
+        // ============================================
+        // PREFERENCES (visible to everyone)
+        // ============================================
+
+        // Appearance - theme + light/dark picker, for all users (mobile overflow)
+        new("/appearance", "🎨", "Appearance", NavVisibility.All, MobileOrder: 8, ShowInDesktop: false, Section: "Manage"),
     ];
 
     public IReadOnlyList<NavItem> GetNavItems(bool isParent, bool isChild, bool isAdmin)

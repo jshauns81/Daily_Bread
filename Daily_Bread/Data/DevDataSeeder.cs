@@ -30,11 +30,6 @@ public static class DevDataSeeder
 
     private static readonly Random _random = new(42); // Fixed seed for reproducible data
 
-    // PIN hashing constants (matching KidModeService)
-    private const int SaltSize = 16;
-    private const int HashSize = 32;
-    private const int Iterations = 10000;
-
     public static async Task SeedDevDataAsync(IServiceProvider serviceProvider, IConfiguration configuration)
     {
         // Check if dev data seeding is enabled
@@ -159,13 +154,13 @@ public static class DevDataSeeder
         // 4 children with varying "ages" (affects completion rates)
         var childData = new[]
         {
-            ("emma_test", "Emma", "1234", 0.85), // Oldest, most reliable
-            ("noah_test", "Noah", "2345", 0.78), // Second oldest
-            ("olivia_test", "Olivia", "3456", 0.72), // Middle child
-            ("liam_test", "Liam", "4567", 0.68) // Youngest, learning
+            ("emma_test", "Emma", 0.85), // Oldest, most reliable
+            ("noah_test", "Noah", 0.78), // Second oldest
+            ("olivia_test", "Olivia", 0.72), // Middle child
+            ("liam_test", "Liam", 0.68) // Youngest, learning
         };
 
-        foreach (var (username, displayName, pin, _) in childData)
+        foreach (var (username, displayName, _) in childData)
         {
             var user = new ApplicationUser
             {
@@ -189,7 +184,6 @@ public static class DevDataSeeder
             {
                 UserId = user.Id,
                 DisplayName = displayName,
-                PinHash = HashPin(pin),
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow.AddDays(-100) // Account age for achievements
             };
@@ -894,24 +888,4 @@ public static class DevDataSeeder
         };
     }
 
-    /// <summary>
-    /// Hashes a PIN using PBKDF2 with a random salt (matches KidModeService implementation).
-    /// </summary>
-    private static string HashPin(string pin)
-    {
-        byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
-        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
-            pin,
-            salt,
-            Iterations,
-            HashAlgorithmName.SHA256,
-            HashSize);
-
-        // Combine salt and hash for storage
-        byte[] combined = new byte[SaltSize + HashSize];
-        Buffer.BlockCopy(salt, 0, combined, 0, SaltSize);
-        Buffer.BlockCopy(hash, 0, combined, SaltSize, HashSize);
-
-        return Convert.ToBase64String(combined);
-    }
 }

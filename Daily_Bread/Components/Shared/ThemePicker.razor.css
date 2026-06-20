@@ -1,0 +1,89 @@
+.theme-picker {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-3);
+}
+
+.tp-section-label {
+    font-size: var(--ds-text-xs);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-weight: var(--ds-font-bold);
+    color: var(--ds-text-muted);
+}
+
+.tp-dots {
+    display: flex;
+    gap: var(--ds-space-3);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.tp-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--ds-radius-full);
+    border: 2px solid transparent;
+    background: var(--c);
+    cursor: pointer;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    transition: transform var(--ds-duration-fast) var(--ds-ease-default),
+                box-shadow var(--ds-duration-fast) var(--ds-ease-default),
+                border-color var(--ds-duration-fast) var(--ds-ease-default);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tp-dot:hover {
+    transform: scale(1.08);
+}
+
+.tp-dot.active {
+    border-color: var(--ds-text-primary);
+    transform: scale(1.12);
+    box-shadow: 0 0 12px var(--c);
+}
+
+.tp-dot .bi {
+    font-size: 1.1rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+}
+
+.tp-name {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-secondary);
+    font-weight: var(--ds-font-medium);
+}
+
+.tp-mode-toggle {
+    display: inline-flex;
+    gap: var(--ds-space-2);
+    background: var(--ds-bg-base);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-full);
+    padding: 4px;
+    width: fit-content;
+}
+
+.tp-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    border: 0;
+    background: transparent;
+    color: var(--ds-text-muted);
+    font: inherit;
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-semibold);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border-radius: var(--ds-radius-full);
+    cursor: pointer;
+    transition: all var(--ds-duration-fast) var(--ds-ease-default);
+}
+
+.tp-mode.active {
+    background: var(--ds-accent-primary);
+    color: var(--ds-on-accent, #fff);
+}

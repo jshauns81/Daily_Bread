@@ -93,9 +93,9 @@ main.has-bottom-nav {
 
 .content {
     flex: 1;
-    padding: 0.75rem; /* Reduced from 1rem */
+    padding: 1rem;
     /* Bottom padding accounts for safe area */
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     /* Content itself doesn't scroll - main scrolls */
     overflow: visible;
     background-color: var(--ds-bg-base);
@@ -264,10 +264,10 @@ main.has-bottom-nav {
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
-    background: rgba(59, 66, 82, 0.95);
+    background: color-mix(in srgb, var(--ds-bg-elevated) 92%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(216, 222, 233, 0.1);
+    border-top: 1px solid var(--ds-bg-muted);
     box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
     z-index: 100;
 }
@@ -288,9 +288,10 @@ main.has-bottom-nav {
     min-height: 60px;
 }
 
-.bottom-nav-item .bi {
+.bottom-nav-item .nav-ico {
     font-size: 1.35rem;
-    transition: transform 0.2s ease, color 0.2s ease;
+    line-height: 1;
+    transition: transform 0.2s ease, filter 0.2s ease;
 }
 
 .bottom-nav-item span:last-child {
@@ -309,9 +310,9 @@ main.has-bottom-nav {
     color: var(--ds-accent-cyan);
 }
 
-.bottom-nav-item.active .bi {
+.bottom-nav-item.active .nav-ico {
     transform: scale(1.1);
-    filter: drop-shadow(0 0 8px rgba(136, 192, 208, 0.5));
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--ds-accent-primary) 55%, transparent));
 }
 
 /* Active indicator dot */
@@ -325,17 +326,17 @@ main.has-bottom-nav {
     height: 4px;
     background: var(--ds-accent-cyan);
     border-radius: 50%;
-    box-shadow: 0 0 8px rgba(136, 192, 208, 0.6);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--ds-accent-primary) 60%, transparent);
 }
 
 /* Touch feedback */
 @media (hover: none) and (pointer: coarse) {
     .bottom-nav-item:active {
-        background: rgba(136, 192, 208, 0.1);
+        background: color-mix(in srgb, var(--ds-accent-primary) 12%, transparent);
         transform: scale(0.95);
     }
     
-    .bottom-nav-item:active .bi {
+    .bottom-nav-item:active .nav-ico {
         transform: scale(0.9);
     }
 }
@@ -345,11 +346,81 @@ main.has-bottom-nav {
    =========================================== */
 
 .desktop-header {
+    /* Hidden on mobile; becomes the desktop top bar at >=768px */
     display: none;
-    padding: 0.75rem 1.5rem;
-    background-color: var(--ds-bg-elevated);
-    border-bottom: none;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+/* Top-bar page title (icon + current page name) */
+.page-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.page-title-icon {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    border-radius: var(--ds-radius-md);
+    color: var(--ds-accent-primary);
+    background: color-mix(in srgb, var(--ds-accent-primary) 14%, transparent);
+}
+
+.page-title-text {
+    font-size: 1.4rem;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: -0.02em;
+    color: var(--ds-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.desktop-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+/* Quick light/dark toggle (top bar + mobile header) */
+.quick-theme {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    border-radius: var(--ds-radius-md);
+    border: 1px solid var(--ds-bg-muted);
+    background: var(--ds-bg-elevated);
+    color: var(--ds-text-secondary);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: border-color var(--ds-duration-fast) ease, transform var(--ds-duration-fast) ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.quick-theme:hover {
+    border-color: var(--ds-accent-primary);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+    .quick-theme {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: transparent;
+        font-size: 1.2rem;
+    }
 }
 
 /* ===========================================
@@ -440,73 +511,51 @@ main.has-bottom-nav {
         padding-right: 0;
     }
     
-    /* On desktop, hide the mobile header entirely and show user menu differently */
+    /* On desktop, the mobile header is fully replaced by the top bar +
+       the sidebar profile footer, so hide it entirely. */
     .mobile-header {
-        /* Keep it fixed in top-right corner for the user dropdown */
-        position: fixed;
-        top: 0;
-        right: 0;
-        left: auto;
-        height: auto;
-        width: auto;
-        background: transparent;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        z-index: 150; /* Above sidebar and content */
-        justify-content: flex-end;
-    }
-    
-    /* Hide the ::before pseudo-element on desktop */
-    .mobile-header::before {
         display: none;
-    }
-    
-    /* Hide hamburger and brand on desktop - LoginDisplay stays visible */
-    .mobile-header .hamburger-btn,
-    .mobile-header .mobile-brand {
-        display: none;
-    }
-    
-    /* LoginDisplay container adapts for desktop */
-    .mobile-header .mobile-header-actions {
-        position: relative;
     }
     
     .desktop-header {
-        /* Desktop header is sticky within the scrolling main content */
+        /* Desktop top bar - sticky within the scrolling main content */
         display: flex;
         position: sticky;
         top: 0;
-        padding: 0.75rem 1.5rem;
-        background-color: var(--ds-bg-elevated);
+        padding: 0.85rem 2rem;
+        background: color-mix(in srgb, var(--ds-bg-base) 80%, transparent);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
         border-bottom: 1px solid var(--ds-bg-muted);
-        justify-content: flex-end;
-        min-height: 56px;
+        min-height: 64px;
         z-index: 50; /* Above content but below mobile-header */
     }
-    
+
     .sidebar {
-        /* Fixed sidebar on desktop - doesn't scroll with content */
+        /* Floating "pill" sidebar on desktop - detached, rounded, elevated */
         position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        height: 100dvh;
+        top: 16px;
+        left: 16px;
+        bottom: 16px;
+        height: auto;
         transform: translateX(0);
         flex-shrink: 0;
         max-width: none;
         will-change: auto;
-        /* No safe area needed on desktop */
         padding-top: 0;
         padding-bottom: 0;
-        z-index: 100; /* Below the user menu */
-        width: 220px;
+        z-index: 100;
+        width: 248px;
+        border-radius: 26px;
+        border: 1px solid var(--ds-bg-muted);
+        box-shadow: 0 18px 50px -14px rgba(0, 0, 0, 0.55);
+        overflow: hidden;
     }
-    
+
     .sidebar-overlay {
         display: none !important;
     }
-    
+
     main {
         flex: 1;
         min-width: 0;
@@ -516,27 +565,33 @@ main.has-bottom-nav {
         height: 100vh;
         height: 100dvh;
         padding-top: 0;
-        /* Offset for the fixed sidebar */
-        margin-left: 220px;
+        /* Offset for the floating sidebar (width 248 + left 16 + gap 16) */
+        margin-left: 280px;
     }
-    
+
     /* Desktop: no bottom nav, so no extra padding needed */
     main.has-bottom-nav {
         padding-bottom: 0;
     }
-    
+
     .mobile-bottom-nav {
         display: none;
     }
-    
+
     .content {
-        padding: 1.5rem;
+        padding: 2rem;
         max-width: 1400px;
         margin: 0 auto;
         width: 100%;
         overflow-x: visible;
         /* No safe area padding needed on desktop */
-        padding-bottom: 1.5rem;
+        padding-bottom: 2rem;
+    }
+
+    /* Parent dashboard fills the available width (cards reach the edges);
+       other pages keep the readable 1400px cap. */
+    .content:has(.db-dash) {
+        max-width: none;
     }
 }
 
@@ -546,15 +601,15 @@ main.has-bottom-nav {
 
 @media (min-width: 1200px) {
     .sidebar {
-        width: 240px;
+        width: 264px;
     }
-    
+
     main {
-        margin-left: 240px;
+        margin-left: 296px;
     }
-    
+
     .content {
-        padding: 2rem;
+        padding: 2rem 2.5rem;
     }
 }
 
@@ -586,7 +641,7 @@ main.has-bottom-nav {
         max-width: 90vw;
     }
     
-    .bottom-nav-item .bi {
+    .bottom-nav-item .nav-ico {
         font-size: 1.25rem;
     }
     

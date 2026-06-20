@@ -172,7 +172,7 @@ public class AppStateService : IAppStateService, IDisposable
     /// </summary>
     private void NotifyChildDashboardChangedDebounced()
     {
-        _logger.LogWarning(">>> Debounce triggered for ChildDashboard - scheduling {DelayMs}ms delay", DebounceDelayMs);
+        _logger.LogDebug("Debounce triggered for ChildDashboard - scheduling {DelayMs}ms delay", DebounceDelayMs);
         
         lock (_debounceLock)
         {
@@ -188,17 +188,17 @@ public class AppStateService : IAppStateService, IDisposable
                     await Task.Delay(DebounceDelayMs, token);
                     if (!token.IsCancellationRequested)
                     {
-                        _logger.LogWarning(">>> Debounce FIRING OnChildDashboardChanged after {DelayMs}ms delay", DebounceDelayMs);
+                        _logger.LogDebug("Debounce FIRING OnChildDashboardChanged after {DelayMs}ms delay", DebounceDelayMs);
                         OnChildDashboardChanged?.Invoke();
                     }
                     else
                     {
-                        _logger.LogWarning(">>> Debounce CANCELLED for ChildDashboard (superseded by newer call)");
+                        _logger.LogDebug("Debounce CANCELLED for ChildDashboard (superseded by newer call)");
                     }
                 }
                 catch (TaskCanceledException)
                 {
-                    _logger.LogWarning(">>> Debounce CANCELLED for ChildDashboard (TaskCanceledException)");
+                    _logger.LogDebug("Debounce CANCELLED for ChildDashboard (TaskCanceledException)");
                 }
             });
         }
@@ -210,7 +210,7 @@ public class AppStateService : IAppStateService, IDisposable
     /// </summary>
     private void NotifyParentDashboardChangedDebounced()
     {
-        _logger.LogWarning(">>> Debounce triggered for ParentDashboard - scheduling {DelayMs}ms delay", DebounceDelayMs);
+        _logger.LogDebug("Debounce triggered for ParentDashboard - scheduling {DelayMs}ms delay", DebounceDelayMs);
         
         lock (_debounceLock)
         {
@@ -226,17 +226,17 @@ public class AppStateService : IAppStateService, IDisposable
                     await Task.Delay(DebounceDelayMs, token);
                     if (!token.IsCancellationRequested)
                     {
-                        _logger.LogWarning(">>> Debounce FIRING OnParentDashboardChanged after {DelayMs}ms delay", DebounceDelayMs);
+                        _logger.LogDebug("Debounce FIRING OnParentDashboardChanged after {DelayMs}ms delay", DebounceDelayMs);
                         OnParentDashboardChanged?.Invoke();
                     }
                     else
                     {
-                        _logger.LogWarning(">>> Debounce CANCELLED for ParentDashboard (superseded by newer call)");
+                        _logger.LogDebug("Debounce CANCELLED for ParentDashboard (superseded by newer call)");
                     }
                 }
                 catch (TaskCanceledException)
                 {
-                    _logger.LogWarning(">>> Debounce CANCELLED for ParentDashboard (TaskCanceledException)");
+                    _logger.LogDebug("Debounce CANCELLED for ParentDashboard (TaskCanceledException)");
                 }
             });
         }
@@ -248,7 +248,7 @@ public class AppStateService : IAppStateService, IDisposable
     /// </summary>
     private void NotifyTrackerChangedDebounced()
     {
-        _logger.LogWarning(">>> Debounce triggered for Tracker - scheduling {DelayMs}ms delay", DebounceDelayMs);
+        _logger.LogDebug("Debounce triggered for Tracker - scheduling {DelayMs}ms delay", DebounceDelayMs);
         
         lock (_debounceLock)
         {
@@ -264,17 +264,17 @@ public class AppStateService : IAppStateService, IDisposable
                     await Task.Delay(DebounceDelayMs, token);
                     if (!token.IsCancellationRequested)
                     {
-                        _logger.LogWarning(">>> Debounce FIRING OnTrackerChanged after {DelayMs}ms delay", DebounceDelayMs);
+                        _logger.LogDebug("Debounce FIRING OnTrackerChanged after {DelayMs}ms delay", DebounceDelayMs);
                         OnTrackerChanged?.Invoke();
                     }
                     else
                     {
-                        _logger.LogWarning(">>> Debounce CANCELLED for Tracker (superseded by newer call)");
+                        _logger.LogDebug("Debounce CANCELLED for Tracker (superseded by newer call)");
                     }
                 }
                 catch (TaskCanceledException)
                 {
-                    _logger.LogWarning(">>> Debounce CANCELLED for Tracker (TaskCanceledException)");
+                    _logger.LogDebug("Debounce CANCELLED for Tracker (TaskCanceledException)");
                 }
             });
         }

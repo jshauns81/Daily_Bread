@@ -70,134 +70,147 @@ else if (_isAdminOnly)
 else if ((_isParent || _isAdmin) && _parentData != null)
 {
     <!-- Parent Dashboard -->
-    <div class="dashboard-container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Welcome back!</h1>
-            <span class="text-muted">@DateTime.Now.ToString("dddd, MMMM d, yyyy")</span>
+    <div class="dashboard-container db-dash">
+        <!-- Hero header -->
+        <div class="card db-hero">
+            <div class="db-hero-main">
+                <h1 class="db-greeting">@Greeting()@(string.IsNullOrEmpty(_firstName) ? "" : ", ")<span class="db-greeting-name">@_firstName</span></h1>
+                <div class="db-sumline">
+                    <span class="db-sumtag warn">✦ @_parentData.PendingApprovals.Count awaiting approval</span>
+                    <span class="db-sumtag">✓ @_parentData.TodayCompletedCount done today</span>
+                    <span class="db-sumtag help">! @_parentData.TodayHelpCount needs help</span>
+                </div>
+            </div>
+            <div class="db-hero-date">@DateTime.Now.ToString("dddd, MMMM d")</div>
         </div>
 
-        <div class="row mb-4 g-3">
-            <div class="col-md-3 col-6">
-                <StatCard Value="@_parentData.PendingApprovals.Count" Label="Pending Blessings" Color="StatColor.Warning" FullHeight="true" />
+        <!-- Stat pills -->
+        <div class="db-stats">
+            <div class="db-stat gold">
+                <div class="db-stat-chip">✦</div>
+                <div class="db-stat-body">
+                    <div class="db-stat-v">@_parentData.PendingApprovals.Count</div>
+                    <div class="db-stat-l">Awaiting approval</div>
+                </div>
             </div>
-            <div class="col-md-3 col-6">
-                <StatCard Value="@_parentData.TodayCompletedCount" Label="Completed Today" Color="StatColor.Info" FullHeight="true" />
+            <div class="db-stat acc">
+                <div class="db-stat-chip">✓</div>
+                <div class="db-stat-body">
+                    <div class="db-stat-v">@_parentData.TodayCompletedCount</div>
+                    <div class="db-stat-l">Done today</div>
+                </div>
             </div>
-            <div class="col-md-3 col-6">
-                <StatCard Value="@_parentData.TodayApprovedCount" Label="Blessed Today" Color="StatColor.Success" FullHeight="true" />
-            </div>
-            <div class="col-md-3 col-6">
-                <StatCard Value="@_parentData.TodayPendingCount" Label="Still Pending" FullHeight="true" />
+            <div class="db-stat gold">
+                <div class="db-stat-chip">💰</div>
+                <div class="db-stat-body">
+                    <div class="db-stat-v">$@_parentData.ThisWeekEarnings.ToString("F2")</div>
+                    <div class="db-stat-l">Earned this week</div>
+                </div>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-lg-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">✓ Pending Blessings</h5>
+        <!-- Asymmetric grid: action column + rail -->
+        <div class="db-grid">
+            <div class="db-col">
+                <div class="card db-approvals @(_parentData.PendingApprovals.Count > 0 ? "is-glowing" : "")">
+                    <div class="db-card-head">
+                        <h2 class="db-card-title">Pending approvals</h2>
                         @if (_parentData.PendingApprovals.Count > 0)
                         {
-                            <span class="badge bg-warning text-dark">@_parentData.PendingApprovals.Count</span>
+                            <span class="db-count">@_parentData.PendingApprovals.Count</span>
                         }
                     </div>
-                    <div class="card-body">
-                        @if (_parentData.PendingApprovals.Count == 0)
-                        {
-                            <EmptyState Type="EmptyStateType.NoChores" 
-                                        Title="All Caught Up!"
-                                        Message="No labors waiting for blessing."
-                                        CssClass="empty-state-compact" />
-                        }
-                        else
-                        {
-                            <div class="list-group list-group-flush">
-                                @foreach (var item in _parentData.PendingApprovals.Take(5))
-                                {
-                                    <div class="list-group-item d-flex justify-content-between align-items-start px-0">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <strong>@item.ChoreName</strong>
-                                                <span class="text-success fw-bold">$@item.Value.ToString("F2")</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                                <small class="text-muted">
-                                                    <span class="user-name">@item.ChildName</span> • @item.Date.ToString("MMM d")
-                                                    @if (item.CompletedAt.HasValue)
-                                                    {
-                                                        <span class="ms-1">• @GetTimeAgo(item.CompletedAt.Value)</span>
-                                                    }
-                                                </small>
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-success btn-sm" @onclick="() => QuickApprove(item.ChoreLogId)" disabled="@_isApproving" title="Bless this labor">
-                                                        @if (_approvingId == item.ChoreLogId) 
-                                                        { 
-                                                            <span class="spinner-border spinner-border-sm"></span> 
-                                                        } 
-                                                        else 
-                                                        { 
-                                                            <text>✓ Bless</text> 
-                                                        }
-                                                    </button>
-                                                    <a href="/tracker/@item.Date.ToString("yyyy-MM-dd")" class="btn btn-outline-secondary btn-sm" title="Review in Book of Deeds">
-                                                        <span class="bi bi-eye"></span>
-                                                    </a>
-                                                </div>
-                                            </div>
+                    @if (_parentData.PendingApprovals.Count == 0)
+                    {
+                        <EmptyState Type="EmptyStateType.NoChores"
+                                    Title="All caught up!"
+                                    Message="No tasks waiting for approval."
+                                    CssClass="empty-state-compact" />
+                    }
+                    else
+                    {
+                        <div class="db-appr-list">
+                            @foreach (var item in _parentData.PendingApprovals.Take(6))
+                            {
+                                <div class="db-appr">
+                                    <div class="db-appr-ava">@(string.IsNullOrWhiteSpace(item.ChildName) ? "?" : item.ChildName.Trim().Substring(0, 1).ToUpper())</div>
+                                    <div class="db-appr-info">
+                                        <div class="db-appr-t">@item.ChoreName</div>
+                                        <div class="db-appr-m">
+                                            <span class="user-name">@item.ChildName</span>@(item.CompletedAt.HasValue ? " • " + GetTimeAgo(item.CompletedAt.Value) : "")
                                         </div>
                                     </div>
-                                }
-                            </div>
-                            @if (_parentData.PendingApprovals.Count > 5)
-                            {
-                                <div class="text-center mt-3">
-                                    <a href="/tracker" class="btn btn-outline-primary btn-sm">
-                                        View All (@_parentData.PendingApprovals.Count)
+                                    <span class="db-appr-amt">$@item.Value.ToString("F2")</span>
+                                    <button class="db-btn-approve" @onclick="() => QuickApprove(item.ChoreLogId)" disabled="@_isApproving" title="Approve this task">
+                                        @if (_approvingId == item.ChoreLogId)
+                                        {
+                                            <span class="spinner-border spinner-border-sm"></span>
+                                        }
+                                        else
+                                        {
+                                            <text>✓ Approve</text>
+                                        }
+                                    </button>
+                                    <a href="/tracker/@item.Date.ToString("yyyy-MM-dd")" class="db-appr-view" title="Review in Activity">
+                                        <span class="bi bi-eye"></span>
                                     </a>
                                 </div>
                             }
+                        </div>
+                        @if (_parentData.PendingApprovals.Count > 6)
+                        {
+                            <a href="/tracker" class="db-viewall">View all (@_parentData.PendingApprovals.Count) in Activity →</a>
                         }
-                    </div>
+                    }
                 </div>
-            </div>
 
-            <div class="col-lg-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-header"><h5 class="mb-0">🏛️ Treasury</h5></div>
-                    <div class="card-body">
-                        @if (_parentData.ChildrenBalances.Count == 0)
+                <div class="card db-quickview">
+                    <div class="db-card-head"><h2 class="db-card-title">Quick view — this week</h2></div>
+                    <div class="db-week">
+                        @foreach (var day in _parentData.WeekEarnings)
                         {
-                            <EmptyState Type="EmptyStateType.NoChildren" 
-                                        CssClass="empty-state-compact">
-                                <ActionButton>
-                                    <a href="/admin/users" class="btn btn-primary btn-sm">Add Children</a>
-                                </ActionButton>
-                            </EmptyState>
-                        }
-                        else
-                        {
-                            <div class="list-group list-group-flush">
-                                @foreach (var child in _parentData.ChildrenBalances)
-                                {
-                                    <a href="/ledger/@child.ProfileId" class="list-group-item list-group-item-action d-flex justify-content-between">
-                                        <div>
-                                            <strong class="user-name">@child.DisplayName</strong>
-                                            @if (child.CanCashOut) { <span class="badge bg-success ms-2">Cash out ready!</span> }
-                                        </div>
-                                        <span class="@(child.Balance >= 0 ? "text-success" : "text-danger") fw-bold fs-5">$@child.Balance.ToString("F2")</span>
-                                    </a>
-                                }
+                            <div class="db-day @(day.Amount > 0 ? "on" : "") @(day.Date == DateProvider.Today ? "today" : "")">
+                                <div class="db-day-d">@DayLetter(day.Date)</div>
+                                <div class="db-day-v">@FormatDay(day.Amount)</div>
                             </div>
                         }
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Year Activity Heatmap -->
-        <div class="row">
-            <div class="col-12 mb-4">
-                <YearActivityCard />
+            <div class="db-col">
+                <div class="card db-children">
+                    <div class="db-card-head"><h2 class="db-card-title">Children</h2></div>
+                    @if (_parentData.ChildrenBalances.Count == 0)
+                    {
+                        <EmptyState Type="EmptyStateType.NoChildren" CssClass="empty-state-compact">
+                            <ActionButton>
+                                <a href="/admin/users" class="btn btn-primary btn-sm">Add Children</a>
+                            </ActionButton>
+                        </EmptyState>
+                    }
+                    else
+                    {
+                        <div class="db-bal-list">
+                            @foreach (var child in _parentData.ChildrenBalances)
+                            {
+                                <a href="/ledger/@child.ProfileId" class="db-bal">
+                                    <span class="db-bal-who">
+                                        <span class="db-bal-av">@(string.IsNullOrWhiteSpace(child.DisplayName) ? "?" : child.DisplayName.Trim().Substring(0, 1).ToUpper())</span>
+                                        <span class="db-bal-nm">@child.DisplayName</span>
+                                        @if (child.CanCashOut)
+                                        {
+                                            <span class="db-bal-ready">Cash out ready</span>
+                                        }
+                                    </span>
+                                    <span class="db-bal-amt @(child.Balance < 0 ? "neg" : "")">$@child.Balance.ToString("F2")</span>
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <YearActivityCard Compact="true" Heading="@HeatmapHeading()" />
             </div>
         </div>
     </div>
@@ -590,6 +603,7 @@ else
     private bool _isAdmin;
     private bool _isAdminOnly;
     private string? _userId;
+    private string _firstName = string.Empty;
     private bool _showConfetti;
     private bool _hasTriggeredConfetti;
     private bool _initializationComplete;
@@ -696,6 +710,37 @@ else
         return _childData.WeeklyProgress.ChoreProgress.Sum(p => p.TargetCount);
     }
     
+    private static string DayLetter(DateOnly d) => d.DayOfWeek switch
+    {
+        DayOfWeek.Sunday => "S",
+        DayOfWeek.Monday => "M",
+        DayOfWeek.Tuesday => "T",
+        DayOfWeek.Wednesday => "W",
+        DayOfWeek.Thursday => "T",
+        DayOfWeek.Friday => "F",
+        DayOfWeek.Saturday => "S",
+        _ => ""
+    };
+
+    private static string FormatDay(decimal amount) => amount > 0 ? "$" + amount.ToString("0.##") : "—";
+
+    private string HeatmapHeading()
+    {
+        if (_parentData?.ChildrenBalances.Count == 1)
+        {
+            return $"{_parentData.ChildrenBalances[0].DisplayName}'s year";
+        }
+        return "Activity this year";
+    }
+
+    private static string Greeting()
+    {
+        var hour = DateTime.Now.Hour;
+        if (hour < 12) return "Good morning";
+        if (hour < 17) return "Good afternoon";
+        return "Good evening";
+    }
+
     private static string GetTimeAgo(DateTime time)
     {
         var diff = DateTime.UtcNow - time;
@@ -723,6 +768,20 @@ else
             }
 
             _userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Greeting name: prefer a given-name claim, else fall back to the username,
+            // capitalising the first letter for display (e.g. "shaun" -> "Shaun").
+            var rawName = user.FindFirstValue(ClaimTypes.GivenName);
+            if (string.IsNullOrWhiteSpace(rawName))
+            {
+                rawName = user.Identity?.Name;
+            }
+            if (!string.IsNullOrWhiteSpace(rawName))
+            {
+                var trimmed = rawName.Trim();
+                _firstName = char.ToUpperInvariant(trimmed[0]) + trimmed[1..];
+            }
+
             _isParent = user.IsInRole("Parent");
             _isAdmin = user.IsInRole("Admin");
             _isAdminOnly = user.IsInRole("Admin") && !user.IsInRole("Parent") && !user.IsInRole("Child");
@@ -983,7 +1042,7 @@ else
             
             if (result.Success)
             {
-                ToastService.ShowSuccess("Blessed!", "Labor has been blessed and wages processed.");
+                ToastService.ShowSuccess("Approved!", "Task approved and earnings added.");
                 
                 // Invalidate caches and reload fresh data
                 AppState.InvalidateParentDashboard();
@@ -997,7 +1056,7 @@ else
             }
             else
             {
-                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to bless labor.");
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to approve task.");
             }
         }
         catch (Exception ex)

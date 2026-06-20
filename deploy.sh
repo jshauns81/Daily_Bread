@@ -1,16 +1,23 @@
 #!/bin/bash
 
 # Daily Bread Deployment Script for Unraid
-# Usage: ./deploy.sh [command]
+# Usage: ./deploy.sh [command] [--verbose]
+#
 # Commands:
-#   start    - Start the application (default)
+#   start    - Start the application
 #   stop     - Stop the application
 #   restart  - Restart the application
-#   rebuild  - Pull latest code and rebuild
-#   resetdb  - Reset database (DESTROYS ALL DATA)
+#   rebuild  - Pull latest code and rebuild (default)
 #   logs     - Show live logs
 #   status   - Show container status
-#   setup    - First-time setup (creates .env file)
+#
+# Options:
+#   --verbose, -v  - Show detailed output (for manual runs)
+#
+# Examples:
+#   ./deploy.sh rebuild           # Quiet mode (for cron/webhooks)
+#   ./deploy.sh rebuild --verbose # Detailed output (for manual runs)
+#   ./deploy.sh -v rebuild        # Same as above
 
 set -e
 
@@ -18,143 +25,112 @@ set -e
 APP_DIR="/mnt/user/appdata/Daily_Bread"
 COMPOSE_CMD="docker-compose"
 
-# Colors for output
+# Parse arguments
+VERBOSE=false
+COMMAND="rebuild"
+
+for arg in "$@"; do
+  case "$arg" in
+    -v|--verbose) VERBOSE=true ;;
+    start|stop|restart|rebuild|logs|status) COMMAND="$arg" ;;
+  esac
+done
+
+# Colors (only used in verbose mode)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Check if docker-compose exists, try docker compose if not
-if ! command -v docker-compose &> /dev/null; then
-    if docker compose version &> /dev/null; then
-        COMPOSE_CMD="docker compose"
-    else
-        echo -e "${RED}Error: docker-compose not found. Installing...${NC}"
-        curl -L "https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-        echo -e "${GREEN}docker-compose installed successfully${NC}"
-    fi
+# Output helpers
+log() {
+  if $VERBOSE; then
+    echo -e "$1"
+  fi
+}
+
+log_always() {
+  echo -e "$1"
+}
+
+run() {
+  if $VERBOSE; then
+    "$@"
+  else
+    "$@" >/dev/null 2>&1
+  fi
+}
+
+run_visible() {
+  # Always show output (for logs/status commands)
+  "$@"
+}
+
+# Check for docker-compose
+if ! command -v docker-compose &>/dev/null; then
+  if docker compose version &>/dev/null 2>&1; then
+    COMPOSE_CMD="docker compose"
+  else
+    log_always "${RED}Error: docker-compose not found${NC}"
+    exit 1
+  fi
 fi
 
-cd "$APP_DIR" || { echo -e "${RED}Error: Cannot find $APP_DIR${NC}"; exit 1; }
+cd "$APP_DIR" || { log_always "${RED}Error: Cannot find $APP_DIR${NC}"; exit 1; }
 
-case "${1:-start}" in
-    setup)
-        echo -e "${YELLOW}=== First-Time Setup ===${NC}"
-        
-        if [ -f .env ]; then
-            echo -e "${YELLOW}.env file already exists. Skipping creation.${NC}"
-        else
-            echo -e "${GREEN}Creating .env file from template...${NC}"
-            cp .env.example .env
-            
-            echo ""
-            echo -e "${YELLOW}Please edit .env with your passwords:${NC}"
-            echo "  nano $APP_DIR/.env"
-            echo ""
-            echo "Required settings:"
-            echo "  POSTGRES_PASSWORD=YourSecureDbPassword"
-            echo "  ADMIN_PASSWORD=YourSecureAdminPass (must have uppercase, lowercase, digit, special char)"
-            echo ""
-            exit 0
-        fi
-        ;;
-        
-    start)
-        echo -e "${GREEN}=== Starting Daily Bread ===${NC}"
-        
-        if [ ! -f .env ]; then
-            echo -e "${RED}Error: .env file not found. Run './deploy.sh setup' first.${NC}"
-            exit 1
-        fi
-        
-        $COMPOSE_CMD up -d
-        echo -e "${GREEN}Daily Bread started!${NC}"
-        echo -e "Access at: http://$(hostname -I | awk '{print $1}'):5000"
-        ;;
-        
-    stop)
-        echo -e "${YELLOW}=== Stopping Daily Bread ===${NC}"
-        $COMPOSE_CMD down
-        echo -e "${GREEN}Daily Bread stopped.${NC}"
-        ;;
-        
-    restart)
-        echo -e "${YELLOW}=== Restarting Daily Bread ===${NC}"
-        $COMPOSE_CMD restart
-        echo -e "${GREEN}Daily Bread restarted.${NC}"
-        ;;
-        
-    rebuild)
-        echo -e "${YELLOW}=== Rebuilding Daily Bread ===${NC}"
-        
-        echo "Pulling latest code..."
-        git pull origin master
-        
-        echo "Stopping containers..."
-        $COMPOSE_CMD down
-        
-        echo "Rebuilding and starting..."
-        $COMPOSE_CMD up -d --build
-        
-        echo -e "${GREEN}Daily Bread rebuilt and started!${NC}"
-        echo -e "Access at: http://$(hostname -I | awk '{print $1}'):5000"
-        ;;
-    
-    resetdb)
-        echo -e "${RED}=== DATABASE RESET ===${NC}"
-        echo -e "${RED}WARNING: This will DELETE ALL DATA including users, chores, and transactions!${NC}"
-        echo ""
-        
-        # Confirmation prompt
-        read -p "Are you sure you want to reset the database? Type 'yes' to confirm: " confirm
-        if [ "$confirm" != "yes" ]; then
-            echo -e "${YELLOW}Cancelled.${NC}"
-            exit 0
-        fi
-        
-        echo ""
-        echo -e "${YELLOW}Stopping containers...${NC}"
-        $COMPOSE_CMD down
-        
-        echo -e "${YELLOW}Removing database volume...${NC}"
-        docker volume rm dailybread_postgres_data 2>/dev/null || true
-        
-        echo -e "${YELLOW}Starting fresh...${NC}"
-        $COMPOSE_CMD up -d --build
-        
-        echo ""
-        echo -e "${GREEN}Database reset complete!${NC}"
-        echo -e "${CYAN}The admin user will be created from your .env settings:${NC}"
-        echo -e "  Username: \$ADMIN_USERNAME"
-        echo -e "  Password: \$ADMIN_PASSWORD"
-        echo ""
-        echo -e "Access at: http://$(hostname -I | awk '{print $1}'):5000"
-        ;;
-        
-    logs)
-        echo -e "${GREEN}=== Daily Bread Logs (Ctrl+C to exit) ===${NC}"
-        $COMPOSE_CMD logs -f dailybread
-        ;;
-        
-    status)
-        echo -e "${GREEN}=== Container Status ===${NC}"
-        docker ps --filter "name=dailybread" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-        ;;
-        
-    *)
-        echo "Usage: $0 {start|stop|restart|rebuild|resetdb|logs|status|setup}"
-        echo ""
-        echo "Commands:"
-        echo "  setup    - First-time setup (creates .env file)"
-        echo "  start    - Start the application"
-        echo "  stop     - Stop the application"
-        echo "  restart  - Restart the application"
-        echo "  rebuild  - Pull latest code and rebuild containers"
-        echo -e "  resetdb  - ${RED}Reset database (DESTROYS ALL DATA)${NC}"
-        echo "  logs     - Show live application logs"
-        echo "  status   - Show container status"
-        exit 1
-        ;;
+case "$COMMAND" in
+  start)
+    log "${GREEN}=== Starting Daily Bread ===${NC}"
+    if [ ! -f .env ]; then
+      log_always "${RED}Error: .env file not found${NC}"
+      exit 1
+    fi
+    run $COMPOSE_CMD up -d
+    log "${GREEN}Daily Bread started!${NC}"
+    log "Access at: http://$(hostname -I | awk '{print $1}'):5000"
+    ;;
+
+  stop)
+    log "${YELLOW}=== Stopping Daily Bread ===${NC}"
+    run $COMPOSE_CMD down
+    log "${GREEN}Daily Bread stopped.${NC}"
+    ;;
+
+  restart)
+    log "${YELLOW}=== Restarting Daily Bread ===${NC}"
+    run $COMPOSE_CMD restart
+    log "${GREEN}Daily Bread restarted.${NC}"
+    ;;
+
+  rebuild)
+    log "${YELLOW}=== Rebuilding Daily Bread ===${NC}"
+
+    log "Pulling latest code..."
+    run git pull origin master
+
+    log "Stopping containers..."
+    run $COMPOSE_CMD down
+
+    log "Rebuilding and starting..."
+    run $COMPOSE_CMD up -d --build
+
+    # These lines are parsed by the webhook script - always output them
+    log_always "Daily Bread rebuilt and started!"
+    log_always "Access at: http://$(hostname -I | awk '{print $1}'):5000"
+    ;;
+
+  logs)
+    log "${GREEN}=== Daily Bread Logs (Ctrl+C to exit) ===${NC}"
+    run_visible $COMPOSE_CMD logs -f dailybread
+    ;;
+
+  status)
+    log "${GREEN}=== Container Status ===${NC}"
+    run_visible docker ps --filter "name=dailybread" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    ;;
+
+  *)
+    log_always "Usage: $0 {start|stop|restart|rebuild|logs|status} [--verbose]"
+    exit 1
+    ;;
 esac

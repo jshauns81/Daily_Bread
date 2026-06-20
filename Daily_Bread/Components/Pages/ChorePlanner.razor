@@ -16,7 +16,7 @@
 @inject NavigationManager Navigation
 @inject ModalService ModalService
 
-<PageTitle>Labor Planner</PageTitle>
+<PageTitle>Planner</PageTitle>
 
 <div class="labor-planner">
     <!-- Header -->
@@ -25,7 +25,7 @@
             <div class="header-left">
                 <h1 class="board-title">
                     <span class="title-icon">📋</span>
-                    <span>Labor Planner</span>
+                    <span>Planner</span>
                 </h1>
                 @if (_childProfiles.Count > 1)
                 {
@@ -72,7 +72,7 @@
             <button class="tab-btn @(_activeTab == TabView.Wages ? "active" : "")"
                     @onclick="() => SetActiveTab(TabView.Wages)">
                 <span class="tab-icon">💵</span>
-                <span class="tab-label">Wages</span>
+                <span class="tab-label">Tasks</span>
                 <span class="tab-count">@_earningChores.Count</span>
             </button>
             <button class="tab-btn @(_activeTab == TabView.Routines ? "active" : "")"
@@ -89,7 +89,7 @@
     {
         <div class="loading-state">
             <div class="loading-spinner"></div>
-            <p>Loading labor planner...</p>
+            <p>Loading planner...</p>
         </div>
     }
     else if (_plannerData == null)
@@ -97,7 +97,7 @@
         <div class="empty-state">
             <span class="empty-icon">📝</span>
             <h3>No chores yet</h3>
-            <p>Add your first labor to get started!</p>
+            <p>Add your first task to get started!</p>
             <button class="primary-btn" @onclick="ShowCreateChoreForm">
                 <span class="bi bi-plus-lg"></span> Add Labor
             </button>
@@ -461,8 +461,8 @@
     private void OpenChoreModal()
     {
         var title = _editingChore?.Id > 0 
-            ? $"Edit {(_isRoutineMode ? "Routine" : "Labor")}" 
-            : $"Add {(_isRoutineMode ? "Routine" : "Labor")}";
+            ? $"Edit {(_isRoutineMode ? "Routine" : "Task")}" 
+            : $"Add {(_isRoutineMode ? "Routine" : "Task")}";
         
         var editingChore = _editingChore;
         var assignableUsers = _assignableUsers;

@@ -28,7 +28,7 @@ public class ChoreHub : Hub
     public override async Task OnConnectedAsync()
     {
         var count = Interlocked.Increment(ref _connectedClients);
-        _logger.LogWarning(">>> ChoreHub: Client connected: {ConnectionId}. Total clients: {Count}", 
+        _logger.LogDebug("ChoreHub: Client connected: {ConnectionId}. Total clients: {Count}",
             Context.ConnectionId, count);
         await base.OnConnectedAsync();
     }
@@ -36,8 +36,8 @@ public class ChoreHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var count = Interlocked.Decrement(ref _connectedClients);
-        _logger.LogWarning(
-            ">>> ChoreHub: Client disconnected: {ConnectionId}, Exception: {Exception}. Total clients: {Count}",
+        _logger.LogDebug(
+            "ChoreHub: Client disconnected: {ConnectionId}, Exception: {Exception}. Total clients: {Count}",
             Context.ConnectionId,
             exception?.Message ?? "None",
             count);

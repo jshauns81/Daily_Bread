@@ -1,0 +1,39 @@
+@page "/appearance"
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Appearance - Daily Bread</PageTitle>
+
+<div class="appearance-container">
+    <h1 class="mb-2">🎨 Appearance</h1>
+    <p class="appearance-subtitle">Choose a color and light or dark mode. Your choice is saved on this device.</p>
+
+    <div class="ds-card">
+        <div class="ds-card-body">
+            <ThemePicker />
+        </div>
+    </div>
+
+    <p class="appearance-foot">
+        Bread stays gold and a Help alert stays red in every theme, so what matters never gets lost.
+    </p>
+</div>
+
+<style>
+    .appearance-container {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: var(--ds-space-5) var(--ds-space-4);
+    }
+    .appearance-subtitle {
+        color: var(--ds-text-muted);
+        font-size: var(--ds-text-sm);
+        margin-bottom: var(--ds-space-5);
+    }
+    .appearance-foot {
+        color: var(--ds-text-muted);
+        font-size: var(--ds-text-xs);
+        margin-top: var(--ds-space-4);
+        text-align: center;
+    }
+</style>

@@ -13,10 +13,10 @@
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Treasury</PageTitle>
+<PageTitle>History</PageTitle>
 
 <div class="ledger-container">
-    <h1>Treasury</h1>
+    <h1>History</h1>
 
     <!-- Filters Card -->
     @if (IsParent)
@@ -92,7 +92,7 @@
         @if (Stats != null)
         {
             <div class="stats-grid">
-                <StatCard Value="@Stats.TotalEarnings.ToString("F2")" Label="Wages" Prefix="$" Color="StatColor.Success" Background="StatBackground.SuccessSubtle" />
+                <StatCard Value="@Stats.TotalEarnings.ToString("F2")" Label="Earnings" Prefix="$" Color="StatColor.Success" Background="StatBackground.SuccessSubtle" />
                 <StatCard Value="@Stats.TotalDeductions.ToString("F2")" Label="Deductions" Prefix="$" Color="StatColor.Danger" Background="StatBackground.DangerSubtle" />
                 <StatCard Value="@Stats.TotalBonuses.ToString("F2")" Label="Bonuses" Prefix="$" Color="StatColor.Info" Background="StatBackground.InfoSubtle" />
                 <StatCard Value="@Stats.TotalPenalties.ToString("F2")" Label="Penance" Prefix="$" Color="StatColor.Warning" Background="StatBackground.WarningSubtle" />
@@ -105,8 +105,8 @@
     {
         <EmptyState Type="EmptyStateType.Error" 
                     Icon="🏛️"
-                    Title="No Treasury Found"
-                    Message="Please contact a parent to set up your treasury account." />
+                    Title="No History Found"
+                    Message="Please contact a parent to set up their account." />
     }
     else if (IsParent && SelectedProfileId == 0)
     {
@@ -115,7 +115,7 @@
             <EmptyState Type="EmptyStateType.NoChildren" 
                         Icon="👨‍👩‍👧‍👦"
                         Title="No Children Added"
-                        Message="Add children to view their treasury.">
+                        Message="Add children to view their history.">
                 <ActionButton>
                     <a href="/admin/users" class="btn btn-primary">Add Children</a>
                 </ActionButton>
@@ -126,7 +126,7 @@
             <EmptyState Type="EmptyStateType.NoChildren" 
                         Icon="🏛️"
                         Title="Select a Child"
-                        Message="Choose a child from the dropdown above to view their treasury." />
+                        Message="Choose a child from the dropdown above to view their history." />
         }
     }
 
@@ -520,7 +520,7 @@
 
     private string GetTypeDisplay(TransactionType type) => type switch
     {
-        TransactionType.ChoreEarning => "Labor",
+        TransactionType.ChoreEarning => "Task",
         TransactionType.ChoreDeduction => "Missed",
         TransactionType.Bonus => "Bonus",
         TransactionType.Penalty => "Penance",

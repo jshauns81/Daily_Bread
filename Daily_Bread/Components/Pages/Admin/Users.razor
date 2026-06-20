@@ -5,8 +5,6 @@
 @attribute [Authorize(Roles = "Admin")]
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @inject IUserManagementService UserService
-@inject IKidModeService KidModeService
-@inject IChildProfileService ProfileService
 
 <PageTitle>User Management</PageTitle>
 
@@ -27,16 +25,6 @@
         <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
     </div>
 }
-
-<!-- Kid Mode Quick Access -->
-<div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <strong><span class="bi bi-phone"></span> Kid Mode:</strong> Children can access the app on their phone without logging in using a 4-digit PIN.
-    </div>
-    <a href="/kid" target="_blank" class="btn btn-info btn-sm">
-        Open Kid Mode <span class="bi bi-box-arrow-up-right"></span>
-    </a>
-</div>
 
 <!-- Toolbar -->
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -76,7 +64,7 @@ else
         @foreach (var user in _filteredUsers)
         {
             <div class="col-md-6 col-lg-4 mb-3">
-                <div class="card h-100 @(user.IsLockedOut ? "border-warning" : "")">
+                <div class="card h-100 @(user.IsLockedOut ? "border-warning" : "")" style="overflow: visible;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
@@ -98,29 +86,11 @@ else
                             {
                                 <span class="badge bg-success"><span class="bi bi-check-circle"></span> Active</span>
                             }
-                            
-                            @if (user.Roles.Contains("Child"))
-                            {
-                                @if (_childPinStatus.TryGetValue(user.Id, out var hasPin) && hasPin)
-                                {
-                                    <span class="badge bg-info"><span class="bi bi-phone"></span> PIN Set</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary"><span class="bi bi-phone"></span> No PIN</span>
-                                }
-                            }
                         </div>
-                        
+
                         @if (!user.Roles.Contains("Admin"))
                         {
                             <div class="d-flex flex-wrap gap-1">
-                                @if (user.Roles.Contains("Child"))
-                                {
-                                    <button class="btn btn-sm btn-outline-info" @onclick="() => ShowSetPinModal(user)">
-                                        <span class="bi bi-phone"></span> Set PIN
-                                    </button>
-                                }
                                 <button class="btn btn-sm btn-outline-secondary" @onclick="() => ShowResetPasswordModal(user)">
                                     <span class="bi bi-key"></span> Password
                                 </button>
@@ -235,19 +205,12 @@ else
                         {
                             <div class="card bg-light mb-3">
                                 <div class="card-body">
-                                    <h6 class="card-title"><span class="bi bi-phone"></span> Kid Mode Settings</h6>
-                                    
-                                    <div class="mb-3">
+                                    <h6 class="card-title"><span class="bi bi-person-badge"></span> Child Profile</h6>
+
+                                    <div class="mb-0">
                                         <label class="form-label">Display Name</label>
                                         <InputText class="form-control" @bind-Value="_createRequest.DisplayName" />
                                         <small class="text-muted">Optional. Defaults to username if not provided.</small>
-                                    </div>
-                                    
-                                    <div class="mb-0">
-                                        <label class="form-label">Kid Mode PIN (4 digits)</label>
-                                        <InputText class="form-control" @bind-Value="_createRequest.Pin" maxlength="4" 
-                                                   placeholder="e.g., 1234" style="max-width: 120px;" />
-                                        <small class="text-muted">Optional. Allows iPhone access without login.</small>
                                     </div>
                                 </div>
                             </div>
@@ -265,65 +228,6 @@ else
                             </button>
                         </div>
                     </EditForm>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Set PIN Modal -->
-@if (_showSetPinModal && _selectedUser != null)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><span class="bi bi-phone"></span> Kid Mode PIN for @_selectedUser.UserName</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted">
-                        Set a 4-digit PIN so <strong>@_selectedUser.UserName</strong> can access their chores on their phone 
-                        by going to <code>/kid</code> - no login required!
-                    </p>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">4-Digit PIN</label>
-                        <input type="text" class="form-control text-center" 
-                               @bind="_newPin" maxlength="4" 
-                               placeholder="Enter 4 digits" 
-                               style="max-width: 150px; font-size: 1.5rem; letter-spacing: 0.5rem;" />
-                    </div>
-                    
-                    @{ var userHasPin = _childPinStatus.TryGetValue(_selectedUser.Id, out var pinStatus) && pinStatus; }
-                    @if (userHasPin)
-                    {
-                        <div class="alert alert-info py-2">
-                            <span class="bi bi-info-circle"></span> This user already has a PIN set. Entering a new one will replace it.
-                        </div>
-                    }
-                    
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            @if (userHasPin)
-                            {
-                                <button type="button" class="btn btn-outline-danger" @onclick="ClearPin" disabled="@_isSaving">
-                                    <span class="bi bi-x-circle"></span> Remove PIN
-                                </button>
-                            }
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                            <button type="button" class="btn btn-primary" @onclick="SetPin" 
-                                    disabled="@(string.IsNullOrEmpty(_newPin) || _newPin.Length != 4 || !_newPin.All(char.IsDigit) || _isSaving)">
-                                @if (_isSaving)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-1"></span>
-                                }
-                                Set PIN
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -462,7 +366,6 @@ else
 
 @code {
     private List<UserListItem> _users = [];
-    private Dictionary<string, bool> _childPinStatus = new();
     private bool _isLoading = true;
     private bool _isSaving;
     private string? _errorMessage;
@@ -475,7 +378,6 @@ else
     private bool _showChangeRoleModal;
     private bool _showResetPasswordModal;
     private bool _showDeleteModal;
-    private bool _showSetPinModal;
     private UserListItem? _selectedUser;
     private string? _openDropdownUserId;
     
@@ -483,8 +385,7 @@ else
     private string _newRole = "";
     private string _newPassword = "";
     private string _confirmPassword = "";
-    private string _newPin = "";
-    
+
     private List<UserListItem> _filteredUsers => _users
         .Where(u => string.IsNullOrEmpty(_searchTerm) || 
                     u.UserName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
@@ -513,16 +414,6 @@ else
         try
         {
             _users = await UserService.GetAllUsersAsync();
-            
-            _childPinStatus.Clear();
-            foreach (var user in _users.Where(u => u.Roles.Contains("Child")))
-            {
-                var profile = await ProfileService.GetProfileByUserIdAsync(user.Id);
-                if (profile != null)
-                {
-                    _childPinStatus[user.Id] = await KidModeService.HasPinAsync(profile.Id);
-                }
-            }
         }
         catch (Exception ex)
         {
@@ -561,20 +452,12 @@ else
         _showDeleteModal = true;
     }
 
-    private void ShowSetPinModal(UserListItem user)
-    {
-        _selectedUser = user;
-        _newPin = "";
-        _showSetPinModal = true;
-    }
-
     private void CloseModals()
     {
         _showCreateModal = false;
         _showChangeRoleModal = false;
         _showResetPasswordModal = false;
         _showDeleteModal = false;
-        _showSetPinModal = false;
         _selectedUser = null;
     }
 
@@ -606,96 +489,7 @@ else
             
             if (result.Success)
             {
-                if (_createRequest.Role == "Child" && !string.IsNullOrEmpty(_createRequest.Pin) && result.Data != null)
-                {
-                    var profile = await ProfileService.GetProfileByUserIdAsync(result.Data);
-                    if (profile != null)
-                    {
-                        await KidModeService.SetPinAsync(profile.Id, _createRequest.Pin);
-                    }
-                }
-                
                 _successMessage = $"User '{_createRequest.UserName}' created successfully.";
-                CloseModals();
-                await LoadUsers();
-            }
-            else
-            {
-                _errorMessage = result.ErrorMessage;
-            }
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = $"An error occurred: {ex.Message}";
-        }
-        finally
-        {
-            _isSaving = false;
-        }
-    }
-
-    private async Task SetPin()
-    {
-        if (_selectedUser == null || string.IsNullOrEmpty(_newPin))
-            return;
-
-        _isSaving = true;
-        _errorMessage = null;
-        
-        try
-        {
-            var profile = await ProfileService.GetProfileByUserIdAsync(_selectedUser.Id);
-            if (profile == null)
-            {
-                _errorMessage = "Child profile not found.";
-                return;
-            }
-
-            var result = await KidModeService.SetPinAsync(profile.Id, _newPin);
-            
-            if (result.Success)
-            {
-                _successMessage = $"PIN set for '{_selectedUser.UserName}'. They can now access Kid Mode at /kid";
-                CloseModals();
-                await LoadUsers();
-            }
-            else
-            {
-                _errorMessage = result.ErrorMessage;
-            }
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = $"An error occurred: {ex.Message}";
-        }
-        finally
-        {
-            _isSaving = false;
-        }
-    }
-
-    private async Task ClearPin()
-    {
-        if (_selectedUser == null)
-            return;
-
-        _isSaving = true;
-        _errorMessage = null;
-        
-        try
-        {
-            var profile = await ProfileService.GetProfileByUserIdAsync(_selectedUser.Id);
-            if (profile == null)
-            {
-                _errorMessage = "Child profile not found.";
-                return;
-            }
-
-            var result = await KidModeService.ClearPinAsync(profile.Id);
-            
-            if (result.Success)
-            {
-                _successMessage = $"PIN removed for '{_selectedUser.UserName}'.";
                 CloseModals();
                 await LoadUsers();
             }
@@ -898,6 +692,5 @@ else
         public string ConfirmPassword { get; set; } = "";
         public string Role { get; set; } = "";
         public string? DisplayName { get; set; }
-        public string? Pin { get; set; }
     }
 }
