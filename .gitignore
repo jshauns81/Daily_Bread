@@ -448,4 +448,4 @@ railway.toml
 .git-rebase-backup/
 
 # Claude AI settings
-.claude/
+.claude/db-backups/
