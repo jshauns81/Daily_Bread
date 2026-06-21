@@ -733,9 +733,12 @@ else
         return "Activity this year";
     }
 
-    private static string Greeting()
+    private string Greeting()
     {
-        var hour = DateTime.Now.Hour;
+        // Use the configured family timezone (DateProvider.Now), not the server's
+        // clock. The container runs in UTC, so DateTime.Now would report UTC and
+        // skew the greeting by hours (e.g. "Good evening" at 1:30 PM Central).
+        var hour = DateProvider.Now.Hour;
         if (hour < 12) return "Good morning";
         if (hour < 17) return "Good afternoon";
         return "Good evening";
