@@ -386,7 +386,40 @@ public enum UnlockConditionType
     /// Cash out performed.
     /// JSON: {"count": 1} or {"total_amount": 100.00}
     /// </summary>
-    CashOut = 25
+    CashOut = 25,
+
+    /// <summary>
+    /// N chores completed within a single calendar day.
+    /// JSON: {"count": 5}
+    /// </summary>
+    ChoresInSingleDay = 26,
+
+    /// <summary>
+    /// N achievements earned within a trailing window of days, counted as of now.
+    /// JSON: {"count": 3, "days": 7}
+    /// </summary>
+    AchievementsInPeriod = 27,
+
+    /// <summary>
+    /// Every one of the user's currently active chore definitions completed at least once.
+    /// JSON: {} (no parameters - target is the user's current active chore count)
+    /// </summary>
+    AllChoreTypesCompleted = 28,
+
+    /// <summary>
+    /// N achievements earned at or above a given rarity, or all qualifying achievements.
+    /// JSON: {"min_rarity": "Epic", "count": 3} or {"min_rarity": "Epic", "mode": "all"}
+    /// </summary>
+    RarityMastery = 29,
+
+    /// <summary>
+    /// Consecutive days hitting a completion percentage threshold (need not be 100%).
+    /// A day counts as met if (Completed+Approved+Skipped)/total logged chores that day >= percent.
+    /// Days with zero logged chores are skipped rather than breaking the streak (matches StreakDays).
+    /// Chores in Help status count toward the day's total but not toward "met".
+    /// JSON: {"percent": 90, "days": 30}
+    /// </summary>
+    ThresholdCompletionStreak = 30
 }
 
 /// <summary>
