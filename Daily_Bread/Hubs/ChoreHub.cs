@@ -6,19 +6,17 @@ namespace Daily_Bread.Hubs;
 /// <summary>
 /// SignalR hub for real-time chore notifications across family members.
 /// This hub is intentionally minimal - it just establishes the endpoint.
-/// Server-side broadcasting is done via IHubContext<ChoreHub> in ChoreNotificationService.
-/// 
-/// Note: [AllowAnonymous] is safe here because each family runs in their own
-/// isolated Docker container. Everyone connected to this hub is in the same
-/// household. The Blazor app itself still requires authentication.
+/// Server-side delivery is done via IHubContext&lt;ChoreHub&gt; in ChoreNotificationService.
 /// </summary>
-[AllowAnonymous]
+[Authorize]
 public class ChoreHub : Hub
 {
     private readonly ILogger<ChoreHub> _logger;
+    public const string ParentsGroup = "parents";
+
     
     // Track connected clients for diagnostics
-    private static int _connectedClients = 0;
+    private static int _connectedClients;
 
     public ChoreHub(ILogger<ChoreHub> logger)
     {
@@ -27,6 +25,16 @@ public class ChoreHub : Hub
 
     public override async Task OnConnectedAsync()
     {
+        if (string.IsNullOrEmpty(Context.UserIdentifier))
+        {
+            throw new HubException("Authenticated connection has no user identifier.");
+        }
+
+        if (Context.User?.IsInRole("Parent") == true || Context.User?.IsInRole("Admin") == true)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, ParentsGroup);
+        }
+
         var count = Interlocked.Increment(ref _connectedClients);
         _logger.LogDebug("ChoreHub: Client connected: {ConnectionId}. Total clients: {Count}",
             Context.ConnectionId, count);

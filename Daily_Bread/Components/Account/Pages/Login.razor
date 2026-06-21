@@ -39,6 +39,7 @@
         }
 
         <form method="post" action="/Account/PerformLogin@(string.IsNullOrEmpty(ReturnUrl) ? "" : $"?ReturnUrl={Uri.EscapeDataString(ReturnUrl)}")">
+            <AntiforgeryToken />
             <div class="mb-4">
                 <label for="username" class="form-label">Username</label>
                 <input type="text" 

@@ -100,11 +100,18 @@ public class ChoreNotificationService : IChoreNotificationService
         {
             var timestamp = DateTime.UtcNow;
             
-            // Send as individual parameters for reliable deserialization
-            // Client: _hubConnection.On<string[], DateTime>("DashboardChanged", ...)
-            await _hubContext.Clients.All.SendAsync("DashboardChanged", 
-                usersToNotify, 
+            await _hubContext.Clients.Group(ChoreHub.ParentsGroup).SendAsync(
+                "DashboardChanged",
+                usersToNotify,
                 timestamp);
+
+            foreach (var userId in usersToNotify.Distinct(StringComparer.Ordinal))
+            {
+                await _hubContext.Clients.User(userId).SendAsync(
+                    "DashboardChanged",
+                    new[] { userId },
+                    timestamp);
+            }
 
             _logger.LogInformation(
                 "DashboardChanged broadcast sent for users: {UserIds} (excluded: {ExcludedUserId})",
@@ -127,13 +134,13 @@ public class ChoreNotificationService : IChoreNotificationService
         {
             var timestamp = DateTime.UtcNow;
             
-            // Send as individual parameters for reliable deserialization
-            // Client: _hubConnection.On<int, string, string, string, DateTime>("HelpAlert", ...)
-            await _hubContext.Clients.All.SendAsync("HelpAlert", 
-                choreLogId, 
-                requestingUserId, 
-                choreName, 
-                childName, 
+            // Send as individual parameters for reliable deserialization.
+            // Parents receive the alert through the server-managed group.
+            await _hubContext.Clients.Group(ChoreHub.ParentsGroup).SendAsync("HelpAlert",
+                choreLogId,
+                requestingUserId,
+                choreName,
+                childName,
                 timestamp);
 
             _logger.LogInformation(
@@ -167,13 +174,12 @@ public class ChoreNotificationService : IChoreNotificationService
                 "Sending BlessingGranted: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Amount={Amount}",
                 childUserId, choreName, earnedAmount);
 
-            // Send as individual parameters for reliable deserialization
-            // Client: _hubConnection.On<string, string, decimal, string, DateTime>("BlessingGranted", ...)
-            await _hubContext.Clients.All.SendAsync("BlessingGranted", 
-                childUserId, 
-                choreName, 
-                earnedAmount, 
-                effectiveParentName, 
+            // Send as individual parameters for reliable deserialization.
+            await _hubContext.Clients.User(childUserId).SendAsync("BlessingGranted",
+                childUserId,
+                choreName,
+                earnedAmount,
+                effectiveParentName,
                 timestamp);
 
             _logger.LogInformation(
@@ -208,12 +214,11 @@ public class ChoreNotificationService : IChoreNotificationService
                 "Sending HelpResponded: ChildUserId={ChildUserId}, ChoreName={ChoreName}, Response={Response}, Note={Note}",
                 childUserId, choreName, response, note ?? "none");
 
-            // Send as individual parameters for reliable deserialization
-            // Client: _hubConnection.On<string, string, string, string, string?, DateTime>("HelpResponded", ...)
-            await _hubContext.Clients.All.SendAsync("HelpResponded", 
-                childUserId, 
-                choreName, 
-                response, 
+            // Send as individual parameters for reliable deserialization.
+            await _hubContext.Clients.User(childUserId).SendAsync("HelpResponded",
+                childUserId,
+                choreName,
+                response,
                 effectiveParentName,
                 note,
                 timestamp);
@@ -248,12 +253,11 @@ public class ChoreNotificationService : IChoreNotificationService
                 "Sending ChoreUndone: ChildUserId={ChildUserId}, ChoreName={ChoreName}",
                 childUserId, choreName);
 
-            // Send as individual parameters for reliable deserialization
-            // Client: _hubConnection.On<string, string, string, DateTime>("ChoreUndone", ...)
-            await _hubContext.Clients.All.SendAsync("ChoreUndone", 
-                childUserId, 
-                choreName, 
-                effectiveParentName, 
+            // Send as individual parameters for reliable deserialization.
+            await _hubContext.Clients.User(childUserId).SendAsync("ChoreUndone",
+                childUserId,
+                choreName,
+                effectiveParentName,
                 timestamp);
 
             _logger.LogInformation(
