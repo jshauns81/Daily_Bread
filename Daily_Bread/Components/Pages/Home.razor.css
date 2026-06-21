@@ -31,7 +31,7 @@
 }
 
 .today-hero.gamified {
-    background: linear-gradient(160deg, #1a1f2e 0%, #252d3f 50%, #1e2636 100%);
+    background: linear-gradient(160deg, var(--ds-bg-base) 0%, var(--ds-bg-hover) 50%, var(--ds-bg-elevated) 100%);
     border: 2px solid rgba(136, 192, 208, 0.3);
     position: relative;
     overflow: hidden;
@@ -113,39 +113,39 @@
 
 /* Level color variants */
 .level-badge.level-starter {
-    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-    color: #a0aec0;
-    border: 2px solid #4a5568;
+    background: linear-gradient(135deg, var(--ds-bg-hover) 0%, var(--ds-bg-elevated) 100%);
+    color: var(--ds-text-muted);
+    border: 2px solid var(--ds-bg-hover);
 }
 
 .level-badge.level-common {
-    background: linear-gradient(135deg, #68d391 0%, #38a169 100%);
-    color: #1a202c;
-    border: 2px solid #68d391;
+    background: linear-gradient(135deg, var(--ds-semantic-success) 0%, color-mix(in srgb, var(--ds-semantic-success) 70%, black) 100%);
+    color: var(--ds-bg-base);
+    border: 2px solid var(--ds-semantic-success);
 }
 
 .level-badge.level-uncommon {
-    background: linear-gradient(135deg, #63b3ed 0%, #3182ce 100%);
-    color: #1a202c;
-    border: 2px solid #63b3ed;
+    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, color-mix(in srgb, var(--ds-accent-primary) 70%, black) 100%);
+    color: var(--ds-bg-base);
+    border: 2px solid var(--ds-accent-primary);
 }
 
 .level-badge.level-rare {
-    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-    color: #1a202c;
-    border: 2px solid #ed8936;
+    background: linear-gradient(135deg, var(--ds-semantic-warning) 0%, color-mix(in srgb, var(--ds-semantic-warning) 70%, black) 100%);
+    color: var(--ds-bg-base);
+    border: 2px solid var(--ds-semantic-warning);
 }
 
 .level-badge.level-epic {
-    background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
-    color: #fff;
-    border: 2px solid #9f7aea;
+    background: linear-gradient(135deg, var(--ds-semantic-special) 0%, color-mix(in srgb, var(--ds-semantic-special) 70%, black) 100%);
+    color: var(--ds-text-primary);
+    border: 2px solid var(--ds-semantic-special);
 }
 
 .level-badge.level-legendary {
-    background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 50%, #d69e2e 100%);
-    color: #1a202c;
-    border: 2px solid #f6e05e;
+    background: linear-gradient(135deg, var(--ds-semantic-highlight) 0%, color-mix(in srgb, var(--ds-semantic-highlight) 90%, black) 50%, color-mix(in srgb, var(--ds-semantic-highlight) 75%, black) 100%);
+    color: var(--ds-bg-base);
+    border: 2px solid var(--ds-semantic-highlight);
     animation: legendary-shine 3s ease-in-out infinite;
 }
 
@@ -223,10 +223,10 @@
 }
 
 .xp-fill.complete {
-    background: linear-gradient(90deg, 
-        #68d391 0%, 
-        #48bb78 50%, 
-        #38a169 100%);
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--ds-semantic-success) 85%, white) 0%,
+        var(--ds-semantic-success) 50%,
+        color-mix(in srgb, var(--ds-semantic-success) 70%, black) 100%);
 }
 
 .xp-glow {
