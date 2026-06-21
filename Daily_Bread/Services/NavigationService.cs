@@ -84,6 +84,9 @@ public class NavigationService : INavigationService
         // History (transactions / ledger) - parent-only, position 3 in mobile
         new("/ledger", "💳", "History", NavVisibility.Parent, MobileOrder: 3, Section: "Manage"),
 
+        // Achievements management - parent-only, desktop sidebar / mobile overflow
+        new("/manage-achievements", "🏆", "Achievements", NavVisibility.Parent, MobileOrder: 7, ShowInMobile: false, Section: "Manage"),
+
         // Settings - parent-only, in overflow (position 5)
         new("/settings", "⚙️", "Settings", NavVisibility.Parent, MobileOrder: 5, ShowInDesktop: false, Section: "Manage"),
 

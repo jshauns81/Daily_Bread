@@ -247,8 +247,7 @@ public class AchievementConditionEvaluator : IAchievementConditionEvaluator
                 UnlockConditionType.TotalEarned => EvaluateTotalEarnedWithContext(achievement, ctx),
                 UnlockConditionType.BalanceReached => EvaluateBalanceReachedWithContext(achievement, ctx),
                 UnlockConditionType.PerfectDays => EvaluatePerfectDaysWithContext(achievement, ctx),
-                // Not yet implemented - no current achievement uses this condition type.
-                UnlockConditionType.SpecificChoreCount => AchievementEvaluationResult.NotApplicable(),
+                UnlockConditionType.SpecificChoreCount => EvaluateSpecificChoreCountWithContext(achievement, ctx),
                 UnlockConditionType.EarlyCompletion => EvaluateEarlyCompletionWithContext(achievement, ctx),
                 UnlockConditionType.FirstChore => EvaluateFirstChoreWithContext(achievement, ctx),
                 UnlockConditionType.FirstGoal => EvaluateFirstGoalWithContext(achievement, ctx),
@@ -294,6 +293,23 @@ public class AchievementConditionEvaluator : IAchievementConditionEvaluator
         var target = ParseInt(achievement.UnlockConditionValue, "count", 1);
         var count = ctx.ChoreLogs.Count(cl =>
             cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved);
+
+        return count >= target
+            ? AchievementEvaluationResult.Met(count, target)
+            : AchievementEvaluationResult.NotMet(count, target);
+    }
+
+    private AchievementEvaluationResult EvaluateSpecificChoreCountWithContext(Achievement achievement, AchievementEvaluationContext ctx)
+    {
+        var choreId = ParseInt(achievement.UnlockConditionValue, "chore_id", 0);
+        var target = ParseInt(achievement.UnlockConditionValue, "count", 1);
+
+        if (choreId <= 0)
+            return AchievementEvaluationResult.NotApplicable();
+
+        var count = ctx.ChoreLogs.Count(cl =>
+            cl.ChoreDefinitionId == choreId &&
+            (cl.Status == ChoreStatus.Completed || cl.Status == ChoreStatus.Approved));
 
         return count >= target
             ? AchievementEvaluationResult.Met(count, target)

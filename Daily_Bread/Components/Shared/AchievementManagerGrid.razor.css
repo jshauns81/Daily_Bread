@@ -1,0 +1,130 @@
+.manager-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--ds-space-4);
+}
+
+.manager-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ds-space-4);
+    padding: var(--ds-space-4);
+    background: var(--ds-bg-elevated);
+    border-radius: var(--ds-radius-lg);
+    border: 2px solid var(--ds-bg-muted);
+    transition: all 0.15s ease;
+}
+
+.manager-card.legendary {
+    border-color: var(--ds-semantic-highlight);
+    background: linear-gradient(135deg, rgba(235, 203, 139, 0.15) 0%, var(--ds-bg-elevated) 100%);
+}
+
+.manager-card.inactive {
+    opacity: 0.6;
+}
+
+.manager-card-icon {
+    font-size: 2.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.manager-card-icon.locked-icon {
+    filter: grayscale(100%);
+    opacity: 0.5;
+}
+
+.manager-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.manager-card-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-1);
+}
+
+.manager-card-name {
+    color: var(--ds-text-primary);
+    font-size: var(--ds-text-base);
+}
+
+.manager-card-desc {
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-sm);
+    margin: 0 0 var(--ds-space-2) 0;
+}
+
+.manager-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ds-space-1);
+}
+
+.meta-chip {
+    font-size: var(--ds-text-xs);
+    padding: 2px 8px;
+    border-radius: var(--ds-radius-sm);
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-secondary);
+}
+
+.condition-chip {
+    font-family: var(--ds-font-mono, monospace);
+}
+
+.manager-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-1);
+    flex-shrink: 0;
+}
+
+.manager-card-actions .btn {
+    white-space: nowrap;
+}
+
+/* Rarity left-border accents, matching the child Achievements view */
+.rarity-uncommon {
+    border-left: 4px solid var(--ds-semantic-success) !important;
+}
+
+.rarity-rare {
+    border-left: 4px solid var(--ds-accent-primary) !important;
+}
+
+.rarity-epic {
+    border-left: 4px solid var(--ds-accent-purple) !important;
+}
+
+.rarity-legendary {
+    border-left: 4px solid var(--ds-semantic-highlight) !important;
+}
+
+.bg-purple {
+    background-color: var(--ds-accent-purple) !important;
+    color: var(--ds-text-primary) !important;
+}
+
+@media (max-width: 767px) {
+    .manager-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .manager-card {
+        flex-direction: column;
+    }
+
+    .manager-card-actions {
+        flex-direction: row;
+        width: 100%;
+    }
+
+    .manager-card-actions .btn {
+        flex: 1;
+    }
+}

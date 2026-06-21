@@ -270,7 +270,7 @@ public enum UnlockConditionType
     
     /// <summary>
     /// Specific chore completed N times.
-    /// JSON: {"chore_code": "MAKE_BED", "count": 100}
+    /// JSON: {"chore_id": 5, "count": 100} (chore_id is ChoreDefinition.Id)
     /// </summary>
     SpecificChoreCount = 6,
     

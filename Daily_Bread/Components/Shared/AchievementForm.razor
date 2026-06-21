@@ -1,0 +1,229 @@
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+@using System.ComponentModel.DataAnnotations
+
+<div class="achievement-form">
+    <EditForm Model="FormModel" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+
+        <!-- Identity: icon + name -->
+        <div class="form-section identity-section">
+            <div class="icon-picker">
+                <EmojiPicker @bind-Value="FormModel.Icon" />
+            </div>
+            <div class="name-field">
+                <InputText @bind-Value="FormModel.Name" class="ds-input ds-input--name" placeholder="Achievement name" />
+                <ValidationMessage For="() => FormModel.Name" class="validation-msg" />
+                <ValidationMessage For="() => FormModel.Icon" class="validation-msg" />
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-section">
+            <InputTextArea @bind-Value="FormModel.Description" class="ds-input ds-input--textarea" rows="2" placeholder="How is this earned?" />
+            <ValidationMessage For="() => FormModel.Description" class="validation-msg" />
+        </div>
+
+        <!-- Rarity picker -->
+        <div class="form-section">
+            <span class="section-label">Rarity</span>
+            <div class="rarity-row">
+                @foreach (var rarity in Enum.GetValues<AchievementRarity>())
+                {
+                    <button type="button"
+                            class="rarity-chip rarity-chip--@rarity.ToString().ToLowerInvariant() @(FormModel.Rarity == rarity ? "rarity-chip--selected" : "")"
+                            @onclick="() => FormModel.Rarity = rarity">
+                        @rarity
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Category + Points -->
+        <div class="form-section two-col-section">
+            <label class="field-col">
+                <span class="field-label">Category</span>
+                <InputSelect @bind-Value="FormModel.Category" class="ds-select">
+                    @foreach (var category in Enum.GetValues<AchievementCategory>())
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </InputSelect>
+            </label>
+            <label class="field-col">
+                <span class="field-label">Points</span>
+                <InputNumber @bind-Value="FormModel.Points" class="ds-input" min="0" />
+            </label>
+        </div>
+
+        <!-- Unlock condition -->
+        <div class="form-section">
+            <span class="section-label">Unlock condition</span>
+            <AchievementConditionBuilder
+                @bind-ConditionType="FormModel.UnlockConditionType"
+                @bind-ConditionValue="FormModel.UnlockConditionValue"
+                @bind-ProgressTarget="FormModel.ProgressTarget"
+                Chores="Chores" />
+        </div>
+
+        <!-- Options (collapsed) -->
+        <details class="options-section" open="@IsEditing">
+            <summary class="options-summary">
+                <span class="options-icon">⚙</span>
+                <span>Options</span>
+            </summary>
+            <div class="options-content">
+                <label class="option-check">
+                    <InputCheckbox @bind-Value="FormModel.IsHidden" />
+                    <span>Hidden until earned</span>
+                </label>
+
+                @if (FormModel.IsHidden)
+                {
+                    <label class="option-check">
+                        <InputCheckbox @bind-Value="FormModel.IsVisibleBeforeUnlock" />
+                        <span>Show "???" placeholder before unlock (uncheck to fully hide)</span>
+                    </label>
+                    <InputText @bind-Value="FormModel.HiddenHint" class="ds-input" placeholder="Hint shown before unlock (optional)" />
+                }
+
+                <label class="option-check">
+                    <InputCheckbox @bind-Value="FormModel.IsLegendary" />
+                    <span>Legendary (special visual treatment)</span>
+                </label>
+
+                <label class="option-check">
+                    <InputCheckbox @bind-Value="FormModel.IsActive" />
+                    <span>Active</span>
+                </label>
+            </div>
+        </details>
+
+        <!-- Actions -->
+        <div class="form-actions">
+            <button type="button" class="btn-cancel" @onclick="HandleCancel">Cancel</button>
+            <button type="submit" class="btn-submit" disabled="@IsSubmitting">
+                @if (IsSubmitting) { <span class="spinner"></span> }
+                @(IsEditing ? "Save" : "Create")
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public AchievementDto? Achievement { get; set; }
+    [Parameter] public List<ChoreDefinition> Chores { get; set; } = [];
+    [Parameter] public EventCallback<AchievementDto> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private AchievementFormModel FormModel { get; set; } = new();
+    private bool IsEditing => Achievement?.Id > 0;
+    private bool IsSubmitting { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Achievement != null)
+        {
+            FormModel = new AchievementFormModel
+            {
+                Id = Achievement.Id,
+                Name = Achievement.Name,
+                Description = Achievement.Description,
+                HiddenHint = Achievement.HiddenHint,
+                Icon = Achievement.Icon,
+                LockedIcon = Achievement.LockedIcon,
+                Category = Achievement.Category,
+                Rarity = Achievement.Rarity,
+                Points = Achievement.Points,
+                SortOrder = Achievement.SortOrder,
+                IsHidden = Achievement.IsHidden,
+                IsLegendary = Achievement.IsLegendary,
+                IsVisibleBeforeUnlock = Achievement.IsVisibleBeforeUnlock,
+                IsActive = Achievement.IsActive,
+                UnlockConditionType = Achievement.UnlockConditionType,
+                UnlockConditionValue = Achievement.UnlockConditionValue,
+                ProgressTarget = Achievement.ProgressTarget
+            };
+        }
+        else
+        {
+            FormModel = new AchievementFormModel
+            {
+                Icon = EmojiConstants.Star,
+                Rarity = AchievementRarity.Common,
+                Category = AchievementCategory.Special,
+                Points = 10,
+                IsVisibleBeforeUnlock = true,
+                IsActive = true,
+                UnlockConditionType = UnlockConditionType.Manual
+            };
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        IsSubmitting = true;
+        try
+        {
+            var dto = new AchievementDto
+            {
+                Id = FormModel.Id,
+                Name = FormModel.Name,
+                Description = FormModel.Description,
+                HiddenHint = FormModel.IsHidden ? FormModel.HiddenHint : null,
+                Icon = FormModel.Icon ?? string.Empty,
+                LockedIcon = FormModel.LockedIcon,
+                Category = FormModel.Category,
+                Rarity = FormModel.Rarity,
+                Points = FormModel.Points,
+                SortOrder = FormModel.SortOrder,
+                IsHidden = FormModel.IsHidden,
+                IsLegendary = FormModel.IsLegendary,
+                IsVisibleBeforeUnlock = !FormModel.IsHidden || FormModel.IsVisibleBeforeUnlock,
+                IsActive = FormModel.IsActive,
+                UnlockConditionType = FormModel.UnlockConditionType,
+                UnlockConditionValue = FormModel.UnlockConditionValue,
+                ProgressTarget = FormModel.ProgressTarget
+            };
+            await OnSubmit.InvokeAsync(dto);
+        }
+        finally { IsSubmitting = false; }
+    }
+
+    private async Task HandleCancel() => await OnCancel.InvokeAsync();
+
+    private class AchievementFormModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Required")]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Required")]
+        [StringLength(500)]
+        public string Description { get; set; } = string.Empty;
+
+        public string? HiddenHint { get; set; }
+
+        [Required(ErrorMessage = "Choose an icon")]
+        public string? Icon { get; set; }
+
+        public string? LockedIcon { get; set; }
+        public AchievementCategory Category { get; set; } = AchievementCategory.Special;
+        public AchievementRarity Rarity { get; set; } = AchievementRarity.Common;
+
+        [Range(0, 10000)]
+        public int Points { get; set; } = 10;
+
+        public int SortOrder { get; set; }
+        public bool IsHidden { get; set; }
+        public bool IsLegendary { get; set; }
+        public bool IsVisibleBeforeUnlock { get; set; } = true;
+        public bool IsActive { get; set; } = true;
+
+        public UnlockConditionType UnlockConditionType { get; set; } = UnlockConditionType.Manual;
+        public string? UnlockConditionValue { get; set; }
+        public int? ProgressTarget { get; set; }
+    }
+}

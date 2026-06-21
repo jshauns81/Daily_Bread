@@ -152,17 +152,21 @@ public class AchievementService : IAchievementService
     public async Task<List<AchievementDisplay>> GetAllAchievementsAsync(string userId)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        
-        var achievements = await context.Achievements
-            .Where(a => a.IsActive)
-            .OrderBy(a => a.Category)
-            .ThenBy(a => a.SortOrder)
-            .ThenBy(a => a.Rarity)
-            .ToListAsync();
 
         var earnedMap = await context.UserAchievements
             .Where(ua => ua.UserId == userId)
             .ToDictionaryAsync(ua => ua.AchievementId, ua => ua);
+
+        // Include inactive achievements the user already earned - deactivating an
+        // achievement stops new awards but must not erase a child's earned history.
+        var earnedAchievementIds = earnedMap.Keys.ToList();
+
+        var achievements = await context.Achievements
+            .Where(a => a.IsActive || earnedAchievementIds.Contains(a.Id))
+            .OrderBy(a => a.Category)
+            .ThenBy(a => a.SortOrder)
+            .ThenBy(a => a.Rarity)
+            .ToListAsync();
 
         // Get progress for all unearned achievements
         var progressMap = await _conditionEvaluator.EvaluateAllAsync(userId);
@@ -308,17 +312,23 @@ public class AchievementService : IAchievementService
     public async Task<AchievementStats> GetStatsAsync(string userId)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        
-        var allAchievements = await context.Achievements
-            .Where(a => a.IsActive)
-            .ToListAsync();
 
         var earnedIds = await context.UserAchievements
             .Where(ua => ua.UserId == userId)
             .Select(ua => ua.AchievementId)
             .ToListAsync();
 
-        var earnedAchievements = allAchievements.Where(a => earnedIds.Contains(a.Id)).ToList();
+        // TotalAchievements/TotalPoints reflect what's currently available to earn (active only).
+        var allAchievements = await context.Achievements
+            .Where(a => a.IsActive)
+            .ToListAsync();
+
+        // EarnedAchievements/EarnedPoints must include already-earned achievements even if
+        // since deactivated, so a child's earned history doesn't shrink when a parent
+        // deactivates an achievement.
+        var earnedAchievements = await context.Achievements
+            .Where(a => earnedIds.Contains(a.Id))
+            .ToListAsync();
 
         return new AchievementStats
         {
