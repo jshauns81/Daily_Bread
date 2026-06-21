@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -619,10 +620,21 @@ internal static class IdentityEndpointsExtensions
         // Uses /PerformLogin to avoid collision with the /Login Blazor page route
         group.MapPost("/PerformLogin", async (
             HttpContext context,
+            IAntiforgery antiforgery,
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             ILogger<Program> logger) =>
         {
+            try
+            {
+                await antiforgery.ValidateRequestAsync(context);
+            }
+            catch (AntiforgeryValidationException ex)
+            {
+                logger.LogWarning(ex, "Rejected login request with an invalid antiforgery token");
+                return Results.BadRequest();
+            }
+
             var form = await context.Request.ReadFormAsync();
             var userName = form["Input.UserName"].ToString();
             var password = form["Input.Password"].ToString();
@@ -663,14 +675,28 @@ internal static class IdentityEndpointsExtensions
 
             logger.LogWarning("Failed login attempt for {UserName}", userName);
             return Results.LocalRedirect($"~/Account/Login?ReturnUrl={Uri.EscapeDataString(returnUrl)}&error=invalid");
-        }).DisableAntiforgery().AllowAnonymous();
+        }).AllowAnonymous();
 
         // Logout POST endpoint
-        group.MapPost("/Logout", async (SignInManager<ApplicationUser> signInManager) =>
+        group.MapPost("/Logout", async (
+            HttpContext context,
+            IAntiforgery antiforgery,
+            SignInManager<ApplicationUser> signInManager,
+            ILogger<Program> logger) =>
         {
+            try
+            {
+                await antiforgery.ValidateRequestAsync(context);
+            }
+            catch (AntiforgeryValidationException ex)
+            {
+                logger.LogWarning(ex, "Rejected logout request with an invalid antiforgery token");
+                return Results.BadRequest();
+            }
+
             await signInManager.SignOutAsync();
             return Results.LocalRedirect("~/Account/Login");
-        }).DisableAntiforgery();
+        });
 
         // External login (Authentik SSO) - challenge endpoint.
         // Must run as a plain HTTP endpoint, not inside a Blazor interactive
@@ -718,17 +744,62 @@ internal static class IdentityEndpointsExtensions
 
             // Link the Authentik identity to the local account if not already linked.
             var logins = await userManager.GetLoginsAsync(user);
-            if (!logins.Any(l => l.LoginProvider == info.LoginProvider && l.ProviderKey == info.ProviderKey))
+            var isAuthentikLinked = logins.Any(l => l.LoginProvider == info.LoginProvider && l.ProviderKey == info.ProviderKey);
+            if (!isAuthentikLinked)
             {
-                await userManager.AddLoginAsync(user, info);
+                var linkResult = await userManager.AddLoginAsync(user, info);
+                if (!linkResult.Succeeded)
+                {
+                    logger.LogWarning("Failed to link Authentik identity for {Email}", email);
+                    return Results.LocalRedirect("~/Account/Login?error=external");
+                }
+
+                isAuthentikLinked = true;
             }
 
-            // Roles follow Authentik group membership.
-            var groups = info.Principal.FindAll("groups").Select(c => c.Value).ToHashSet(StringComparer.Ordinal);
-            if (groups.Contains("authentik Admins") && !await userManager.IsInRoleAsync(user, "Admin"))
-                await userManager.AddToRoleAsync(user, "Admin");
-            if (groups.Contains("dailybread-parents") && !await userManager.IsInRoleAsync(user, "Parent"))
-                await userManager.AddToRoleAsync(user, "Parent");
+            // Roles follow Authentik group membership for Authentik-linked users.
+            if (isAuthentikLinked)
+            {
+                var groups = info.Principal.FindAll("groups").Select(c => c.Value).ToHashSet(StringComparer.Ordinal);
+                var roleMappings = new[]
+                {
+                    (Group: "authentik Admins", Role: "Admin"),
+                    (Group: "dailybread-parents", Role: "Parent")
+                };
+
+                foreach (var (groupName, roleName) in roleMappings)
+                {
+                    var inGroup = groups.Contains(groupName);
+                    var inRole = await userManager.IsInRoleAsync(user, roleName);
+
+                    if (inGroup && !inRole)
+                    {
+                        var addResult = await userManager.AddToRoleAsync(user, roleName);
+                        if (!addResult.Succeeded)
+                        {
+                            logger.LogError(
+                                "Failed to add role {Role} for Authentik-linked user {Email}: {Errors}",
+                                roleName,
+                                email,
+                                string.Join(", ", addResult.Errors.Select(error => error.Description)));
+                            return Results.LocalRedirect("~/Account/Login?error=external");
+                        }
+                    }
+                    else if (!inGroup && inRole)
+                    {
+                        var removeResult = await userManager.RemoveFromRoleAsync(user, roleName);
+                        if (!removeResult.Succeeded)
+                        {
+                            logger.LogError(
+                                "Failed to remove role {Role} for Authentik-linked user {Email}: {Errors}",
+                                roleName,
+                                email,
+                                string.Join(", ", removeResult.Errors.Select(error => error.Description)));
+                            return Results.LocalRedirect("~/Account/Login?error=external");
+                        }
+                    }
+                }
+            }
 
             // Persistent sign-in so parents stay logged in across the 60-day window.
             await signInManager.SignInAsync(user, isPersistent: true);
