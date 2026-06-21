@@ -107,7 +107,11 @@
    NAV LINKS - Simple inline layout
    =========================================== */
 
-.nav-link {
+/* NOTE: NavLink is a framework child component, so its rendered <a> does NOT
+   receive this component's CSS-isolation scope attribute. Selectors whose
+   subject is the <a> must reach it via the scoped .nav-menu parent + ::deep,
+   otherwise the row spacing, hover and active-pill rules silently never match. */
+.nav-menu ::deep .nav-link {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -174,24 +178,24 @@
 }
 
 /* Hover state */
-.nav-link:hover {
+.nav-menu ::deep .nav-link:hover {
     background-color: color-mix(in srgb, var(--ds-accent-primary) 10%, transparent);
     color: var(--ds-text-primary);
 }
 
-.nav-link:hover .bi {
+.nav-menu ::deep .nav-link:hover .bi {
     color: var(--ds-accent-primary);
 }
 
 /* Active state - glowing accent pill */
-.nav-link.active {
+.nav-menu ::deep .nav-link.active {
     background: color-mix(in srgb, var(--ds-accent-primary) 16%, transparent);
     color: var(--ds-accent-primary);
     border-color: color-mix(in srgb, var(--ds-accent-primary) 30%, transparent);
     box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--ds-accent-primary) 60%, transparent);
 }
 
-.nav-link.active .bi {
+.nav-menu ::deep .nav-link.active .bi {
     color: var(--ds-accent-primary);
 }
 
@@ -361,12 +365,12 @@
         padding-bottom: 1rem;
     }
     
-    .nav-link {
+    .nav-menu ::deep .nav-link {
         padding: 1rem;
         min-height: 52px;
         font-size: 1rem;
     }
-    
+
     .nav-link .nav-ico {
         font-size: 1.35rem;
         width: 28px;
@@ -396,24 +400,24 @@
    =========================================== */
 
 @media (hover: none) and (pointer: coarse) {
-    .nav-link {
+    .nav-menu ::deep .nav-link {
         min-height: 52px;
     }
-    
-    .nav-link:active {
+
+    .nav-menu ::deep .nav-link:active {
         background-color: color-mix(in srgb, var(--ds-accent-primary) 15%, transparent);
     }
 
     /* Disable hover effects on touch */
-    .nav-link:hover {
+    .nav-menu ::deep .nav-link:hover {
         background-color: transparent;
     }
 
-    .nav-link:hover .bi {
+    .nav-menu ::deep .nav-link:hover .bi {
         color: inherit;
     }
 
-    .nav-link.active:hover {
+    .nav-menu ::deep .nav-link.active:hover {
         background-color: color-mix(in srgb, var(--ds-accent-primary) 16%, transparent);
     }
     
@@ -431,8 +435,8 @@
    =========================================== */
 
 @media (prefers-reduced-motion: reduce) {
-    .nav-link,
-    .nav-link .bi,
+    .nav-menu ::deep .nav-link,
+    .nav-menu ::deep .nav-link .bi,
     .kid-mode-link,
     .nav-brand-logo {
         transition: none;
