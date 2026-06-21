@@ -151,16 +151,20 @@ public class ChildDashboardData
     
     /// <summary>
     /// Chores that are pending (not yet completed) - for swipeable action view.
+    /// Weekly chores that can still take more completions today (CanDoMore) stay here even
+    /// once approved, so the swipeable card keeps showing for repeat-completion taps - without
+    /// this, a weekly chore would disappear into CompletedChores the moment it's approved and
+    /// the card would never render again that day.
     /// </summary>
     public List<TrackerChoreItem> PendingChores => TodayChores
-        .Where(c => c.IsPending || c.IsHelp)
+        .Where(c => c.IsPending || c.IsHelp || (c.IsWeeklyFlexible && c.CanDoMore))
         .ToList();
-    
+
     /// <summary>
     /// Chores that are done (completed or approved) - collapsed section.
     /// </summary>
     public List<TrackerChoreItem> CompletedChores => TodayChores
-        .Where(c => c.IsCompleted || c.IsApproved)
+        .Where(c => (c.IsCompleted || c.IsApproved) && !(c.IsWeeklyFlexible && c.CanDoMore))
         .ToList();
     
     /// <summary>
@@ -209,8 +213,17 @@ public interface IDashboardService
     /// Returns the new status and updated chore item.
     /// </summary>
     Task<ServiceResult<TrackerChoreItem>> ToggleChoreFromDashboardAsync(
-        int choreDefinitionId, 
-        DateOnly date, 
+        int choreDefinitionId,
+        DateOnly date,
+        string userId);
+
+    /// <summary>
+    /// Undoes the most recent completion of a WeeklyFrequency chore from the dashboard.
+    /// Returns the updated chore item.
+    /// </summary>
+    Task<ServiceResult<TrackerChoreItem>> UndoLastWeeklyCompletionFromDashboardAsync(
+        int choreDefinitionId,
+        DateOnly date,
         string userId);
 }
 
@@ -630,6 +643,33 @@ public class DashboardService : IDashboardService
         }
 
         // Get the updated chore item to return
+        var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, date);
+        var updatedChore = todayChores.FirstOrDefault(c => c.ChoreDefinitionId == choreDefinitionId);
+
+        if (updatedChore == null)
+        {
+            return ServiceResult<TrackerChoreItem>.Fail("Could not find updated chore.");
+        }
+
+        return ServiceResult<TrackerChoreItem>.Ok(updatedChore);
+    }
+
+    public async Task<ServiceResult<TrackerChoreItem>> UndoLastWeeklyCompletionFromDashboardAsync(
+        int choreDefinitionId,
+        DateOnly date,
+        string userId)
+    {
+        var result = await _trackerService.UndoLastWeeklyCompletionAsync(
+            choreDefinitionId,
+            date,
+            userId,
+            isParent: false);
+
+        if (!result.Success)
+        {
+            return ServiceResult<TrackerChoreItem>.Fail(result.ErrorMessage!);
+        }
+
         var todayChores = await _trackerService.GetTrackerItemsForUserOnDateAsync(userId, date);
         var updatedChore = todayChores.FirstOrDefault(c => c.ChoreDefinitionId == choreDefinitionId);
 

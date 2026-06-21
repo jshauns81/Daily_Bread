@@ -20,9 +20,17 @@ public class ChoreLog
     public DateOnly Date { get; set; }
 
     /// <summary>
-    /// Current status of the chore for this date.  
+    /// Current status of the chore for this date.
     /// </summary>
     public ChoreStatus Status { get; set; } = ChoreStatus.Pending;
+
+    /// <summary>
+    /// Whether this chore allowed more than one log per (ChoreDefinitionId, Date) at the moment
+    /// this row was created. Stamped once from ChoreDefinition.ScheduleType at insert time and
+    /// never updated afterward - a log carries the rule that applied when it was created, even if
+    /// the chore's ScheduleType changes later. True for WeeklyFrequency, false for SpecificDays.
+    /// </summary>
+    public bool AllowsMultiplePerDay { get; set; }
 
     /// <summary>
     /// The user  who completed/updated this chore log. 

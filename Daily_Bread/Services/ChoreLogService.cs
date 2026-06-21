@@ -24,6 +24,7 @@ public class ServiceResult<T> : ServiceResult
 public interface IChoreLogService
 {
     Task<ServiceResult<ChoreLog>> GetOrCreateChoreLogAsync(int choreDefinitionId, DateOnly date);
+    Task<ServiceResult<ChoreLog>> CreateWeeklyCompletionAsync(int choreDefinitionId, DateOnly date);
     Task<List<ChoreLog>> GetChoreLogsForDateAsync(DateOnly date);
     Task<List<ChoreLog>> GetChoreLogsForUserOnDateAsync(string userId, DateOnly date);
     Task<ServiceResult> UpdateChoreLogStatusAsync(int choreLogId, ChoreStatus status, string userId, bool isParent, string? notes = null);
@@ -70,13 +71,64 @@ public class ChoreLogService : IChoreLogService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
+        // Weekly chores can have more than one row for the same (chore, date) - one per
+        // completion. When several exist, prefer an open Pending row; otherwise fall back
+        // to the most recently created row. For SpecificDays chores there is always at most
+        // one row, so this ordering is a no-op there.
         var existingLog = await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
-            .FirstOrDefaultAsync(c => c.ChoreDefinitionId == choreDefinitionId && c.Date == date);
+            .Where(c => c.ChoreDefinitionId == choreDefinitionId && c.Date == date)
+            .OrderBy(c => c.Status == ChoreStatus.Pending ? 0 : 1)
+            .ThenByDescending(c => c.Id)
+            .FirstOrDefaultAsync();
 
         if (existingLog != null)
         {
             return ServiceResult<ChoreLog>.Ok(existingLog);
+        }
+
+        var choreDefinition = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
+
+        var choreLog = new ChoreLog
+        {
+            ChoreDefinitionId = choreDefinitionId,
+            Date = date,
+            Status = ChoreStatus.Pending,
+            AllowsMultiplePerDay = choreDefinition?.ScheduleType == ChoreScheduleType.WeeklyFrequency,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        context.ChoreLogs.Add(choreLog);
+        await context.SaveChangesAsync();
+
+        await context.Entry(choreLog).Reference(c => c.ChoreDefinition).LoadAsync();
+
+        return ServiceResult<ChoreLog>.Ok(choreLog);
+    }
+
+    /// <summary>
+    /// Unconditionally inserts a fresh ChoreLog row for a WeeklyFrequency chore, regardless of
+    /// whether other rows already exist for that (chore, date). This is the "log another
+    /// completion" path - use GetOrCreateChoreLogAsync to find/reuse an existing open row instead.
+    /// </summary>
+    public async Task<ServiceResult<ChoreLog>> CreateWeeklyCompletionAsync(int choreDefinitionId, DateOnly date)
+    {
+        if (!await _scheduleService.IsChoreActiveOnDateAsync(choreDefinitionId, date))
+        {
+            return ServiceResult<ChoreLog>.Fail("Chore is not scheduled for this date.");
+        }
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var choreDefinition = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        if (choreDefinition == null)
+        {
+            return ServiceResult<ChoreLog>.Fail("Chore not found.");
+        }
+
+        if (choreDefinition.ScheduleType != ChoreScheduleType.WeeklyFrequency)
+        {
+            return ServiceResult<ChoreLog>.Fail("CreateWeeklyCompletionAsync is only valid for WeeklyFrequency chores.");
         }
 
         var choreLog = new ChoreLog
@@ -84,6 +136,7 @@ public class ChoreLogService : IChoreLogService
             ChoreDefinitionId = choreDefinitionId,
             Date = date,
             Status = ChoreStatus.Pending,
+            AllowsMultiplePerDay = true,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -197,12 +250,27 @@ public class ChoreLogService : IChoreLogService
 
         if (choreLog.Status == ChoreStatus.Approved)
         {
-            return ServiceResult.Fail("This chore has already been approved.");
+            // Weekly chores: an already-approved row for today doesn't block another
+            // completion - insert a new row instead of failing. Daily chores keep the
+            // existing single-row "already approved" guard.
+            if (choreLog.ChoreDefinition?.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            {
+                var newLogResult = await CreateWeeklyCompletionAsync(choreDefinitionId, date);
+                if (!newLogResult.Success)
+                {
+                    return ServiceResult.Fail(newLogResult.ErrorMessage!);
+                }
+                choreLog = newLogResult.Data!;
+            }
+            else
+            {
+                return ServiceResult.Fail("This chore has already been approved.");
+            }
         }
 
         await using var context = await _contextFactory.CreateDbContextAsync();
         var choreDefinition = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
-        
+
         if (choreDefinition != null && choreDefinition.AutoApprove)
         {
             var logToUpdate = await context.ChoreLogs.FindAsync(choreLog.Id);
@@ -251,6 +319,16 @@ public class ChoreLogService : IChoreLogService
         return await UpdateChoreLogStatusAsync(choreLogId, ChoreStatus.Missed, parentUserId, isParent: true);
     }
 
+    // NOTE: as of this writing, neither GetChoreLogsForUserInWeekAsync nor
+    // GetWeeklyChoresWithLogsAsync below has any callers anywhere in the codebase - they're
+    // unused. Both compute week boundaries via IChoreScheduleService.GetWeekStartDate/
+    // GetWeekEndDate (the hardcoded-Sunday-start ChoreScheduleHelper), while the live weekly
+    // progress/earnings paths (WeeklyProgressService, LedgerService) use
+    // IFamilySettingsService.GetWeekStartForDateAsync/GetWeekEndForDateAsync (the
+    // DB-configurable WeekStartDay setting). These two definitions can disagree. It's harmless
+    // today only because these methods are dead code. If either is ever given a caller, switch
+    // it to IFamilySettingsService first, or it resurrects a second week-boundary definition
+    // that silently disagrees with the one everything else uses.
     public async Task<List<ChoreLog>> GetChoreLogsForUserInWeekAsync(string userId, DateOnly anyDateInWeek)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -270,6 +348,7 @@ public class ChoreLogService : IChoreLogService
             .ToListAsync();
     }
 
+    // See the week-boundary note above GetChoreLogsForUserInWeekAsync - applies here too.
     public async Task<List<WeeklyChoreWithLogs>> GetWeeklyChoresWithLogsAsync(string userId, DateOnly anyDateInWeek)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();

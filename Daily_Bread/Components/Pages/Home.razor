@@ -441,10 +441,11 @@ else if (_childData != null)
                 </div>
                 
                 <div class="next-up-card">
-                    <SwipeableChoreCard 
+                    <SwipeableChoreCard
                         Chore="@nextChore"
                         OnComplete="HandleChoreComplete"
                         OnRequestHelp="HandleHelpRequest"
+                        OnUndo="HandleChoreUndo"
                         IsProcessing="@(_processingChoreId == nextChore.ChoreDefinitionId)" />
                 </div>
                 
@@ -473,10 +474,11 @@ else if (_childData != null)
                     <div class="chore-stack">
                         @foreach (var chore in remainingChores)
                         {
-                            <SwipeableChoreCard 
+                            <SwipeableChoreCard
                                 Chore="@chore"
                                 OnComplete="HandleChoreComplete"
                                 OnRequestHelp="HandleHelpRequest"
+                                OnUndo="HandleChoreUndo"
                                 IsProcessing="@(_processingChoreId == chore.ChoreDefinitionId)" />
                         }
                     </div>
@@ -992,7 +994,44 @@ else
             _processingChoreId = null;
         }
     }
-    
+
+    private async Task HandleChoreUndo(TrackerChoreItem chore)
+    {
+        if (string.IsNullOrEmpty(_userId) || _childData == null) return;
+        if (_processingChoreId.HasValue) return;
+
+        _processingChoreId = chore.ChoreDefinitionId;
+        StateHasChanged();
+
+        try
+        {
+            var today = DateProvider.Today;
+            var result = await DashboardService.UndoLastWeeklyCompletionFromDashboardAsync(
+                chore.ChoreDefinitionId,
+                today,
+                _userId);
+
+            if (result.Success)
+            {
+                ToastService.ShowInfo("Undone", $"'{chore.ChoreName}' completion was undone.");
+                AppState.InvalidateChildDashboard(_userId);
+                await LoadDashboardAsync(forceRefresh: true);
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage ?? "Failed to undo chore");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", ex.Message);
+        }
+        finally
+        {
+            _processingChoreId = null;
+        }
+    }
+
     private async Task HandleHelpRequest(TrackerChoreItem chore)
     {
         if (string.IsNullOrEmpty(_userId) || _childData == null) return;

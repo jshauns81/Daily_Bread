@@ -319,6 +319,22 @@
     font-weight: var(--ds-font-bold);
 }
 
+.weekly-undo-link {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: 8px;
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.weekly-undo-link:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
 .status-text {
     font-size: var(--ds-text-sm);
     font-weight: var(--ds-font-medium);

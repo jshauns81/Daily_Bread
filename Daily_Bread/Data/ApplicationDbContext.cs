@@ -85,7 +85,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Version)
                 .IsConcurrencyToken();
 
-            entity.HasIndex(e => new { e.ChoreDefinitionId, e.Date }).IsUnique();
+            // Unique only for rows stamped AllowsMultiplePerDay=false (SpecificDays chores).
+            // WeeklyFrequency chores stamp AllowsMultiplePerDay=true and can have multiple
+            // logs per (ChoreDefinitionId, Date) - one per completion. See ChoreLog.AllowsMultiplePerDay.
+            entity.HasIndex(e => new { e.ChoreDefinitionId, e.Date })
+                .IsUnique()
+                .HasFilter("\"AllowsMultiplePerDay\" = false");
             entity.HasIndex(e => e.Date);
             entity.HasIndex(e => e.Status);
 
