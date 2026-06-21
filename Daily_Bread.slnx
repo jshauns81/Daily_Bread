@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Daily_Bread/Daily_Bread.csproj" />
+  <Project Path="Daily_Bread.Tests/Daily_Bread.Tests.csproj" />
 </Solution>
