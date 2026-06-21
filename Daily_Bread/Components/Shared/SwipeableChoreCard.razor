@@ -39,6 +39,17 @@
                             <span class="bonus-indicator">• Bonus</span>
                         }
                     </span>
+                    @if (Chore.WeeklyCompletedCount > 0)
+                    {
+                        <button type="button"
+                                class="weekly-undo-link"
+                                @onclick="HandleUndoClick"
+                                @onclick:stopPropagation="true"
+                                disabled="@IsProcessing"
+                                title="Undo last completion">
+                            Undo last
+                        </button>
+                    }
                 }
                 @if (GetStatusText() is var statusText && !string.IsNullOrEmpty(statusText))
                 {
@@ -103,7 +114,14 @@
     
     [Parameter]
     public EventCallback<TrackerChoreItem> OnRequestHelp { get; set; }
-    
+
+    /// <summary>
+    /// Reverts the most recent completion for a WeeklyFrequency chore today. Only relevant
+    /// when Chore.IsWeeklyFlexible - the button that invokes this is hidden otherwise.
+    /// </summary>
+    [Parameter]
+    public EventCallback<TrackerChoreItem> OnUndo { get; set; }
+
     [Parameter]
     public bool IsProcessing { get; set; }
     
@@ -115,8 +133,12 @@
     
     /// <summary>
     /// Swipe is disabled for non-pending chores (already completed, approved, missed, etc.)
+    /// Weekly chores that can still take more completions today (CanDoMore) stay swipeable
+    /// past Approved, so a second/third same-day completion can be logged.
     /// </summary>
-    private bool IsSwipeDisabled => !Chore.IsPending && !Chore.IsHelp;
+    private bool IsSwipeDisabled => Chore.IsWeeklyFlexible
+        ? !Chore.CanDoMore && !Chore.IsHelp
+        : !Chore.IsPending && !Chore.IsHelp;
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -175,6 +197,16 @@
     {
         if (_disposed || IsProcessing || IsSwipeDisabled) return;
         await OnRequestHelp.InvokeAsync(Chore);
+    }
+
+    /// <summary>
+    /// Undo is independent of IsSwipeDisabled/CanDoMore - it's available whenever there's a
+    /// completion to revert today, even if quota is met and no more completions are allowed.
+    /// </summary>
+    private async Task HandleUndoClick()
+    {
+        if (_disposed || IsProcessing) return;
+        await OnUndo.InvokeAsync(Chore);
     }
     
     private string GetCardStateClass()

@@ -85,8 +85,22 @@ public interface ITrackerService
 
     /// <summary>
     /// Toggles chore completion status. Returns the new status.
+    /// For WeeklyFrequency chores, repeated calls after every row for the day is already
+    /// Approved insert a new completion rather than reverting one - use
+    /// UndoLastWeeklyCompletionAsync to go backward.
     /// </summary>
     Task<ServiceResult<ChoreStatus>> ToggleChoreCompletionAsync(
+        int choreDefinitionId,
+        DateOnly date,
+        string userId,
+        bool isParent);
+
+    /// <summary>
+    /// Reverts the most recently created ChoreLog row for a WeeklyFrequency chore on the given
+    /// date. Children may only target a not-yet-approved row (skipping Approved/Help); parents
+    /// may also un-approve the newest Approved row. Returns the new status of the reverted row.
+    /// </summary>
+    Task<ServiceResult<ChoreStatus>> UndoLastWeeklyCompletionAsync(
         int choreDefinitionId,
         DateOnly date,
         string userId,
@@ -215,12 +229,14 @@ public class TrackerService : ITrackerService
         var scheduledChores = await _scheduleService.GetChoresForDateAsync(date);
 
         await using var context = await _contextFactory.CreateDbContextAsync();
-        var existingLogs = await context.ChoreLogs
+        var existingLogs = (await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Include(c => c.ApprovedByUser)
             .Where(c => c.Date == date)
-            .ToDictionaryAsync(c => c.ChoreDefinitionId);
+            .ToListAsync())
+            .GroupBy(c => c.ChoreDefinitionId)
+            .ToDictionary(g => g.Key, g => SelectRepresentativeLog(g)!);
 
         var weeklyChoreIds = scheduledChores
             .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
@@ -250,13 +266,15 @@ public class TrackerService : ITrackerService
         var scheduledChores = await _scheduleService.GetChoresForUserOnDateAsync(userId, date);
 
         await using var context = await _contextFactory.CreateDbContextAsync();
-        var existingLogs = await context.ChoreLogs
+        var existingLogs = (await context.ChoreLogs
             .Include(c => c.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Include(c => c.ApprovedByUser)
             .Where(c => c.Date == date)
             .Where(c => c.ChoreDefinition.AssignedUserId == userId)
-            .ToDictionaryAsync(c => c.ChoreDefinitionId);
+            .ToListAsync())
+            .GroupBy(c => c.ChoreDefinitionId)
+            .ToDictionary(g => g.Key, g => SelectRepresentativeLog(g)!);
 
         var weeklyChoreIds = scheduledChores
             .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
@@ -289,10 +307,11 @@ public class TrackerService : ITrackerService
     {
         var scheduledChores = await _scheduleService.GetChoresForUserOnDateAsync(userId, date);
 
-        // Filter pre-loaded logs for today's date and convert to dictionary
+        // Filter pre-loaded logs for today's date and pick one representative row per chore
         var existingLogs = preLoadedLogs
             .Where(l => l.Date == date)
-            .ToDictionary(l => l.ChoreDefinitionId);
+            .GroupBy(l => l.ChoreDefinitionId)
+            .ToDictionary(g => g.Key, g => SelectRepresentativeLog(g)!);
 
         var weeklyChoreIds = scheduledChores
             .Where(c => c.ScheduleType == ChoreScheduleType.WeeklyFrequency)
@@ -552,19 +571,42 @@ public class TrackerService : ITrackerService
         }
 
         var choreLog = logResult.Data!;
-        
+
         await using var context = await _contextFactory.CreateDbContextAsync();
         var choreDefinition = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
         var autoApprove = choreDefinition?.AutoApprove ?? true;
-        
+
         // Verify actual role from server
         var actualIsParent = await IsUserInRoleAsync(userId, "Parent");
 
         ChoreStatus newStatus;
         bool requiresParent = false;
 
+        // Weekly chores: once every row for today is Approved, tapping again means "log
+        // another completion" (insert a new row), not "un-approve the existing one" - that
+        // un-approve action now lives in UndoLastWeeklyCompletionAsync. SpecificDays chores
+        // never reach this branch (GetOrCreateChoreLogAsync only ever has one row for them)
+        // and fall through to the original state machine below, unchanged.
+        if (choreDefinition?.ScheduleType == ChoreScheduleType.WeeklyFrequency
+            && choreLog.Status == ChoreStatus.Approved)
+        {
+            if (!await _weeklyProgressService.CanCompleteChoreAsync(choreDefinitionId, date))
+            {
+                return ServiceResult<ChoreStatus>.Fail("Weekly quota already met for this chore.");
+            }
+
+            var newLogResult = await _choreLogService.CreateWeeklyCompletionAsync(choreDefinitionId, date);
+            if (!newLogResult.Success)
+            {
+                return ServiceResult<ChoreStatus>.Fail(newLogResult.ErrorMessage!);
+            }
+
+            choreLog = newLogResult.Data!;
+            newStatus = autoApprove ? ChoreStatus.Approved : ChoreStatus.Completed;
+            // Auto-approve doesn't require parent role - mirrors the Pending branch below.
+        }
         // Determine new status based on current status
-        if (choreLog.Status == ChoreStatus.Pending)
+        else if (choreLog.Status == ChoreStatus.Pending)
         {
             newStatus = autoApprove ? ChoreStatus.Approved : ChoreStatus.Completed;
             // Auto-approve doesn't require parent role
@@ -580,6 +622,8 @@ public class TrackerService : ITrackerService
         }
         else if (choreLog.Status == ChoreStatus.Approved)
         {
+            // Reached only for SpecificDays chores - weekly Approved rows are handled
+            // in the branch above instead.
             if (actualIsParent)
             {
                 newStatus = autoApprove ? ChoreStatus.Pending : ChoreStatus.Completed;
@@ -615,6 +659,55 @@ public class TrackerService : ITrackerService
         }
 
         return await UpdateStatusAtomicallyAsync(choreLog.Id, newStatus, userId, requiresParent);
+    }
+
+    public async Task<ServiceResult<ChoreStatus>> UndoLastWeeklyCompletionAsync(
+        int choreDefinitionId,
+        DateOnly date,
+        string userId,
+        bool isParent) // Note: this parameter is now only a hint, actual role is verified server-side
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var choreDefinition = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        if (choreDefinition == null)
+        {
+            return ServiceResult<ChoreStatus>.Fail("Chore not found.");
+        }
+
+        if (choreDefinition.ScheduleType != ChoreScheduleType.WeeklyFrequency)
+        {
+            return ServiceResult<ChoreStatus>.Fail("UndoLastWeeklyCompletionAsync is only valid for WeeklyFrequency chores.");
+        }
+
+        var actualIsParent = await IsUserInRoleAsync(userId, "Parent");
+
+        // Candidate rows for today, newest first. Help rows are never eligible - they're
+        // resolved only via RespondToHelpRequestAsync.
+        var todaysLogs = await context.ChoreLogs
+            .Where(l => l.ChoreDefinitionId == choreDefinitionId && l.Date == date)
+            .Where(l => l.Status != ChoreStatus.Help)
+            .OrderByDescending(l => l.Id)
+            .ToListAsync();
+
+        // Children may only undo their own not-yet-approved completion; parents may also
+        // un-approve the newest Approved row.
+        var target = actualIsParent
+            ? todaysLogs.FirstOrDefault()
+            : todaysLogs.FirstOrDefault(l => l.Status != ChoreStatus.Approved);
+
+        if (target == null)
+        {
+            return actualIsParent
+                ? ServiceResult<ChoreStatus>.Fail("Nothing to undo.")
+                : ServiceResult<ChoreStatus>.Fail("This has already been approved - ask a parent to undo it.");
+        }
+
+        return await UpdateStatusAtomicallyAsync(
+            target.Id,
+            ChoreStatus.Pending,
+            userId,
+            requiresParent: target.Status == ChoreStatus.Approved);
     }
 
     public async Task<ServiceResult> SetChoreStatusAsync(
@@ -826,6 +919,28 @@ public class TrackerService : ITrackerService
         }
         
         return ServiceResult.Ok();
+    }
+
+    /// <summary>
+    /// Weekly chores can have multiple ChoreLog rows for the same date - one per completion.
+    /// Picks one representative row per chore for the card's single status badge/swipe-state:
+    /// the oldest still-Pending row if one exists, otherwise the newest row. WeeklyCompletedCount
+    /// itself comes from the separate WeeklyProgressService batch lookup, so this choice only
+    /// affects which status badge/swipe-state the card shows, not the count.
+    /// </summary>
+    private static ChoreLog? SelectRepresentativeLog(IEnumerable<ChoreLog> logsForChore)
+    {
+        var logs = logsForChore.ToList();
+        if (logs.Count == 0)
+        {
+            return null;
+        }
+
+        return logs
+            .Where(l => l.Status == ChoreStatus.Pending)
+            .OrderBy(l => l.Id)
+            .FirstOrDefault()
+            ?? logs.OrderByDescending(l => l.Id).First();
     }
 
     private static TrackerChoreItem CreateTrackerItem(

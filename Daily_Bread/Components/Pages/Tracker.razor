@@ -789,7 +789,9 @@
     {
         if (IsParent) return false;
         if (!IsToday) return true;
-        if (item.Status == ChoreStatus.Approved) return true;
+        // Weekly chores that can still take more completions today stay clickable past
+        // Approved, so a child can log a second same-day completion from this page too.
+        if (item.Status == ChoreStatus.Approved) return !(item.IsWeeklyFlexible && item.CanDoMore);
         if (item.Status == ChoreStatus.Missed) return true;
         if (item.Status == ChoreStatus.Skipped) return true;
         return false;
