@@ -1,0 +1,312 @@
+/* ============================================
+   ACHIEVEMENT FORM
+   Mirrors ChoreForm's design language (identity
+   section, options drawer, ds-input/ds-select
+   tokens, form-actions footer).
+   ============================================ */
+
+.achievement-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-5);
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.achievement-form .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-2);
+    width: 100%;
+}
+
+.achievement-form .section-label {
+    width: 100%;
+    display: block;
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: var(--ds-font-semibold);
+    opacity: 0.8;
+}
+
+/* Identity: icon + name */
+.achievement-form .identity-section {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    background: var(--ds-bg-base);
+    border-radius: var(--ds-radius-lg);
+    border: 1px solid var(--ds-bg-muted);
+    overflow: hidden;
+}
+
+.achievement-form .icon-picker {
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--ds-bg-hover);
+    border-right: 1px solid var(--ds-bg-muted);
+    cursor: pointer;
+}
+
+.achievement-form .name-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+::deep input.ds-input--name,
+.achievement-form .ds-input--name {
+    height: 56px;
+    padding: var(--ds-space-3) var(--ds-space-4);
+    font-size: var(--ds-text-lg);
+    font-weight: var(--ds-font-medium);
+    border: none;
+    background: transparent;
+    color: var(--ds-text-primary);
+}
+
+.achievement-form .validation-msg {
+    font-size: var(--ds-text-xs);
+    color: var(--ds-semantic-error);
+    padding-left: var(--ds-space-4);
+}
+
+/* Generic ds-input / ds-select tokens */
+::deep .ds-input,
+.achievement-form .ds-input {
+    height: 40px;
+    padding: var(--ds-space-2) var(--ds-space-3);
+    font-size: var(--ds-text-sm);
+    background: var(--ds-bg-base);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md);
+    color: var(--ds-text-primary);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+::deep textarea.ds-input--textarea,
+.achievement-form .ds-input--textarea {
+    height: auto;
+    resize: none;
+    min-height: 64px;
+    line-height: var(--ds-leading-relaxed);
+}
+
+::deep select.ds-select,
+.achievement-form .ds-select {
+    height: 40px;
+    width: 100%;
+    padding: 0 var(--ds-space-4);
+    padding-right: var(--ds-space-8);
+    background: var(--ds-bg-base);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md);
+    color: var(--ds-text-primary);
+    font-size: var(--ds-text-sm);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23D8DEE9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+}
+
+::deep input.ds-input:focus,
+::deep select.ds-select:focus,
+::deep textarea.ds-input--textarea:focus {
+    border-color: var(--ds-accent-cyan);
+    box-shadow: var(--ds-glow-primary);
+    outline: none;
+}
+
+/* Rarity picker */
+.achievement-form .rarity-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+}
+
+.achievement-form .rarity-chip {
+    padding: var(--ds-space-2) var(--ds-space-3);
+    border-radius: var(--ds-radius-full);
+    border: 1px solid var(--ds-bg-muted);
+    background: var(--ds-bg-base);
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-font-semibold);
+    cursor: pointer;
+    transition: all var(--ds-duration-fast) ease;
+}
+
+.achievement-form .rarity-chip:hover {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+.achievement-form .rarity-chip--selected {
+    color: var(--ds-text-primary);
+    border-color: transparent;
+    transform: scale(1.05);
+}
+
+.achievement-form .rarity-chip--common.rarity-chip--selected { background: var(--ds-bg-muted); }
+.achievement-form .rarity-chip--uncommon.rarity-chip--selected { background: var(--ds-semantic-success); }
+.achievement-form .rarity-chip--rare.rarity-chip--selected { background: var(--ds-accent-primary); }
+.achievement-form .rarity-chip--epic.rarity-chip--selected { background: var(--ds-accent-purple); }
+.achievement-form .rarity-chip--legendary.rarity-chip--selected { background: var(--ds-semantic-highlight); color: var(--ds-bg-base); }
+
+/* Two-column section (Category / Points) */
+.achievement-form .two-col-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ds-space-3);
+}
+
+.achievement-form .field-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-1);
+}
+
+.achievement-form .field-label {
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+    font-weight: var(--ds-font-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Options drawer */
+.achievement-form .options-section {
+    border: none;
+    margin-top: var(--ds-space-2);
+}
+
+.achievement-form .options-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-2) var(--ds-space-3);
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-font-semibold);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    border-radius: var(--ds-radius-md);
+}
+
+.achievement-form .options-summary::-webkit-details-marker,
+.achievement-form .options-summary::marker {
+    display: none;
+}
+
+.achievement-form .options-summary:hover {
+    background: var(--ds-bg-hover);
+}
+
+.achievement-form .options-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-3);
+    padding: var(--ds-space-4);
+    background: var(--ds-bg-base);
+    border-radius: var(--ds-radius-lg);
+    border: 1px solid var(--ds-bg-muted);
+}
+
+.achievement-form .option-check {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-secondary);
+    cursor: pointer;
+}
+
+::deep .option-check input[type="checkbox"],
+.achievement-form .option-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--ds-accent-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* Form actions */
+.achievement-form .form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ds-space-3);
+    padding-top: var(--ds-space-5);
+    margin-top: var(--ds-space-3);
+    border-top: 1px solid var(--ds-bg-muted);
+}
+
+.achievement-form .btn-cancel {
+    height: var(--ds-touch-target-lg);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md);
+    background: transparent;
+    color: var(--ds-text-muted);
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-semibold);
+    cursor: pointer;
+}
+
+.achievement-form .btn-cancel:hover {
+    background: var(--ds-bg-base);
+    color: var(--ds-text-primary);
+    border-color: var(--ds-text-muted);
+}
+
+.achievement-form .btn-submit {
+    height: var(--ds-touch-target-lg);
+    border: none;
+    border-radius: var(--ds-radius-md);
+    background: linear-gradient(135deg, var(--ds-accent-primary), var(--ds-accent-blue));
+    color: var(--ds-text-primary);
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ds-space-2);
+}
+
+.achievement-form .btn-submit:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.achievement-form .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--ds-bg-muted);
+    border-top-color: var(--ds-text-primary);
+    border-radius: var(--ds-radius-full);
+    animation: achievementFormSpin var(--ds-duration-slow) linear infinite;
+}
+
+@keyframes achievementFormSpin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+    .achievement-form .two-col-section {
+        grid-template-columns: 1fr;
+    }
+}

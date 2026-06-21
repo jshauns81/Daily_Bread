@@ -289,6 +289,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<ISavingsGoalService, SavingsGoalService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
+builder.Services.AddScoped<IAchievementManagementService, AchievementManagementService>();
 builder.Services.AddScoped<IChoreChartService, ChoreChartService>();
 builder.Services.AddScoped<IChorePlannerService, ChorePlannerService>();
 builder.Services.AddScoped<IFamilySettingsService, FamilySettingsService>();

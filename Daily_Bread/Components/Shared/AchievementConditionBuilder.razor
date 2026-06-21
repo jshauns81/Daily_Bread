@@ -1,0 +1,296 @@
+@using Daily_Bread.Data.Models
+@using System.Globalization
+@using System.Text.Json
+
+<div class="condition-builder">
+    <div class="seg2 seg2--builder-mode">
+        <button type="button"
+                class="seg2__btn @(_mode == BuilderMode.Common ? "seg2__btn--active" : "")"
+                @onclick="async () => await SetMode(BuilderMode.Common)">
+            <span class="seg2__label">Common</span>
+            <span class="seg2__bar"></span>
+        </button>
+        <button type="button"
+                class="seg2__btn @(_mode == BuilderMode.Advanced ? "seg2__btn--active" : "")"
+                @onclick="async () => await SetMode(BuilderMode.Advanced)">
+            <span class="seg2__label">Advanced</span>
+            <span class="seg2__bar"></span>
+        </button>
+    </div>
+
+    @if (_mode == BuilderMode.Common)
+    {
+        <div class="condition-common">
+            <select class="ds-select condition-kind-select" @bind="_kindString" @bind:after="OnKindChanged">
+                <option value="@CommonConditionKind.Manual">Manual award only (no auto-unlock)</option>
+                <option value="@CommonConditionKind.StreakDays">Streak reaches N days</option>
+                <option value="@CommonConditionKind.ChoreCount">Chore completed N times</option>
+                <option value="@CommonConditionKind.TotalEarned">Earn $ total</option>
+                <option value="@CommonConditionKind.BalanceReached">Reach $ balance</option>
+            </select>
+
+            @switch (_kind)
+            {
+                case CommonConditionKind.StreakDays:
+                    <div class="condition-row">
+                        <span>Unlock when streak reaches</span>
+                        <input type="number" class="condition-number" min="1" @bind="_days" @bind:after="PushCommonValue" />
+                        <span>days</span>
+                    </div>
+                    break;
+                case CommonConditionKind.ChoreCount:
+                    @if (Chores.Count == 0)
+                    {
+                        <div class="alert alert-warning condition-warning">No chores defined yet - create one first, or use Advanced mode.</div>
+                    }
+                    else
+                    {
+                        <div class="condition-row">
+                            <span>Unlock when</span>
+                            <select class="ds-select condition-chore-select" @bind="_choreId" @bind:after="PushCommonValue">
+                                @foreach (var chore in Chores)
+                                {
+                                    <option value="@chore.Id">@chore.Name</option>
+                                }
+                            </select>
+                            <span>completed</span>
+                            <input type="number" class="condition-number" min="1" @bind="_count" @bind:after="PushCommonValue" />
+                            <span>×</span>
+                        </div>
+                    }
+                    break;
+                case CommonConditionKind.TotalEarned:
+                    <div class="condition-row">
+                        <span>Unlock when total earned reaches</span>
+                        <span class="condition-currency">$</span>
+                        <input type="number" class="condition-number" min="0.01" step="0.01" @bind="_amount" @bind:after="PushCommonValue" />
+                    </div>
+                    break;
+                case CommonConditionKind.BalanceReached:
+                    <div class="condition-row">
+                        <span>Unlock when balance reaches</span>
+                        <span class="condition-currency">$</span>
+                        <input type="number" class="condition-number" min="0.01" step="0.01" @bind="_amount" @bind:after="PushCommonValue" />
+                    </div>
+                    break;
+                default:
+                    <p class="condition-hint">Awarded only by a parent (no automatic unlock).</p>
+                    break;
+            }
+        </div>
+    }
+    else
+    {
+        <div class="condition-advanced">
+            <label class="condition-field">
+                <span>Condition type</span>
+                <select class="ds-select" @bind="_advancedType" @bind:after="PushAdvancedValue">
+                    @foreach (var type in Enum.GetValues<UnlockConditionType>())
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </label>
+            <label class="condition-field">
+                <span>Condition JSON</span>
+                <textarea class="ds-input ds-input--textarea condition-json" rows="2"
+                          placeholder='e.g. {"days": 7}'
+                          @bind="_advancedJson" @bind:after="PushAdvancedValue"></textarea>
+            </label>
+            <label class="condition-field condition-field--inline">
+                <span>Progress target (optional)</span>
+                <input type="number" class="condition-number" min="1" @bind="_advancedProgressTarget" @bind:after="PushAdvancedValue" />
+            </label>
+            <p class="condition-hint">See <code>UnlockConditionType</code> XML docs in Achievement.cs for the JSON shape each type expects.</p>
+        </div>
+    }
+</div>
+
+@code {
+    private enum BuilderMode { Common, Advanced }
+    private enum CommonConditionKind { Manual, StreakDays, ChoreCount, TotalEarned, BalanceReached }
+
+    [Parameter] public UnlockConditionType ConditionType { get; set; }
+    [Parameter] public EventCallback<UnlockConditionType> ConditionTypeChanged { get; set; }
+    [Parameter] public string? ConditionValue { get; set; }
+    [Parameter] public EventCallback<string?> ConditionValueChanged { get; set; }
+    [Parameter] public int? ProgressTarget { get; set; }
+    [Parameter] public EventCallback<int?> ProgressTargetChanged { get; set; }
+    [Parameter] public List<ChoreDefinition> Chores { get; set; } = [];
+
+    private BuilderMode _mode = BuilderMode.Common;
+    private CommonConditionKind _kind = CommonConditionKind.Manual;
+    private string _kindString
+    {
+        get => _kind.ToString();
+        set => _kind = Enum.TryParse<CommonConditionKind>(value, out var k) ? k : CommonConditionKind.Manual;
+    }
+
+    private int _days = 7;
+    private int _choreId;
+    private int _count = 1;
+    private decimal _amount = 10;
+
+    private UnlockConditionType _advancedType;
+    private string? _advancedJson;
+    private int? _advancedProgressTarget;
+
+    protected override void OnInitialized()
+    {
+        _advancedType = ConditionType;
+        _advancedJson = ConditionValue;
+        _advancedProgressTarget = ProgressTarget;
+
+        switch (ConditionType)
+        {
+            case UnlockConditionType.Manual:
+                _mode = BuilderMode.Common;
+                _kind = CommonConditionKind.Manual;
+                break;
+
+            case UnlockConditionType.StreakDays when TryGetInt(ConditionValue, "days", out var days):
+                _mode = BuilderMode.Common;
+                _kind = CommonConditionKind.StreakDays;
+                _days = days;
+                break;
+
+            case UnlockConditionType.SpecificChoreCount when TryGetInt(ConditionValue, "chore_id", out var choreId)
+                                                              && TryGetInt(ConditionValue, "count", out var count):
+                _mode = BuilderMode.Common;
+                _kind = CommonConditionKind.ChoreCount;
+                _choreId = choreId;
+                _count = count;
+                break;
+
+            case UnlockConditionType.TotalEarned when TryGetDecimal(ConditionValue, "amount", out var totalAmount):
+                _mode = BuilderMode.Common;
+                _kind = CommonConditionKind.TotalEarned;
+                _amount = totalAmount;
+                break;
+
+            case UnlockConditionType.BalanceReached when TryGetDecimal(ConditionValue, "amount", out var balanceAmount):
+                _mode = BuilderMode.Common;
+                _kind = CommonConditionKind.BalanceReached;
+                _amount = balanceAmount;
+                break;
+
+            default:
+                _mode = BuilderMode.Advanced;
+                break;
+        }
+
+        if (Chores.Count > 0 && _choreId == 0)
+        {
+            _choreId = Chores[0].Id;
+        }
+    }
+
+    private async Task SetMode(BuilderMode mode)
+    {
+        _mode = mode;
+        if (mode == BuilderMode.Common)
+        {
+            await PushCommonValue();
+        }
+        else
+        {
+            await PushAdvancedValue();
+        }
+    }
+
+    private async Task OnKindChanged()
+    {
+        if (_kind == CommonConditionKind.ChoreCount && Chores.Count > 0 && _choreId == 0)
+        {
+            _choreId = Chores[0].Id;
+        }
+        await PushCommonValue();
+    }
+
+    private async Task PushCommonValue()
+    {
+        UnlockConditionType type;
+        string? value;
+        int? progressTarget;
+
+        switch (_kind)
+        {
+            case CommonConditionKind.StreakDays:
+                type = UnlockConditionType.StreakDays;
+                value = $"{{\"days\": {_days}}}";
+                progressTarget = _days;
+                break;
+            case CommonConditionKind.ChoreCount:
+                type = UnlockConditionType.SpecificChoreCount;
+                value = $"{{\"chore_id\": {_choreId}, \"count\": {_count}}}";
+                progressTarget = _count;
+                break;
+            case CommonConditionKind.TotalEarned:
+                type = UnlockConditionType.TotalEarned;
+                value = $"{{\"amount\": {_amount.ToString(CultureInfo.InvariantCulture)}}}";
+                progressTarget = (int)_amount;
+                break;
+            case CommonConditionKind.BalanceReached:
+                type = UnlockConditionType.BalanceReached;
+                value = $"{{\"amount\": {_amount.ToString(CultureInfo.InvariantCulture)}}}";
+                progressTarget = (int)_amount;
+                break;
+            default:
+                type = UnlockConditionType.Manual;
+                value = null;
+                progressTarget = null;
+                break;
+        }
+
+        await PushAsync(type, value, progressTarget);
+    }
+
+    private async Task PushAdvancedValue()
+    {
+        await PushAsync(_advancedType, string.IsNullOrWhiteSpace(_advancedJson) ? null : _advancedJson, _advancedProgressTarget);
+    }
+
+    private async Task PushAsync(UnlockConditionType type, string? value, int? progressTarget)
+    {
+        ConditionType = type;
+        ConditionValue = value;
+        ProgressTarget = progressTarget;
+        await ConditionTypeChanged.InvokeAsync(type);
+        await ConditionValueChanged.InvokeAsync(value);
+        await ProgressTargetChanged.InvokeAsync(progressTarget);
+    }
+
+    private static bool TryGetInt(string? json, string key, out int result)
+    {
+        result = 0;
+        if (string.IsNullOrEmpty(json)) return false;
+        try
+        {
+            var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty(key, out var el))
+            {
+                result = el.GetInt32();
+                return true;
+            }
+        }
+        catch { /* fall through to false */ }
+        return false;
+    }
+
+    private static bool TryGetDecimal(string? json, string key, out decimal result)
+    {
+        result = 0;
+        if (string.IsNullOrEmpty(json)) return false;
+        try
+        {
+            var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty(key, out var el))
+            {
+                result = el.GetDecimal();
+                return true;
+            }
+        }
+        catch { /* fall through to false */ }
+        return false;
+    }
+}

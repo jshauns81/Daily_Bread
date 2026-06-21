@@ -1,0 +1,113 @@
+@using Daily_Bread.Data.Models
+@using System.Text.Json
+
+<div class="manager-grid">
+    @if (Achievements.Count == 0)
+    {
+        <div class="alert alert-info">
+            <p class="mb-0">No achievements yet. Click <strong>Add Achievement</strong> to create your first one.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var achievement in Achievements)
+        {
+            <div class="manager-card @(!achievement.IsActive ? "inactive" : "") @(achievement.IsLegendary ? "legendary" : "") @GetRarityClass(achievement.Rarity)">
+                <div class="manager-card-icon @(!achievement.IsActive ? "locked-icon" : "")">
+                    @achievement.Icon
+                </div>
+                <div class="manager-card-body">
+                    <div class="manager-card-title-row">
+                        <strong class="manager-card-name">@achievement.Name</strong>
+                        <span class="badge @GetRarityBadgeClass(achievement.Rarity)">@achievement.Rarity</span>
+                        @if (achievement.IsLegendary)
+                        {
+                            <span class="badge bg-warning text-dark" title="Legendary">@EmojiConstants.GlowingStar</span>
+                        }
+                        @if (achievement.IsHidden)
+                        {
+                            <span class="badge bg-secondary" title="Hidden until earned">@EmojiConstants.QuestionMark Hidden</span>
+                        }
+                        @if (!achievement.IsActive)
+                        {
+                            <span class="badge bg-dark">Inactive</span>
+                        }
+                    </div>
+                    <p class="manager-card-desc">@achievement.Description</p>
+                    <div class="manager-card-meta">
+                        <span class="meta-chip">@achievement.Category</span>
+                        <span class="meta-chip">@achievement.Points pts</span>
+                        <span class="meta-chip condition-chip">@FormatCondition(achievement)</span>
+                    </div>
+                </div>
+                <div class="manager-card-actions">
+                    <button class="btn action-btn outline-edit" @onclick="() => OnEdit.InvokeAsync(achievement)" title="Edit">
+                        Edit
+                    </button>
+                    <button class="btn action-btn @(achievement.IsActive ? "pause" : "approve")"
+                            @onclick="() => OnToggleActive.InvokeAsync(achievement)"
+                            title="@(achievement.IsActive ? "Deactivate" : "Activate")">
+                        @(achievement.IsActive ? "Deactivate" : "Activate")
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<Achievement> Achievements { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<Achievement> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<Achievement> OnToggleActive { get; set; }
+
+    private static string GetRarityClass(AchievementRarity rarity) => rarity switch
+    {
+        AchievementRarity.Uncommon => "rarity-uncommon",
+        AchievementRarity.Rare => "rarity-rare",
+        AchievementRarity.Epic => "rarity-epic",
+        AchievementRarity.Legendary => "rarity-legendary",
+        _ => ""
+    };
+
+    private static string GetRarityBadgeClass(AchievementRarity rarity) => rarity switch
+    {
+        AchievementRarity.Common => "bg-secondary",
+        AchievementRarity.Uncommon => "bg-success",
+        AchievementRarity.Rare => "bg-primary",
+        AchievementRarity.Epic => "bg-purple",
+        AchievementRarity.Legendary => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    private static string FormatCondition(Achievement a)
+    {
+        if (a.UnlockConditionType == UnlockConditionType.Manual)
+        {
+            return "Manual award only";
+        }
+
+        var summary = a.UnlockConditionType.ToString();
+        if (string.IsNullOrEmpty(a.UnlockConditionValue))
+        {
+            return summary;
+        }
+
+        try
+        {
+            var doc = JsonDocument.Parse(a.UnlockConditionValue);
+            var parts = doc.RootElement.EnumerateObject()
+                .Select(p => $"{p.Name}: {p.Value}")
+                .ToList();
+            return parts.Count > 0 ? $"{summary} ({string.Join(", ", parts)})" : summary;
+        }
+        catch
+        {
+            return summary;
+        }
+    }
+}

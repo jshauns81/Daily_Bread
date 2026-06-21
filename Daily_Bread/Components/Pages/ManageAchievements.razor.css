@@ -1,0 +1,36 @@
+.manage-achievements-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow-x: hidden;
+}
+
+.manage-achievements-container h1 {
+    color: var(--ds-text-primary);
+}
+
+.form-check-input:checked {
+    background-color: var(--ds-accent-primary);
+    border-color: var(--ds-accent-primary);
+}
+
+.form-check-label {
+    color: var(--ds-text-muted);
+}
+
+@media (max-width: 767px) {
+    .manage-achievements-container {
+        padding: 0;
+    }
+
+    .manage-achievements-container .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: var(--ds-space-3);
+    }
+}
+
+@media (max-width: 480px) {
+    .manage-achievements-container h1 {
+        font-size: 1.5rem;
+    }
+}

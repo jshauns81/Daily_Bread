@@ -1,0 +1,215 @@
+@page "/manage-achievements"
+@attribute [Authorize(Roles = "Parent")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+@using Daily_Bread.Components.Shared
+
+@inject IAchievementManagementService AchievementManagementService
+@inject IChoreManagementService ChoreManagementService
+@inject ModalService ModalService
+
+<PageTitle>Manage Achievements</PageTitle>
+
+<div class="manage-achievements-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@EmojiConstants.Trophy Manage Achievements</h1>
+        <button class="btn btn-primary" @onclick="ShowCreateForm">
+            + Add Achievement
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @SuccessMessage
+            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
+        </div>
+    }
+
+    <div class="mb-3">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="showInactive"
+                   @bind="ShowInactive" @bind:after="LoadAchievementsAsync" />
+            <label class="form-check-label" for="showInactive">Show inactive achievements</label>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <AchievementManagerGrid
+            Achievements="Achievements"
+            OnEdit="HandleEdit"
+            OnToggleActive="HandleToggleActive" />
+    }
+</div>
+
+@code {
+    private List<Achievement> Achievements { get; set; } = [];
+    private List<ChoreDefinition> Chores { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private bool ShowInactive { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Chores = await ChoreManagementService.GetAllChoresAsync(includeInactive: false);
+        await LoadAchievementsAsync();
+    }
+
+    private async Task LoadAchievementsAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Achievements = await AchievementManagementService.GetAllAchievementsAsync(ShowInactive);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading achievements: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ShowCreateForm()
+    {
+        ClearMessages();
+
+        var dto = new AchievementDto
+        {
+            Icon = EmojiConstants.Star,
+            Rarity = AchievementRarity.Common,
+            Category = AchievementCategory.Special,
+            Points = 10,
+            IsVisibleBeforeUnlock = true,
+            IsActive = true,
+            UnlockConditionType = UnlockConditionType.Manual
+        };
+
+        ModalService.Open(@<AchievementFormModal
+            Title="Add Achievement"
+            Achievement="dto"
+            Chores="Chores"
+            OnSubmit="HandleFormSubmit"
+            OnCancel="HideForm" />, closeOnBackdropClick: true);
+    }
+
+    private void HandleEdit(Achievement achievement)
+    {
+        ClearMessages();
+
+        var dto = new AchievementDto
+        {
+            Id = achievement.Id,
+            Name = achievement.Name,
+            Description = achievement.Description,
+            HiddenHint = achievement.HiddenHint,
+            Icon = achievement.Icon,
+            LockedIcon = achievement.LockedIcon,
+            Category = achievement.Category,
+            Rarity = achievement.Rarity,
+            Points = achievement.Points,
+            SortOrder = achievement.SortOrder,
+            IsHidden = achievement.IsHidden,
+            IsLegendary = achievement.IsLegendary,
+            IsVisibleBeforeUnlock = achievement.IsVisibleBeforeUnlock,
+            IsActive = achievement.IsActive,
+            UnlockConditionType = achievement.UnlockConditionType,
+            UnlockConditionValue = achievement.UnlockConditionValue,
+            ProgressTarget = achievement.ProgressTarget
+        };
+
+        ModalService.Open(@<AchievementFormModal
+            Title="Edit Achievement"
+            Achievement="dto"
+            Chores="Chores"
+            OnSubmit="HandleFormSubmit"
+            OnCancel="HideForm" />, closeOnBackdropClick: true);
+    }
+
+    private void HideForm()
+    {
+        ModalService.Close();
+    }
+
+    private async Task HandleFormSubmit(AchievementDto dto)
+    {
+        ClearMessages();
+
+        ServiceResult result;
+        if (dto.Id > 0)
+        {
+            result = await AchievementManagementService.UpdateAchievementAsync(dto);
+            if (result.Success)
+            {
+                SuccessMessage = $"Achievement '{dto.Name}' updated successfully!";
+            }
+        }
+        else
+        {
+            var createResult = await AchievementManagementService.CreateAchievementAsync(dto);
+            result = createResult;
+            if (createResult.Success)
+            {
+                SuccessMessage = $"Achievement '{dto.Name}' created successfully!";
+            }
+        }
+
+        if (result.Success)
+        {
+            HideForm();
+            await LoadAchievementsAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private async Task HandleToggleActive(Achievement achievement)
+    {
+        ClearMessages();
+
+        var result = await AchievementManagementService.ToggleActiveAsync(achievement.Id);
+
+        if (result.Success)
+        {
+            var newStatus = achievement.IsActive ? "deactivated" : "activated";
+            SuccessMessage = $"Achievement '{achievement.Name}' {newStatus}!";
+            await LoadAchievementsAsync();
+        }
+        else
+        {
+            ErrorMessage = result.ErrorMessage;
+        }
+    }
+
+    private void ClearMessages()
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+}
