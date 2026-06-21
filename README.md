@@ -1,6 +1,6 @@
 # 🍞 Daily Bread
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/jshauns81/Daily_Bread/releases)
+[![Version](https://img.shields.io/badge/version-1.0.10-blue.svg)](https://github.com/jshauns81/Daily_Bread/releases)
 [![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Blazor](https://img.shields.io/badge/Blazor-Server-blueviolet.svg)](https://blazor.net/)
 
@@ -11,7 +11,6 @@ Daily Bread is a comprehensive family management and chore tracking application 
 -   **Chore Management**: Schedule, track, and manage daily and weekly chores.
 -   **Financial Ledger**: Track earnings, payouts, and balances for each child.
 -   **Savings Goals**: Help children set and track progress toward specific purchase goals.
--   **Kid Mode**: A simplified, interactive interface for children to check off their tasks.
 -   **Achievements**: Gamify chores with unlockable milestones and rewards.
 -   **Family Dashboard**: A centralized view for parents to monitor progress and approve tasks.
 -   **Push Notifications**: Integrated WebPush support for reminders and updates.
@@ -126,7 +125,7 @@ By default, the container listens on port `8080`. You can map this to any port o
 ## 🔒 Security & Identity
 
 -   **Authentication**: Uses ASP.NET Core Identity with hardened cookie settings (HttpOnly, SameSite=Lax).
--   **Authorization**: Implements a "Default Deny" policy; all pages require login unless explicitly marked for anonymous access (like the Kid Mode or Login pages).
+-   **Authorization**: Implements a "Default Deny" policy; all pages require login unless explicitly marked for anonymous access (like the Login page).
 -   **Reverse Proxy**: The app is configured to handle `X-Forwarded-For` and `X-Forwarded-Proto` headers, making it safe to host behind Nginx, Caddy, or Traefik.
 
 ## 📄 License
