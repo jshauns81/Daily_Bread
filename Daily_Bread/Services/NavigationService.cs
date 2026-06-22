@@ -87,6 +87,9 @@ public class NavigationService : INavigationService
         // Achievements management - parent-only, desktop sidebar / mobile overflow
         new("/manage-achievements", "🏆", "Achievements", NavVisibility.Parent, MobileOrder: 7, ShowInMobile: false, Section: "Manage"),
 
+        // Reward claims - parent-only, desktop sidebar / mobile overflow
+        new("/reward-claims", "🎁", "Reward Claims", NavVisibility.Parent, MobileOrder: 8, Section: "Manage"),
+
         // Settings - parent-only, in overflow (position 5)
         new("/settings", "⚙️", "Settings", NavVisibility.Parent, MobileOrder: 5, ShowInDesktop: false, Section: "Manage"),
 
