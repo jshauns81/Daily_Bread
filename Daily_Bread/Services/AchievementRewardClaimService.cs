@@ -160,99 +160,122 @@ public class AchievementRewardClaimService : IAchievementRewardClaimService
 
     public async Task<ServiceResult> ApproveClaimAsync(int claimId, string parentUserId)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        // This context only exists to resolve the execution strategy from the configured
+        // provider options - it's never used for a query and is disposed without one.
+        await using var strategyContext = await _contextFactory.CreateDbContextAsync();
 
-        var claim = await context.AchievementRewardClaims
-            .Include(c => c.Achievement)
-            .FirstOrDefaultAsync(c => c.Id == claimId);
+        // The DbContext has EnableRetryOnFailure configured (Program.cs), which forbids
+        // a user-started transaction (EF Core has no way to safely replay it). The whole
+        // unit of work - fetch, validation, credit insert, status flip - has to run
+        // inside the execution strategy so it can retry the entire thing atomically on a
+        // transient failure. Mirrors TrackerService.UpdateStatusAtomicallyAsync.
+        var strategy = strategyContext.Database.CreateExecutionStrategy();
 
-        if (claim == null)
-            return ServiceResult.Fail("Reward claim not found.");
+        return await strategy.ExecuteAsync(async () =>
+        {
+            // A FRESH context every attempt, including retries. EF Core does not reset a
+            // context's change tracker between execution-strategy retries: if a transient
+            // failure landed after the LedgerTransaction below was Add()ed but before this
+            // whole transaction committed, reusing the same context on retry would still
+            // have that LedgerTransaction tracked as Added, and the retry's SaveChanges
+            // would insert it AGAIN alongside the retry's own new one - crediting twice.
+            // Scoping the context to one attempt means a failed attempt's tracked-but-
+            // uncommitted entities are discarded with it; the retry starts from a real,
+            // freshly-read DB state with nothing pending.
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
-        if (claim.Status != RewardClaimStatus.PendingApproval)
-            return ServiceResult.Fail($"This claim was already {claim.Status switch
+            var claim = await context.AchievementRewardClaims
+                .Include(c => c.Achievement)
+                .FirstOrDefaultAsync(c => c.Id == claimId);
+
+            if (claim == null)
+                return ServiceResult.Fail("Reward claim not found.");
+
+            if (claim.Status != RewardClaimStatus.PendingApproval)
+                return ServiceResult.Fail($"This claim was already {claim.Status switch
+                {
+                    RewardClaimStatus.Approved => "approved",
+                    RewardClaimStatus.FulfilledByParent => "approved",
+                    RewardClaimStatus.Rejected => "rejected",
+                    _ => "decided"
+                }}.");
+
+            if (claim.RewardType == RewardClaimType.Cash && (claim.CashAmount ?? 0) <= 0)
+                return ServiceResult.Fail("Claim has no cash amount to credit.");
+
+            // The ledger credit (if any) and the claim's status flip must commit together or
+            // not at all - wrapping both SaveChanges calls below in one explicit transaction
+            // means a failure (including a concurrency conflict on the second save) rolls
+            // back the first save's credit too, instead of leaving a committed ledger
+            // transaction attached to a claim that never actually flipped to Approved.
+            await using var dbTransaction = await context.Database.BeginTransactionAsync();
+
+            if (claim.RewardType == RewardClaimType.Cash)
             {
-                RewardClaimStatus.Approved => "approved",
-                RewardClaimStatus.FulfilledByParent => "approved",
-                RewardClaimStatus.Rejected => "rejected",
-                _ => "decided"
-            }}.");
+                var amount = claim.CashAmount!.Value;
 
-        if (claim.RewardType == RewardClaimType.Cash && (claim.CashAmount ?? 0) <= 0)
-            return ServiceResult.Fail("Claim has no cash amount to credit.");
+                var childProfile = await context.ChildProfiles
+                    .Include(p => p.LedgerAccounts)
+                    .FirstOrDefaultAsync(p => p.UserId == claim.UserId);
 
-        // The ledger credit (if any) and the claim's status flip must commit together or
-        // not at all - wrapping both SaveChanges calls below in one explicit transaction
-        // means a failure (including a concurrency conflict on the second save) rolls
-        // back the first save's credit too, instead of leaving a committed ledger
-        // transaction attached to a claim that never actually flipped to Approved.
-        await using var dbTransaction = await context.Database.BeginTransactionAsync();
+                var defaultAccount = childProfile?.LedgerAccounts
+                    .FirstOrDefault(a => a.IsDefault && a.IsActive)
+                    ?? childProfile?.LedgerAccounts.FirstOrDefault(a => a.IsActive);
 
-        if (claim.RewardType == RewardClaimType.Cash)
-        {
-            var amount = claim.CashAmount!.Value;
+                if (defaultAccount == null)
+                    return ServiceResult.Fail("No active ledger account found for this child.");
 
-            var childProfile = await context.ChildProfiles
-                .Include(p => p.LedgerAccounts)
-                .FirstOrDefaultAsync(p => p.UserId == claim.UserId);
+                var transaction = new LedgerTransaction
+                {
+                    LedgerAccountId = defaultAccount.Id,
+                    UserId = claim.UserId,
+                    Amount = amount,
+                    Type = TransactionType.AchievementReward,
+                    Description = $"Achievement Reward: {claim.Achievement.Name}",
+                    TransactionDate = _dateProvider.Today,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            var defaultAccount = childProfile?.LedgerAccounts
-                .FirstOrDefault(a => a.IsDefault && a.IsActive)
-                ?? childProfile?.LedgerAccounts.FirstOrDefault(a => a.IsActive);
+                context.LedgerTransactions.Add(transaction);
+                await context.SaveChangesAsync(); // within dbTransaction; populates transaction.Id
 
-            if (defaultAccount == null)
-                return ServiceResult.Fail("No active ledger account found for this child.");
-
-            var transaction = new LedgerTransaction
+                claim.LedgerTransactionId = transaction.Id;
+                claim.Status = RewardClaimStatus.Approved;
+            }
+            else
             {
-                LedgerAccountId = defaultAccount.Id,
-                UserId = claim.UserId,
-                Amount = amount,
-                Type = TransactionType.AchievementReward,
-                Description = $"Achievement Reward: {claim.Achievement.Name}",
-                TransactionDate = _dateProvider.Today,
-                CreatedAt = DateTime.UtcNow
-            };
+                claim.Status = RewardClaimStatus.FulfilledByParent;
+            }
 
-            context.LedgerTransactions.Add(transaction);
-            await context.SaveChangesAsync(); // within dbTransaction; populates transaction.Id
+            claim.DecidedAt = DateTime.UtcNow;
+            claim.DecidedByUserId = parentUserId;
 
-            claim.LedgerTransactionId = transaction.Id;
-            claim.Status = RewardClaimStatus.Approved;
-        }
-        else
-        {
-            claim.Status = RewardClaimStatus.FulfilledByParent;
-        }
+            // Manual concurrency increment (this repo's pattern - see LedgerService.cs,
+            // TrackerService.cs). Without this, the WHERE clause EF generates for the
+            // claim's UPDATE would always match the current row, and a second concurrent
+            // approval would never fail - it would just credit again.
+            claim.Version++;
 
-        claim.DecidedAt = DateTime.UtcNow;
-        claim.DecidedByUserId = parentUserId;
+            try
+            {
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // claim.Version no longer matches the stored row's Version - someone else
+                // already decided this claim. dbTransaction is never committed below, so
+                // the ledger insert above (if any) rolls back too: no orphaned credit.
+                return ServiceResult.Fail("This claim was just decided by someone else. Refresh and try again.");
+            }
 
-        // Manual concurrency increment (this repo's pattern - see LedgerService.cs,
-        // TrackerService.cs). Without this, the WHERE clause EF generates for the
-        // claim's UPDATE would always match the current row, and a second concurrent
-        // approval would never fail - it would just credit again.
-        claim.Version++;
+            await dbTransaction.CommitAsync();
 
-        try
-        {
-            await context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // claim.Version no longer matches the stored row's Version - someone else
-            // already decided this claim. dbTransaction is never committed below, so
-            // the ledger insert above (if any) rolls back too: no orphaned credit.
-            return ServiceResult.Fail("This claim was just decided by someone else. Refresh and try again.");
-        }
+            _logger.LogInformation(
+                "Parent {ParentUserId} approved reward claim {ClaimId} ({RewardType}) for user {UserId}",
+                parentUserId, claimId, claim.RewardType, claim.UserId);
 
-        await dbTransaction.CommitAsync();
-
-        _logger.LogInformation(
-            "Parent {ParentUserId} approved reward claim {ClaimId} ({RewardType}) for user {UserId}",
-            parentUserId, claimId, claim.RewardType, claim.UserId);
-
-        return ServiceResult.Ok();
+            return ServiceResult.Ok();
+        });
     }
 
     public async Task<ServiceResult> RejectClaimAsync(int claimId, string parentUserId, string? reason = null)
