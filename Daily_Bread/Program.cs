@@ -307,6 +307,7 @@ builder.Services.AddSingleton<IChoreNotificationService, ChoreNotificationServic
 
 // Achievement system services (order matters - dependencies first)
 builder.Services.AddScoped<IAchievementConditionEvaluator, AchievementConditionEvaluator>();
+builder.Services.AddScoped<IAchievementRewardClaimService, AchievementRewardClaimService>();
 builder.Services.AddScoped<IAchievementBonusService, AchievementBonusService>();
 
 // Add health checks

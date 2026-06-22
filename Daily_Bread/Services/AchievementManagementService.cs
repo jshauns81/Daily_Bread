@@ -1,6 +1,7 @@
 using Daily_Bread.Data;
 using Daily_Bread.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Daily_Bread.Services;
@@ -29,9 +30,22 @@ public class AchievementDto
     public string? UnlockConditionValue { get; set; }
     public int? ProgressTarget { get; set; }
 
-    // REWARD HOOK: Phase 1's reward ladder isn't designed yet. Once it is, add a
-    // RewardTierCode (or similar) field here and to the form's identity/value section -
-    // do not bolt it onto BonusType/BonusValue, which are a separate gameplay-bonus system.
+    /// <summary>
+    /// Real-world reward (cash or item), gated on parent approval when earned. Null means
+    /// no tangible reward. Maps to Achievement.BonusType == TangibleReward - mutually
+    /// exclusive with the gameplay-bonus system (PointMultiplier, StreakProtection, etc.);
+    /// setting a reward here overwrites any existing gameplay bonus on this achievement.
+    /// </summary>
+    public RewardClaimType? RewardType { get; set; }
+
+    /// <summary>For RewardType == Cash: the amount credited to the child on approval.</summary>
+    public decimal? RewardCashAmount { get; set; }
+
+    /// <summary>For RewardType == Item: the child-visible name of the item.</summary>
+    public string? RewardItemLabel { get; set; }
+
+    /// <summary>For RewardType == Item: parent's budgeting estimate (reporting only).</summary>
+    public decimal? RewardItemEstValue { get; set; }
 }
 
 /// <summary>
@@ -116,6 +130,8 @@ public class AchievementManagementService : IAchievementManagementService
             CreatedAt = DateTime.UtcNow
         };
 
+        ApplyReward(achievement, dto);
+
         context.Achievements.Add(achievement);
         await context.SaveChangesAsync();
 
@@ -160,6 +176,8 @@ public class AchievementManagementService : IAchievementManagementService
         achievement.UnlockConditionValue = dto.UnlockConditionValue;
         achievement.ProgressTarget = dto.ProgressTarget;
         achievement.ModifiedAt = DateTime.UtcNow;
+
+        ApplyReward(achievement, dto);
 
         await context.SaveChangesAsync();
 
@@ -219,7 +237,50 @@ public class AchievementManagementService : IAchievementManagementService
             return "Hidden achievements that are invisible before unlock should have a hint, or earning them will show no clue at all.";
         }
 
+        if (dto.RewardType == RewardClaimType.Cash && dto.RewardCashAmount is not > 0)
+        {
+            return "Cash reward amount must be greater than zero.";
+        }
+
+        if (dto.RewardType == RewardClaimType.Item && string.IsNullOrWhiteSpace(dto.RewardItemLabel))
+        {
+            return "Item reward needs a name.";
+        }
+
         return null;
+    }
+
+    /// <summary>
+    /// Maps the DTO's reward selection onto Achievement.BonusType/BonusValue/BonusDescription.
+    /// Leaves an existing non-reward gameplay bonus (PointMultiplier, StreakProtection, etc.)
+    /// untouched unless the parent explicitly sets a tangible reward, since the two systems
+    /// share the same BonusType slot and this form only edits the reward side of it.
+    /// </summary>
+    private static void ApplyReward(Achievement achievement, AchievementDto dto)
+    {
+        if (dto.RewardType == RewardClaimType.Cash)
+        {
+            achievement.BonusType = AchievementBonusType.TangibleReward;
+            achievement.BonusValue = JsonSerializer.Serialize(new { type = "cash", amount = dto.RewardCashAmount ?? 0 });
+            achievement.BonusDescription = $"${dto.RewardCashAmount:F2} reward (parent approval required)";
+        }
+        else if (dto.RewardType == RewardClaimType.Item)
+        {
+            achievement.BonusType = AchievementBonusType.TangibleReward;
+            achievement.BonusValue = JsonSerializer.Serialize(new
+            {
+                type = "item",
+                label = dto.RewardItemLabel,
+                est_value = dto.RewardItemEstValue
+            });
+            achievement.BonusDescription = $"{dto.RewardItemLabel} (parent approval required)";
+        }
+        else if (achievement.BonusType == AchievementBonusType.TangibleReward)
+        {
+            achievement.BonusType = null;
+            achievement.BonusValue = null;
+            achievement.BonusDescription = null;
+        }
     }
 
     private static string GenerateUniqueCode(string name, List<string> existingCodes)

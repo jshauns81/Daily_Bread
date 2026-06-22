@@ -683,9 +683,16 @@ public class AchievementConditionEvaluator : IAchievementConditionEvaluator
             if (totalAtRarity == 0)
                 return AchievementEvaluationResult.NotApplicable();
 
-            return earnedAtRarity >= totalAtRarity
-                ? AchievementEvaluationResult.Met(earnedAtRarity, totalAtRarity)
-                : AchievementEvaluationResult.NotMet(earnedAtRarity, totalAtRarity);
+            // "all" means holds every CURRENTLY ACTIVE achievement at/above the rarity.
+            // A deactivated-but-earned achievement must not count toward this - otherwise
+            // it could pad earnedAtRarity past totalAtRarity (which is active-only) while
+            // the user is still missing one of the achievements that's actually active today.
+            var earnedActiveAtRarity = ctx.UserAchievements.Count(ua =>
+                ua.Achievement.IsActive && ua.Achievement.Rarity >= minRarity && ua.AchievementId != achievement.Id);
+
+            return earnedActiveAtRarity >= totalAtRarity
+                ? AchievementEvaluationResult.Met(earnedActiveAtRarity, totalAtRarity)
+                : AchievementEvaluationResult.NotMet(earnedActiveAtRarity, totalAtRarity);
         }
 
         var target = ParseInt(achievement.UnlockConditionValue, "count", 1);

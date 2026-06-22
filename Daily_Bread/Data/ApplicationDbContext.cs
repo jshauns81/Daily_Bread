@@ -27,6 +27,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<AchievementProgress> AchievementProgress => Set<AchievementProgress>();
     public DbSet<UserAchievementBonus> UserAchievementBonuses => Set<UserAchievementBonus>();
+    public DbSet<AchievementRewardClaim> AchievementRewardClaims => Set<AchievementRewardClaim>();
     public DbSet<FamilySettings> FamilySettings => Set<FamilySettings>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<Household> Households => Set<Household>();
@@ -314,6 +315,44 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany()
                 .HasForeignKey(e => e.AchievementId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AchievementRewardClaim configuration
+        builder.Entity<AchievementRewardClaim>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CashAmount).HasPrecision(10, 2);
+            entity.Property(e => e.ItemLabel).HasMaxLength(200);
+            entity.Property(e => e.ItemEstValue).HasPrecision(10, 2);
+            entity.Property(e => e.RejectionReason).HasMaxLength(500);
+            entity.Property(e => e.Version).IsConcurrencyToken();
+
+            // One claim per earn event, ever - this is the idempotency guarantee against
+            // the achievement evaluator re-running and double-creating a claim.
+            entity.HasIndex(e => e.UserAchievementId).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.AchievementId);
+            entity.HasIndex(e => e.Status);
+
+            entity.HasOne(e => e.UserAchievement)
+                .WithMany()
+                .HasForeignKey(e => e.UserAchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Achievement)
+                .WithMany()
+                .HasForeignKey(e => e.AchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.LedgerTransaction)
+                .WithMany()
+                .HasForeignKey(e => e.LedgerTransactionId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // AppSetting configuration

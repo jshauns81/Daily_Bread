@@ -515,7 +515,18 @@ public enum AchievementBonusType
     /// JSON: {"category": "Cleaning", "multiplier": 1.25, "duration_days": 7}
     /// Scope: Temporary
     /// </summary>
-    CategoryBonus = 12
+    CategoryBonus = 12,
+
+    /// <summary>
+    /// Real-world reward (cash or a parent-fulfilled item), gated on parent approval.
+    /// Unlike every other bonus type, granting this does NOT touch the balance or
+    /// any gameplay state directly - it creates an AchievementRewardClaim instead.
+    /// See AchievementRewardClaimService for the approve/reject/fulfill flow.
+    /// JSON (cash): {"type":"cash","amount":25.00}
+    /// JSON (item): {"type":"item","label":"Pokémon booster pack","est_value":5.00}
+    /// Scope: One-time, approval-gated
+    /// </summary>
+    TangibleReward = 13
 }
 
 /// <summary>
@@ -674,4 +685,108 @@ public class UserAchievementBonus
     /// When this bonus was last used/applied.
     /// </summary>
     public DateTime? LastUsedAt { get; set; }
+}
+
+/// <summary>
+/// Shape of the real-world reward carried by an AchievementBonusType.TangibleReward achievement.
+/// </summary>
+public enum RewardClaimType
+{
+    /// <summary>A fixed cash amount credited to the child's ledger on approval.</summary>
+    Cash = 0,
+
+    /// <summary>A named item fulfilled by a parent outside the app; no balance impact.</summary>
+    Item = 1
+}
+
+/// <summary>
+/// State machine for a pending real-world reward. Created the moment a TangibleReward
+/// achievement is earned; the balance/fulfillment effect only happens on parent approval.
+/// </summary>
+public enum RewardClaimStatus
+{
+    /// <summary>Earned, waiting on a parent to approve or reject. Terminal effect: none.</summary>
+    PendingApproval = 0,
+
+    /// <summary>Cash claim approved - the ledger credit has been written. Terminal.</summary>
+    Approved = 1,
+
+    /// <summary>Item claim approved - the parent has taken on fulfilling it. Terminal.</summary>
+    FulfilledByParent = 2,
+
+    /// <summary>Parent declined the reward. The achievement itself stays earned. Terminal.</summary>
+    Rejected = 3
+}
+
+/// <summary>
+/// A pending or decided real-world reward from a TangibleReward achievement.
+/// One row per UserAchievement (enforced by a unique index on UserAchievementId) so
+/// re-running the achievement evaluator can never create a duplicate claim, and the
+/// approval methods only act on rows still in PendingApproval so a claim can be
+/// approved/rejected at most once.
+/// </summary>
+public class AchievementRewardClaim
+{
+    public int Id { get; set; }
+
+    /// <summary>
+    /// The specific earn event this claim is for. Unique - this is the idempotency anchor.
+    /// </summary>
+    public int UserAchievementId { get; set; }
+    public UserAchievement UserAchievement { get; set; } = null!;
+
+    /// <summary>
+    /// Denormalized for quick lookups without joining through UserAchievement.
+    /// </summary>
+    public required string UserId { get; set; }
+    public ApplicationUser User { get; set; } = null!;
+
+    public int AchievementId { get; set; }
+    public Achievement Achievement { get; set; } = null!;
+
+    public RewardClaimType RewardType { get; set; }
+
+    /// <summary>
+    /// For cash claims: the amount to credit on approval. Frozen at claim-creation time
+    /// from the achievement's BonusValue, so editing the achievement later doesn't
+    /// retroactively change a reward a child has already earned.
+    /// </summary>
+    public decimal? CashAmount { get; set; }
+
+    /// <summary>
+    /// For item claims: the child-visible name of the item.
+    /// </summary>
+    public string? ItemLabel { get; set; }
+
+    /// <summary>
+    /// For item claims: parent's budgeting estimate. Reporting only, never shown to the child,
+    /// never affects the balance.
+    /// </summary>
+    public decimal? ItemEstValue { get; set; }
+
+    public RewardClaimStatus Status { get; set; } = RewardClaimStatus.PendingApproval;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// When a parent approved, rejected, or fulfilled this claim.
+    /// </summary>
+    public DateTime? DecidedAt { get; set; }
+
+    public string? DecidedByUserId { get; set; }
+
+    public string? RejectionReason { get; set; }
+
+    /// <summary>
+    /// For cash claims: the single ledger transaction this approval wrote. Null until approved.
+    /// </summary>
+    public int? LedgerTransactionId { get; set; }
+    public LedgerTransaction? LedgerTransaction { get; set; }
+
+    /// <summary>
+    /// Concurrency token. Guards against a double-click (or retry) on Approve/Reject
+    /// crediting or deciding the same claim twice - the second writer's SaveChanges
+    /// throws DbUpdateConcurrencyException instead of silently double-firing.
+    /// </summary>
+    public int Version { get; set; }
 }

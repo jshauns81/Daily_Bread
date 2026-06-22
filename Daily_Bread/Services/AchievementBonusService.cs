@@ -118,8 +118,10 @@ public interface IAchievementBonusService
 {
     /// <summary>
     /// Grants a bonus to a user when they earn an achievement.
+    /// userAchievementId must already be persisted (its Id populated) - required for
+    /// TangibleReward, which anchors its reward claim's idempotency to that row.
     /// </summary>
-    Task GrantBonusAsync(string userId, Achievement achievement);
+    Task GrantBonusAsync(string userId, Achievement achievement, int userAchievementId);
     
     /// <summary>
     /// Gets a summary of all active bonuses for a user.
@@ -181,6 +183,7 @@ public class AchievementBonusService : IAchievementBonusService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IDateProvider _dateProvider;
+    private readonly IAchievementRewardClaimService _rewardClaimService;
     private readonly ILogger<AchievementBonusService> _logger;
 
     // Stacking caps to prevent runaway bonuses
@@ -190,20 +193,30 @@ public class AchievementBonusService : IAchievementBonusService
     public AchievementBonusService(
         IDbContextFactory<ApplicationDbContext> contextFactory,
         IDateProvider dateProvider,
+        IAchievementRewardClaimService rewardClaimService,
         ILogger<AchievementBonusService> logger)
     {
         _contextFactory = contextFactory;
         _dateProvider = dateProvider;
+        _rewardClaimService = rewardClaimService;
         _logger = logger;
     }
 
-    public async Task GrantBonusAsync(string userId, Achievement achievement)
+    public async Task GrantBonusAsync(string userId, Achievement achievement, int userAchievementId)
     {
         if (!achievement.BonusType.HasValue || achievement.BonusType == AchievementBonusType.None)
             return;
 
+        // TangibleReward never touches UserAchievementBonus or the balance directly -
+        // it only ever creates a pending claim for a parent to approve or reject.
+        if (achievement.BonusType == AchievementBonusType.TangibleReward)
+        {
+            await _rewardClaimService.CreateClaimIfNeededAsync(userId, achievement, userAchievementId);
+            return;
+        }
+
         await using var context = await _contextFactory.CreateDbContextAsync();
-        
+
         // Check if bonus already granted for this achievement
         var existing = await context.UserAchievementBonuses
             .FirstOrDefaultAsync(b => b.UserId == userId && b.AchievementId == achievement.Id);

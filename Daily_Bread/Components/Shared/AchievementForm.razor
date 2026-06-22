@@ -96,6 +96,45 @@
                     <InputCheckbox @bind-Value="FormModel.IsActive" />
                     <span>Active</span>
                 </label>
+
+                <hr />
+
+                <span class="section-label">Real-world reward (optional)</span>
+                <p class="reward-hint">Earning this achievement creates a pending claim - nothing is credited until a parent approves it.</p>
+
+                <div class="reward-type-row">
+                    <label class="option-check">
+                        <input type="radio" name="rewardType" checked="@(FormModel.RewardType == null)" @onchange="() => FormModel.RewardType = null" />
+                        <span>None</span>
+                    </label>
+                    <label class="option-check">
+                        <input type="radio" name="rewardType" checked="@(FormModel.RewardType == RewardClaimType.Cash)" @onchange="() => FormModel.RewardType = RewardClaimType.Cash" />
+                        <span>Cash</span>
+                    </label>
+                    <label class="option-check">
+                        <input type="radio" name="rewardType" checked="@(FormModel.RewardType == RewardClaimType.Item)" @onchange="() => FormModel.RewardType = RewardClaimType.Item" />
+                        <span>Item</span>
+                    </label>
+                </div>
+
+                @if (FormModel.RewardType == RewardClaimType.Cash)
+                {
+                    <label class="field-col">
+                        <span class="field-label">Amount ($)</span>
+                        <InputNumber @bind-Value="FormModel.RewardCashAmount" class="ds-input" min="0.01" step="0.01" />
+                    </label>
+                }
+                else if (FormModel.RewardType == RewardClaimType.Item)
+                {
+                    <label class="field-col">
+                        <span class="field-label">Item name (shown to child)</span>
+                        <InputText @bind-Value="FormModel.RewardItemLabel" class="ds-input" placeholder="Pokémon booster pack" />
+                    </label>
+                    <label class="field-col">
+                        <span class="field-label">Estimated cost (parent budgeting only, not shown to child)</span>
+                        <InputNumber @bind-Value="FormModel.RewardItemEstValue" class="ds-input" min="0" step="0.01" />
+                    </label>
+                }
             </div>
         </details>
 
@@ -142,7 +181,11 @@
                 IsActive = Achievement.IsActive,
                 UnlockConditionType = Achievement.UnlockConditionType,
                 UnlockConditionValue = Achievement.UnlockConditionValue,
-                ProgressTarget = Achievement.ProgressTarget
+                ProgressTarget = Achievement.ProgressTarget,
+                RewardType = Achievement.RewardType,
+                RewardCashAmount = Achievement.RewardCashAmount,
+                RewardItemLabel = Achievement.RewardItemLabel,
+                RewardItemEstValue = Achievement.RewardItemEstValue
             };
         }
         else
@@ -183,7 +226,11 @@
                 IsActive = FormModel.IsActive,
                 UnlockConditionType = FormModel.UnlockConditionType,
                 UnlockConditionValue = FormModel.UnlockConditionValue,
-                ProgressTarget = FormModel.ProgressTarget
+                ProgressTarget = FormModel.ProgressTarget,
+                RewardType = FormModel.RewardType,
+                RewardCashAmount = FormModel.RewardType == RewardClaimType.Cash ? FormModel.RewardCashAmount : null,
+                RewardItemLabel = FormModel.RewardType == RewardClaimType.Item ? FormModel.RewardItemLabel : null,
+                RewardItemEstValue = FormModel.RewardType == RewardClaimType.Item ? FormModel.RewardItemEstValue : null
             };
             await OnSubmit.InvokeAsync(dto);
         }
@@ -225,5 +272,10 @@
         public UnlockConditionType UnlockConditionType { get; set; } = UnlockConditionType.Manual;
         public string? UnlockConditionValue { get; set; }
         public int? ProgressTarget { get; set; }
+
+        public RewardClaimType? RewardType { get; set; }
+        public decimal? RewardCashAmount { get; set; }
+        public string? RewardItemLabel { get; set; }
+        public decimal? RewardItemEstValue { get; set; }
     }
 }

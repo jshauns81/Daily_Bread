@@ -119,5 +119,12 @@ public enum TransactionType
     /// <summary>
     /// Transfer between accounts.
     /// </summary>
-    Transfer = 6
+    Transfer = 6,
+
+    /// <summary>
+    /// Cash payout from an approved achievement reward claim (TangibleReward).
+    /// Distinct from Bonus (which covers AchievementBonusType.BonusPoints) so reward
+    /// payouts are reportable separately from gameplay bonus points.
+    /// </summary>
+    AchievementReward = 7
 }

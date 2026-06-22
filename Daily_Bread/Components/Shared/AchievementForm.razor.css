@@ -236,12 +236,26 @@
 }
 
 ::deep .option-check input[type="checkbox"],
-.achievement-form .option-check input[type="checkbox"] {
+.achievement-form .option-check input[type="checkbox"],
+::deep .option-check input[type="radio"],
+.achievement-form .option-check input[type="radio"] {
     width: 18px;
     height: 18px;
     accent-color: var(--ds-accent-primary);
     cursor: pointer;
     flex-shrink: 0;
+}
+
+.achievement-form .reward-hint {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-secondary);
+    margin: 0 0 var(--ds-space-2);
+}
+
+.achievement-form .reward-type-row {
+    display: flex;
+    gap: var(--ds-space-4);
+    margin-bottom: var(--ds-space-3);
 }
 
 /* Form actions */
