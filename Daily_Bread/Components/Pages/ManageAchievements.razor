@@ -5,6 +5,7 @@
 @using Daily_Bread.Data.Models
 @using Daily_Bread.Services
 @using Daily_Bread.Components.Shared
+@using System.Text.Json
 
 @inject IAchievementManagementService AchievementManagementService
 @inject IChoreManagementService ChoreManagementService
@@ -142,6 +143,11 @@
             ProgressTarget = achievement.ProgressTarget
         };
 
+        if (achievement.BonusType == AchievementBonusType.TangibleReward && achievement.BonusValue != null)
+        {
+            ApplyExistingReward(dto, achievement.BonusValue);
+        }
+
         ModalService.Open(@<AchievementFormModal
             Title="Edit Achievement"
             Achievement="dto"
@@ -211,5 +217,43 @@
     {
         ErrorMessage = null;
         SuccessMessage = null;
+    }
+
+    /// <summary>
+    /// Parses an existing TangibleReward Achievement.BonusValue JSON back into the DTO's
+    /// reward fields so the edit form shows what's already configured.
+    /// </summary>
+    private static void ApplyExistingReward(AchievementDto dto, string bonusValueJson)
+    {
+        try
+        {
+            var doc = JsonDocument.Parse(bonusValueJson);
+            var type = doc.RootElement.TryGetProperty("type", out var t) ? t.GetString() : null;
+
+            if (type == "cash")
+            {
+                dto.RewardType = RewardClaimType.Cash;
+                if (doc.RootElement.TryGetProperty("amount", out var amount))
+                {
+                    dto.RewardCashAmount = amount.GetDecimal();
+                }
+            }
+            else if (type == "item")
+            {
+                dto.RewardType = RewardClaimType.Item;
+                if (doc.RootElement.TryGetProperty("label", out var label))
+                {
+                    dto.RewardItemLabel = label.GetString();
+                }
+                if (doc.RootElement.TryGetProperty("est_value", out var estValue) && estValue.ValueKind != JsonValueKind.Null)
+                {
+                    dto.RewardItemEstValue = estValue.GetDecimal();
+                }
+            }
+        }
+        catch
+        {
+            // Malformed BonusValue - leave reward fields unset rather than fail the page.
+        }
     }
 }

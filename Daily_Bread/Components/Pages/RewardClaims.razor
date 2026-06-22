@@ -1,0 +1,149 @@
+@page "/reward-claims"
+@attribute [Authorize(Roles = "Parent")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+
+@inject IAchievementRewardClaimService RewardClaimService
+@inject ICurrentUserContext CurrentUserContext
+
+<PageTitle>Reward Claims</PageTitle>
+
+<div class="reward-claims-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@EmojiConstants.Gift Reward Claims</h1>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @SuccessMessage
+            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (Claims.Count == 0)
+    {
+        <div class="rc-empty">
+            <span class="rc-empty-icon">@EmojiConstants.CheckMark</span>
+            <p>No reward claims waiting on a decision.</p>
+        </div>
+    }
+    else
+    {
+        <div class="rc-list">
+            @foreach (var claim in Claims)
+            {
+                <div class="rc-card">
+                    <div class="rc-icon">@claim.AchievementIcon</div>
+                    <div class="rc-info">
+                        <div class="rc-title">@claim.AchievementName</div>
+                        <div class="rc-meta">@claim.ChildName • earned @claim.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt")</div>
+                        <div class="rc-reward">
+                            @if (claim.RewardType == RewardClaimType.Cash)
+                            {
+                                <span class="rc-badge rc-badge-cash">@EmojiConstants.Dollar $@claim.CashAmount?.ToString("F2")</span>
+                            }
+                            else
+                            {
+                                <span class="rc-badge rc-badge-item">@EmojiConstants.Gift @claim.ItemLabel</span>
+                                @if (claim.ItemEstValue.HasValue)
+                                {
+                                    <span class="rc-est">(est. $@claim.ItemEstValue.Value.ToString("F2"), parent budgeting only)</span>
+                                }
+                            }
+                        </div>
+                    </div>
+                    <div class="rc-actions">
+                        <button class="rc-btn rc-btn-approve" @onclick="() => ApproveAsync(claim.Id)" disabled="@IsBusy">
+                            @EmojiConstants.ThumbsUp @(claim.RewardType == RewardClaimType.Cash ? "Approve & Credit" : "Approve")
+                        </button>
+                        <button class="rc-btn rc-btn-reject" @onclick="() => RejectAsync(claim.Id)" disabled="@IsBusy">
+                            @EmojiConstants.ThumbsDown Reject
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<RewardClaimDisplay> Claims { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private bool IsBusy { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClaimsAsync();
+    }
+
+    private async Task LoadClaimsAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Claims = await RewardClaimService.GetPendingClaimsAsync();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ApproveAsync(int claimId)
+    {
+        await RunDecisionAsync(claimId, claim => RewardClaimService.ApproveClaimAsync(claimId, CurrentUserContext.UserId),
+            "Reward approved.");
+    }
+
+    private async Task RejectAsync(int claimId)
+    {
+        await RunDecisionAsync(claimId, claim => RewardClaimService.RejectClaimAsync(claimId, CurrentUserContext.UserId),
+            "Reward rejected. The achievement stays earned.");
+    }
+
+    private async Task RunDecisionAsync(int claimId, Func<int, Task<ServiceResult>> action, string successMessage)
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+        IsBusy = true;
+
+        try
+        {
+            var result = await action(claimId);
+            if (result.Success)
+            {
+                SuccessMessage = successMessage;
+                await LoadClaimsAsync();
+            }
+            else
+            {
+                ErrorMessage = result.ErrorMessage;
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}

@@ -274,11 +274,23 @@ public class AchievementService : IAchievementService
 
                 context.UserAchievements.Add(userAchievement);
 
+                // TangibleReward's claim is anchored to UserAchievementId and needs that
+                // Id to actually exist (populated) before GrantBonusAsync runs, so save
+                // immediately rather than batching - but only for that bonus type. Every
+                // other achievement keeps the original batched-at-end-of-loop save: they
+                // don't read userAchievement.Id, and batching keeps this loop atomic (a
+                // throw on achievement N rolls back 1..N-1 instead of leaving them
+                // committed).
+                if (achievement.BonusType == AchievementBonusType.TangibleReward)
+                {
+                    await context.SaveChangesAsync();
+                }
+
                 // Update progress if tracked
                 await UpdateProgressAsync(context, userId, achievement, evaluation);
 
                 // Grant bonus if applicable
-                await _bonusService.GrantBonusAsync(userId, achievement);
+                await _bonusService.GrantBonusAsync(userId, achievement, userAchievement.Id);
 
                 newlyAwarded.Add(CreateDisplay(achievement, userAchievement, evaluation, true));
 
@@ -379,7 +391,7 @@ public class AchievementService : IAchievementService
         await context.SaveChangesAsync();
 
         // Grant bonus if applicable
-        await _bonusService.GrantBonusAsync(userId, achievement);
+        await _bonusService.GrantBonusAsync(userId, achievement, userAchievement.Id);
 
         _logger.LogInformation("Manually awarded achievement {Code} to user {UserId}", achievementCode, userId);
 
