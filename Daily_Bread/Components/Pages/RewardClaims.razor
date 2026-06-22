@@ -2,11 +2,12 @@
 @attribute [Authorize(Roles = "Parent")]
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
+@using System.Security.Claims
 @using Daily_Bread.Data.Models
 @using Daily_Bread.Services
 
 @inject IAchievementRewardClaimService RewardClaimService
-@inject ICurrentUserContext CurrentUserContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Reward Claims</PageTitle>
 
@@ -91,9 +92,13 @@
     private bool IsBusy { get; set; }
     private string? ErrorMessage { get; set; }
     private string? SuccessMessage { get; set; }
+    private string? _currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         await LoadClaimsAsync();
     }
 
@@ -112,13 +117,17 @@
 
     private async Task ApproveAsync(int claimId)
     {
-        await RunDecisionAsync(claimId, claim => RewardClaimService.ApproveClaimAsync(claimId, CurrentUserContext.UserId),
+        if (string.IsNullOrEmpty(_currentUserId)) return;
+
+        await RunDecisionAsync(claimId, claim => RewardClaimService.ApproveClaimAsync(claimId, _currentUserId),
             "Reward approved.");
     }
 
     private async Task RejectAsync(int claimId)
     {
-        await RunDecisionAsync(claimId, claim => RewardClaimService.RejectClaimAsync(claimId, CurrentUserContext.UserId),
+        if (string.IsNullOrEmpty(_currentUserId)) return;
+
+        await RunDecisionAsync(claimId, claim => RewardClaimService.RejectClaimAsync(claimId, _currentUserId),
             "Reward rejected. The achievement stays earned.");
     }
 
