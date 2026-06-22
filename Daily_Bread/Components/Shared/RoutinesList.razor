@@ -16,7 +16,7 @@
         var isBeingDragged = _draggedChore?.ChoreDefinitionId == chore.ChoreDefinitionId;
         var isDropTarget = _dropTargetChore?.ChoreDefinitionId == chore.ChoreDefinitionId && !isBeingDragged;
         
-        <div class="routine-row @(isBeingDragged ? "dragging" : "") @(isDropTarget ? "drop-target" : "")" 
+        <div class="routine-row @(!chore.IsActive ? "inactive" : "") @(isBeingDragged ? "dragging" : "") @(isDropTarget ? "drop-target" : "")"
              @key="chore.ChoreDefinitionId"
              draggable="@(EnableReorder ? "true" : "false")"
              @ondragstart="() => HandleDragStart(chore)"
@@ -34,8 +34,12 @@
                 </div>
             }
             <div class="routine-info">
-                <span class="routine-emoji">@(chore.Icon ?? "✨")</span>
+                <span class="routine-emoji @(!chore.IsActive ? "inactive-icon" : "")">@(chore.Icon ?? "✨")</span>
                 <span class="routine-name">@chore.ChoreName</span>
+                @if (!chore.IsActive)
+                {
+                    <span class="badge bg-dark">Inactive</span>
+                }
                 @if (string.IsNullOrEmpty(SelectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
                 {
                     <span class="routine-assignee">@chore.AssignedUserName</span>
@@ -65,7 +69,7 @@
     [Parameter] public string? SelectedUserId { get; set; }
     [Parameter] public EventCallback<ChorePlannerRow> OnEditChore { get; set; }
     [Parameter] public EventCallback OnAddRoutine { get; set; }
-    
+
     /// <summary>
     /// Enable drag-and-drop reordering. When true, shows drag handles.
     /// </summary>
