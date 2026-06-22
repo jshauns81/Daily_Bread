@@ -449,3 +449,6 @@ railway.toml
 
 # Claude AI settings
 .claude/db-backups/
+
+# Local DB dumps taken before risky changes - never commit these
+db-backups/
