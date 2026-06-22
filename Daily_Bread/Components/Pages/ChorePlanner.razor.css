@@ -261,6 +261,24 @@
 }
 
 /* ===========================================
+   ROUTINES FILTER BAR
+   Slim toolbar strip above the routines table -
+   not a table column, just a quiet list filter.
+   =========================================== */
+
+.routines-filter-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--ds-space-2);
+    margin-bottom: var(--ds-space-4);
+}
+
+.routines-filter-bar .form-check-label {
+    font-size: 0.8rem;
+    color: var(--board-muted);
+}
+
+/* ===========================================
    LOADING & EMPTY STATES
    =========================================== */
 

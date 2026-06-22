@@ -128,6 +128,15 @@
     background: rgba(136, 192, 208, 0.05);
 }
 
+/* Inactive (deactivated) routine - greyed out, shown only when "Show inactive" is on */
+.routine-row.inactive {
+    opacity: 0.6;
+}
+
+.routine-emoji.inactive-icon {
+    filter: grayscale(100%);
+}
+
 .routine-info {
     display: flex;
     align-items: center;
@@ -221,7 +230,7 @@
     .routines-header {
         display: none;
     }
-    
+
     .routine-row {
         grid-template-columns: 40px 1fr auto;
     }

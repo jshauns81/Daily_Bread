@@ -179,6 +179,14 @@
         <!-- Routines Tab Content -->
         @if (_activeTab == TabView.Routines)
         {
+            <div class="routines-filter-bar no-print">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="showInactiveRoutines"
+                           @bind="_showInactiveRoutines" @bind:after="LoadDataAsync" />
+                    <label class="form-check-label" for="showInactiveRoutines">Show inactive routines</label>
+                </div>
+            </div>
+
             @if (_routineChores.Count == 0)
             {
                 <div class="empty-state">
@@ -192,7 +200,7 @@
             }
             else
             {
-                <RoutinesList 
+                <RoutinesList
                     RoutineChores="_routineChores"
                     SelectedUserId="_selectedUserId"
                     OnEditChore="ShowEditChoreForm"
@@ -239,6 +247,7 @@
     private string? _currentUserId;
     private string? _selectedUserId;
     private bool _showOverrides = false;
+    private bool _showInactiveRoutines = false;
 #pragma warning disable CS0414 // Field is assigned but never read - used for state tracking with ModalService
     private bool _showChoreForm = false;
 #pragma warning restore CS0414
@@ -290,12 +299,13 @@
             var today = DateProvider.Today;
             var weekStart = PlannerService.GetWeekStart(today).AddDays(_weekOffset * 7);
 
-            // Load ALL chores - no filtering at data level
-            _plannerData = await PlannerService.GetPlannerDataAsync(weekStart, _selectedUserId);
+            // Load ALL active chores, plus inactive ones if "Show inactive" is on
+            _plannerData = await PlannerService.GetPlannerDataAsync(weekStart, _selectedUserId, includeInactive: _showInactiveRoutines);
 
-            // Visual separation only - all chores participate in scheduling
+            // Visual separation only - all chores participate in scheduling.
+            // Wages tab is intentionally never shown inactive chores - "Show inactive" is scoped to Routines.
             var allChores = _plannerData.Groups.SelectMany(g => g.Chores).ToList();
-            _earningChores = allChores.Where(c => c.IsEarningChore).ToList();
+            _earningChores = allChores.Where(c => c.IsEarningChore && c.IsActive).ToList();
             _routineChores = allChores.Where(c => !c.IsEarningChore).ToList();
         }
         catch (Exception ex)

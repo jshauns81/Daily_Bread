@@ -62,7 +62,13 @@ public class ChorePlannerRow
     /// Cells for each day of the week (indexed 0-6 for Sun-Sat).
     /// </summary>
     public List<ChorePlannerCell> Cells { get; init; } = [];
-    
+
+    /// <summary>
+    /// Whether the underlying chore is active. Inactive chores are only present
+    /// when the caller opted in via includeInactive, and should render greyed-out.
+    /// </summary>
+    public bool IsActive { get; init; } = true;
+
     /// <summary>
     /// For weekly frequency chores: how many times completed this week.
     /// </summary>
@@ -317,7 +323,8 @@ public interface IChorePlannerService
     /// <param name="weekStart">Start of the week (Sunday). Null = current week.</param>
     /// <param name="userId">Optional: filter to specific user's chores.</param>
     /// <param name="includeStreaks">Whether to calculate streak data (can be slow).</param>
-    Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null, bool includeStreaks = true);
+    /// <param name="includeInactive">Whether to include deactivated chores (shown greyed-out). Default false preserves existing behavior.</param>
+    Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null, bool includeStreaks = true, bool includeInactive = false);
     
     /// <summary>
     /// Gets printable chart data for all children for a week.
@@ -365,7 +372,7 @@ public class ChorePlannerService : IChorePlannerService
         return ChoreScheduleHelper.GetWeekStartDate(date);
     }
 
-    public async Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null, bool includeStreaks = true)
+    public async Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null, bool includeStreaks = true, bool includeInactive = false)
     {
         var today = _dateProvider.Today;
         var start = weekStart ?? GetWeekStart(today);
@@ -384,10 +391,13 @@ public class ChorePlannerService : IChorePlannerService
         }
 
         // Get all chore definitions - use AsNoTracking for read-only queries
+        // includeInactive=false preserves the original active-only ordering exactly;
+        // when true, inactive chores are interleaved by the same SortOrder/Name sort
+        // rather than appended, so active ordering is never disrupted.
         var chores = await context.ChoreDefinitions
             .AsNoTracking()
             .Include(c => c.AssignedUser)
-            .Where(c => c.IsActive)
+            .Where(c => includeInactive || c.IsActive)
             .Where(c => c.StartDate == null || c.StartDate <= end)
             .Where(c => c.EndDate == null || c.EndDate >= start)
             .Where(c => string.IsNullOrEmpty(userId) || c.AssignedUserId == userId)
@@ -403,6 +413,7 @@ public class ChorePlannerService : IChorePlannerService
 
         // Get all chore logs for the week - single query
         var choreIds = chores.Select(c => c.Id).ToList();
+        var activeChoreIds = chores.Where(c => c.IsActive).Select(c => c.Id).ToHashSet();
         var logs = await context.ChoreLogs
             .AsNoTracking()
             .Where(cl => choreIds.Contains(cl.ChoreDefinitionId))
@@ -518,6 +529,7 @@ public class ChorePlannerService : IChorePlannerService
                 AssignedUserId = chore.AssignedUserId,
                 AssignedUserName = chore.AssignedUser?.UserName,
                 Cells = cells,
+                IsActive = chore.IsActive,
                 WeeklyCompletedCount = weeklyCompleted,
                 WeeklyApprovedCount = weeklyApproved
             });
@@ -526,15 +538,19 @@ public class ChorePlannerService : IChorePlannerService
         // Group chores
         var groups = GroupChores(rows);
 
+        // Day stats, override summaries, and streaks must stay based on active chores only,
+        // so toggling includeInactive (a display-only concern) never changes earnings/streak math.
+        var activeRows = rows.Where(r => r.IsActive).ToList();
+
         // Update day column statistics
         for (int i = 0; i < 7; i++)
         {
             var date = start.AddDays(i);
-            var dayCells = rows.SelectMany(r => r.Cells.Where(c => c.Date == date && c.IsScheduled)).ToList();
+            var dayCells = activeRows.SelectMany(r => r.Cells.Where(c => c.Date == date && c.IsScheduled)).ToList();
             var totalChores = dayCells.Count;
             var completedChores = dayCells.Count(c => c.Status == ChoreCellStatus.Completed || c.Status == ChoreCellStatus.Skipped);
             var earnedAmount = dayCells.Sum(c => c.EarnedAmount ?? 0);
-            var potentialAmount = rows.Where(r => r.Cells[i].IsScheduled).Sum(r => r.Value);
+            var potentialAmount = activeRows.Where(r => r.Cells[i].IsScheduled).Sum(r => r.Value);
 
             var status = DetermineDayColumnStatus(date, today, totalChores, completedChores, dayCells);
 
@@ -552,9 +568,10 @@ public class ChorePlannerService : IChorePlannerService
             };
         }
 
-        // Build override summaries
+        // Build override summaries (active chores only - matches activeRows scoping above)
         var overrideSummaries = overrides
-            .Where(o => o.Type != ScheduleOverrideType.Remove || !overrides.Any(o2 => 
+            .Where(o => activeChoreIds.Contains(o.ChoreDefinitionId))
+            .Where(o => o.Type != ScheduleOverrideType.Remove || !overrides.Any(o2 =>
                 o2.ChoreDefinitionId == o.ChoreDefinitionId && 
                 o2.Type == ScheduleOverrideType.Move))
             .Select(o => new OverrideSummary
@@ -573,7 +590,9 @@ public class ChorePlannerService : IChorePlannerService
         
         if (includeStreaks && start <= today)
         {
-            (currentStreak, longestStreak) = await CalculateStreaksAsync(context, userId, today, chores);
+            // Pass active-only chores so streaks are unaffected by includeInactive.
+            var activeChoreDefs = includeInactive ? chores.Where(c => c.IsActive).ToList() : chores;
+            (currentStreak, longestStreak) = await CalculateStreaksAsync(context, userId, today, activeChoreDefs);
         }
 
         return new ChorePlannerData
@@ -836,6 +855,7 @@ public class ChorePlannerService : IChorePlannerService
                 AssignedUserId = chore.AssignedUserId,
                 AssignedUserName = chore.AssignedUser?.UserName,
                 Cells = cells,
+                IsActive = chore.IsActive,
                 WeeklyCompletedCount = 0,
                 WeeklyApprovedCount = 0
             });
