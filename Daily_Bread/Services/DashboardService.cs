@@ -118,6 +118,9 @@ public class ParentDashboardData
     public int TodayTotalChores { get; init; }
     public decimal ThisWeekEarnings { get; init; }
 
+    /// <summary>This week's maximum possible earnings across active chores (all children). 0 if no active chores.</summary>
+    public decimal WeeklyPotential { get; init; }
+
     /// <summary>Per-day earnings for the current week (7 entries, week start first).</summary>
     public List<DailyEarning> WeekEarnings { get; init; } = [];
 }
@@ -242,6 +245,7 @@ public class DashboardService : IDashboardService
     private readonly IAchievementService _achievementService;
     private readonly IWeeklyProgressService _weeklyProgressService;
     private readonly IChoreNotificationService _choreNotificationService;
+    private readonly IChorePlannerService _chorePlannerService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<DashboardService> _logger;
 
@@ -259,6 +263,7 @@ public class DashboardService : IDashboardService
         IAchievementService achievementService,
         IWeeklyProgressService weeklyProgressService,
         IChoreNotificationService choreNotificationService,
+        IChorePlannerService chorePlannerService,
         UserManager<ApplicationUser> userManager,
         ILogger<DashboardService> logger)
     {
@@ -272,6 +277,7 @@ public class DashboardService : IDashboardService
         _achievementService = achievementService;
         _weeklyProgressService = weeklyProgressService;
         _choreNotificationService = choreNotificationService;
+        _chorePlannerService = chorePlannerService;
         _userManager = userManager;
         _logger = logger;
     }
@@ -384,6 +390,10 @@ public class DashboardService : IDashboardService
             .ToList();
         var thisWeekEarnings = weekEarnings.Sum(d => d.Amount);
 
+        // Same week/scope as ThisWeekEarnings above (current week, all children) - the
+        // hero's reward-progress denominator.
+        var weeklyPotential = await _chorePlannerService.GetWeeklyPotentialAsync();
+
         // Get recent activity - pass pre-loaded logs to avoid re-querying
         var recentActivity = await GetRecentActivityAsync(10, allRelevantLogs);
 
@@ -420,6 +430,7 @@ public class DashboardService : IDashboardService
             TodayHelpCount = todayLogs.Count(l => l.Status == ChoreStatus.Help),
             TodayTotalChores = todayLogs.Count,
             ThisWeekEarnings = thisWeekEarnings,
+            WeeklyPotential = weeklyPotential,
             WeekEarnings = weekEarnings
         };
     }

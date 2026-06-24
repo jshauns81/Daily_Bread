@@ -76,12 +76,40 @@ else if ((_isParent || _isAdmin) && _parentData != null)
             <div class="db-hero-main">
                 <h1 class="db-greeting">@Greeting()@(string.IsNullOrEmpty(_firstName) ? "" : ", ")<span class="db-greeting-name">@_firstName</span></h1>
                 <div class="db-sumline">
-                    <span class="db-sumtag warn">✦ @_parentData.PendingApprovals.Count awaiting approval</span>
-                    <span class="db-sumtag">✓ @_parentData.TodayCompletedCount done today</span>
-                    <span class="db-sumtag help">! @_parentData.TodayHelpCount needs help</span>
+                    <span class="db-sumtag warn">✦ @_parentData.PendingApprovals.Count <span class="db-sumtag-full">awaiting approval</span><span class="db-sumtag-short">approvals</span></span>
+                    <span class="db-sumtag">✓ @_parentData.TodayCompletedCount <span class="db-sumtag-full">done today</span><span class="db-sumtag-short">done</span></span>
+                    <span class="db-sumtag help">! @_parentData.TodayHelpCount <span class="db-sumtag-full">needs help</span><span class="db-sumtag-short">help</span></span>
                 </div>
             </div>
             <div class="db-hero-date">@DateTime.Now.ToString("dddd, MMMM d")</div>
+            <div class="db-hero-potential">
+                @if (_parentData.WeeklyPotential > 0)
+                {
+                    <div class="db-pbar">
+                        <div class="db-pbar-track-wrap @(_parentData.ThisWeekEarnings > 0 ? "has-marker" : "")">
+                            @if (_parentData.ThisWeekEarnings > 0)
+                            {
+                                <div class="db-pbar-marker" style="left: @WeeklyMarkerPercent().ToString("0.##")%">
+                                    <span class="db-pbar-bubble">$@_parentData.ThisWeekEarnings.ToString("F2")</span>
+                                    <span class="db-pbar-caret"></span>
+                                </div>
+                            }
+                            <div class="db-pbar-track">
+                                <div class="db-pbar-fill" style="width: @WeeklyFillPercent().ToString("0.##")%"></div>
+                            </div>
+                        </div>
+                        <div class="db-pbar-labels">
+                            <span class="db-pbar-label-left">$0</span>
+                            <span class="db-pbar-label-right">$@_parentData.WeeklyPotential.ToString("F2")</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <span class="db-hero-potential-amt">💰 @WeeklyPotentialDisplay()</span>
+                    <span class="db-hero-potential-label">earned this week</span>
+                }
+            </div>
         </div>
 
         <!-- Stat pills -->
@@ -725,6 +753,26 @@ else
     };
 
     private static string FormatDay(decimal amount) => amount > 0 ? "$" + amount.ToString("0.##") : "—";
+
+    private string WeeklyPotentialDisplay()
+    {
+        if (_parentData == null) return "$0.00";
+        return _parentData.WeeklyPotential > 0
+            ? $"${_parentData.ThisWeekEarnings:F2} / ${_parentData.WeeklyPotential:F2}"
+            : $"${_parentData.ThisWeekEarnings:F2}";
+    }
+
+    private decimal WeeklyFillPercent()
+    {
+        if (_parentData == null || _parentData.WeeklyPotential <= 0) return 0;
+        var pct = (_parentData.ThisWeekEarnings / _parentData.WeeklyPotential) * 100m;
+        return Math.Clamp(pct, 0m, 100m);
+    }
+
+    private decimal WeeklyMarkerPercent()
+    {
+        return Math.Clamp(WeeklyFillPercent(), 10m, 90m);
+    }
 
     private string HeatmapHeading()
     {
