@@ -325,7 +325,16 @@ public interface IChorePlannerService
     /// <param name="includeStreaks">Whether to calculate streak data (can be slow).</param>
     /// <param name="includeInactive">Whether to include deactivated chores (shown greyed-out). Default false preserves existing behavior.</param>
     Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null, bool includeStreaks = true, bool includeInactive = false);
-    
+
+    /// <summary>
+    /// Gets the maximum possible earnings for a week, across active chores only - the same
+    /// "WeeklyPotential" figure <see cref="GetPlannerDataAsync"/> computes per-row, without
+    /// building the full 7-day cell grid, chore logs, or streaks. Cheap enough for dashboard use.
+    /// </summary>
+    /// <param name="weekStart">Start of the week (Sunday). Null = current week.</param>
+    /// <param name="userId">Optional: filter to a specific user's chores. Null = all children.</param>
+    Task<decimal> GetWeeklyPotentialAsync(DateOnly? weekStart = null, string? userId = null);
+
     /// <summary>
     /// Gets printable chart data for all children for a week.
     /// </summary>
@@ -370,6 +379,85 @@ public class ChorePlannerService : IChorePlannerService
     public DateOnly GetWeekStart(DateOnly date)
     {
         return ChoreScheduleHelper.GetWeekStartDate(date);
+    }
+
+    public async Task<decimal> GetWeeklyPotentialAsync(DateOnly? weekStart = null, string? userId = null)
+    {
+        var today = _dateProvider.Today;
+        var start = weekStart ?? GetWeekStart(today);
+        var end = start.AddDays(6);
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        // Active chores only, scoped to the same date-range/assignment rules GetPlannerDataAsync
+        // uses (includeInactive defaults to false there too) - no Include() needed since we never
+        // touch AssignedUser, and no OrderBy since we only sum.
+        var chores = await context.ChoreDefinitions
+            .AsNoTracking()
+            .Where(c => c.IsActive)
+            .Where(c => c.StartDate == null || c.StartDate <= end)
+            .Where(c => c.EndDate == null || c.EndDate >= start)
+            .Where(c => string.IsNullOrEmpty(userId) || c.AssignedUserId == userId)
+            .ToListAsync();
+
+        if (chores.Count == 0)
+        {
+            return 0m;
+        }
+
+        // Overrides only affect SpecificDays chores' per-day schedule (see WeeklyPotential below
+        // and the matching isEffectivelyScheduled logic in GetPlannerDataAsync) - WeeklyFrequency
+        // chores ignore them entirely, same as the Planner does.
+        var choreIds = chores.Select(c => c.Id).ToList();
+        var overrides = await context.ChoreScheduleOverrides
+            .AsNoTracking()
+            .Where(o => o.Date >= start && o.Date <= end)
+            .Where(o => choreIds.Contains(o.ChoreDefinitionId))
+            .ToListAsync();
+
+        var overridesByChoreAndDate = overrides
+            .GroupBy(o => (o.ChoreDefinitionId, o.Date))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        decimal total = 0m;
+        foreach (var chore in chores)
+        {
+            // Mirrors ChorePlannerRow.WeeklyPotential exactly: weekly-goal chores contribute
+            // Value x target count regardless of which days; fixed-days chores contribute
+            // Value x however many of their scheduled days actually fall in this week.
+            if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+            {
+                total += chore.EarnValue * chore.WeeklyTargetCount;
+                continue;
+            }
+
+            var scheduledDayCount = 0;
+            for (var i = 0; i < 7; i++)
+            {
+                var date = start.AddDays(i);
+                var isBaseScheduled = ChoreScheduleHelper.IsChoreScheduledForDate(chore, date);
+
+                bool isEffectivelyScheduled;
+                if (overridesByChoreAndDate.TryGetValue((chore.Id, date), out var choreOverride))
+                {
+                    isEffectivelyScheduled = choreOverride.Type == ScheduleOverrideType.Add ||
+                                              choreOverride.Type == ScheduleOverrideType.Move;
+                }
+                else
+                {
+                    isEffectivelyScheduled = isBaseScheduled;
+                }
+
+                if (isEffectivelyScheduled)
+                {
+                    scheduledDayCount++;
+                }
+            }
+
+            total += chore.EarnValue * scheduledDayCount;
+        }
+
+        return total;
     }
 
     public async Task<ChorePlannerData> GetPlannerDataAsync(DateOnly? weekStart = null, string? userId = null, bool includeStreaks = true, bool includeInactive = false)
