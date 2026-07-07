@@ -599,6 +599,15 @@ public class DashboardService : IDashboardService
         await context.SaveChangesAsync();
         await _ledgerService.ReconcileChoreLogTransactionAsync(choreLogId);
 
+        // WeeklyFrequency + AllOrNothing chores are paid by a week-level threshold transaction, not
+        // per rep; re-derive it here for parity with TrackerService's approval path (§D).
+        if (choreLog.ChoreDefinition.ScheduleType == ChoreScheduleType.WeeklyFrequency
+            && choreLog.ChoreDefinition.AllOrNothing
+            && !string.IsNullOrEmpty(childUserId))
+        {
+            await _ledgerService.ReconcileWeeklyThresholdAsync(choreLog.ChoreDefinition.Id, choreLog.Date, childUserId);
+        }
+
         // Broadcast dashboard change to parent and child
         var affectedUserIds = new List<string> { parentUserId };
         if (!string.IsNullOrEmpty(childUserId))

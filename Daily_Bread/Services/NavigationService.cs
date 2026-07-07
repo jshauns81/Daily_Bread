@@ -90,6 +90,12 @@ public class NavigationService : INavigationService
         // Reward claims - parent-only, desktop sidebar / mobile overflow
         new("/reward-claims", "🎁", "Reward Claims", NavVisibility.Parent, MobileOrder: 8, Section: "Manage"),
 
+        // Driving log - visible to parents and children, mobile overflow
+        new("/driving-log", "🚗", "Driving Log", NavVisibility.Parent | NavVisibility.Child, MobileOrder: 9, ShowInMobile: false, Section: "Manage"),
+
+        // Driving log approvals - parent-only, mobile overflow
+        new("/driving-log/approvals", "🚗", "Driving Approvals", NavVisibility.Parent, MobileOrder: 10, ShowInMobile: false, Section: "Manage"),
+
         // Settings - parent-only, in overflow (position 5)
         new("/settings", "⚙️", "Settings", NavVisibility.Parent, MobileOrder: 5, ShowInDesktop: false, Section: "Manage"),
 

@@ -31,6 +31,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<FamilySettings> FamilySettings => Set<FamilySettings>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<Household> Households => Set<Household>();
+    public DbSet<DrivingLogEntry> DrivingLogEntries => Set<DrivingLogEntry>();
+    public DbSet<ChoreScreenTimeState> ChoreScreenTimeStates => Set<ChoreScreenTimeState>();
+    public DbSet<ChildWeeklyScreenTimeBudget> ChildWeeklyScreenTimeBudgets => Set<ChildWeeklyScreenTimeBudget>();
+    public DbSet<ScreenTimeEntry> ScreenTimeEntries => Set<ScreenTimeEntry>();
+    public DbSet<QolShare> QolShares => Set<QolShare>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -63,7 +68,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.Icon).HasMaxLength(50);
             entity.Property(e => e.EarnValue).HasPrecision(10, 2);
-            entity.Property(e => e.PenaltyValue).HasPrecision(10, 2);
+            entity.Property(e => e.Kind).HasConversion<int>();
 #pragma warning disable CS0618 // Ignore obsolete warning - we need to tell EF to ignore this property
             entity.Ignore(e => e.Value);
 #pragma warning restore CS0618
@@ -85,6 +90,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             
             entity.Property(e => e.Version)
                 .IsConcurrencyToken();
+
+            entity.Property(e => e.RedemptionChoice).HasConversion<int>();
 
             // Unique only for rows stamped AllowsMultiplePerDay=false (SpecificDays chores).
             // WeeklyFrequency chores stamp AllowsMultiplePerDay=true and can have multiple
@@ -142,7 +149,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DisplayName).HasMaxLength(100).IsRequired();
-            
+            entity.Property(e => e.DrivingGoalTotalHours).HasPrecision(6, 2);
+            entity.Property(e => e.DrivingGoalNightHours).HasPrecision(6, 2);
+            entity.Property(e => e.WeeklyRoutinePayout).HasPrecision(10, 2);
+            entity.Property(e => e.WeekdayScreenTimeHours).HasPrecision(6, 2);
+            entity.Property(e => e.WeekendScreenTimeHours).HasPrecision(6, 2);
+
             entity.HasIndex(e => e.UserId).IsUnique();
             entity.HasIndex(e => e.IsActive);
 
@@ -355,6 +367,39 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
+        // DrivingLogEntry configuration
+        builder.Entity<DrivingLogEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SupervisorName).HasMaxLength(100);
+            entity.Property(e => e.RouteNotes).HasMaxLength(1000);
+            entity.Property(e => e.RejectionReason).HasMaxLength(500);
+            entity.Property(e => e.Version).IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.ChildUserId, e.Date });
+            entity.HasIndex(e => e.Status);
+
+            entity.HasOne(e => e.ChildUser)
+                .WithMany()
+                .HasForeignKey(e => e.ChildUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.SupervisorUser)
+                .WithMany()
+                .HasForeignKey(e => e.SupervisorUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.DecidedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.DecidedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
         // AppSetting configuration
         builder.Entity<AppSetting>(entity =>
         {
@@ -384,8 +429,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<FamilySettings>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.DailyExpectationPenalty).HasPrecision(10, 2);
-            entity.Property(e => e.WeeklyIncompletePenaltyPercent).HasPrecision(5, 4);
             entity.Property(e => e.CashOutThreshold).HasPrecision(10, 2);
             entity.Property(e => e.VapidPublicKey).HasMaxLength(500);
             entity.Property(e => e.VapidPrivateKey).HasMaxLength(500);
@@ -409,6 +452,82 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ChoreScreenTimeState configuration (per-chore, per-child compounding streak)
+        builder.Entity<ChoreScreenTimeState>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // One streak row per (chore, child).
+            entity.HasIndex(e => new { e.ChoreDefinitionId, e.ChildProfileId }).IsUnique();
+
+            entity.HasOne(e => e.ChoreDefinition)
+                .WithMany()
+                .HasForeignKey(e => e.ChoreDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ChildProfile)
+                .WithMany(c => c.ScreenTimeStates)
+                .HasForeignKey(e => e.ChildProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ChildWeeklyScreenTimeBudget configuration (per-child, per-week snapshot)
+        builder.Entity<ChildWeeklyScreenTimeBudget>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // One budget snapshot per (child, week).
+            entity.HasIndex(e => new { e.ChildProfileId, e.WeekStartDate }).IsUnique();
+
+            entity.HasOne(e => e.ChildProfile)
+                .WithMany()
+                .HasForeignKey(e => e.ChildProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ScreenTimeEntry configuration (auditable per-line ST ledger)
+        builder.Entity<ScreenTimeEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Pool).HasConversion<int>();
+            entity.Property(e => e.Kind).HasConversion<int>();
+            entity.Property(e => e.StreakMultiplier).HasPrecision(5, 2);
+            entity.Property(e => e.Note).HasMaxLength(200);
+
+            entity.HasIndex(e => new { e.ChildProfileId, e.WeekStartDate });
+
+            entity.HasOne(e => e.ChildProfile)
+                .WithMany(c => c.ScreenTimeEntries)
+                .HasForeignKey(e => e.ChildProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ChoreDefinition)
+                .WithMany()
+                .HasForeignKey(e => e.ChoreDefinitionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+        });
+
+        // QolShare configuration (explicit vacuum-fill shares summing to 100%)
+        builder.Entity<QolShare>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // One share row per (QOL routine, child).
+            entity.HasIndex(e => new { e.ChoreDefinitionId, e.ChildProfileId }).IsUnique();
+
+            entity.HasOne(e => e.ChoreDefinition)
+                .WithMany()
+                .HasForeignKey(e => e.ChoreDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ChildProfile)
+                .WithMany(c => c.QolShares)
+                .HasForeignKey(e => e.ChildProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

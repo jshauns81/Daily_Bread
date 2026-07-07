@@ -123,14 +123,14 @@ public sealed class ChorePlannerWeeklyPotentialTests : IAsyncLifetime
     [Fact]
     public async Task ZeroValueChore_Contributes_Nothing_Even_Though_It_Is_Scheduled()
     {
-        // An "expectation" chore (EarnValue = 0, e.g. paired with a PenaltyValue) is scheduled
-        // every day but must add $0 to the potential - it isn't a paid chore.
+        // An "expectation" chore (a Routine, EarnValue = 0) is scheduled every day but must add
+        // $0 to the potential - it isn't a paid Task.
         await AddChoreAsync(new ChoreDefinition
         {
             Name = "Make bed",
             AssignedUserId = ChildId,
+            Kind = ChoreKind.Routine,
             EarnValue = 0m,
-            PenaltyValue = 1m,
             ScheduleType = ChoreScheduleType.SpecificDays,
             ActiveDays = DaysOfWeek.All,
             IsActive = true
@@ -368,8 +368,8 @@ public sealed class ChorePlannerWeeklyPotentialTests : IAsyncLifetime
         {
             Name = "Make bed (unpaid)",
             AssignedUserId = ChildId,
+            Kind = ChoreKind.Routine,
             EarnValue = 0m,
-            PenaltyValue = 1m,
             ScheduleType = ChoreScheduleType.SpecificDays,
             ActiveDays = DaysOfWeek.All,
             IsActive = true

@@ -120,6 +120,49 @@
     }
 </div>
 
+<!-- Mobile card view: visual summary only (Phase 1). Tapping a card opens the
+     existing Edit Task modal; individual week-cells are not yet tappable. -->
+<div class="wage-cards">
+    @foreach (var chore in EarningChores)
+    {
+        <div class="wage-card @(!chore.IsActive ? "inactive" : "")"
+             @key="chore.ChoreDefinitionId"
+             @onclick="() => OnEditChore.InvokeAsync(chore)">
+
+            <div class="wage-card-header">
+                <span class="wage-card-emoji">@(chore.Icon ?? "✨")</span>
+                <div class="wage-card-title">
+                    <span class="wage-card-name">@chore.ChoreName</span>
+                    <span class="wage-card-subtitle">@GetScheduleSummary(chore)</span>
+                </div>
+                <div class="wage-card-value">
+                    @if (chore.IsEarningChore)
+                    {
+                        <span class="wage-card-pay">$@chore.Value.ToString("F2")</span>
+                    }
+                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                    {
+                        <span class="wage-card-goal">@chore.WeeklyTargetCount / wk</span>
+                    }
+                </div>
+            </div>
+
+            <div class="week-strip">
+                @for (int i = 0; i < chore.Cells.Count; i++)
+                {
+                    var cell = chore.Cells[i];
+                    var isWeeklyGoal = chore.ScheduleType == ChoreScheduleType.WeeklyFrequency;
+
+                    <div class="week-cell @(isWeeklyGoal ? "eligible" : (cell.IsScheduled ? "filled" : "empty"))"
+                         data-day-index="@i">
+                        <span class="week-cell-label">@DayLetters[i]</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
 @code {
     [Parameter, EditorRequired] public ChorePlannerData PlannerData { get; set; } = default!;
     [Parameter, EditorRequired] public List<ChorePlannerRow> EarningChores { get; set; } = [];
@@ -220,5 +263,24 @@
         }
 
         return updates;
+    }
+
+    private static readonly string[] DayLetters = ["S", "M", "T", "W", "T", "F", "S"];
+
+    private static string GetScheduleSummary(ChorePlannerRow chore)
+    {
+        if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+        {
+            return $"{chore.WeeklyTargetCount}× any day";
+        }
+
+        if (chore.ActiveDays == DaysOfWeek.All) return "Every day";
+        if (chore.ActiveDays == DaysOfWeek.Weekdays) return "Weekdays";
+        if (chore.ActiveDays == DaysOfWeek.Weekends) return "Weekends";
+
+        var dayNames = new[] { "Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays" };
+        var dayFlags = new[] { DaysOfWeek.Sunday, DaysOfWeek.Monday, DaysOfWeek.Tuesday, DaysOfWeek.Wednesday, DaysOfWeek.Thursday, DaysOfWeek.Friday, DaysOfWeek.Saturday };
+        var matched = dayNames.Where((n, i) => chore.ActiveDays.HasFlag(dayFlags[i])).ToList();
+        return matched.Count == 1 ? matched[0] : string.Join(", ", matched.Select(n => n[..3]));
     }
 }

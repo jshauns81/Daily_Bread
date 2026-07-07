@@ -85,8 +85,32 @@ public class ChoreLog
     /// </summary>
     public int Version { get; set; }
 
+    /// <summary>
+    /// The child's money-vs-screen-time choice for a redemptive rep. Meaningful only for reps that
+    /// end up redemptive (over-target reps in a made-target week, or any rep in a busted week);
+    /// ignored otherwise. <see cref="RedemptionChoice.None"/> is treated as
+    /// <see cref="RedemptionChoice.ScreenTime"/> at reconciliation. See MECHANICS_AMENDMENT.md §D.
+    /// </summary>
+    public RedemptionChoice RedemptionChoice { get; set; } = RedemptionChoice.None;
+
     // Navigation property
     public LedgerTransaction? LedgerTransaction { get; set; }
+}
+
+/// <summary>
+/// A child's redemption choice for a redemptive rep: take money or screen-time earn-back.
+/// See MECHANICS_AMENDMENT.md §D.
+/// </summary>
+public enum RedemptionChoice
+{
+    /// <summary>No explicit choice made; treated as <see cref="ScreenTime"/> at reconciliation.</summary>
+    None = 0,
+
+    /// <summary>Redeem the rep for money (EarnValue × 0.5). Only available in a made-target week.</summary>
+    Money = 1,
+
+    /// <summary>Redeem the rep for screen-time earn-back (half the per-instance ST price).</summary>
+    ScreenTime = 2
 }
 
 /// <summary>
@@ -116,8 +140,8 @@ public enum ChoreStatus
     Missed = 3,
 
     /// <summary>
-    /// Chore was skipped/excused by a parent.
-    /// No penalty, no earning.
+    /// Chore was skipped/excused by a parent. Counts as credited: pays its routine slice and
+    /// takes no screen-time hit (as if the child did it). See CHORE_SCREENTIME_REDESIGN.md §3.3.
     /// </summary>
     Skipped = 4,
     

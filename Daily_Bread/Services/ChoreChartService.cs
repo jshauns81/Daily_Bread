@@ -12,8 +12,7 @@ public class ChoreChartEntry
     public int ChoreDefinitionId { get; init; }
     public required string ChoreName { get; init; }
     public decimal EarnValue { get; init; }
-    public decimal PenaltyValue { get; init; }
-    public decimal Value => EarnValue > 0 ? EarnValue : PenaltyValue; // Backward compatibility
+    public decimal Value => EarnValue; // Backward compatibility
     public ChoreStatus? Status { get; init; }
     public bool IsScheduled { get; init; }
     public bool IsWeeklyFrequency { get; init; }
@@ -65,8 +64,7 @@ public class WeeklyFrequencyChoreProgress
     public int ChoreDefinitionId { get; init; }
     public required string ChoreName { get; init; }
     public decimal EarnValue { get; init; }
-    public decimal PenaltyValue { get; init; }
-    public decimal Value => EarnValue > 0 ? EarnValue : PenaltyValue; // Backward compatibility
+    public decimal Value => EarnValue; // Backward compatibility
     public int TargetCount { get; init; }
     public int CompletedCount { get; init; }
     public int ApprovedCount { get; init; }
@@ -313,7 +311,6 @@ public class ChoreChartService : IChoreChartService
                         ChoreDefinitionId = chore.Id,
                         ChoreName = chore.Name,
                         EarnValue = chore.EarnValue,
-                        PenaltyValue = chore.PenaltyValue,
                         Status = log?.Status,
                         IsScheduled = isScheduled,
                         IsWeeklyFrequency = false,
@@ -339,7 +336,6 @@ public class ChoreChartService : IChoreChartService
                         ChoreDefinitionId = chore.Id,
                         ChoreName = chore.Name,
                         EarnValue = chore.EarnValue,
-                        PenaltyValue = chore.PenaltyValue,
                         Status = log?.Status,
                         IsScheduled = true,
                         IsWeeklyFrequency = true,
@@ -369,7 +365,6 @@ public class ChoreChartService : IChoreChartService
                 ChoreDefinitionId = chore.Id,
                 ChoreName = chore.Name,
                 EarnValue = chore.EarnValue,
-                PenaltyValue = chore.PenaltyValue,
                 TargetCount = chore.WeeklyTargetCount,
                 CompletedCount = weeklyLogs.Count(l => l.Status == ChoreStatus.Completed || l.Status == ChoreStatus.Approved),
                 ApprovedCount = weeklyLogs.Count(l => l.Status == ChoreStatus.Approved),

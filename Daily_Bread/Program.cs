@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Daily_Bread.Components;
@@ -297,6 +298,7 @@ builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddHttpClient<INtfyAlertService, NtfyAlertService>();
 builder.Services.AddScoped<IWeeklyProgressService, WeeklyProgressService>();
 builder.Services.AddScoped<IWeeklyReconciliationService, WeeklyReconciliationService>();
+builder.Services.AddScoped<IScreenTimePricingService, ScreenTimePricingService>();
 builder.Services.AddScoped<IBiometricAuthService, BiometricAuthService>();
 builder.Services.AddScoped<IAppStateService, AppStateService>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
@@ -309,6 +311,13 @@ builder.Services.AddSingleton<IChoreNotificationService, ChoreNotificationServic
 builder.Services.AddScoped<IAchievementConditionEvaluator, AchievementConditionEvaluator>();
 builder.Services.AddScoped<IAchievementRewardClaimService, AchievementRewardClaimService>();
 builder.Services.AddScoped<IAchievementBonusService, AchievementBonusService>();
+
+builder.Services.AddScoped<IDrivingLogService, DrivingLogService>();
+
+builder.Services.AddScoped<IQolShareService, QolShareService>();
+
+// Hosted background reconciler: fires weekly reconciliation on an hourly timer (see plan §8).
+builder.Services.AddHostedService<WeeklyReconciliationHostedService>();
 
 // Add health checks
 builder.Services.AddHealthChecks()
@@ -498,6 +507,23 @@ app.MapRazorComponents<App>()
 
 // Map additional Identity endpoints
 app.MapAdditionalIdentityEndpoints();
+
+// Driving log CSV export - caller must be a Parent, or the Child requesting their own data
+app.MapGet("/api/driving-log/export", async (
+    string childUserId, DateOnly? from, DateOnly? to,
+    HttpContext ctx, IDrivingLogService drivingLogService) =>
+{
+    var requestingUserId = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (!ctx.User.IsInRole("Parent") && requestingUserId != childUserId)
+    {
+        return Results.Forbid();
+    }
+
+    var entries = await drivingLogService.GetEntriesAsync(childUserId, from, to);
+    var csv = Daily_Bread.Services.DrivingLogCsvBuilder.Build(entries);
+    var fileName = $"driving-log-{childUserId}-{DateTime.Now:yyyyMMdd}.csv";
+    return Results.File(Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
+});
 
 app.Run();
 

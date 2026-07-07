@@ -234,7 +234,6 @@ public static class DevDataSeeder
                     Icon = "🛏️",
                     AssignedUserId = user.Id,
                     EarnValue = 0m,
-                    PenaltyValue = 0m, // Uses family default
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.All,
                     AutoApprove = true,
@@ -248,7 +247,6 @@ public static class DevDataSeeder
                     Icon = "🪥",
                     AssignedUserId = user.Id,
                     EarnValue = 0m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.All,
                     AutoApprove = true,
@@ -262,7 +260,6 @@ public static class DevDataSeeder
                     Icon = "🪥",
                     AssignedUserId = user.Id,
                     EarnValue = 0m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.All,
                     AutoApprove = true,
@@ -276,7 +273,6 @@ public static class DevDataSeeder
                     Icon = "🧹",
                     AssignedUserId = user.Id,
                     EarnValue = 0m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.All,
                     AutoApprove = false, // Requires approval
@@ -290,7 +286,6 @@ public static class DevDataSeeder
                     Icon = "📚",
                     AssignedUserId = user.Id,
                     EarnValue = 0m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.All,
                     AutoApprove = true,
@@ -304,7 +299,6 @@ public static class DevDataSeeder
                     Icon = "🍽️",
                     AssignedUserId = user.Id,
                     EarnValue = 0m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.All,
                     AutoApprove = false,
@@ -325,7 +319,6 @@ public static class DevDataSeeder
                     Icon = "🍴",
                     AssignedUserId = user.Id,
                     EarnValue = 0.50m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.Monday | DaysOfWeek.Wednesday | DaysOfWeek.Friday,
                     AutoApprove = false,
@@ -339,7 +332,6 @@ public static class DevDataSeeder
                     Icon = "🗑️",
                     AssignedUserId = user.Id,
                     EarnValue = 0.75m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.Tuesday | DaysOfWeek.Friday,
                     AutoApprove = false,
@@ -353,7 +345,6 @@ public static class DevDataSeeder
                     Icon = "🧽",
                     AssignedUserId = user.Id,
                     EarnValue = 1.00m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.SpecificDays,
                     ActiveDays = DaysOfWeek.Saturday,
                     AutoApprove = false,
@@ -374,7 +365,6 @@ public static class DevDataSeeder
                     Icon = "🐕",
                     AssignedUserId = user.Id,
                     EarnValue = 1.50m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.WeeklyFrequency,
                     WeeklyTargetCount = 3,
                     ActiveDays = DaysOfWeek.All,
@@ -390,7 +380,6 @@ public static class DevDataSeeder
                     Icon = "🌳",
                     AssignedUserId = user.Id,
                     EarnValue = 2.00m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.WeeklyFrequency,
                     WeeklyTargetCount = 1,
                     ActiveDays = DaysOfWeek.Weekends,
@@ -406,7 +395,6 @@ public static class DevDataSeeder
                     Icon = "🧠",
                     AssignedUserId = user.Id,
                     EarnValue = 0.75m,
-                    PenaltyValue = 0m,
                     ScheduleType = ChoreScheduleType.WeeklyFrequency,
                     WeeklyTargetCount = 4,
                     ActiveDays = DaysOfWeek.All,
@@ -416,6 +404,12 @@ public static class DevDataSeeder
                     CreatedAt = baseDate
                 }
             });
+
+            // Paid chores are Tasks; unpaid ones are Routines (earn via the flat pool).
+            foreach (var c in chores)
+            {
+                c.Kind = c.EarnValue > 0 ? ChoreKind.Task : ChoreKind.Routine;
+            }
 
             context.ChoreDefinitions.AddRange(chores);
             choresByChild[user.Id] = chores;

@@ -632,9 +632,13 @@
     {
         var consequences = new List<string> { "Task will be recorded as not completed" };
         
-        if (_confirmingItem?.PenaltyValue > 0)
+        if (_confirmingItem?.Importance > 0)
         {
-            consequences.Add($"A ${_confirmingItem.PenaltyValue:F2} penalty may apply");
+            // TODO (phase 2): compute the live minute price from IScreenTimePricingService
+            // (importance-share pricing, MECHANICS_AMENDMENT.md §A). Rename-only for now — the ×6
+            // math is a placeholder until pricing lands.
+            var minutes = _confirmingItem.Importance * 6;
+            consequences.Add($"Up to {minutes} min of screen time may be lost (more if missed repeatedly)");
         }
         
         consequences.Add("This can be undone later");

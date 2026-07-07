@@ -188,7 +188,6 @@
                 Icon = Chore.Icon,
                 AssignedUserId = Chore.AssignedUserId,
                 EarnValue = Chore.EarnValue,
-                PenaltyValue = Chore.PenaltyValue,
                 ScheduleType = Chore.ScheduleType,
                 ActiveDays = Chore.ActiveDays,
                 WeeklyTargetCount = Chore.WeeklyTargetCount,
@@ -198,7 +197,7 @@
                 IsActive = Chore.IsActive,
                 AutoApprove = Chore.AutoApprove,
                 SortOrder = Chore.SortOrder,
-                ChoreType = Chore.EarnValue > 0 ? ChoreTypeOption.Earning : ChoreTypeOption.Expectation
+                ChoreType = Chore.Kind == ChoreKind.Task ? ChoreTypeOption.Earning : ChoreTypeOption.Expectation
             };
         }
         else
@@ -212,8 +211,7 @@
                 IsRepeatable = false,
                 IsActive = true,
                 AutoApprove = true,
-                EarnValue = 1.00m,
-                PenaltyValue = 0
+                EarnValue = 1.00m
             };
         }
         
@@ -266,8 +264,8 @@
                 Description = FormModel.Description,
                 Icon = FormModel.Icon,
                 AssignedUserId = string.IsNullOrEmpty(FormModel.AssignedUserId) ? null : FormModel.AssignedUserId,
+                Kind = FormModel.ChoreType == ChoreTypeOption.Earning ? ChoreKind.Task : ChoreKind.Routine,
                 EarnValue = FormModel.ChoreType == ChoreTypeOption.Earning ? FormModel.EarnValue : 0,
-                PenaltyValue = FormModel.PenaltyValue,
                 ScheduleType = FormModel.ScheduleType,
                 ActiveDays = FormModel.ActiveDays,
                 WeeklyTargetCount = FormModel.WeeklyTargetCount,
@@ -299,8 +297,6 @@
         public string? AssignedUserId { get; set; }
         [Range(0, 10000)]
         public decimal EarnValue { get; set; }
-        [Range(0, 10000)]
-        public decimal PenaltyValue { get; set; }
         public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
         public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
         [Range(1, 7)]

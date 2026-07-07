@@ -439,7 +439,7 @@
             var choreDetails = await ChoreManagementService.GetChoreByIdAsync(chore.ChoreDefinitionId);
             if (choreDetails != null)
             {
-                _isRoutineMode = choreDetails.EarnValue == 0;
+                _isRoutineMode = choreDetails.Kind == ChoreKind.Routine;
                 _editingChore = new ChoreDefinitionDto
                 {
                     Id = choreDetails.Id,
@@ -447,8 +447,12 @@
                     Description = choreDetails.Description,
                     Icon = choreDetails.Icon,
                     AssignedUserId = choreDetails.AssignedUserId,
+                    Kind = choreDetails.Kind,
                     EarnValue = choreDetails.EarnValue,
-                    PenaltyValue = choreDetails.PenaltyValue,
+                    Importance = choreDetails.Importance,
+                    AllOrNothing = choreDetails.AllOrNothing,
+                    IsInverseFill = choreDetails.IsInverseFill,
+                    InverseFillBaselineMinutes = choreDetails.InverseFillBaselineMinutes,
                     ScheduleType = choreDetails.ScheduleType,
                     ActiveDays = choreDetails.ActiveDays,
                     WeeklyTargetCount = choreDetails.WeeklyTargetCount,

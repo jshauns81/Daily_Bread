@@ -10,6 +10,10 @@
 .grid-header .drag-header {
     width: 40px;
     min-width: 40px;
+    position: sticky;
+    left: 0;
+    z-index: 6;
+    background: var(--ds-bg-elevated);
 }
 
 .drag-handle-cell {
@@ -18,6 +22,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: sticky;
+    left: 0;
+    z-index: 6;
+    background: var(--ds-bg-hover);
 }
 
 .drag-handle {
@@ -110,6 +118,45 @@
 .job-header {
     align-items: flex-start;
     font-size: 0.75rem;
+}
+
+/* Sticky job column: stays put while day columns scroll underneath on mobile.
+   Left offset accounts for the 40px drag-handle column when present. */
+.job-header,
+.job-cell {
+    position: sticky;
+    left: 40px;
+    z-index: 5;
+}
+
+.grid-header:not(:has(.drag-header)) .job-header,
+.chore-row:not(:has(.drag-handle-cell)) .job-cell {
+    left: 0;
+}
+
+.job-header {
+    background: var(--ds-bg-elevated);
+}
+
+.job-cell {
+    background: var(--ds-bg-hover);
+}
+
+.chore-row.dragging .job-cell {
+    background: var(--ds-bg-muted);
+}
+
+/* Right-edge shadow on the pinned column to signal it's layered above scrolling content */
+.job-header::after,
+.job-cell::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -2px;
+    bottom: 0;
+    width: 8px;
+    box-shadow: 4px 0 6px -2px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
 }
 
 .day-header {
@@ -343,6 +390,144 @@
 }
 
 /* ===========================================
+   MOBILE CARD VIEW
+   Additive fork of the matrix above for narrow viewports.
+   Hidden on desktop; swapped in for .wage-grid at <=768px (see media query below).
+   No horizontal scroll anywhere in this section - week-strip cells are flex:1
+   so 7 of them always sum to exactly the card width.
+   =========================================== */
+
+.wage-cards {
+    display: none;
+    flex-direction: column;
+    gap: var(--ds-space-3);
+    margin-top: var(--ds-space-6);
+}
+
+.wage-card {
+    background: var(--ds-bg-elevated);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    padding: var(--ds-space-3);
+    cursor: pointer;
+    transition: background-color var(--ds-duration-fast) ease;
+}
+
+.wage-card:hover {
+    background: var(--ds-bg-hover);
+}
+
+.wage-card.inactive {
+    opacity: 0.5;
+}
+
+.wage-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-3);
+}
+
+.wage-card-emoji {
+    font-size: 1.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.wage-card-title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.wage-card-name {
+    font-weight: 600;
+    color: var(--ds-text-primary);
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wage-card-subtitle {
+    font-size: 0.8rem;
+    color: var(--ds-text-muted);
+}
+
+.wage-card-value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.wage-card-pay {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ds-semantic-success);
+    font-family: var(--ds-font-mono);
+}
+
+.wage-card-goal {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--ds-text-muted);
+}
+
+.week-strip {
+    display: flex;
+    gap: 4px;
+}
+
+.week-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: var(--ds-touch-target);
+    border-radius: var(--ds-radius-sm);
+}
+
+.week-cell-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    color: var(--ds-text-muted);
+}
+
+/* Fixed days, scheduled: solid info-token fill. */
+.week-cell.filled {
+    background: var(--ds-accent-primary);
+}
+
+.week-cell.filled .week-cell-label {
+    color: var(--ds-on-accent);
+    font-weight: 500;
+}
+
+/* Fixed days, unscheduled: plain outline, tertiary (muted) tier. */
+.week-cell.empty {
+    background: transparent;
+    border: 1px solid var(--ds-bg-muted);
+}
+
+/* Weekly goal: eligible any day, never filled solid - dashed outline signals
+   "not assigned to specific days" rather than "scheduled". No --ds-border-*
+   token exists in this codebase (confirmed gap - see WageGrid review notes),
+   so --ds-text-secondary stands in as the "secondary" tier border color. */
+.week-cell.eligible {
+    background: transparent;
+    border: 1px dashed var(--ds-text-secondary);
+}
+
+.week-cell.eligible .week-cell-label {
+    color: var(--ds-text-secondary);
+}
+
+/* ===========================================
    RESPONSIVE - TABLET
    =========================================== */
 
@@ -379,12 +564,15 @@
    =========================================== */
 
 @media (max-width: 768px) {
-    /* Horizontal scroll for grid */
+    /* Mobile card fork: hide the matrix, show the card list instead. */
     .wage-grid {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        display: none;
     }
-    
+
+    .wage-cards {
+        display: flex;
+    }
+
     .grid-header,
     .chore-row {
         min-width: 640px;

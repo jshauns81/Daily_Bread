@@ -24,6 +24,22 @@ public interface ILedgerService
     Task<ReconcileResult> ReconcileChoreLogTransactionAsync(ApplicationDbContext context, ChoreLog choreLog);
 
     /// <summary>
+    /// Reconciles the single week-level threshold-pay transaction for a WeeklyFrequency + AllOrNothing
+    /// chore, re-derived from the whole week's credited reps on every call (reversal-safe under
+    /// out-of-order undo). Upserts one LedgerTransaction keyed by (chore, week) with ChoreLogId=null,
+    /// or removes it when the payout is $0. Uses an existing DbContext; CALLER manages SaveChanges and
+    /// the transaction. See MECHANICS_AMENDMENT.md §D.
+    /// </summary>
+    Task<ReconcileResult> ReconcileWeeklyThresholdAsync(
+        ApplicationDbContext context, ChoreDefinition chore, DateOnly weekEnd, string userId);
+
+    /// <summary>
+    /// Standalone overload: creates its own context, resolves the week containing <paramref name="weekDate"/>,
+    /// reconciles the week-level threshold transaction, and saves.
+    /// </summary>
+    Task<ServiceResult> ReconcileWeeklyThresholdAsync(int choreDefinitionId, DateOnly weekDate, string userId);
+
+    /// <summary>
     /// Gets the current balance for a ledger account.
     /// </summary>
     Task<decimal> GetAccountBalanceAsync(int ledgerAccountId);
@@ -247,6 +263,164 @@ public class LedgerService : ILedgerService
         return ReconcileResult.Ok(newTransaction, created: true);
     }
 
+    /// <summary>
+    /// Standalone overload — creates its own context, resolves the week, reconciles, and saves.
+    /// </summary>
+    public async Task<ServiceResult> ReconcileWeeklyThresholdAsync(int choreDefinitionId, DateOnly weekDate, string userId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var chore = await context.ChoreDefinitions.FindAsync(choreDefinitionId);
+        if (chore == null)
+        {
+            return ServiceResult.Fail("Chore not found.");
+        }
+
+        var weekEnd = await _familySettingsService.GetWeekEndForDateAsync(weekDate);
+        var result = await ReconcileWeeklyThresholdAsync(context, chore, weekEnd, userId);
+        if (!result.Success)
+        {
+            return ServiceResult.Fail(result.ErrorMessage!);
+        }
+
+        await context.SaveChangesAsync();
+        return ServiceResult.Ok();
+    }
+
+    /// <summary>
+    /// Reconciles the single week-level threshold-pay transaction for a WeeklyFrequency + AllOrNothing
+    /// chore. Re-derives the payout from the whole week's credited reps on every call, so it is correct
+    /// even when a rep is un-approved out of order. See MECHANICS_AMENDMENT.md §D.
+    /// </summary>
+    public async Task<ReconcileResult> ReconcileWeeklyThresholdAsync(
+        ApplicationDbContext context, ChoreDefinition chore, DateOnly weekEnd, string userId)
+    {
+        // Only WeeklyFrequency + AllOrNothing chores use week-level threshold pay; ignore everything else.
+        if (chore.ScheduleType != ChoreScheduleType.WeeklyFrequency || !chore.AllOrNothing)
+        {
+            return ReconcileResult.Ok();
+        }
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return ReconcileResult.Ok(); // No user assigned, no transaction needed
+        }
+
+        var weekStart = await _familySettingsService.GetWeekStartForDateAsync(weekEnd);
+
+        // Credited reps toward the target: Approved | Completed | Skipped. An excused/parent-completed
+        // rep (Skipped) counts — a sick day must not nuke the pay. Ordered by Id so the over-target
+        // (redemptive) reps are deterministically the later ones.
+        var credited = await context.ChoreLogs
+            .Where(l => l.ChoreDefinitionId == chore.Id)
+            .Where(l => l.Date >= weekStart && l.Date <= weekEnd)
+            .Where(l => l.Status == ChoreStatus.Approved
+                     || l.Status == ChoreStatus.Completed
+                     || l.Status == ChoreStatus.Skipped)
+            .OrderBy(l => l.Id)
+            .ToListAsync();
+
+        var thresholdMet = credited.Count >= chore.WeeklyTargetCount;
+
+        // All-or-nothing base pay: full target value on a made-target week, $0 on any shortfall.
+        var basePay = thresholdMet ? chore.EarnValue * chore.WeeklyTargetCount : 0m;
+
+        // Redemptive money exists only in a made-target week: each over-target rep whose child chose
+        // Money pays EarnValue × 0.5. ScreenTime / None reps add no money here (ST earn-back is realized
+        // later at reconciliation). A busted week yields $0 with no redemptive money at all.
+        var redemptiveMoneyReps = thresholdMet
+            ? credited.Skip(chore.WeeklyTargetCount).Count(l => l.RedemptionChoice == RedemptionChoice.Money)
+            : 0;
+        var redemptiveMoney = redemptiveMoneyReps * chore.EarnValue * 0.5m;
+
+        var total = Math.Round(basePay + redemptiveMoney, 2, MidpointRounding.AwayFromZero);
+
+        // The single week-level row for this (chore, week): a ChoreEarning with the chore set and no log.
+        var existing = await context.LedgerTransactions.FirstOrDefaultAsync(t =>
+            t.UserId == userId &&
+            t.Type == TransactionType.ChoreEarning &&
+            t.WeekEndDate == weekEnd &&
+            t.ChoreDefinitionId == chore.Id &&
+            t.ChoreLogId == null);
+
+        if (total <= 0)
+        {
+            if (existing != null)
+            {
+                _logger.LogInformation(
+                    "Removing week-level threshold transaction {TransactionId} for Chore {ChoreId} week ending {WeekEnd}",
+                    existing.Id, chore.Id, weekEnd);
+                context.LedgerTransactions.Remove(existing);
+                return ReconcileResult.Ok(removed: true);
+            }
+            return ReconcileResult.Ok();
+        }
+
+        var childProfile = await context.ChildProfiles
+            .Include(p => p.LedgerAccounts)
+            .FirstOrDefaultAsync(p => p.UserId == userId);
+
+        if (childProfile == null)
+        {
+            return ReconcileResult.Fail("Child profile not found for assigned user.");
+        }
+
+        var defaultAccount = childProfile.LedgerAccounts
+            .FirstOrDefault(a => a.IsDefault && a.IsActive)
+            ?? childProfile.LedgerAccounts.FirstOrDefault(a => a.IsActive);
+
+        if (defaultAccount == null)
+        {
+            return ReconcileResult.Fail("No active ledger account found for child.");
+        }
+
+        var description = redemptiveMoneyReps > 0
+            ? $"Threshold: {chore.Name} ({credited.Count}/{chore.WeeklyTargetCount}, +{redemptiveMoneyReps} redeemed)"
+            : $"Threshold: {chore.Name} ({credited.Count}/{chore.WeeklyTargetCount})";
+
+        if (existing != null)
+        {
+            if (existing.Amount != total || existing.LedgerAccountId != defaultAccount.Id)
+            {
+                _logger.LogInformation(
+                    "Updating week-level threshold transaction {TransactionId}: Amount {OldAmount} -> {NewAmount}",
+                    existing.Id, existing.Amount, total);
+
+                existing.Amount = total;
+                existing.LedgerAccountId = defaultAccount.Id;
+                existing.Description = description;
+                existing.ModifiedAt = DateTime.UtcNow;
+                existing.Version++; // Manual increment for concurrency
+                return ReconcileResult.Ok(existing, updated: true);
+            }
+
+            existing.Description = description; // keep count/redeemed label fresh even if amount is unchanged
+            return ReconcileResult.Ok(existing);
+        }
+
+        var newTransaction = new LedgerTransaction
+        {
+            LedgerAccountId = defaultAccount.Id,
+            ChoreDefinitionId = chore.Id,
+            ChoreLogId = null,
+            WeekEndDate = weekEnd,
+            UserId = userId,
+            Amount = total,
+            Type = TransactionType.ChoreEarning,
+            Description = description,
+            TransactionDate = weekEnd,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        context.LedgerTransactions.Add(newTransaction);
+
+        _logger.LogInformation(
+            "Creating week-level threshold transaction for Chore {ChoreId} week ending {WeekEnd}: Amount {Amount}",
+            chore.Id, weekEnd, total);
+
+        return ReconcileResult.Ok(newTransaction, created: true);
+    }
+
     public async Task<decimal> GetAccountBalanceAsync(int ledgerAccountId)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -431,21 +605,22 @@ public class LedgerService : ILedgerService
     private async Task<(bool NeedsTransaction, decimal Amount, TransactionType Type, string Description)> DetermineTransactionAsync(
         ApplicationDbContext context, ChoreLog choreLog, ChoreDefinition choreDefinition)
     {
-        if (choreLog.Status != ChoreStatus.Approved && choreLog.Status != ChoreStatus.Missed)
+        // Money is earn-only now: a Missed chore never deducts from the balance. Screen time is
+        // the sole penalty axis (handled in WeeklyReconciliationService). See CHORE_SCREENTIME_REDESIGN.md §3.1.
+        if (choreLog.Status != ChoreStatus.Approved)
             return (false, 0, TransactionType.ChoreEarning, string.Empty);
-        
-        if (choreLog.Status == ChoreStatus.Missed)
-        {
-            return choreDefinition.PenaltyValue > 0
-                ? (true, -choreDefinition.PenaltyValue, TransactionType.ChoreDeduction, $"Missed: {choreDefinition.Name}")
-                : (false, 0, TransactionType.ChoreDeduction, string.Empty);
-        }
-        
+
         if (choreDefinition.EarnValue <= 0)
             return (false, 0, TransactionType.ChoreEarning, string.Empty);
         
         if (choreDefinition.ScheduleType == ChoreScheduleType.WeeklyFrequency)
         {
+            // WeeklyFrequency + AllOrNothing chores are paid all-or-nothing by a single week-level
+            // transaction (ReconcileWeeklyThresholdAsync), not per rep. Disable the per-log path here
+            // so it never creates a stale per-rep row. See MECHANICS_AMENDMENT.md §D.
+            if (choreDefinition.AllOrNothing)
+                return (false, 0, TransactionType.ChoreEarning, string.Empty);
+
             var earnAmount = await CalculateWeeklyChoreEarningAsync(context, choreLog, choreDefinition);
             if (earnAmount <= 0) return (false, 0, TransactionType.ChoreEarning, string.Empty);
             
