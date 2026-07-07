@@ -1,0 +1,222 @@
+@namespace Daily_Bread.Components.Shared
+@using Daily_Bread.Data
+@using Daily_Bread.Data.Models
+@using Daily_Bread.Services
+@using Microsoft.EntityFrameworkCore
+
+@inject IScreenTimePricingService PricingService
+@inject IChildProfileService ChildProfileService
+@inject IFamilySettingsService FamilySettingsService
+@inject IDateProvider DateProvider
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ILogger<ScreenTimeMeter> Logger
+
+@if (_isLoading)
+{
+    <div class="st-meter">
+        <div class="st-meter-header">
+            <span class="st-meter-icon">📺</span>
+            <span class="st-meter-title">Screen Time</span>
+        </div>
+        <div class="st-meter-empty">Loading your screen time…</div>
+    </div>
+}
+else if (!_hasChild)
+{
+    @* Single-child app with no child set up yet — stay calm, render nothing loud. *@
+}
+else
+{
+    <div class="st-meter">
+        <div class="st-meter-header">
+            <span class="st-meter-icon">📺</span>
+            <span class="st-meter-title">Screen Time This Week</span>
+        </div>
+
+        <div class="st-pool-grid">
+            <div class="st-pool">
+                <div class="st-pool-head">
+                    <span class="st-pool-name">Weekdays</span>
+                    <span class="st-pool-tag">Mon–Fri</span>
+                </div>
+                <div class="st-pool-value">@FormatMinutes(_weekdayEffective)</div>
+                <div class="st-pool-sub">in your pool</div>
+                <div class="st-floor">
+                    <span class="st-floor-lock">🔒</span>
+                    <span>You always keep at least <strong>@FormatMinutes(_weekdayFloor)</strong></span>
+                </div>
+                @if (_weekdayAtRisk > 0)
+                {
+                    <div class="st-risk">Up to <strong>@_weekdayAtRisk min</strong> is on the line this week</div>
+                }
+            </div>
+
+            <div class="st-pool">
+                <div class="st-pool-head">
+                    <span class="st-pool-name">Weekend</span>
+                    <span class="st-pool-tag">Sat–Sun</span>
+                </div>
+                <div class="st-pool-value">@FormatMinutes(_weekendEffective)</div>
+                <div class="st-pool-sub">in your pool</div>
+                <div class="st-floor">
+                    <span class="st-floor-lock">🔒</span>
+                    <span>You always keep at least <strong>@FormatMinutes(_weekendFloor)</strong></span>
+                </div>
+                @if (_weekendAtRisk > 0)
+                {
+                    <div class="st-risk">Up to <strong>@_weekendAtRisk min</strong> is on the line this week</div>
+                }
+            </div>
+        </div>
+
+        <div class="st-prices">
+            <div class="st-prices-head">What each chore is worth</div>
+            @if (_priceRows.Count == 0)
+            {
+                <div class="st-meter-empty">No chores are priced this week — nothing at risk. 😎</div>
+            }
+            else
+            {
+                @foreach (var group in _priceRows.GroupBy(r => r.Pool).OrderBy(g => g.Key))
+                {
+                    <div class="st-price-group-label">@PoolLabel(group.Key)</div>
+                    @foreach (var row in group.OrderByDescending(r => r.PerInstanceMinutes))
+                    {
+                        <div class="st-price-row">
+                            <span class="st-price-name">@row.Name</span>
+                            <span class="st-price-cost">Miss once: −@row.PerInstanceMinutes min</span>
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private bool _isLoading = true;
+    private bool _hasChild;
+
+    private int _weekdayEffective;
+    private int _weekendEffective;
+    private int _weekdayFloor;
+    private int _weekendFloor;
+    private int _weekdayAtRisk;
+    private int _weekendAtRisk;
+
+    private readonly List<PriceRow> _priceRows = new();
+
+    private sealed record PriceRow(string Name, ScreenTimePool Pool, int PerInstanceMinutes);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Single-child scope: resolve the one child, same as Settings does.
+            var children = await ChildProfileService.GetAllChildProfilesAsync();
+            var child = children.FirstOrDefault();
+            if (child == null)
+            {
+                return;
+            }
+
+            var profile = await ChildProfileService.GetProfileByIdAsync(child.ProfileId);
+            if (profile == null)
+            {
+                return;
+            }
+
+            _hasChild = true;
+
+            var today = DateProvider.Today;
+            // Reuse the app's week-start convention (same helper the pricing engine uses).
+            var weekStart = await FamilySettingsService.GetWeekStartForDateAsync(today);
+
+            // Read-only pricing (pool budgets + per-chore instance prices).
+            var pricing = await PricingService.GetWeekPricingAsync(profile.Id, today);
+            _weekdayAtRisk = pricing.WeekdayBudgetMinutes;
+            _weekendAtRisk = pricing.WeekendBudgetMinutes;
+
+            // This week's snapshot, if reconciliation has written one; else fall back to base pool.
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+            var snapshot = await context.ChildWeeklyScreenTimeBudgets
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.ChildProfileId == profile.Id && b.WeekStartDate == weekStart);
+
+            int weekdayBase;
+            int weekendBase;
+            if (snapshot != null)
+            {
+                weekdayBase = snapshot.WeekdayBasePoolMinutes;
+                weekendBase = snapshot.WeekendBasePoolMinutes;
+                _weekdayEffective = snapshot.WeekdayEffectiveMinutes;
+                _weekendEffective = snapshot.WeekendEffectiveMinutes;
+            }
+            else
+            {
+                weekdayBase = HoursToMinutes(profile.WeekdayScreenTimeHours);
+                weekendBase = HoursToMinutes(profile.WeekendScreenTimeHours);
+                _weekdayEffective = weekdayBase;
+                _weekendEffective = weekendBase;
+            }
+
+            // Guaranteed floor = base − the at-risk budget (portion that can never be lost).
+            _weekdayFloor = Math.Max(0, weekdayBase - _weekdayAtRisk);
+            _weekendFloor = Math.Max(0, weekendBase - _weekendAtRisk);
+
+            // Join priced chores to their names for the "what each chore is worth" list.
+            var pricedIds = pricing.ChorePrices
+                .Where(kv => kv.Value.PerInstanceMinutes > 0)
+                .Select(kv => kv.Key)
+                .ToList();
+
+            if (pricedIds.Count > 0)
+            {
+                var names = await context.ChoreDefinitions
+                    .AsNoTracking()
+                    .Where(c => pricedIds.Contains(c.Id))
+                    .Select(c => new { c.Id, c.Name })
+                    .ToDictionaryAsync(c => c.Id, c => c.Name);
+
+                foreach (var id in pricedIds)
+                {
+                    var price = pricing.ChorePrices[id];
+                    var name = names.TryGetValue(id, out var n) ? n : "Chore";
+                    _priceRows.Add(new PriceRow(name, price.Pool, price.PerInstanceMinutes));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load screen-time meter for the kid dashboard.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static int HoursToMinutes(decimal hours) =>
+        (int)Math.Round(hours * 60m, MidpointRounding.AwayFromZero);
+
+    private static string PoolLabel(ScreenTimePool pool) =>
+        pool == ScreenTimePool.Weekend ? "Weekend" : "Weekdays";
+
+    private static string FormatMinutes(int minutes)
+    {
+        if (minutes <= 0)
+        {
+            return "0m";
+        }
+
+        var hours = minutes / 60;
+        var mins = minutes % 60;
+
+        if (hours > 0 && mins > 0)
+        {
+            return $"{hours}h {mins}m";
+        }
+
+        return hours > 0 ? $"{hours}h" : $"{mins}m";
+    }
+}

@@ -52,12 +52,26 @@ nothing displays the result (no meter). Slice 1 turns it on.
   - _Known-minor:_ AppSettings save commits before the child-update validation runs in the same
     click; a rejected child update (only reachable past the HTML min/max guards) leaves AppSettings
     saved but child unchanged. Matches page's existing per-concern save style. Revisit if it bites.
-- [ ] **Piece 3 — Kid screen-time meter** *(medium)*
-  - [ ] New `ScreenTimeMeter.razor` (current look), placed on kid branch of `Home.razor`
-  - [ ] Reads `GetWeekPricingAsync` + latest `ChildWeeklyScreenTimeBudget` snapshot
-  - [ ] Live "pending −N min this week" (reuse pricing/reconciliation math read-only)
+- [x] **Piece 3 — Kid screen-time meter** *(DONE 2026-07-07)*
+  - [x] New `ScreenTimeMeter.razor` (+ `.css`, current look), on kid branch of `Home.razor` (self-resolving child)
+  - [x] Reads `GetWeekPricingAsync` (budgets + per-chore prices) + latest `ChildWeeklyScreenTimeBudget` snapshot
+  - [x] Shows this-week pool, guaranteed floor, at-risk budget, per-chore "N min if missed"; calm empty states
+  - [x] Week-start via `IFamilySettingsService.GetWeekStartForDateAsync` (same helper pricing uses)
+  - [x] ~~Live "pending −N min this week"~~ **DEFERRED** — see note below
+
+> **Pending-accrual decision (2026-07-07):** the live mid-week "pending −N min" figure is
+> deliberately NOT in Piece 3. The only loss computation on `beta`
+> (`WeeklyReconciliationService.ReconcileChildWeekAsync`) is **destructive** (mutates streak
+> state + writes budget snapshots) — there is no read-only preview. Computing pending in the UI
+> would fork the streak-multiplier/clamp math and drift from what reconciliation actually applies.
+> Correct fix = a later, separately-reviewed refactor extracting reconciliation's loss calc into a
+> **shared pure calculator** (single source of truth) that both reconcile and a `PreviewWeekLoss`
+> read call use. Parked until the numbers are tuned. Added as a Slice-2 item below.
 
 ### Slice 2 — complete it (after Slice 1 feels right)
+- [ ] **Reconciliation loss-calc refactor** → shared pure calculator (`PreviewWeekLossAsync`),
+      enabling the live "pending −N min this week" accrual on the meter (see Piece 3 note). Engine
+      change — review carefully; wife's daily money/screen-time flow depends on reconciliation.
 - [ ] All-or-nothing threshold toggle on WeeklyFrequency earning chores
 - [ ] QOL mixer bar (draggable shares; `QolRebalancer` math already exists)
 - [ ] Kid "at-risk today" card (MECHANICS_AMENDMENT §E escalation)
@@ -79,3 +93,6 @@ Smoke: set Importance on a chore → set a pool in settings → kid meter shows 
   ChoreForm in current look. Committed `4a61e5d`.
 - 2026-07-07 — **Piece 2 done & verified** (build 0 err, tests 107/107). Screen-time settings live on
   /settings (UI-only; service + tests already existed on beta). Starting Piece 3 (kid meter).
+- 2026-07-07 — **Piece 3 done & verified** (build 0 err, tests 107/107). Kid meter live on Home (read-only:
+  pool/floor/at-risk/per-chore prices). Pending accrual deferred (see note). **SLICE 1 COMPLETE.**
+  Not yet smoke-tested against a live DB (sandbox is Npgsql-only, no Postgres) — needs a real run.
