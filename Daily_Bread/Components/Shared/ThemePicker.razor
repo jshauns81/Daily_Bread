@@ -37,17 +37,16 @@
 
     private static readonly ThemeOption[] Themes =
     [
-        new("guadalupe", "Guadalupe", "#4DA8C6"),
-        new("marian",    "Sea",       "#6A82E6"),
-        new("sion",      "Garden",    "#5AAE7B"),
-        new("advent",    "Violet",    "#9B7BE0"),
-        new("rosa",      "Rose",      "#E08AA6"),
+        new("ultraviolet", "Ultraviolet", "#8B5CF6"),
+        new("voltage",     "Voltage",     "#CDFF3D"),
+        new("cobalt",      "Cobalt",      "#4D8DFF"),
+        new("tangerine",   "Tangerine",   "#FF7A1A"),
     ];
 
-    private string _theme = "guadalupe";
+    private string _theme = "ultraviolet";
     private string _mode = "dark";
 
-    private string CurrentName => Themes.FirstOrDefault(t => t.Key == _theme)?.Name ?? "Guadalupe";
+    private string CurrentName => Themes.FirstOrDefault(t => t.Key == _theme)?.Name ?? "Ultraviolet";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

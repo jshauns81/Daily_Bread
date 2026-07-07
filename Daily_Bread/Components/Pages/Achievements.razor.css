@@ -1,5 +1,5 @@
 /* ===========================================
-   ACHIEVEMENTS PAGE - Nord Theme
+   ACHIEVEMENTS PAGE - App Theme
    =========================================== */
 
 .achievements-container {
@@ -39,17 +39,17 @@
 
 .achievement-card.earned {
     border-color: var(--ds-semantic-success);
-    background: linear-gradient(135deg, rgba(163, 190, 140, 0.15) 0%, var(--ds-bg-elevated) 100%);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-semantic-success) 15%, transparent) 0%, var(--ds-bg-elevated) 100%);
 }
 
 .achievement-card.legendary {
     border-color: var(--ds-semantic-highlight);
-    background: linear-gradient(135deg, rgba(235, 203, 139, 0.15) 0%, var(--ds-bg-elevated) 100%);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-semantic-highlight) 15%, transparent) 0%, var(--ds-bg-elevated) 100%);
 }
 
 .achievement-card.legendary.earned {
     border-color: var(--ds-semantic-highlight);
-    box-shadow: 0 0 15px rgba(235, 203, 139, 0.3);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--ds-semantic-highlight) 30%, transparent);
 }
 
 .achievement-card.locked {
@@ -159,7 +159,7 @@
    =========================================== */
 
 .new-achievements-banner {
-    background: linear-gradient(135deg, rgba(235, 203, 139, 0.2) 0%, rgba(235, 203, 139, 0.1) 100%);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-semantic-highlight) 20%, transparent) 0%, color-mix(in srgb, var(--ds-semantic-highlight) 10%, transparent) 100%);
     border: 2px solid var(--ds-semantic-highlight);
     border-radius: var(--ds-radius-xl);
     padding: var(--ds-space-7);
@@ -211,7 +211,7 @@
     align-items: center;
     gap: var(--ds-space-3);
     padding: var(--ds-space-3) var(--ds-space-4);
-    background: linear-gradient(135deg, rgba(235, 203, 139, 0.25) 0%, rgba(235, 203, 139, 0.1) 100%);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-semantic-highlight) 25%, transparent) 0%, color-mix(in srgb, var(--ds-semantic-highlight) 10%, transparent) 100%);
     border: 2px solid var(--ds-semantic-highlight);
     border-radius: var(--ds-radius-lg);
     cursor: pointer;
@@ -231,7 +231,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(235, 203, 139, 0.3), transparent);
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ds-semantic-highlight) 30%, transparent), transparent);
     animation: banner-glow 3s infinite;
 }
 
@@ -259,7 +259,7 @@
 
 .new-icon-preview {
     font-size: 1.25rem;
-    filter: drop-shadow(0 0 4px rgba(235, 203, 139, 0.6));
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--ds-semantic-highlight) 60%, transparent));
     transition: transform 0.15s ease;
 }
 
@@ -370,13 +370,13 @@
 }
 
 .achievement-row.earned {
-    border-color: rgba(163, 190, 140, 0.4);
-    background: linear-gradient(90deg, rgba(163, 190, 140, 0.08) 0%, var(--ds-bg-elevated) 100%);
+    border-color: color-mix(in srgb, var(--ds-semantic-success) 40%, transparent);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--ds-semantic-success) 8%, transparent) 0%, var(--ds-bg-elevated) 100%);
 }
 
 .achievement-row.legendary.earned {
-    border-color: rgba(235, 203, 139, 0.4);
-    background: linear-gradient(90deg, rgba(235, 203, 139, 0.08) 0%, var(--ds-bg-elevated) 100%);
+    border-color: color-mix(in srgb, var(--ds-semantic-highlight) 40%, transparent);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--ds-semantic-highlight) 8%, transparent) 0%, var(--ds-bg-elevated) 100%);
 }
 
 .achievement-row.locked {

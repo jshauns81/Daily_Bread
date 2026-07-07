@@ -5,19 +5,19 @@
 /// </summary>
 public enum StatColor
 {
-    /// <summary>Uses default --nord8 color from CSS.</summary>
+    /// <summary>Uses default --db-accent color from CSS.</summary>
     Default,
-    /// <summary>Green (--nord14) for positive values, earnings, completed.</summary>
+    /// <summary>Success (--ds-semantic-success) for positive values, earnings, completed.</summary>
     Success,
-    /// <summary>Red (--nord11) for negative values, missed, errors.</summary>
+    /// <summary>Risk (--db-risk) for negative values, missed, errors.</summary>
     Danger,
-    /// <summary>Yellow/Orange (--nord13) for warnings, pending, streaks.</summary>
+    /// <summary>Highlight (--ds-semantic-highlight) for warnings, pending, streaks.</summary>
     Warning,
-    /// <summary>Blue (--nord8) for informational, achievements.</summary>
+    /// <summary>Accent (--db-accent) for informational, achievements.</summary>
     Info,
-    /// <summary>Primary blue (--nord10) for primary actions.</summary>
+    /// <summary>Primary accent (--ds-accent-primary) for primary actions.</summary>
     Primary,
-    /// <summary>Muted gray (--nord4) for secondary/disabled states.</summary>
+    /// <summary>Muted (--ds-text-muted) for secondary/disabled states.</summary>
     Muted
 }
 

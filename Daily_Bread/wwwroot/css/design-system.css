@@ -12,7 +12,8 @@
 
 :root {
     /* Color tokens are defined by the THEME SYSTEM block below
-       (section 1b) — Guadalupe palette across data-theme x data-mode. */
+       (section 1b) — ultraviolet/voltage/cobalt/tangerine palettes
+       across data-theme x data-mode. */
 
     /* ----- SPACING SCALE ----- */
     --ds-space-0: 0;
@@ -28,8 +29,8 @@
     --ds-space-10: 64px;
     
     /* ----- TYPOGRAPHY ----- */
-    --ds-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --ds-font-mono: 'SF Mono', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
+    --ds-font-family: 'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --ds-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Monaco', 'Consolas', monospace;
     
     /* Responsive font sizes using clamp() */
     --ds-text-xs: clamp(0.6875rem, 0.65rem + 0.1875vw, 0.75rem);   /* 11-12px */
@@ -55,6 +56,14 @@
     --ds-radius-lg: 16px;
     --ds-radius-xl: 24px;
     --ds-radius-full: 9999px;
+    /* Design-of-record radii (July 2026 redesign) */
+    --ds-radius-pill: 99px;
+    --ds-radius-btn: 10px;
+    --ds-radius-input: 12px;
+    --ds-radius-card: 16px;
+    --ds-radius-hero: 20px;
+    --ds-radius-tile: 10px;      /* icon tiles 9–11px, size-proportional */
+    --ds-transition: 150ms ease-out;   /* color/opacity/shadow only; never transform */
     
     /* ----- SHADOWS ----- */
     --ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -97,50 +106,182 @@
 }
 
 /* ===========================================
-   1b. THEME SYSTEM  (Our Lady of Guadalupe palette + picker)
-   data-theme x data-mode are set on <html>; falls back to Guadalupe dark.
-   Constants across every theme: gold = bread/money, gold-glow = Blessing,
-   red = Help alert. Themes only re-tint the surfaces + the primary accent.
+   1b. THEME SYSTEM — 4-theme suite (design of record, July 2026)
+   data-theme x data-mode are set on <html>; falls back to Ultraviolet dark.
+   Semantic rules (never violate):
+   - --db-money is ONLY for money. Money is never red/pink; it can only fail to appear.
+   - --db-screentime is ONLY for screen-time meters/prices/multipliers.
+   - --db-risk is deductions / overrides / at-risk / destructive.
+   - Tile gradients re-map per theme; a chore keeps its slot index (1–5).
    =========================================== */
 
-/* Per-mode constants (semantics that should stay steady across themes) */
+/* Per-mode card depth (steady across themes) */
 [data-mode="dark"]{
-    --db-gold:#D7A23F; --db-glow:#EAC468;
-    --db-error:#C25563; --db-warning:#D8956A; --db-success:#84B98F; --db-special:#B48EAD;
-    --db-on-accent:#15181C;
-    /* card depth (tuned for dark) */
     --ds-card-shadow: 0 14px 40px -16px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04) inset;
     --ds-card-shadow-hover: 0 22px 55px -16px rgba(0,0,0,.62), 0 1px 0 rgba(255,255,255,.05) inset;
 }
 [data-mode="light"]{
-    --db-gold:#D99514; --db-glow:#F2B705;
-    --db-error:#D33B4E; --db-warning:#D27D3C; --db-success:#3E9E63; --db-special:#9B6FB0;
-    --db-on-accent:#FFFFFF;
-    /* card depth (softer for light) */
     --ds-card-shadow: 0 10px 30px -14px rgba(20,30,45,.16);
     --ds-card-shadow-hover: 0 18px 44px -14px rgba(20,30,45,.22);
 }
 
-/* Themes: surfaces + primary accent (rosa also deepens its alert red) */
-[data-theme="guadalupe"][data-mode="dark"]{  --db-bg:#0F1922; --db-bg2:#1D2A35; --db-bg3:#293945; --db-text:#F0E8D6; --db-text2:#B7BEC4; --db-text3:#7E8790; --db-accent:#4DA8C6; }
-[data-theme="guadalupe"][data-mode="light"]{ --db-bg:#FAFBFC; --db-bg2:#FFFFFF; --db-bg3:#EEF1F4; --db-text:#1E2530; --db-text2:#566069; --db-text3:#8A929A; --db-accent:#0E8FC4; }
-[data-theme="marian"][data-mode="dark"]{     --db-bg:#101226; --db-bg2:#1F2440; --db-bg3:#2C3358; --db-text:#ECE9DA; --db-text2:#B6BAD0; --db-text3:#7C7F9A; --db-accent:#6A82E6; }
-[data-theme="marian"][data-mode="light"]{    --db-bg:#FAFBFE; --db-bg2:#FFFFFF; --db-bg3:#EEF0FA; --db-text:#1F2438; --db-text2:#565C75; --db-text3:#888EA8; --db-accent:#3A5BD0; }
-[data-theme="sion"][data-mode="dark"]{       --db-bg:#0F1A14; --db-bg2:#1E2D24; --db-bg3:#2A3D31; --db-text:#EEEAD7; --db-text2:#B6C0B0; --db-text3:#7E8878; --db-accent:#5AAE7B; }
-[data-theme="sion"][data-mode="light"]{      --db-bg:#FAFCFA; --db-bg2:#FFFFFF; --db-bg3:#EDF3EE; --db-text:#1F2A22; --db-text2:#54635A; --db-text3:#869287; --db-accent:#2E9E63; }
-[data-theme="advent"][data-mode="dark"]{     --db-bg:#150F20; --db-bg2:#272036; --db-bg3:#352B49; --db-text:#EFE9DA; --db-text2:#BDB6C8; --db-text3:#867E94; --db-accent:#9B7BE0; }
-[data-theme="advent"][data-mode="light"]{    --db-bg:#FCFAFE; --db-bg2:#FFFFFF; --db-bg3:#F2EEF8; --db-text:#271F33; --db-text2:#5E5570; --db-text3:#8E869C; --db-accent:#7A4FD0; }
-[data-theme="rosa"][data-mode="dark"]{       --db-bg:#1B1019; --db-bg2:#30212C; --db-bg3:#412C3A; --db-text:#F1E7DC; --db-text2:#C6B3BE; --db-text3:#8E7E88; --db-accent:#E08AA6; --db-error:#9E3350; }
-[data-theme="rosa"][data-mode="light"]{      --db-bg:#FEFAFC; --db-bg2:#FFFFFF; --db-bg3:#F8EEF3; --db-text:#2E1F28; --db-text2:#6E5660; --db-text3:#9C8690; --db-accent:#D14E7E; --db-error:#A8123F; }
+/* ---- Per-theme constants (tile gradients, glows, focus ring) ----
+   Identical in light and dark within a theme — tiles carry their own contrast. */
+[data-theme="ultraviolet"], :root {
+    --ds-glow-accent: 0 0 14px -3px rgba(139,92,246,.65);
+    --ds-glow-risk: 0 0 14px -3px rgba(244,114,182,.65);
+    --ds-glow-money: 0 0 22px -10px rgba(45,212,191,.4);
+    --color-focus-ring: rgba(139,92,246,.25);
+    --tile-1-a:#8B5CF6; --tile-1-b:#6D28D9;  /* violet */
+    --tile-2-a:#F472B6; --tile-2-b:#DB2777;  /* pink */
+    --tile-3-a:#2DD4BF; --tile-3-b:#0D9488;  /* mint */
+    --tile-4-a:#60A5FA; --tile-4-b:#2563EB;  /* blue */
+    --tile-5-a:#FBBF24; --tile-5-b:#D97706;  /* amber */
+}
+[data-theme="voltage"] {
+    --ds-glow-accent: 0 0 14px -3px rgba(205,255,61,.55);
+    --ds-glow-risk: 0 0 14px -3px rgba(255,107,107,.6);
+    --ds-glow-money: 0 0 22px -10px rgba(205,255,61,.4);
+    --color-focus-ring: rgba(205,255,61,.25);
+    --tile-1-a:#CDFF3D; --tile-1-b:#84CC16;  /* lime */
+    --tile-2-a:#2DD4BF; --tile-2-b:#0D9488;  /* teal */
+    --tile-3-a:#60A5FA; --tile-3-b:#2563EB;  /* blue */
+    --tile-4-a:#FBBF24; --tile-4-b:#D97706;  /* amber */
+    --tile-5-a:#FF6B6B; --tile-5-b:#DC2626;  /* coral */
+}
+[data-theme="cobalt"] {
+    --ds-glow-accent: 0 0 14px -3px rgba(77,141,255,.6);
+    --ds-glow-risk: 0 0 14px -3px rgba(255,107,107,.6);
+    --ds-glow-money: 0 0 22px -10px rgba(255,197,61,.4);
+    --color-focus-ring: rgba(77,141,255,.25);
+    --tile-1-a:#4D8DFF; --tile-1-b:#2563EB;  /* blue */
+    --tile-2-a:#22D3EE; --tile-2-b:#0891B2;  /* cyan */
+    --tile-3-a:#FFC53D; --tile-3-b:#D97706;  /* yellow */
+    --tile-4-a:#8B5CF6; --tile-4-b:#6D28D9;  /* violet */
+    --tile-5-a:#FF6B6B; --tile-5-b:#DC2626;  /* coral */
+}
+[data-theme="tangerine"] {
+    --ds-glow-accent: 0 0 14px -3px rgba(255,122,26,.6);
+    --ds-glow-risk: 0 0 14px -3px rgba(255,92,92,.6);
+    --ds-glow-money: 0 0 22px -10px rgba(95,208,104,.4);
+    --color-focus-ring: rgba(255,122,26,.25);
+    --tile-1-a:#FF7A1A; --tile-1-b:#EA580C;  /* orange */
+    --tile-2-a:#5FD068; --tile-2-b:#16A34A;  /* green */
+    --tile-3-a:#60A5FA; --tile-3-b:#2563EB;  /* blue */
+    --tile-4-a:#F472B6; --tile-4-b:#DB2777;  /* pink */
+    --tile-5-a:#FBBF24; --tile-5-b:#D97706;  /* gold */
+}
 
-/* Safety defaults = Guadalupe dark (used before/without the data-* attrs) */
+/* ---- ULTRAVIOLET (default) ---- */
+[data-theme="ultraviolet"][data-mode="dark"], :root {
+    --db-bg: #0D0A14;         --db-bg2: #191327;        --db-bg3: #251C38;
+    --ds-divider: #1F1830;    --ds-bg-selected: #1E1731; --ds-bg-recessed: #12101E;
+    --db-border: #251C38;
+    --db-text: #F1EDF9;       --db-text2: #A79FC0;      --db-text3: #6F6690;
+    --ds-text-faint: #4A3F63;
+    --db-accent: #8B5CF6;     --ds-accent-text: #A78BFA; --ds-accent-light: #C4B5FD;
+    --db-on-accent: #FFFFFF;
+    --db-money: #2DD4BF;      --ds-money-light: #5EEAD4; --ds-money-deep: #0D9488;
+    --db-screentime: #FBBF24; --ds-screentime-deep: #D97706; --ds-screentime-text: #D9B45B;
+    --db-risk: #F472B6;       --ds-risk-light: #F9A8D4;  --ds-risk-deep: #DB2777;
+}
+[data-theme="ultraviolet"][data-mode="light"] {
+    --db-bg: #FAF9FD;         --db-bg2: #FFFFFF;        --db-bg3: #F1EDFA;
+    --ds-divider: #E4DEF1;    --ds-bg-selected: #F1EDFA; --ds-bg-recessed: #F5F2FB; /* derived */
+    --db-text: #1C1528;       --db-text2: #5E5575;      --db-text3: #948CAD;
+    --ds-text-faint: #C4BCD9; /* derived */
+    --db-border: #E8E3F4;
+    --db-accent: #7C3AED;     --ds-accent-text: #7C3AED; --ds-accent-light: #8B5CF6;
+    --db-on-accent: #FFFFFF;
+    --db-money: #0D9488;      --ds-money-light: #2DD4BF; --ds-money-deep: #0D9488;
+    --db-screentime: #D97706; --ds-screentime-deep: #B45309; --ds-screentime-text: #B45309;
+    --db-risk: #DB2777;       --ds-risk-light: #F472B6;  --ds-risk-deep: #BE185D;
+}
+
+/* ---- VOLTAGE ---- */
+[data-theme="voltage"][data-mode="dark"] {
+    --db-bg: #0E1116;         --db-bg2: #171C23;        --db-bg3: #222933;
+    --ds-divider: #141922;    --ds-bg-selected: #1B222C; --ds-bg-recessed: #121620; /* derived */
+    --db-border: #222933;
+    --db-text: #F2F5F7;       --db-text2: #9AA6B2;      --db-text3: #66717D;
+    --ds-text-faint: #454F59; /* derived */
+    --db-accent: #CDFF3D;     --ds-accent-text: #CDFF3D; --ds-accent-light: #DCFF70;
+    --db-on-accent: #10140A;
+    --db-money: #CDFF3D;      --ds-money-light: #DCFF70; --ds-money-deep: #84CC16;
+    --db-screentime: #FBBF24; --ds-screentime-deep: #D97706; --ds-screentime-text: #D9B45B;
+    --db-risk: #FF6B6B;       --ds-risk-light: #FF9B9B;  --ds-risk-deep: #DC2626;
+}
+[data-theme="voltage"][data-mode="light"] {
+    --db-bg: #FAFBFA;  --db-bg2: #FFFFFF;  --db-bg3: #F0F4EC;  --db-border: #E4E9E4;
+    --ds-divider: #E4E9E4;    --ds-bg-selected: #F0F4EC; --ds-bg-recessed: #F5F7F3; /* derived */
+    --db-text: #12161B; --db-text2: #5B6670; --db-text3: #8A949D;
+    --ds-text-faint: #C4CCC4; /* derived */
+    --db-accent: #84CC16; --ds-accent-text: #4D7C0F; --ds-accent-light: #84CC16;
+    --db-on-accent: #10140A;
+    --db-money: #4D7C0F;  --ds-money-light: #84CC16; --ds-money-deep: #3F6212;
+    --db-screentime: #D97706; --ds-screentime-deep: #B45309; --ds-screentime-text: #B45309;
+    --db-risk: #DC2626;   --ds-risk-light: #FF6B6B;  --ds-risk-deep: #B91C1C;
+}
+
+/* ---- COBALT ---- */
+[data-theme="cobalt"][data-mode="dark"] {
+    --db-bg: #0B1220;         --db-bg2: #141E33;        --db-bg3: #1F2C47;
+    --ds-divider: #101A2C;    --ds-bg-selected: #17233C; --ds-bg-recessed: #0E1729; /* derived */
+    --db-border: #1F2C47;
+    --db-text: #EEF3FB;       --db-text2: #9FB0C9;      --db-text3: #64748B;
+    --ds-text-faint: #3E4C66; /* derived */
+    --db-accent: #4D8DFF;     --ds-accent-text: #7CAAFF; --ds-accent-light: #A5C4FF;
+    --db-on-accent: #FFFFFF;
+    --db-money: #FFC53D;      --ds-money-light: #FFD778; --ds-money-deep: #D97706;
+    --db-screentime: #FF8A4C; --ds-screentime-deep: #EA580C; --ds-screentime-text: #E09B72;
+    --db-risk: #FF6B6B;       --ds-risk-light: #FF9B9B;  --ds-risk-deep: #DC2626;
+}
+[data-theme="cobalt"][data-mode="light"] {
+    --db-bg: #F5F8FF;  --db-bg2: #FFFFFF;  --db-bg3: #EAF1FF;  --db-border: #D8E2F2;
+    --ds-divider: #D8E2F2;    --ds-bg-selected: #EAF1FF; --ds-bg-recessed: #F0F5FD; /* derived */
+    --db-text: #101828; --db-text2: #51607A; --db-text3: #8A97AD;
+    --ds-text-faint: #BCCADF; /* derived */
+    --db-accent: #2563EB; --ds-accent-text: #2563EB; --ds-accent-light: #4D8DFF;
+    --db-on-accent: #FFFFFF;
+    --db-money: #B45309;  --ds-money-light: #D97706; --ds-money-deep: #92400E;
+    --db-screentime: #EA580C; --ds-screentime-deep: #C2410C; --ds-screentime-text: #C2410C;
+    --db-risk: #DC2626;   --ds-risk-light: #FF6B6B;  --ds-risk-deep: #B91C1C;
+}
+
+/* ---- TANGERINE ---- */
+[data-theme="tangerine"][data-mode="dark"] {
+    --db-bg: #131114;         --db-bg2: #1E1B1F;        --db-bg3: #2B272C;
+    --ds-divider: #191619;    --ds-bg-selected: #242026; --ds-bg-recessed: #161316; /* derived */
+    --db-border: #2B272C;
+    --db-text: #F5F2F0;       --db-text2: #A8A1A5;      --db-text3: #716B70;
+    --ds-text-faint: #4C4749; /* derived */
+    --db-accent: #FF7A1A;     --ds-accent-text: #FF9A52; --ds-accent-light: #FFB37E;
+    --db-on-accent: #1F1206;
+    --db-money: #5FD068;      --ds-money-light: #86E28D; --ds-money-deep: #16A34A;
+    --db-screentime: #60A5FA; --ds-screentime-deep: #2563EB; --ds-screentime-text: #7FB3F7;
+    --db-risk: #FF5C5C;       --ds-risk-light: #FF9090;  --ds-risk-deep: #DC2626;
+}
+[data-theme="tangerine"][data-mode="light"] {
+    --db-bg: #FAF8F7;  --db-bg2: #FFFFFF;  --db-bg3: #FFEDDC;  --db-border: #E8E1DC;
+    --ds-divider: #E8E1DC;    --ds-bg-selected: #FFEDDC; --ds-bg-recessed: #F5F1EE; /* derived */
+    --db-text: #1D191B; --db-text2: #6B6366; --db-text3: #9C9598;
+    --ds-text-faint: #D0C8C2; /* derived */
+    --db-accent: #EA580C; --ds-accent-text: #EA580C; --ds-accent-light: #FF7A1A;
+    --db-on-accent: #FFFFFF;
+    --db-money: #1D8A3E;  --ds-money-light: #5FD068; --ds-money-deep: #166534;
+    --db-screentime: #2563EB; --ds-screentime-deep: #1D4ED8; --ds-screentime-text: #1D4ED8;
+    --db-risk: #DC2626;   --ds-risk-light: #FF5C5C;  --ds-risk-deep: #B91C1C;
+}
+
+/* Legacy semantic aliases — keep pre-redesign components rendering correctly.
+   gold/bread = money, error = risk, warning = screen time. */
 :root{
-    --db-gold:#D7A23F; --db-glow:#EAC468; --db-error:#C25563; --db-warning:#D8956A;
-    --db-success:#84B98F; --db-special:#B48EAD; --db-on-accent:#15181C;
-    --db-bg:#0F1922; --db-bg2:#1D2A35; --db-bg3:#293945;
-    --db-text:#F0E8D6; --db-text2:#B7BEC4; --db-text3:#7E8790; --db-accent:#4DA8C6;
-    --ds-card-shadow: 0 14px 40px -16px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04) inset;
-    --ds-card-shadow-hover: 0 22px 55px -16px rgba(0,0,0,.62), 0 1px 0 rgba(255,255,255,.05) inset;
+    --db-gold: var(--db-money);
+    --db-glow: var(--ds-money-light);
+    --db-error: var(--db-risk);
+    --db-warning: var(--db-screentime);
+    --db-success: var(--db-money);
+    --db-special: var(--ds-accent-text);
 }
 
 /* Map the theme palette onto the app's existing --ds-* tokens (everything inherits) */
@@ -149,6 +290,7 @@
     --ds-bg-elevated: var(--db-bg2);
     --ds-bg-hover: var(--db-bg3);
     --ds-bg-muted: var(--db-bg3);
+    --ds-border: var(--db-border);
     --ds-text-primary: var(--db-text);
     --ds-text-secondary: var(--db-text2);
     --ds-text-muted: var(--db-text3);
@@ -156,20 +298,23 @@
     --ds-accent-blue: var(--db-accent);
     --ds-accent-cyan: var(--db-accent);
     --ds-accent-teal: var(--db-accent);
-    --ds-semantic-error: var(--db-error);
-    --ds-semantic-warning: var(--db-warning);
-    --ds-semantic-highlight: var(--db-gold);
-    --ds-semantic-success: var(--db-success);
-    --ds-semantic-special: var(--db-special);
-    --ds-glow-success: 0 0 15px color-mix(in srgb, var(--db-success) 32%, transparent);
-    --ds-glow-primary: 0 0 15px color-mix(in srgb, var(--db-accent) 32%, transparent);
-    --ds-glow-error: 0 0 15px color-mix(in srgb, var(--db-error) 32%, transparent);
-    --ds-glow-warning: 0 0 15px color-mix(in srgb, var(--db-gold) 32%, transparent);
-    /* Bread + Blessing helpers for component use */
-    --ds-bread: var(--db-gold);
-    --ds-blessing: var(--db-glow);
+    --ds-semantic-error: var(--db-risk);
+    --ds-semantic-warning: var(--db-screentime);
+    --ds-semantic-highlight: var(--db-money);
+    --ds-semantic-success: var(--db-money);
+    --ds-semantic-special: var(--ds-accent-text);
+    --ds-glow-success: 0 0 15px color-mix(in srgb, var(--db-money) 32%, transparent);
+    --ds-glow-primary: var(--ds-glow-accent);
+    --ds-glow-error: var(--ds-glow-risk);
+    --ds-glow-warning: 0 0 15px color-mix(in srgb, var(--db-screentime) 32%, transparent);
+    /* Money / screen time / risk helpers for component use */
+    --ds-bread: var(--db-money);
+    --ds-money: var(--db-money);
+    --ds-screentime: var(--db-screentime);
+    --ds-risk: var(--db-risk);
+    --ds-blessing: var(--ds-money-light);
     --ds-on-accent: var(--db-on-accent);
-    --ds-blessing-glow: 0 0 26px color-mix(in srgb, var(--db-glow) 38%, transparent);
+    --ds-blessing-glow: 0 0 26px color-mix(in srgb, var(--ds-money-light) 38%, transparent);
 }
 
 /* ===========================================
@@ -211,26 +356,26 @@
    3. SHARED INPUT COMPONENT
    =========================================== */
 
-.nord-input {
+.ds-input {
     height: 50px;
     background: var(--ds-bg-base);
     border: 2px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-lg);
+    border-radius: var(--ds-radius-input);
     color: var(--ds-text-primary);
     font-size: var(--ds-text-base);
     padding: var(--ds-space-2) var(--ds-space-4);
-    transition: all var(--ds-duration-fast);
+    transition: border-color var(--ds-transition), box-shadow var(--ds-transition);
     width: 100%;
 }
 
-.nord-input:focus {
-    border-color: var(--ds-accent-cyan);
+.ds-input:focus {
+    border-color: var(--ds-accent-primary);
     background: var(--ds-bg-base);
-    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
     outline: none;
 }
 
-.nord-input::placeholder {
+.ds-input::placeholder {
     color: var(--ds-text-muted);
 }
 
@@ -472,7 +617,7 @@
     /* Frosted glass effect */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background-color: rgba(59, 66, 82, 0.85);
+    background-color: color-mix(in srgb, var(--ds-bg-elevated) 85%, transparent);
 }
 
 /* Content padding when bottom bar is present */
@@ -485,14 +630,14 @@
    =========================================== */
 
 .ds-glass {
-    background: rgba(59, 66, 82, 0.6);
+    background: color-mix(in srgb, var(--ds-bg-elevated) 60%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(216, 222, 233, 0.1);
+    border: 1px solid color-mix(in srgb, var(--ds-text-primary) 10%, transparent);
 }
 
 .ds-glass--strong {
-    background: rgba(59, 66, 82, 0.85);
+    background: color-mix(in srgb, var(--ds-bg-elevated) 85%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }

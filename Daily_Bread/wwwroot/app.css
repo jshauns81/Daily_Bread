@@ -1,6 +1,6 @@
 /* ============================================
-   DAILY BREAD - NORD THEME
-   Complete CSS Foundation
+   DAILY BREAD - APP THEME
+   Complete CSS Foundation (tokens: design-system.css)
    ============================================ */
 
 /* ===========================================
@@ -550,49 +550,49 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .table-success,
 .table > tbody > tr.table-success,
 .table > tbody > tr.table-success > td {
-    --bs-table-bg: rgba(163, 190, 140, 0.15);
+    --bs-table-bg: color-mix(in srgb, var(--ds-semantic-success) 15%, transparent);
     --bs-table-color: var(--ds-text-primary);
-    --bs-table-hover-bg: rgba(163, 190, 140, 0.25);
-    background-color: rgba(163, 190, 140, 0.15) !important;
+    --bs-table-hover-bg: color-mix(in srgb, var(--ds-semantic-success) 25%, transparent);
+    background-color: color-mix(in srgb, var(--ds-semantic-success) 15%, transparent) !important;
     color: var(--ds-text-primary) !important;
 }
 
 .table-info,
 .table > tbody > tr.table-info,
 .table > tbody > tr.table-info > td {
-    --bs-table-bg: rgba(136, 192, 208, 0.15);
+    --bs-table-bg: color-mix(in srgb, var(--db-accent) 15%, transparent);
     --bs-table-color: var(--ds-text-primary);
-    --bs-table-hover-bg: rgba(136, 192, 208, 0.25);
-    background-color: rgba(136, 192, 208, 0.15) !important;
+    --bs-table-hover-bg: color-mix(in srgb, var(--db-accent) 25%, transparent);
+    background-color: color-mix(in srgb, var(--db-accent) 15%, transparent) !important;
     color: var(--ds-text-primary) !important;
 }
 
 .table-danger,
 .table > tbody > tr.table-danger,
 .table > tbody > tr.table-danger > td {
-    --bs-table-bg: rgba(191, 97, 106, 0.15);
+    --bs-table-bg: color-mix(in srgb, var(--db-risk) 15%, transparent);
     --bs-table-color: var(--ds-text-primary);
-    --bs-table-hover-bg: rgba(191, 97, 106, 0.25);
-    background-color: rgba(191, 97, 106, 0.15) !important;
+    --bs-table-hover-bg: color-mix(in srgb, var(--db-risk) 25%, transparent);
+    background-color: color-mix(in srgb, var(--db-risk) 15%, transparent) !important;
     color: var(--ds-text-primary) !important;
 }
 
 .table-warning,
 .table > tbody > tr.table-warning,
 .table > tbody > tr.table-warning > td {
-    --bs-table-bg: rgba(235, 203, 139, 0.15);
+    --bs-table-bg: color-mix(in srgb, var(--ds-semantic-highlight) 15%, transparent);
     --bs-table-color: var(--ds-text-primary);
-    --bs-table-hover-bg: rgba(235, 203, 139, 0.25);
-    background-color: rgba(235, 203, 139, 0.15) !important;
+    --bs-table-hover-bg: color-mix(in srgb, var(--ds-semantic-highlight) 25%, transparent);
+    background-color: color-mix(in srgb, var(--ds-semantic-highlight) 15%, transparent) !important;
     color: var(--ds-text-primary) !important;
 }
 
 .table-secondary,
 .table > tbody > tr.table-secondary,
 .table > tbody > tr.table-secondary > td {
-    --bs-table-bg: rgba(76, 86, 106, 0.4);
+    --bs-table-bg: color-mix(in srgb, var(--ds-bg-muted) 40%, transparent);
     --bs-table-color: var(--ds-text-muted);
-    background-color: rgba(76, 86, 106, 0.4) !important;
+    background-color: color-mix(in srgb, var(--ds-bg-muted) 40%, transparent) !important;
     color: var(--ds-text-muted) !important;
     opacity: 0.8;
 }
@@ -633,25 +633,25 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 }
 
 .alert-success {
-    background-color: rgba(163, 190, 140, 0.2);
+    background-color: color-mix(in srgb, var(--ds-semantic-success) 20%, transparent);
     color: var(--ds-semantic-success);
     border-left: 4px solid var(--ds-semantic-success);
 }
 
 .alert-danger {
-    background-color: rgba(191, 97, 106, 0.2);
+    background-color: color-mix(in srgb, var(--db-risk) 20%, transparent);
     color: var(--ds-semantic-error);
     border-left: 4px solid var(--ds-semantic-error);
 }
 
 .alert-warning {
-    background-color: rgba(208, 135, 112, 0.2);
+    background-color: color-mix(in srgb, var(--ds-semantic-warning) 20%, transparent);
     color: var(--ds-semantic-warning);
     border-left: 4px solid var(--ds-semantic-warning);
 }
 
 .alert-info {
-    background-color: rgba(136, 192, 208, 0.2);
+    background-color: color-mix(in srgb, var(--db-accent) 20%, transparent);
     color: var(--ds-accent-cyan);
     border-left: 4px solid var(--ds-accent-cyan);
 }
@@ -695,12 +695,12 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
    11. BACKGROUND UTILITIES
    =========================================== */
 
-.bg-success-subtle { background-color: rgba(163, 190, 140, 0.15) !important; }
-.bg-danger-subtle { background-color: rgba(191, 97, 106, 0.15) !important; }
-.bg-warning-subtle { background-color: rgba(235, 203, 139, 0.15) !important; }
-.bg-info-subtle { background-color: rgba(136, 192, 208, 0.15) !important; }
+.bg-success-subtle { background-color: color-mix(in srgb, var(--ds-semantic-success) 15%, transparent) !important; }
+.bg-danger-subtle { background-color: color-mix(in srgb, var(--db-risk) 15%, transparent) !important; }
+.bg-warning-subtle { background-color: color-mix(in srgb, var(--ds-semantic-highlight) 15%, transparent) !important; }
+.bg-info-subtle { background-color: color-mix(in srgb, var(--db-accent) 15%, transparent) !important; }
 .bg-primary-subtle { background-color: color-mix(in srgb, var(--ds-accent-primary) 16%, transparent) !important; }
-.bg-secondary-subtle { background-color: rgba(76, 86, 106, 0.3) !important; }
+.bg-secondary-subtle { background-color: color-mix(in srgb, var(--ds-bg-muted) 30%, transparent) !important; }
 
 /* ===========================================
    12. MODALS
@@ -883,7 +883,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 /* Value Badge (for money display) */
 .value-badge,
 .money-badge {
-    background: linear-gradient(135deg, var(--ds-semantic-success) 0%, rgba(163, 190, 140, 0.8) 100%);
+    background: linear-gradient(135deg, var(--db-money) 0%, color-mix(in srgb, var(--db-money) 80%, transparent) 100%);
     color: var(--ds-bg-base);
     padding: var(--ds-space-1) var(--ds-space-2);
     border-radius: var(--ds-radius-sm);

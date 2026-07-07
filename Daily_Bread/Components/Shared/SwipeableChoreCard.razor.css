@@ -1,5 +1,5 @@
 /* ===========================================
-   SWIPEABLE CHORE CARD - Nord Theme
+   SWIPEABLE CHORE CARD - App Theme
    Enhanced for teen UX with larger touch targets
    =========================================== */
 
@@ -238,28 +238,28 @@
 
 /* COMPLETED / APPROVED - green success state */
 .swipeable-card.completed {
-    background: rgba(163, 190, 140, 0.12);
+    background: color-mix(in srgb, var(--ds-semantic-success) 12%, transparent);
     border-color: var(--ds-semantic-success);
     border-width: 2px;
 }
 
 /* PENDING APPROVAL - blue waiting state */
 .swipeable-card.pending-approval {
-    background: rgba(136, 192, 208, 0.12);
+    background: color-mix(in srgb, var(--db-accent) 12%, transparent);
     border-color: var(--ds-accent-cyan);
     border-width: 2px;
 }
 
 /* HELP REQUESTED - yellow attention state */
 .swipeable-card.help-requested {
-    background: rgba(235, 203, 139, 0.12);
+    background: color-mix(in srgb, var(--ds-semantic-highlight) 12%, transparent);
     border-color: var(--ds-semantic-highlight);
     border-width: 2px;
 }
 
 /* MISSED - red error state */
 .swipeable-card.missed {
-    background: rgba(191, 97, 106, 0.12);
+    background: color-mix(in srgb, var(--db-risk) 12%, transparent);
     border-color: var(--ds-semantic-error);
     border-width: 2px;
     opacity: 0.75;
@@ -267,7 +267,7 @@
 
 /* SKIPPED - muted state */
 .swipeable-card.skipped {
-    background: rgba(76, 86, 106, 0.15);
+    background: color-mix(in srgb, var(--ds-bg-muted) 15%, transparent);
     border-color: var(--ds-bg-muted);
     opacity: 0.65;
 }
@@ -393,7 +393,7 @@
 .processing-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(46, 52, 64, 0.85);
+    background: color-mix(in srgb, var(--ds-bg-base) 85%, transparent);
     border-radius: var(--ds-radius-lg);
     display: flex;
     align-items: center;
@@ -414,14 +414,14 @@
 
 .swipeable-card-container.threshold-reached-right .swipeable-card {
     border-color: var(--ds-semantic-success);
-    box-shadow: 0 0 0 3px rgba(163, 190, 140, 0.35),
-                0 6px 20px rgba(163, 190, 140, 0.25);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ds-semantic-success) 35%, transparent),
+                0 6px 20px color-mix(in srgb, var(--ds-semantic-success) 25%, transparent);
 }
 
 .swipeable-card-container.threshold-reached-left .swipeable-card {
     border-color: var(--ds-semantic-error);
-    box-shadow: 0 0 0 3px rgba(191, 97, 106, 0.35),
-                0 6px 20px rgba(191, 97, 106, 0.25);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--db-risk) 35%, transparent),
+                0 6px 20px color-mix(in srgb, var(--db-risk) 25%, transparent);
 }
 
 /* ===========================================
@@ -469,7 +469,7 @@
 }
 
 .swipeable-card-container.help-requesting .swipeable-card {
-    background: rgba(235, 203, 139, 0.2);
+    background: color-mix(in srgb, var(--ds-semantic-highlight) 20%, transparent);
     border-color: var(--ds-semantic-highlight);
 }
 

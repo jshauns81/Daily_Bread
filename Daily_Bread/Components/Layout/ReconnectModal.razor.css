@@ -91,18 +91,18 @@
 
 #components-reconnect-modal button {
     border: 0;
-    background-color: var(--ds-accent-primary, #4DA8C6);
+    background-color: var(--ds-accent-primary, #8B5CF6);
     color: var(--ds-on-accent, #fff);
     padding: 4px 24px;
     border-radius: 4px;
 }
 
     #components-reconnect-modal button:hover {
-        background-color: color-mix(in srgb, var(--ds-accent-primary, #4DA8C6) 82%, #000);
+        background-color: color-mix(in srgb, var(--ds-accent-primary, #8B5CF6) 82%, #000);
     }
 
     #components-reconnect-modal button:active {
-        background-color: var(--ds-accent-primary, #4DA8C6);
+        background-color: var(--ds-accent-primary, #8B5CF6);
     }
 
 .components-rejoining-animation {
@@ -113,7 +113,7 @@
 
     .components-rejoining-animation div {
         position: absolute;
-        border: 3px solid var(--ds-accent-primary, #4DA8C6);
+        border: 3px solid var(--ds-accent-primary, #8B5CF6);
         opacity: 1;
         border-radius: 50%;
         animation: components-rejoining-animation 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;

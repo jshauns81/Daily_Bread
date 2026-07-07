@@ -4,17 +4,16 @@
 // from the in-app theme picker and the quick top-bar toggle.
 window.DBTheme = (function () {
     var BG = {
-        guadalupe: { dark: '#0F1922', light: '#FAFBFC' },
-        marian:    { dark: '#101226', light: '#FAFBFE' },
-        sion:      { dark: '#0F1A14', light: '#FAFCFA' },
-        advent:    { dark: '#150F20', light: '#FCFAFE' },
-        rosa:      { dark: '#1B1019', light: '#FEFAFC' }
+        ultraviolet: { dark: '#0D0A14', light: '#FAF9FD' },
+        voltage:     { dark: '#0E1116', light: '#FAFBFA' },
+        cobalt:      { dark: '#0B1220', light: '#F5F8FF' },
+        tangerine:   { dark: '#131114', light: '#FAF8F7' }
     };
 
     function current() {
         var t = localStorage.getItem('db-theme');
         var m = localStorage.getItem('db-mode');
-        if (!BG[t]) t = 'guadalupe';
+        if (!BG[t]) t = 'ultraviolet';
         if (m !== 'light' && m !== 'dark') m = 'dark';
         return [t, m];
     }
