@@ -133,7 +133,7 @@
     opacity: 0.6;
 }
 
-.routine-emoji.inactive-icon {
+.routine-tile.inactive-icon {
     filter: grayscale(100%);
 }
 
@@ -143,8 +143,10 @@
     gap: var(--ds-space-2);
 }
 
-.routine-emoji {
-    font-size: 1.5rem;
+.routine-tile {
+    display: inline-flex;
+    flex: none;
+    line-height: 0;
 }
 
 .routine-name {

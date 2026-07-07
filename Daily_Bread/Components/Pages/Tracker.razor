@@ -71,7 +71,7 @@
         @if (IsParent)
         {
             <EmptyState Type="EmptyStateType.NoChores"
-                        Icon="📜"
+                        LucideName="scroll-text"
                         Title="No Tasks Scheduled"
                         Message="@GetEmptyMessage()">
                 <ActionButton>
@@ -82,7 +82,7 @@
         else
         {
             <EmptyState Type="EmptyStateType.NoChores"
-                        Icon="📜"
+                        LucideName="scroll-text"
                         Title="No Tasks Scheduled"
                         Message="@GetEmptyMessage()" />
         }
@@ -240,7 +240,7 @@
 {
     <ConfirmationModal 
         Title="Mark Task as Not Completed"
-        Icon="❌"
+        LucideName="circle-x"
         Message="@($"Mark '{_confirmingItem.ChoreName}' as not completed?")"
         Consequences="@GetMissConsequences()"
         ConfirmText="Mark Undone"
@@ -255,7 +255,7 @@
 {
     <ConfirmationModal 
         Title="Excuse Task for Today"
-        Icon="🙏"
+        LucideName="hand-heart"
         Message="@($"Grant dispensation for '{_confirmingItem.ChoreName}'?")"
         Consequences="@(["No penalty will be applied", "No earning for this chore today", "This can be undone later"])"
         ConfirmText="Grant Dispensation"

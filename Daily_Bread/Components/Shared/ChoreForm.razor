@@ -9,7 +9,7 @@
         <!-- GROUP 1: Identity -->
         <div class="form-section identity-section">
             <div class="icon-picker">
-                <EmojiPicker @bind-Value="FormModel.Icon" />
+                <IconPicker @bind-IconName="FormModel.LucideIconName" @bind-TileSlot="FormModel.TileSlot" />
             </div>
             <div class="name-field">
                 <InputText @bind-Value="FormModel.Name" class="ds-input ds-input--name" placeholder="What's the chore?" />
@@ -186,6 +186,8 @@
                 Name = Chore.Name,
                 Description = Chore.Description,
                 Icon = Chore.Icon,
+                LucideIconName = Chore.LucideIconName,
+                TileSlot = Chore.TileSlot is >= 1 and <= 5 ? Chore.TileSlot : 1,
                 AssignedUserId = Chore.AssignedUserId,
                 EarnValue = Chore.EarnValue,
                 ScheduleType = Chore.ScheduleType,
@@ -263,6 +265,8 @@
                 Name = FormModel.Name,
                 Description = FormModel.Description,
                 Icon = FormModel.Icon,
+                LucideIconName = FormModel.LucideIconName,
+                TileSlot = FormModel.TileSlot,
                 AssignedUserId = string.IsNullOrEmpty(FormModel.AssignedUserId) ? null : FormModel.AssignedUserId,
                 Kind = FormModel.ChoreType == ChoreTypeOption.Earning ? ChoreKind.Task : ChoreKind.Routine,
                 EarnValue = FormModel.ChoreType == ChoreTypeOption.Earning ? FormModel.EarnValue : 0,
@@ -294,6 +298,9 @@
         [StringLength(500)]
         public string? Description { get; set; }
         public string? Icon { get; set; }
+        public string? LucideIconName { get; set; }
+        /// <summary>0 = untouched on a new chore; the service assigns a rotating slot on create.</summary>
+        public int TileSlot { get; set; }
         public string? AssignedUserId { get; set; }
         [Range(0, 10000)]
         public decimal EarnValue { get; set; }

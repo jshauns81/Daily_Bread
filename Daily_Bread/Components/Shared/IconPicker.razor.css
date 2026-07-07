@@ -1,0 +1,189 @@
+.icon-picker-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* The 40px tile doubles as the trigger button (popover anchors to it — #18a/#18b). */
+.picker-tile-btn {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 13px;
+    line-height: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s ease;
+}
+
+.picker-tile-btn:hover {
+    transform: scale(1.05);
+}
+
+.picker-tile-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.picker-tile-btn.empty {
+    opacity: 0.65;
+}
+
+/* Backdrop + dropdown are FIXED so they escape the modal's overflow (same pattern
+   as the old EmojiPicker). */
+.icon-picker-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    background: transparent;
+}
+
+.icon-picker-dropdown {
+    position: fixed;
+    z-index: 10002;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    max-height: 420px;
+    overflow-y: auto;
+    background: var(--ds-bg-selected, var(--ds-bg-elevated));
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--ds-shadow-lg);
+    color: var(--ds-text-primary);
+    -webkit-overflow-scrolling: touch;
+}
+
+.icon-picker-header {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: var(--ds-space-3) var(--ds-space-4);
+    border-bottom: 1px solid var(--ds-divider, var(--ds-bg-muted));
+}
+
+.icon-picker-header-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.icon-picker-title {
+    font-size: 13px;
+    font-weight: var(--ds-font-semibold);
+    color: var(--ds-text-primary);
+}
+
+.icon-picker-sub {
+    font-size: 10px;
+    color: var(--ds-text-muted);
+}
+
+.icon-picker-close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--ds-text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.icon-picker-close:hover {
+    background: var(--ds-bg-muted);
+    color: var(--ds-text-primary);
+}
+
+.icon-picker-body {
+    padding: var(--ds-space-3) var(--ds-space-4) var(--ds-space-4);
+}
+
+/* 9.5px/700 tracked uppercase label (reference #18b) */
+.picker-label {
+    display: block;
+    font-size: 9.5px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--ds-text-muted);
+    margin-bottom: var(--ds-space-2);
+}
+
+.icon-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: var(--ds-space-4);
+}
+
+.icon-cell {
+    aspect-ratio: 1;
+    border-radius: 9px;
+    background: var(--ds-bg-base);
+    border: 1.5px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    color: var(--ds-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.icon-cell svg {
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+.icon-cell:hover {
+    background: var(--ds-bg-hover);
+    color: var(--ds-text-primary);
+}
+
+.icon-cell.selected {
+    background: color-mix(in srgb, var(--ds-accent-primary) 20%, transparent);
+    border-color: var(--ds-accent-primary);
+    color: var(--ds-accent-light, var(--ds-accent-text));
+}
+
+.slot-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: var(--ds-space-2);
+}
+
+/* 30px gradient swatches — one per theme slot; selected gets the outline ring (#18b). */
+.slot-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background: linear-gradient(140deg, var(--swatch-a), var(--swatch-b));
+    box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--swatch-a) 60%, transparent);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.slot-swatch.selected {
+    outline: 2px solid var(--ds-text-primary);
+    outline-offset: 2px;
+}
+
+.slot-swatch:focus-visible {
+    outline: 2px solid var(--ds-accent-primary);
+    outline-offset: 2px;
+}
+
+.picker-hint {
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--ds-text-muted);
+}

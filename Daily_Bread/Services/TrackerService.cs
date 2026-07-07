@@ -15,6 +15,10 @@ public class TrackerChoreItem
     public required string ChoreName { get; init; }
     public string? Description { get; init; }
     public string? Icon { get; init; }
+    /// <summary>Design-system icon name (Lucide sprite id). Presentation only.</summary>
+    public string? LucideIconName { get; init; }
+    /// <summary>Tile color slot (1–5); hue follows the active theme.</summary>
+    public int TileSlot { get; init; }
     public ChoreKind Kind { get; init; }
     public decimal EarnValue { get; init; }
     /// <summary>Importance weight 0–10 (how important, not minutes) used to price a missed instance. See MECHANICS_AMENDMENT.md §A.</summary>
@@ -1050,6 +1054,8 @@ public class TrackerService : ITrackerService
             ChoreName = chore.Name,
             Description = chore.Description,
             Icon = chore.Icon,
+            LucideIconName = chore.LucideIconName,
+            TileSlot = chore.TileSlot,
             Kind = chore.Kind,
             EarnValue = chore.EarnValue,
             Importance = chore.Importance,

@@ -2,7 +2,12 @@
 
 <div class="empty-state @CssClass">
     <div class="empty-state-icon">
-        @if (!string.IsNullOrEmpty(Icon))
+        @if (!string.IsNullOrEmpty(LucideName))
+        {
+            @* Design-system mono icon from the Lucide sprite (preferred over emoji) *@
+            <IconTile IconName="@LucideName" Mono="true" Size="48" />
+        }
+        else if (!string.IsNullOrEmpty(Icon))
         {
             <span class="emoji">@Icon</span>
         }
@@ -80,6 +85,8 @@
 @code {
     [Parameter] public EmptyStateType Type { get; set; } = EmptyStateType.NoData;
     [Parameter] public string? Icon { get; set; }
+    /// <summary>Lucide sprite icon name (e.g. "scroll-text"). Takes precedence over the emoji Icon.</summary>
+    [Parameter] public string? LucideName { get; set; }
     [Parameter] public string? Title { get; set; }
     [Parameter] public string? Message { get; set; }
     [Parameter] public string? ActionText { get; set; }

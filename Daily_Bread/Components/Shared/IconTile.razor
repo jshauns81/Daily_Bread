@@ -1,0 +1,50 @@
+@namespace Daily_Bread.Components.Shared
+
+@* Design-system icon tile: rounded-square gradient tile (hue by theme slot 1-5) with a white
+   Lucide stroke icon from /images/lucide-sprite.svg. Replaces chore emoji (see README Icon System).
+   Mono mode renders the bare stroke icon (no tile) for nav/inline use. *@
+
+@if (Mono)
+{
+    <svg class="icon-tile-mono" width="@Size" height="@Size" aria-hidden="true">
+        <use href="@($"/images/lucide-sprite.svg#lucide-{SafeIconName}")" />
+    </svg>
+}
+else
+{
+    <span class="icon-tile" style="@TileStyle" aria-hidden="true">
+        <svg width="@GlyphSize" height="@GlyphSize">
+            <use href="@($"/images/lucide-sprite.svg#lucide-{SafeIconName}")" />
+        </svg>
+    </span>
+}
+
+@code {
+    /// <summary>Lucide icon name as shipped in the sprite (e.g. "paw-print").</summary>
+    [Parameter] public string? IconName { get; set; }
+
+    /// <summary>Tile color slot (1-5). The slot's actual hue follows the active theme
+    /// (--tile-N-a/--tile-N-b), so identity survives theme switches as position.</summary>
+    [Parameter] public int Slot { get; set; } = 1;
+
+    /// <summary>Tile size in px. 22 dense logs, 26 list rows, 28 planner cells, 30 card headers.</summary>
+    [Parameter] public int Size { get; set; } = 26;
+
+    /// <summary>Render a bare mono stroke icon (currentColor, no gradient tile). Used for nav.</summary>
+    [Parameter] public bool Mono { get; set; }
+
+    private const string DefaultIcon = "sparkles";
+
+    private string SafeIconName => string.IsNullOrWhiteSpace(IconName) ? DefaultIcon : IconName;
+
+    private int SafeSlot => Slot is >= 1 and <= 5 ? Slot : 1;
+
+    // Radius ~ 1/3 of size, glyph ~ 1/2 of size (per reference #5b / #18b).
+    private int Radius => (int)Math.Round(Size / 3.0);
+
+    private int GlyphSize => (int)Math.Round(Size / 2.0);
+
+    private string TileStyle =>
+        $"width:{Size}px;height:{Size}px;border-radius:{Radius}px;" +
+        $"--icon-tile-a:var(--tile-{SafeSlot}-a);--icon-tile-b:var(--tile-{SafeSlot}-b);";
+}

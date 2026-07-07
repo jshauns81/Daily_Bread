@@ -235,11 +235,6 @@
     background: var(--ds-bg-elevated);
 }
 
-.job-emoji {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-
 .job-details {
     display: flex;
     flex-direction: column;
@@ -325,9 +320,15 @@
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cell-indicator .indicator.scheduled {
-    color: var(--ds-semantic-success);
-    filter: drop-shadow(0 0 4px rgba(163, 190, 140, 0.4));
+/* Scheduled day cells show an 11px round dot in the chore's slot hue (--dot-hue is set
+   inline from --tile-N-a) — icons stay out of the 35-cell grid per the design README. */
+.cell-indicator .indicator.scheduled-dot {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--dot-hue, var(--ds-accent-primary));
+    box-shadow: 0 0 4px color-mix(in srgb, var(--dot-hue, var(--ds-accent-primary)) 40%, transparent);
 }
 
 .cell-indicator .indicator.available {
@@ -426,12 +427,6 @@
     align-items: flex-start;
     gap: var(--ds-space-2);
     margin-bottom: var(--ds-space-3);
-}
-
-.wage-card-emoji {
-    font-size: 1.75rem;
-    line-height: 1;
-    flex-shrink: 0;
 }
 
 .wage-card-title {
@@ -542,10 +537,6 @@
         grid-template-columns: minmax(120px, 1.2fr) repeat(7, 1fr) minmax(60px, 0.6fr);
     }
     
-    .job-emoji {
-        font-size: 1.25rem;
-    }
-    
     .job-name {
         font-size: 0.8rem;
     }
@@ -587,10 +578,6 @@
     
     .job-cell {
         padding: var(--ds-space-1);
-    }
-    
-    .job-emoji {
-        font-size: 1.1rem;
     }
     
     .job-name {

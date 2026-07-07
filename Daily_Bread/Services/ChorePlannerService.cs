@@ -51,6 +51,10 @@ public class ChorePlannerRow
     public required string ChoreName { get; init; }
     public string? Description { get; init; }
     public string? Icon { get; init; }
+    /// <summary>Design-system icon name (Lucide sprite id). Presentation only.</summary>
+    public string? LucideIconName { get; init; }
+    /// <summary>Tile color slot (1–5); hue follows the active theme.</summary>
+    public int TileSlot { get; init; }
     public decimal Value { get; init; }
     public ChoreScheduleType ScheduleType { get; init; }
     public DaysOfWeek ActiveDays { get; init; }
@@ -610,6 +614,8 @@ public class ChorePlannerService : IChorePlannerService
                 ChoreName = chore.Name,
                 Description = chore.Description,
                 Icon = chore.Icon,
+                LucideIconName = chore.LucideIconName,
+                TileSlot = chore.TileSlot,
                 Value = chore.EarnValue,
                 ScheduleType = chore.ScheduleType,
                 ActiveDays = chore.ActiveDays,
@@ -936,6 +942,8 @@ public class ChorePlannerService : IChorePlannerService
                 ChoreName = chore.Name,
                 Description = chore.Description,
                 Icon = chore.Icon,
+                LucideIconName = chore.LucideIconName,
+                TileSlot = chore.TileSlot,
                 Value = chore.EarnValue,
                 ScheduleType = chore.ScheduleType,
                 ActiveDays = chore.ActiveDays,

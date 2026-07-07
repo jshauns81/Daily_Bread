@@ -62,10 +62,11 @@ public class ChoreDefinition
     public string? LucideIconName { get; set; }
 
     /// <summary>
-    /// Design-system hue token (e.g. violet|pink|mint|blue|amber). Presentation only.
-    /// See MECHANICS_AMENDMENT.md §G.
+    /// Tile color slot (1–5) in the active theme's hue family. The slot's actual hue re-maps
+    /// per theme (amended owner decision 2026-07-07) — a chore keeps its slot, not a literal
+    /// color. Presentation only. Supersedes the old string Hue column.
     /// </summary>
-    public string? Hue { get; set; }
+    public int TileSlot { get; set; } = 1;
 
     /// <summary>
     /// When true, this routine is a "vacuum-fill" (inverse) routine whose target duration grows

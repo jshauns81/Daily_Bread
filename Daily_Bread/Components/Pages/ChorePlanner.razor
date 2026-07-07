@@ -24,7 +24,7 @@
         <div class="header-content">
             <div class="header-left">
                 <h1 class="board-title">
-                    <span class="title-icon">📋</span>
+                    <span class="title-icon"><IconTile IconName="calendar" Mono="true" Size="20" /></span>
                     <span>Planner</span>
                 </h1>
                 @if (_childProfiles.Count > 1)
@@ -71,13 +71,13 @@
         <div class="tab-bar">
             <button class="tab-btn @(_activeTab == TabView.Wages ? "active" : "")"
                     @onclick="() => SetActiveTab(TabView.Wages)">
-                <span class="tab-icon">💵</span>
+                <span class="tab-icon"><IconTile IconName="wallet" Mono="true" Size="16" /></span>
                 <span class="tab-label">Tasks</span>
                 <span class="tab-count">@_earningChores.Count</span>
             </button>
             <button class="tab-btn @(_activeTab == TabView.Routines ? "active" : "")"
                     @onclick="() => SetActiveTab(TabView.Routines)">
-                <span class="tab-icon">📋</span>
+                <span class="tab-icon"><IconTile IconName="calendar" Mono="true" Size="16" /></span>
                 <span class="tab-label">Routines</span>
                 <span class="tab-count">@_routineChores.Count</span>
             </button>
@@ -95,7 +95,7 @@
     else if (_plannerData == null)
     {
         <div class="empty-state">
-            <span class="empty-icon">📝</span>
+            <span class="empty-icon"><IconTile IconName="scroll-text" Mono="true" Size="40" /></span>
             <h3>No chores yet</h3>
             <p>Add your first task to get started!</p>
             <button class="primary-btn" @onclick="ShowCreateChoreForm">
@@ -111,7 +111,7 @@
             @if (_earningChores.Count == 0)
             {
                 <div class="empty-state">
-                    <span class="empty-icon">💵</span>
+                    <span class="empty-icon"><IconTile IconName="wallet" Mono="true" Size="40" /></span>
                     <h3>No earning chores</h3>
                     <p>Add chores with a dollar value to see them here.</p>
                     <button class="primary-btn" @onclick="ShowCreateChoreForm">
@@ -154,7 +154,7 @@
                         @foreach (var ovr in _plannerData.Overrides)
                         {
                             <div class="override-item">
-                                <span class="override-icon">⚡</span>
+                                <span class="override-icon"><IconTile IconName="zap" Mono="true" Size="14" /></span>
                                 <span class="override-chore">@ovr.ChoreName</span>
                                 <span class="override-action @ovr.Type.ToString().ToLower()">
                                     @(ovr.Type == ScheduleOverrideType.Add ? "added to" : ovr.Type == ScheduleOverrideType.Remove ? "removed from" : "moved to")
@@ -169,9 +169,9 @@
                 <div class="legend no-print">
                     <span class="legend-item"><span class="indicator scheduled">●</span> Scheduled</span>
                     <span class="legend-item"><span class="indicator available">○</span> Available</span>
-                    <span class="legend-item"><span class="indicator override">⚡</span> Override</span>
+                    <span class="legend-item"><span class="indicator override"><IconTile IconName="zap" Mono="true" Size="12" /></span> Override</span>
                     <span class="legend-item"><span class="indicator removed">✕</span> Removed</span>
-                    <span class="legend-tip">💡 Click a cell to toggle schedule</span>
+                    <span class="legend-tip"><IconTile IconName="lightbulb" Mono="true" Size="12" /> Click a cell to toggle schedule</span>
                 </div>
             }
         }
@@ -446,6 +446,8 @@
                     Name = choreDetails.Name,
                     Description = choreDetails.Description,
                     Icon = choreDetails.Icon,
+                    LucideIconName = choreDetails.LucideIconName,
+                    TileSlot = choreDetails.TileSlot,
                     AssignedUserId = choreDetails.AssignedUserId,
                     Kind = choreDetails.Kind,
                     EarnValue = choreDetails.EarnValue,

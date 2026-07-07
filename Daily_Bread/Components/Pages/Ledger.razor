@@ -104,7 +104,7 @@
     else if (!IsParent && SelectedAccountId == 0)
     {
         <EmptyState Type="EmptyStateType.Error" 
-                    Icon="🏛️"
+                    LucideName="landmark"
                     Title="No History Found"
                     Message="Please contact a parent to set up their account." />
     }
@@ -113,7 +113,7 @@
         @if (ChildProfiles.Count == 0)
         {
             <EmptyState Type="EmptyStateType.NoChildren" 
-                        Icon="👨‍👩‍👧‍👦"
+                        LucideName="users"
                         Title="No Children Added"
                         Message="Add children to view their history.">
                 <ActionButton>
@@ -124,7 +124,7 @@
         else
         {
             <EmptyState Type="EmptyStateType.NoChildren" 
-                        Icon="🏛️"
+                        LucideName="landmark"
                         Title="Select a Child"
                         Message="Choose a child from the dropdown above to view their history." />
         }

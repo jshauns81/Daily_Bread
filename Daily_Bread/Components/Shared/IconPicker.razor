@@ -1,0 +1,140 @@
+@namespace Daily_Bread.Components.Shared
+@inject IJSRuntime JS
+
+@* Icon picker (EmojiPicker's replacement for chores) — reference #18b.
+   Two choices: a Lucide glyph and a color SLOT. Slots preview in the active theme's hue
+   family and re-map automatically when the theme changes — the icon is the identity,
+   not the color. *@
+
+<div class="icon-picker-wrapper" @ref="_wrapperRef">
+    <button type="button"
+            class="picker-tile-btn @(string.IsNullOrEmpty(IconName) ? "empty" : "")"
+            @onclick="TogglePicker"
+            @onclick:stopPropagation="true"
+            title="Choose icon">
+        <IconTile IconName="@(string.IsNullOrEmpty(IconName) ? "sparkles" : IconName)" Slot="@CurrentSlot" Size="40" />
+    </button>
+
+    @if (_showPicker)
+    {
+        <div class="icon-picker-backdrop" @onclick="ClosePicker"></div>
+        <div class="icon-picker-dropdown"
+             style="@GetDropdownStyle()"
+             @onclick:stopPropagation="true">
+            <div class="icon-picker-header">
+                <IconTile IconName="@(string.IsNullOrEmpty(IconName) ? "sparkles" : IconName)" Slot="@CurrentSlot" Size="40" />
+                <div class="icon-picker-header-text">
+                    <span class="icon-picker-title">Icon &amp; color</span>
+                    <span class="icon-picker-sub">@(string.IsNullOrEmpty(IconName) ? "sparkles" : IconName) · slot @CurrentSlot</span>
+                </div>
+                <button type="button" class="icon-picker-close" @onclick="ClosePicker">×</button>
+            </div>
+
+            <div class="icon-picker-body">
+                <span class="picker-label">Icon</span>
+                <div class="icon-grid">
+                    @foreach (var icon in ChoreIcons)
+                    {
+                        <button type="button"
+                                class="icon-cell @(IconName == icon ? "selected" : "")"
+                                @onclick="() => SelectIcon(icon)"
+                                title="@icon">
+                            <svg width="15" height="15"><use href="@($"/images/lucide-sprite.svg#lucide-{icon}")" /></svg>
+                        </button>
+                    }
+                </div>
+
+                <span class="picker-label">Color slot</span>
+                <div class="slot-row">
+                    @for (var slot = 1; slot <= 5; slot++)
+                    {
+                        var s = slot;
+                        <button type="button"
+                                class="slot-swatch @(CurrentSlot == s ? "selected" : "")"
+                                style="--swatch-a:var(--tile-@(s)-a);--swatch-b:var(--tile-@(s)-b);"
+                                @onclick="() => SelectSlot(s)"
+                                title="@($"Color slot {s}")">
+                        </button>
+                    }
+                </div>
+                <p class="picker-hint">Slots preview in the current theme. Switch themes and every tile re-maps to that theme's palette — the icon stays.</p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? IconName { get; set; }
+    [Parameter] public EventCallback<string?> IconNameChanged { get; set; }
+
+    [Parameter] public int TileSlot { get; set; } = 1;
+    [Parameter] public EventCallback<int> TileSlotChanged { get; set; }
+
+    private bool _showPicker;
+    private ElementReference _wrapperRef;
+    private double _dropdownTop;
+    private double _dropdownLeft;
+
+    private int CurrentSlot => TileSlot is >= 1 and <= 5 ? TileSlot : 1;
+
+    // The chore icon set shipped in /images/lucide-sprite.svg (README Icon System list).
+    private static readonly string[] ChoreIcons =
+    [
+        "paw-print", "chef-hat", "utensils", "droplet", "trash-2", "leaf", "bed",
+        "book-open", "shirt", "car", "music", "sparkles", "sun", "package",
+        "pill", "bone", "activity", "lightbulb", "monitor", "clock"
+    ];
+
+    private string GetDropdownStyle() => $"top: {_dropdownTop}px; left: {_dropdownLeft}px;";
+
+    private async Task TogglePicker()
+    {
+        if (!_showPicker)
+        {
+            // Position below the button (fixed positioning escapes the modal's overflow).
+            try
+            {
+                var rect = await JS.InvokeAsync<BoundingClientRect>("eval",
+                    $"(function(){{ var el = document.querySelector('[_bl_{_wrapperRef.Id}]') || document.querySelector('.icon-picker-wrapper'); if(el){{ var r = el.getBoundingClientRect(); return {{top:r.top,left:r.left,bottom:r.bottom,right:r.right,width:r.width,height:r.height}}; }} return {{top:100,left:20,bottom:148,right:68,width:48,height:48}}; }})()");
+
+                _dropdownTop = rect.Bottom + 4;
+                _dropdownLeft = rect.Left;
+
+                if (_dropdownLeft + 320 > rect.Right + 200)
+                {
+                    _dropdownLeft = Math.Max(16, rect.Right - 320);
+                }
+            }
+            catch
+            {
+                _dropdownTop = 120;
+                _dropdownLeft = 20;
+            }
+        }
+
+        _showPicker = !_showPicker;
+    }
+
+    private void ClosePicker()
+    {
+        _showPicker = false;
+    }
+
+    private async Task SelectIcon(string icon)
+    {
+        IconName = icon;
+        await IconNameChanged.InvokeAsync(icon);
+        if (TileSlot is < 1 or > 5)
+        {
+            await SelectSlot(1);
+        }
+    }
+
+    private async Task SelectSlot(int slot)
+    {
+        TileSlot = slot;
+        await TileSlotChanged.InvokeAsync(slot);
+    }
+
+    private record BoundingClientRect(double Top, double Left, double Bottom, double Right, double Width, double Height);
+}

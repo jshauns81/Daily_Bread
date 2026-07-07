@@ -34,7 +34,9 @@
                 </div>
             }
             <div class="routine-info">
-                <span class="routine-emoji @(!chore.IsActive ? "inactive-icon" : "")">@(chore.Icon ?? "✨")</span>
+                <span class="routine-tile @(!chore.IsActive ? "inactive-icon" : "")">
+                    <IconTile IconName="@chore.LucideIconName" Slot="@chore.TileSlot" Size="26" />
+                </span>
                 <span class="routine-name">@chore.ChoreName</span>
                 @if (!chore.IsActive)
                 {

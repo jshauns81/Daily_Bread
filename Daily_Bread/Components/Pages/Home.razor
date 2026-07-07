@@ -553,7 +553,9 @@ else if (_childData != null)
                         var isComplete = progress.CompletedCount >= progress.TargetCount;
                         
                         <div class="weekly-item @(isComplete ? "complete" : "")">
-                            <span class="weekly-item-icon">@(progress.ChoreDefinition.Icon ?? "📋")</span>
+                            <span class="weekly-item-icon">
+                                <IconTile IconName="@progress.ChoreDefinition.LucideIconName" Slot="@progress.ChoreDefinition.TileSlot" Size="22" />
+                            </span>
                             <div class="weekly-item-info">
                                 <span class="weekly-item-name">@progress.ChoreDefinition.Name</span>
                                 <div class="weekly-item-progress">

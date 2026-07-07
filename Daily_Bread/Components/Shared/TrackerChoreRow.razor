@@ -16,6 +16,8 @@
     
     @* Chore Details - Name, description, context *@
     <td class="chore-cell">
+        <div class="chore-cell-inner">
+        <IconTile IconName="@Item.LucideIconName" Slot="@Item.TileSlot" Size="26" />
         <div class="chore-content">
             <span class="chore-name">
                 @Item.ChoreName
@@ -29,6 +31,7 @@
             {
                 <span class="help-reason">"@Item.HelpReason"</span>
             }
+        </div>
         </div>
     </td>
     

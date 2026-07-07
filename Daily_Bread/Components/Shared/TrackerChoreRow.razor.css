@@ -159,10 +159,17 @@
     min-width: 200px;
 }
 
+.chore-cell-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+}
+
 .chore-content {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
 }
 
 .chore-name {

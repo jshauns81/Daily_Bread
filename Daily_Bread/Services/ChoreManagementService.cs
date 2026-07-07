@@ -14,6 +14,10 @@ public class ChoreDefinitionDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Icon { get; set; }
+    /// <summary>Design-system icon name (Lucide sprite id, e.g. "paw-print"). Presentation only.</summary>
+    public string? LucideIconName { get; set; }
+    /// <summary>Tile color slot (1–5); the slot's hue follows the active theme. 0 = unset (service assigns a rotating default).</summary>
+    public int TileSlot { get; set; }
     public string? AssignedUserId { get; set; }
     public ChoreKind Kind { get; set; } = ChoreKind.Task;
     public decimal EarnValue { get; set; }
@@ -159,6 +163,10 @@ public class ChoreManagementService : IChoreManagementService
             Name = dto.Name.Trim(),
             Description = dto.Description?.Trim(),
             Icon = dto.Icon?.Trim(),
+            LucideIconName = string.IsNullOrWhiteSpace(dto.LucideIconName) ? "sparkles" : dto.LucideIconName.Trim(),
+            TileSlot = dto.TileSlot is >= 1 and <= 5
+                ? dto.TileSlot
+                : (await context.ChoreDefinitions.CountAsync() % 5) + 1, // rotating default on creation
             AssignedUserId = dto.AssignedUserId,
             Kind = dto.Kind,
             EarnValue = dto.Kind == ChoreKind.Task ? dto.EarnValue : 0m,
@@ -243,6 +251,8 @@ public class ChoreManagementService : IChoreManagementService
         chore.Name = dto.Name.Trim();
         chore.Description = dto.Description?.Trim();
         chore.Icon = dto.Icon?.Trim();
+        chore.LucideIconName = string.IsNullOrWhiteSpace(dto.LucideIconName) ? chore.LucideIconName : dto.LucideIconName.Trim();
+        chore.TileSlot = dto.TileSlot is >= 1 and <= 5 ? dto.TileSlot : chore.TileSlot;
         chore.AssignedUserId = dto.AssignedUserId;
         chore.Kind = dto.Kind;
         chore.EarnValue = dto.Kind == ChoreKind.Task ? dto.EarnValue : 0m;

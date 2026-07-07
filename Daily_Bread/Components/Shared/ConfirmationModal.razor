@@ -5,7 +5,11 @@
         <div class="modal-content">
             <div class="modal-header @GetHeaderClass()">
                 <h5 class="modal-title">
-                    @if (!string.IsNullOrEmpty(Icon))
+                    @if (!string.IsNullOrEmpty(LucideName))
+                    {
+                        <span class="me-2"><IconTile IconName="@LucideName" Mono="true" Size="18" /></span>
+                    }
+                    else if (!string.IsNullOrEmpty(Icon))
                     {
                         <span class="me-2">@Icon</span>
                     }
@@ -59,6 +63,12 @@
     /// </summary>
     [Parameter]
     public string? Icon { get; set; }
+
+    /// <summary>
+    /// Optional Lucide sprite icon name for the header (preferred over the emoji Icon).
+    /// </summary>
+    [Parameter]
+    public string? LucideName { get; set; }
 
     /// <summary>
     /// Main message/question for the user.

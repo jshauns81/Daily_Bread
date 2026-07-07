@@ -45,7 +45,7 @@
             }
             <!-- Job Info -->
             <div class="job-cell" @onclick="() => OnEditChore.InvokeAsync(chore)">
-                <span class="job-emoji">@(chore.Icon ?? "✨")</span>
+                <IconTile IconName="@chore.LucideIconName" Slot="@chore.TileSlot" Size="28" />
                 <div class="job-details">
                     <span class="job-name">@chore.ChoreName</span>
                     @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
@@ -84,11 +84,12 @@
                             {
                                 @if (cell.HasOverride)
                                 {
-                                    <span class="indicator override">⚡</span>
+                                    <span class="indicator override"><IconTile IconName="zap" Mono="true" Size="14" /></span>
                                 }
                                 else
                                 {
-                                    <span class="indicator scheduled">@(chore.Icon ?? "●")</span>
+                                    @* Day cells show an 11px dot in the chore's slot hue, not the icon (README planner rule) *@
+                                    <span class="indicator scheduled scheduled-dot" style="--dot-hue:var(--tile-@(chore.TileSlot is >= 1 and <= 5 ? chore.TileSlot : 1)-a);"></span>
                                 }
                             }
                             else if (cell.Status == ChoreCellStatus.Available)
@@ -130,7 +131,7 @@
              @onclick="() => OnEditChore.InvokeAsync(chore)">
 
             <div class="wage-card-header">
-                <span class="wage-card-emoji">@(chore.Icon ?? "✨")</span>
+                <IconTile IconName="@chore.LucideIconName" Slot="@chore.TileSlot" Size="30" />
                 <div class="wage-card-title">
                     <span class="wage-card-name">@chore.ChoreName</span>
                     <span class="wage-card-subtitle">@GetScheduleSummary(chore)</span>
