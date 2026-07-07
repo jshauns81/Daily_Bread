@@ -81,7 +81,7 @@
             @foreach (var achievement in _unseenAchievements)
             {
                 <div class="ach-unlock-row" @onclick="() => ShowAchievementDetail(achievement)">
-                    <span class="ach-unlock-badge">@achievement.Icon</span>
+                    <span class="ach-unlock-badge">@FirstGlyph(achievement.Icon)</span>
                     <div class="ach-unlock-info">
                         <div class="ach-unlock-name">@achievement.Name</div>
                         <div class="ach-unlock-desc">Unlocked@(achievement.EarnedAt.HasValue ? $" {achievement.EarnedAt.Value:MMM d}" : "") · @achievement.Description</div>
@@ -124,12 +124,12 @@
                     @onclick="() => ShowAchievementDetail(achievement)">
                 @if (achievement.IsEarned)
                 {
-                    <span class="ach-medal">@achievement.Icon</span>
+                    <span class="ach-medal">@FirstGlyph(achievement.Icon)</span>
                 }
                 else
                 {
                     <span class="ach-ring" style="background: conic-gradient(var(--db-accent) 0 @(ringDeg)deg, var(--ds-bg-selected) @(ringDeg)deg 360deg)">
-                        <span class="ach-ring-inner">@(achievement.IsHidden ? "?" : (achievement.LockedIcon ?? achievement.Icon))</span>
+                        <span class="ach-ring-inner">@(achievement.IsHidden ? "?" : FirstGlyph(achievement.LockedIcon ?? achievement.Icon))</span>
                     </span>
                 }
                 <span class="ach-cell-name">@achievement.Name</span>
@@ -181,12 +181,12 @@
             <div class="ach-modal-body">
                 @if (_selectedAchievement.IsEarned)
                 {
-                    <span class="ach-medal big">@_selectedAchievement.Icon</span>
+                    <span class="ach-medal big">@FirstGlyph(_selectedAchievement.Icon)</span>
                 }
                 else
                 {
                     <span class="ach-ring big" style="background: conic-gradient(var(--db-accent) 0 @(Math.Clamp(_selectedAchievement.ProgressPercent, 0, 100) * 360 / 100)deg, var(--ds-bg-selected) @(Math.Clamp(_selectedAchievement.ProgressPercent, 0, 100) * 360 / 100)deg 360deg)">
-                        <span class="ach-ring-inner">@(_selectedAchievement.IsHidden ? "?" : (_selectedAchievement.LockedIcon ?? _selectedAchievement.Icon))</span>
+                        <span class="ach-ring-inner">@(_selectedAchievement.IsHidden ? "?" : FirstGlyph(_selectedAchievement.LockedIcon ?? _selectedAchievement.Icon))</span>
                     </span>
                 }
                 <h4 class="ach-modal-name">@_selectedAchievement.Name</h4>
@@ -328,5 +328,17 @@
             AchievementRarity.Legendary => "LEGENDARY",
             _ => ""
         };
+    }
+
+    /// <summary>
+    /// The medal is a single-glyph slot; some achievements store multi-emoji icons
+    /// (e.g. "💰💰💰" for Half Century) which crowd the circle. Render just the first
+    /// grapheme cluster so escalating-value icons still read as one clean mark.
+    /// </summary>
+    private static string FirstGlyph(string? icon)
+    {
+        if (string.IsNullOrEmpty(icon)) return icon ?? "";
+        var e = System.Globalization.StringInfo.GetTextElementEnumerator(icon);
+        return e.MoveNext() ? (string)e.Current : icon;
     }
 }

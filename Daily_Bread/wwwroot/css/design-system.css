@@ -273,6 +273,12 @@
     --db-risk: #DC2626;   --ds-risk-light: #FF5C5C;  --ds-risk-deep: #B91C1C;
 }
 
+/* Money TEXT color — vivid on dark, deep on light (mirrors --ds-accent-text).
+   --ds-money-light is tuned for dark surfaces; using it as text on light mode
+   is illegible, so text should read --ds-money-text instead. */
+:root, [data-mode="dark"] { --ds-money-text: var(--ds-money-light); }
+[data-mode="light"] { --ds-money-text: var(--ds-money-deep); }
+
 /* Legacy semantic aliases — keep pre-redesign components rendering correctly.
    gold/bread = money, error = risk, warning = screen time. */
 :root{

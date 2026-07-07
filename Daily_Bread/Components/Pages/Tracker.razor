@@ -14,6 +14,7 @@
 @inject IDateProvider DateProvider
 @inject ILedgerService LedgerService
 @inject IToastService ToastService
+@inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>@(IsParent ? "Activity" : "My Day")</PageTitle>
@@ -722,7 +723,7 @@
 
             if (totalChores > 0 && currentCompleted == totalChores && previousCount < totalChores && _previousCompletedCount < totalChores)
             {
-                _showConfetti = true;
+                await TryCelebrateDayCompleteAsync();
             }
 
             _previousCompletedCount = currentCompleted;
@@ -782,7 +783,7 @@
 
             if (totalChores > 0 && currentCompleted == totalChores && previousCount < totalChores)
             {
-                _showConfetti = true;
+                await TryCelebrateDayCompleteAsync();
             }
 
             _previousCompletedCount = currentCompleted;
@@ -791,6 +792,32 @@
         {
             ToastService.ShowError("Error", $"Failed to refresh: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Fire the day-complete celebration at most once per day per device. Guarded by a
+    /// localStorage key (shared with the kid home) so returning to an already-complete
+    /// "My Day" — which recreates this component and resets the in-memory counters —
+    /// does not re-trigger the takeover. Only today's completion celebrates.
+    /// </summary>
+    private async Task TryCelebrateDayCompleteAsync()
+    {
+        if (SelectedDate != DateProvider.Today || string.IsNullOrEmpty(UserId)) return;
+
+        var key = $"db-daycomplete-{UserId}-{SelectedDate:yyyyMMdd}";
+        try
+        {
+            var seen = await JS.InvokeAsync<string?>("localStorage.getItem", key);
+            if (!string.IsNullOrEmpty(seen)) return;
+            await JS.InvokeVoidAsync("localStorage.setItem", key, "1");
+        }
+        catch
+        {
+            // JS unavailable (prerender) — skip rather than risk a stray fire.
+            return;
+        }
+        _showConfetti = true;
+        StateHasChanged();
     }
 
     private string GetEmptyMessage()

@@ -160,7 +160,7 @@
     flex: 1.4;
     background: color-mix(in srgb, var(--db-money) 14%, transparent);
     border-color: color-mix(in srgb, var(--db-money) 40%, transparent);
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
     font-weight: 700;
 }
 
@@ -537,7 +537,7 @@
 }
 
 .chore-form .importance-consequence__mint {
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
 }
 
 .chore-form .importance-coming {

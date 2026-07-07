@@ -138,7 +138,7 @@
 .celebrate-chip-balance {
     background: color-mix(in srgb, var(--db-money) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--db-money) 35%, transparent);
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
 }
 
 .celebrate-hint {
@@ -336,9 +336,10 @@
         animation: none;
     }
 
+    /* Frozen mid-fall confetti reads as a glitch; drop the pieces and let the
+       takeover card stand on its own as the static "day complete" frame. */
     .celebrate-piece {
-        animation: none;
-        opacity: 0.9;
+        display: none;
     }
 
     .billrain-bill {

@@ -69,7 +69,7 @@
 
 .toast.toast-success .toast-icon {
     background: color-mix(in srgb, var(--db-money) 16%, transparent);
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
 }
 
 .toast.toast-info {

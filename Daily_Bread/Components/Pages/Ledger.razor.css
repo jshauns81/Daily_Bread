@@ -152,7 +152,7 @@
     padding: 3px 8px;
     border-radius: var(--ds-radius-pill);
     background: color-mix(in srgb, var(--db-money) 16%, transparent);
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
 }
 
 .lg-hero-amt {
@@ -201,7 +201,7 @@
 
 .lg-action-btn.money:hover {
     border-color: color-mix(in srgb, var(--db-money) 50%, transparent);
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
 }
 
 .lg-action-btn.risk:hover {
@@ -263,7 +263,7 @@
 
 .lg-badge.money {
     background: color-mix(in srgb, var(--db-money) 16%, transparent);
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
 }
 
 .lg-badge.risk,

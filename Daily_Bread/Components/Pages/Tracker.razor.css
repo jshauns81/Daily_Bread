@@ -590,7 +590,7 @@
 }
 
 .md-receipt-check {
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
     display: flex;
     flex: none;
 }
@@ -598,7 +598,7 @@
 .md-receipt-title {
     font-size: 11px;
     font-weight: var(--ds-font-bold);
-    color: var(--ds-money-light);
+    color: var(--ds-money-text);
     white-space: nowrap;
 }
 

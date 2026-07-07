@@ -16,6 +16,7 @@
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 @inject ILogger<Home> Logger
 
 <PageTitle>Daily Bread - Home</PageTitle>
@@ -673,21 +674,7 @@ else
                 ScheduleAchievementMarking(_userId);
             }
             
-            if (_childData != null && 
-                _childData.TodayTotalCount > 0 && 
-                _childData.TodayCompletedCount == _childData.TodayTotalCount &&
-                !_hasTriggeredConfetti)
-            {
-                _hasTriggeredConfetti = true;
-                _ = Task.Delay(500).ContinueWith(_ => 
-                {
-                    InvokeAsync(() =>
-                    {
-                        _showConfetti = true;
-                        StateHasChanged();
-                    });
-                });
-            }
+            _ = ScheduleDayCompleteCelebrationAsync();
         }
         catch (Exception ex)
         {
@@ -716,9 +703,9 @@ else
         await InvokeAsync(async () =>
         {
             await LoadDashboardAsync(forceRefresh: true);
-            CheckAndTriggerConfetti();
             StateHasChanged();
         });
+        _ = ScheduleDayCompleteCelebrationAsync();
     }
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -737,23 +724,41 @@ else
         }
     }
     
-    private void CheckAndTriggerConfetti()
+    /// <summary>
+    /// Fire the day-complete celebration once — and only once per day per device.
+    /// The component is disposed/recreated on every navigation, so an in-memory flag
+    /// alone re-fires the takeover every time the kid returns to Home while the day is
+    /// complete. A localStorage key keyed on user + date makes it a true once-a-day event.
+    /// </summary>
+    private async Task ScheduleDayCompleteCelebrationAsync()
     {
-        if (_childData != null && 
-            _childData.TodayTotalCount > 0 && 
-            _childData.TodayCompletedCount == _childData.TodayTotalCount &&
-            !_hasTriggeredConfetti)
+        if (_hasTriggeredConfetti) return;
+        if (_childData is null ||
+            _childData.TodayTotalCount == 0 ||
+            _childData.TodayCompletedCount != _childData.TodayTotalCount)
         {
-            _hasTriggeredConfetti = true;
-            _ = Task.Delay(500).ContinueWith(_ => 
-            {
-                InvokeAsync(() =>
-                {
-                    _showConfetti = true;
-                    StateHasChanged();
-                });
-            });
+            return;
         }
+        _hasTriggeredConfetti = true;
+
+        var key = $"db-daycomplete-{_userId}-{DateProvider.Today:yyyyMMdd}";
+        await Task.Delay(500);
+        await InvokeAsync(async () =>
+        {
+            try
+            {
+                var seen = await JS.InvokeAsync<string?>("localStorage.getItem", key);
+                if (!string.IsNullOrEmpty(seen)) return;
+                await JS.InvokeVoidAsync("localStorage.setItem", key, "1");
+            }
+            catch
+            {
+                // JS not available yet (prerender) — skip rather than risk a stray fire.
+                return;
+            }
+            _showConfetti = true;
+            StateHasChanged();
+        });
     }
     
     private void ScheduleAchievementMarking(string userId)
@@ -845,11 +850,8 @@ else
                 
                 AppState.InvalidateChildDashboard(_userId);
                 await LoadDashboardAsync(forceRefresh: true);
-                
-                if (!_hasTriggeredConfetti)
-                {
-                    CheckAndTriggerConfetti();
-                }
+
+                await ScheduleDayCompleteCelebrationAsync();
             }
             else
             {
