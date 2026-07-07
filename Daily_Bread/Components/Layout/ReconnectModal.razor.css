@@ -1,158 +1,147 @@
+/* Reconnect overlay (#19c) — replaces the stock Blazor banner.
+   Retrying: centered pill, accent spinner, "Reconnecting…".
+   Dead: risk pill + Reload. Scrim behind; the app is dimmed, not hidden.
+   State classes are toggled by Blazor on the <dialog>; keep every
+   components-* class name intact. */
+
 .components-reconnect-first-attempt-visible,
 .components-reconnect-repeated-attempt-visible,
 .components-reconnect-failed-visible,
 .components-pause-visible,
-.components-resume-failed-visible,
-.components-rejoining-animation {
+.components-resume-failed-visible {
     display: none;
 }
 
-#components-reconnect-modal.components-reconnect-show .components-reconnect-first-attempt-visible,
-#components-reconnect-modal.components-reconnect-show .components-rejoining-animation,
-#components-reconnect-modal.components-reconnect-paused .components-pause-visible,
-#components-reconnect-modal.components-reconnect-resume-failed .components-resume-failed-visible,
+/* Pills (flex) */
+#components-reconnect-modal.components-reconnect-show .db-rc-pill.components-reconnect-first-attempt-visible,
+#components-reconnect-modal.components-reconnect-retrying .db-rc-pill.components-reconnect-repeated-attempt-visible,
+#components-reconnect-modal.components-reconnect-failed .db-rc-pill.components-reconnect-failed-visible,
+#components-reconnect-modal.components-reconnect-paused .db-rc-pill.components-pause-visible,
+#components-reconnect-modal.components-reconnect-resume-failed .db-rc-pill.components-resume-failed-visible {
+    display: flex;
+}
+
+/* Inline fragments (the retry countdown) */
+#components-reconnect-modal.components-reconnect-retrying .db-rc-count.components-reconnect-repeated-attempt-visible {
+    display: inline;
+}
+
+/* Safety net: keep the dialog itself rendered in non-"show" states */
 #components-reconnect-modal.components-reconnect-retrying,
-#components-reconnect-modal.components-reconnect-retrying .components-reconnect-repeated-attempt-visible,
-#components-reconnect-modal.components-reconnect-retrying .components-rejoining-animation,
 #components-reconnect-modal.components-reconnect-failed,
-#components-reconnect-modal.components-reconnect-failed .components-reconnect-failed-visible {
+#components-reconnect-modal.components-reconnect-paused,
+#components-reconnect-modal.components-reconnect-resume-failed {
     display: block;
 }
 
-
+/* The dialog is an invisible, centered stage — the pill is the UI. */
 #components-reconnect-modal {
-    background-color: var(--ds-bg-elevated, #1D2A35);
-    color: var(--ds-text-primary, #F0E8D6);
-    width: 20rem;
-    margin: 20vh auto;
-    padding: 2rem;
+    background: transparent;
     border: 0;
-    border-radius: 0.5rem;
-    box-shadow: 0 3px 6px 2px rgba(0, 0, 0, 0.3);
+    padding: 0;
+    margin: auto;
+    max-width: min(92vw, 420px);
+    overflow: visible;
     opacity: 0;
-    transition: display 0.5s allow-discrete, overlay 0.5s allow-discrete;
-    animation: components-reconnect-modal-fadeOutOpacity 0.5s both;
-    &[open]
-
-{
-    animation: components-reconnect-modal-slideUp 1.5s cubic-bezier(.05, .89, .25, 1.02) 0.3s, components-reconnect-modal-fadeInOpacity 0.5s ease-in-out 0.3s;
-    animation-fill-mode: both;
+    transition: display 0.4s allow-discrete, overlay 0.4s allow-discrete;
+    animation: db-rc-fade-out 0.4s both;
 }
 
+#components-reconnect-modal[open] {
+    animation: db-rc-fade-in 0.3s ease-out both;
 }
 
+/* Scrim: app dimmed, not hidden */
 #components-reconnect-modal::backdrop {
-    background-color: rgba(0, 0, 0, 0.4);
-    animation: components-reconnect-modal-fadeInOpacity 0.5s ease-in-out;
-    opacity: 1;
+    background: color-mix(in srgb, #06040A 55%, transparent);
+    animation: db-rc-fade-in 0.4s ease-in-out;
 }
 
-@keyframes components-reconnect-modal-slideUp {
-    0% {
-        transform: translateY(30px) scale(0.95);
-    }
-
-    100% {
-        transform: translateY(0);
-    }
+@keyframes db-rc-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-@keyframes components-reconnect-modal-fadeInOpacity {
-    0% {
-        opacity: 0;
-    }
-
-    100% {
-        opacity: 1;
-    }
-}
-
-@keyframes components-reconnect-modal-fadeOutOpacity {
-    0% {
-        opacity: 1;
-    }
-
-    100% {
-        opacity: 0;
-    }
+@keyframes db-rc-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
 }
 
 .components-reconnect-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 10px;
 }
 
-#components-reconnect-modal p {
-    margin: 0;
-    text-align: center;
+/* ---- Pill ---- */
+
+.db-rc-pill {
+    align-items: center;
+    gap: 10px;
+    background: var(--ds-bg-selected, #1E1731);
+    border: 1px solid color-mix(in srgb, var(--db-accent, #8B5CF6) 40%, transparent);
+    border-radius: var(--ds-radius-full, 99px);
+    padding: 9px 18px;
 }
 
-#components-reconnect-modal button {
+.db-rc-pill.db-rc-dead {
+    border-color: color-mix(in srgb, var(--db-risk, #F472B6) 50%, transparent);
+    box-shadow: 0 0 18px -6px color-mix(in srgb, var(--db-risk, #F472B6) 50%, transparent);
+    padding-right: 12px;
+}
+
+.db-rc-text {
+    font-size: 12.5px;
+    font-weight: var(--ds-font-semibold, 600);
+    color: var(--db-text, #F1EDF9);
+    white-space: nowrap;
+}
+
+.db-rc-text-risk {
+    color: var(--ds-risk-light, #F9A8D4);
+}
+
+/* Accent spinner */
+.db-rc-spinner {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    border-radius: 50%;
+    border: 3px solid color-mix(in srgb, var(--ds-accent-text, #A78BFA) 25%, transparent);
+    border-top-color: var(--ds-accent-text, #A78BFA);
+    animation: db-rc-spin 0.8s linear infinite;
+}
+
+@keyframes db-rc-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Reload / Resume button — risk pill action */
+.db-rc-btn {
     border: 0;
-    background-color: var(--ds-accent-primary, #8B5CF6);
-    color: var(--ds-on-accent, #fff);
-    padding: 4px 24px;
-    border-radius: 4px;
+    background: var(--db-risk, #F472B6);
+    color: var(--db-bg, #0D0A14);
+    font-size: 11px;
+    font-weight: var(--ds-font-bold, 700);
+    padding: 5px 12px;
+    border-radius: var(--ds-radius-full, 99px);
+    cursor: pointer;
 }
 
-    #components-reconnect-modal button:hover {
-        background-color: color-mix(in srgb, var(--ds-accent-primary, #8B5CF6) 82%, #000);
-    }
-
-    #components-reconnect-modal button:active {
-        background-color: var(--ds-accent-primary, #8B5CF6);
-    }
-
-.components-rejoining-animation {
-    position: relative;
-    width: 80px;
-    height: 80px;
+.db-rc-btn:hover {
+    filter: brightness(1.08);
 }
 
-    .components-rejoining-animation div {
-        position: absolute;
-        border: 3px solid var(--ds-accent-primary, #8B5CF6);
-        opacity: 1;
-        border-radius: 50%;
-        animation: components-rejoining-animation 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;
-    }
-
-        .components-rejoining-animation div:nth-child(2) {
-            animation-delay: -0.5s;
-        }
-
-@keyframes components-rejoining-animation {
-    0% {
-        top: 40px;
-        left: 40px;
-        width: 0;
-        height: 0;
-        opacity: 0;
-    }
-
-    4.9% {
-        top: 40px;
-        left: 40px;
-        width: 0;
-        height: 0;
-        opacity: 0;
-    }
-
-    5% {
-        top: 40px;
-        left: 40px;
-        width: 0;
-        height: 0;
+@media (prefers-reduced-motion: reduce) {
+    #components-reconnect-modal,
+    #components-reconnect-modal[open],
+    #components-reconnect-modal::backdrop {
+        animation: none;
         opacity: 1;
     }
 
-    100% {
-        top: 0px;
-        left: 0px;
-        width: 80px;
-        height: 80px;
-        opacity: 0;
+    .db-rc-spinner {
+        animation-duration: 2s;
     }
 }

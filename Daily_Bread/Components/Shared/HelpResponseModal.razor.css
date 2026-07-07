@@ -1,55 +1,279 @@
 /* ============================================
-   HELP RESPONSE MODAL - Scoped Styles
-   Uses Daily Bread Design System tokens
+   HELP RESPONSE MODAL (design #19b)
+   Shared modal pattern: scrim rgba(6,4,10,.6), surface card + #2F2547 border,
+   radius 18, header + X, right-aligned actions. Fulfill = money, Deny = risk.
    ============================================ */
 
-/* Response option base styling */
-.response-option {
-    transition: all var(--ds-duration-fast) var(--ds-ease-default);
+.hrm-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(6, 4, 10, .6);
+    animation: hrm-scrim-in .16s ease-out both;
+}
+
+@keyframes hrm-scrim-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.hrm-card {
+    width: 100%;
+    max-width: 460px;
+    max-height: calc(100dvh - 40px);
+    display: flex;
+    flex-direction: column;
+    background: var(--db-bg2);
+    border: 1px solid color-mix(in srgb, var(--db-bg3) 65%, var(--db-text) 8%); /* #2F2547-equivalent */
+    border-radius: 18px;
+    box-shadow: 0 24px 60px -12px rgba(6, 4, 10, .7);
+    animation: hrm-card-in .2s var(--ds-ease-default, ease-out) both;
+}
+
+@keyframes hrm-card-in {
+    from { opacity: 0; transform: translateY(8px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---- Header ---- */
+.hrm-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 18px 12px;
+}
+
+.hrm-eyebrow {
+    display: block;
+    font-size: 10px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 1.5px;
+    color: var(--ds-risk-light, var(--db-risk));
+}
+
+.hrm-title {
+    margin: 3px 0 0;
+    font-size: 17px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: -.2px;
+    color: var(--db-text);
+}
+
+.hrm-x {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--db-text3);
     cursor: pointer;
+    transition: background .15s, color .15s;
 }
 
-.response-option:hover {
-    transform: translateX(2px);
+.hrm-x:hover:not(:disabled) {
+    background: var(--db-bg3);
+    color: var(--db-text);
 }
 
-/* ============================================
-   SELECTED STATE BACKGROUNDS
-   Match app.css table status patterns
-   ============================================ */
+.hrm-x:disabled { opacity: .4; cursor: default; }
 
-.response-option.selected-success {
-    background-color: rgba(163, 190, 140, 0.15) !important;
+/* ---- Body ---- */
+.hrm-body {
+    padding: 0 18px 4px;
+    overflow-y: auto;
 }
 
-.response-option.selected-secondary {
-    background-color: rgba(76, 86, 106, 0.4) !important;
+.hrm-context {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--db-bg);
+    border: 1px solid var(--db-bg3);
+    margin-bottom: 14px;
 }
 
-.response-option.selected-warning {
-    background-color: rgba(235, 203, 139, 0.15) !important;
+.hrm-chore {
+    font-size: 15px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-text);
 }
 
-/* ============================================
-   SELECTED STATE TEXT
-   Use --ds-text-primary for good contrast on all tinted backgrounds
-   ============================================ */
-
-.response-option.selected-success .option-description,
-.response-option.selected-secondary .option-description,
-.response-option.selected-warning .option-description {
-    color: var(--ds-text-primary) !important;
+.hrm-reason {
+    margin-top: 6px;
+    font-size: 12.5px;
+    font-style: italic;
+    color: var(--db-text2);
 }
 
-/* Option titles use semantic colors when selected */
-.response-option.selected-success .option-title {
-    color: var(--ds-semantic-success) !important;
+.hrm-meta {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--db-text3);
 }
 
-.response-option.selected-secondary .option-title {
-    color: var(--ds-text-primary) !important;
+/* ---- Options ---- */
+.hrm-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.response-option.selected-warning .option-title {
-    color: var(--ds-semantic-highlight) !important;
+.hrm-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 12px;
+    border: 1px solid var(--db-bg3);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+
+.hrm-option:hover {
+    border-color: color-mix(in srgb, var(--db-text) 22%, transparent);
+}
+
+.hrm-option input[type="radio"] {
+    margin-top: 2px;
+    accent-color: var(--db-accent);
+    flex: none;
+}
+
+.hrm-option-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hrm-option-title {
+    font-size: 13.5px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-text);
+}
+
+.hrm-option-title.money { color: var(--ds-money-light, var(--db-money)); }
+.hrm-option-title.risk { color: var(--ds-risk-light, var(--db-risk)); }
+
+.hrm-option-desc {
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--db-text2);
+}
+
+.hrm-badge {
+    flex: none;
+    align-self: center;
+    padding: 3px 9px;
+    border-radius: var(--ds-radius-full, 9999px);
+    font-size: 11px;
+    font-weight: var(--ds-font-bold);
+    background: var(--db-bg3);
+    color: var(--db-text2);
+}
+
+.hrm-badge.money {
+    background: color-mix(in srgb, var(--db-money) 15%, transparent);
+    color: var(--ds-money-light, var(--db-money));
+}
+
+/* Selected states — ring in the outcome's semantic color */
+.hrm-option.is-selected.sel-money {
+    border-color: var(--db-money);
+    background: color-mix(in srgb, var(--db-money) 9%, transparent);
+}
+
+.hrm-option.is-selected.sel-neutral {
+    border-color: color-mix(in srgb, var(--db-text) 40%, transparent);
+    background: color-mix(in srgb, var(--db-text) 6%, transparent);
+}
+
+.hrm-option.is-selected.sel-risk {
+    border-color: var(--db-risk);
+    background: color-mix(in srgb, var(--db-risk) 9%, transparent);
+}
+
+/* ---- Note ---- */
+.hrm-note {
+    margin: 14px 0 4px;
+}
+
+.hrm-note-label {
+    display: block;
+    font-size: 12px;
+    font-weight: var(--ds-font-semibold, 600);
+    color: var(--db-text2);
+    margin-bottom: 6px;
+}
+
+.hrm-muted { color: var(--db-text3); font-weight: 400; }
+
+/* ---- Actions (right-aligned) ---- */
+.hrm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 18px 18px;
+}
+
+.hrm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: var(--ds-font-bold);
+    cursor: pointer;
+    transition: filter .15s, background .15s, opacity .15s;
+}
+
+.hrm-btn:disabled { opacity: .5; cursor: default; }
+
+.hrm-btn-ghost {
+    background: transparent;
+    border-color: var(--db-bg3);
+    color: var(--db-text2);
+}
+
+.hrm-btn-ghost:hover:not(:disabled) {
+    background: var(--db-bg3);
+    color: var(--db-text);
+}
+
+.hrm-btn-money {
+    background: var(--db-money);
+    color: var(--db-bg);
+}
+
+.hrm-btn-neutral {
+    background: var(--db-bg3);
+    color: var(--db-text);
+}
+
+.hrm-btn-risk {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--db-risk) 55%, transparent);
+    color: var(--ds-risk-light, var(--db-risk));
+}
+
+.hrm-btn-money:hover:not(:disabled),
+.hrm-btn-neutral:hover:not(:disabled) { filter: brightness(1.08); }
+
+.hrm-btn-risk:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--db-risk) 12%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hrm-scrim, .hrm-card { animation: none; }
 }

@@ -1,98 +1,272 @@
+/* Login (#15a/#15b) — always Ultraviolet dark. Theme prefs are per-device and
+   applied post-auth, so the login surface pins the default palette regardless of
+   the html[data-theme]/[data-mode] a returning device may carry. */
+
 .login-container {
+    /* Pin Ultraviolet-dark tokens for this surface + everything inside it. */
+    --db-bg: #0D0A14;
+    --db-bg2: #191327;
+    --db-bg3: #251C38;
+    --db-border: #251C38;
+    --ds-divider: #1F1830;
+    --ds-bg-selected: #1E1731;
+    --ds-bg-recessed: #12101E;
+    --db-text: #F1EDF9;
+    --db-text2: #A79FC0;
+    --db-text3: #6F6690;
+    --ds-text-faint: #4A3F63;
+    --db-accent: #8B5CF6;
+    --ds-accent-text: #A78BFA;
+    --ds-accent-light: #C4B5FD;
+    --db-on-accent: #FFFFFF;
+    --db-risk: #F472B6;
+    --ds-risk-light: #F9A8D4;
+    --color-focus-ring: rgba(139, 92, 246, .25);
+
     min-height: 100vh; /* Fallback for older browsers */
     min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--ds-space-7);
-    background: var(--ds-bg-base);
+    background: var(--db-bg);
+    color: var(--db-text);
 }
 
 .login-card {
-    background: var(--ds-bg-elevated);
-    border: 1px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-xl);
-    padding: var(--ds-space-7);
     width: 100%;
-    max-width: 420px;
-    box-shadow: var(--ds-shadow-lg);
+    max-width: 340px;
 }
 
 .login-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    margin-bottom: var(--ds-space-7);
+    margin-bottom: var(--ds-space-6);
 }
 
-.brand-icon {
-    width: 80px;
-    height: 80px;
-    display: block;
-    margin: 0 auto var(--ds-space-4) auto;
+/* Loaf mark: 56px tile with a soft pink glow (#15a). */
+.brand-tile {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 22px -6px rgba(244, 114, 182, .5);
 }
 
 .login-header h1 {
-    color: var(--ds-text-primary);
-    font-size: var(--ds-text-2xl);
+    color: var(--db-text);
+    font-size: 23px;
     font-weight: var(--ds-font-bold);
-    margin-bottom: var(--ds-space-2);
+    letter-spacing: -.4px;
+    margin: var(--ds-space-3) 0 0;
 }
 
 .tagline {
-    color: var(--ds-text-muted);
+    color: var(--db-text2);
     font-size: var(--ds-text-sm);
-    margin: 0;
+    margin: 3px 0 0;
 }
 
-.login-card .form-label {
-    color: var(--ds-text-muted);
+/* Error alert — risk tint, same shell for all four states (#15b). */
+.login-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 13px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--db-risk) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-risk) 35%, transparent);
+    color: var(--ds-risk-light);
+    font-size: 12.5px;
+    line-height: 1.45;
     font-weight: var(--ds-font-medium);
-    margin-bottom: var(--ds-space-2);
-    font-size: var(--ds-text-sm);
+    margin-bottom: var(--ds-space-4);
 }
 
-.login-card .form-check-label {
-    color: var(--ds-text-muted);
-    font-size: var(--ds-text-sm);
+.login-alert svg {
+    flex: none;
+    margin-top: 1px;
 }
 
+.login-field {
+    margin-bottom: var(--ds-space-4);
+}
+
+/* Labels: 10px caps, letterspaced (#15a). */
+.login-card .form-label {
+    display: block;
+    color: var(--db-text3);
+    font-size: 10px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+/* Inputs: 44px, radius 12, surface bg; focus = accent border + 3px ring. */
+.login-card .ds-input {
+    height: 44px;
+    border-radius: 12px;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    color: var(--db-text);
+    font-size: 14px;
+    padding: 0 14px;
+}
+
+.login-card .ds-input:focus {
+    background: var(--db-bg2);
+    border-color: var(--db-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.login-card .ds-input::placeholder {
+    color: var(--ds-text-faint);
+}
+
+/* Password group with static show/hide toggle (password-toggle.js). */
+.login-password-group {
+    position: relative;
+    display: flex;
+}
+
+.login-password-group .ds-input {
+    padding-right: 44px;
+}
+
+.login-password-group .password-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--db-text3);
+    cursor: pointer;
+    z-index: 2;
+}
+
+.login-password-group .password-toggle:hover {
+    color: var(--db-text2);
+}
+
+/* Remember me — 19px accent checkbox. */
+.login-remember {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: var(--ds-space-5);
+    padding: 0;
+}
+
+.login-remember .form-check-input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 19px;
+    height: 19px;
+    margin: 0;
+    flex: none;
+    border-radius: 6px;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-bg3);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background var(--ds-duration-fast) ease, border-color var(--ds-duration-fast) ease;
+}
+
+.login-remember .form-check-input:checked {
+    background: var(--db-accent);
+    border-color: var(--db-accent);
+}
+
+.login-remember .form-check-input:checked::after {
+    content: "";
+    width: 10px;
+    height: 6px;
+    border-left: 2.2px solid var(--db-on-accent);
+    border-bottom: 2.2px solid var(--db-on-accent);
+    transform: translateY(-1px) rotate(-45deg);
+}
+
+.login-remember .form-check-input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.login-remember .form-check-label {
+    color: var(--db-text2);
+    font-size: var(--ds-text-xs);
+    cursor: pointer;
+}
+
+/* Sign In — solid accent, 44px, radius 12. */
 .btn-login {
     width: 100%;
-    height: 50px;
-    font-size: var(--ds-text-lg);
-    font-weight: var(--ds-font-semibold);
-    border-radius: var(--ds-radius-lg);
-    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ds-space-2);
+    font-size: 14px;
+    font-weight: var(--ds-font-bold);
+    border-radius: 12px;
+    background: var(--db-accent);
     border: none;
-    color: var(--ds-text-primary);
-    transition: all var(--ds-duration-fast) ease;
+    color: var(--db-on-accent);
+    transition: filter var(--ds-duration-fast) ease, box-shadow var(--ds-duration-fast) ease;
 }
 
-.btn-login:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(94, 129, 172, 0.4);
-    color: var(--ds-text-primary);
+.btn-login:hover,
+.btn-login:focus {
+    background: var(--db-accent);
+    color: var(--db-on-accent);
+    filter: brightness(1.08);
+    box-shadow: 0 0 18px -4px color-mix(in srgb, var(--db-accent) 65%, transparent);
 }
 
-.login-footer {
-    margin-top: var(--ds-space-7);
-    padding-top: var(--ds-space-6);
-    border-top: 1px solid var(--ds-bg-muted);
-    text-align: center;
+/* "or" divider between password and SSO. */
+.login-or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: var(--ds-space-4) 0;
+    color: var(--db-text3);
+    font-size: var(--ds-text-xs);
 }
 
-.kid-mode-link {
-    color: var(--ds-text-muted);
-    text-decoration: none;
-    font-size: var(--ds-text-sm);
-    padding: var(--ds-space-2) var(--ds-space-6);
-    border-radius: var(--ds-radius-md);
-    background: var(--ds-bg-hover);
-    display: inline-block;
-    transition: all var(--ds-duration-fast) ease;
+.login-or::before,
+.login-or::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--db-bg3);
 }
 
-.kid-mode-link:hover {
-    background: var(--ds-bg-muted);
-    color: var(--ds-text-primary);
-    transform: translateY(-1px);
+/* Authentik SSO — quiet surface button. */
+.btn-login-sso {
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    color: var(--db-text2);
+    font-size: 13.5px;
+    font-weight: var(--ds-font-semibold);
+}
+
+.btn-login-sso:hover,
+.btn-login-sso:focus {
+    background: var(--db-bg3);
+    border-color: var(--db-bg3);
+    color: var(--db-text);
+    filter: none;
+    box-shadow: none;
 }

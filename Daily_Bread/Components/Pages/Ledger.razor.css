@@ -121,6 +121,8 @@
 
 /* --- Balance hero: mint tint border + glow --- */
 .lg-hero {
+    position: relative;
+    overflow: hidden;
     background: var(--db-bg2);
     border: 1px solid color-mix(in srgb, var(--db-money) 30%, transparent);
     border-radius: 18px;

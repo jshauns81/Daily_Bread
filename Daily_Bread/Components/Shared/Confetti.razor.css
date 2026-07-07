@@ -1,5 +1,200 @@
 /* ============================================
-   CONFETTI CELEBRATION ANIMATION
+   CELEBRATION (#19d) — three tiers
+   Tier 2 "Day complete": full-screen takeover — radial accent glow, confetti in
+   the 5 tile hues, giant money amount, streak + balance chips.
+   Tier 3 "Payout": money bill-rain over the Ledger balance card (1.2s).
+   Reduced motion: tier 2 = static frame; tier 3 = fade.
+   ============================================ */
+
+/* ---- Tier 2: day-complete takeover ---- */
+
+.celebrate-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    overflow: hidden;
+    cursor: pointer;
+    background: radial-gradient(ellipse 90% 55% at 50% 38%, var(--db-bg3) 0%, var(--db-bg) 70%);
+    animation: celebrate-in 0.25s ease-out both;
+}
+
+@keyframes celebrate-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Confetti pieces in the 5 tile hues (slot hue follows the active theme) */
+.celebrate-piece {
+    position: absolute;
+    width: 8px;
+    height: 14px;
+    border-radius: 2px;
+    background: var(--piece-color);
+    transform: rotate(var(--rotation, 20deg));
+    animation: celebrate-fall ease-in-out both;
+}
+
+@keyframes celebrate-fall {
+    0% {
+        opacity: 0;
+        transform: translateY(-18vh) rotate(var(--rotation, 20deg));
+    }
+    12% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(38vh) rotate(calc(var(--rotation, 20deg) + 200deg));
+    }
+}
+
+.celebrate-body {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 28px;
+    text-align: center;
+    animation: celebrate-pop 0.35s var(--ds-ease-default, ease-out) both;
+}
+
+@keyframes celebrate-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.celebrate-check {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--db-money);
+    background: color-mix(in srgb, var(--db-money) 12%, transparent);
+    border: 2px solid color-mix(in srgb, var(--db-money) 50%, transparent);
+    box-shadow: 0 0 44px -6px color-mix(in srgb, var(--db-money) 65%, transparent);
+}
+
+.celebrate-kicker {
+    font-size: 12px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 3px;
+    color: var(--ds-accent-text);
+    margin-top: 22px;
+}
+
+.celebrate-amount {
+    font-size: 44px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: -1px;
+    color: var(--db-money);
+    margin-top: 6px;
+    text-shadow: 0 0 30px color-mix(in srgb, var(--db-money) 50%, transparent);
+}
+
+.celebrate-msg {
+    font-size: 13px;
+    color: var(--db-text2);
+    margin-top: 6px;
+}
+
+.celebrate-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.celebrate-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--ds-radius-full);
+    font-size: 12px;
+    font-weight: var(--ds-font-bold);
+}
+
+/* Streak = amber flame (screen-time family carries amber) */
+.celebrate-chip-streak {
+    background: color-mix(in srgb, var(--db-screentime) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-screentime) 40%, transparent);
+    color: var(--ds-screentime-text);
+}
+
+.celebrate-chip-balance {
+    background: color-mix(in srgb, var(--db-money) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-money) 35%, transparent);
+    color: var(--ds-money-light);
+}
+
+.celebrate-hint {
+    font-size: 10px;
+    color: var(--db-text3);
+    margin-top: 26px;
+}
+
+/* ---- Tier 3: payout bill-rain (rendered inside the balance card) ---- */
+
+.billrain {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 3;
+}
+
+.billrain-bill {
+    position: absolute;
+    top: -18px;
+    width: 22px;
+    height: 12px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--db-money) 30%, var(--db-bg2));
+    border: 1px solid var(--db-money);
+    transform: rotate(var(--rotation, 10deg));
+    animation: billrain-fall 1.1s ease-in both;
+}
+
+/* Bill face: a little denomination dot */
+.billrain-bill::after {
+    content: "";
+    position: absolute;
+    inset: 2px 7px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--db-money) 55%, transparent);
+}
+
+@keyframes billrain-fall {
+    0% {
+        opacity: 1;
+        transform: translateY(0) rotate(var(--rotation, 10deg));
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(260px) rotate(calc(var(--rotation, 10deg) * -1));
+    }
+}
+
+/* ============================================
+   LEGACY FULL-SCREEN CONFETTI (Classic variant)
    ============================================ */
 
 .confetti-container {
@@ -129,12 +324,47 @@
     }
 }
 
-/* Reduced motion - just fade */
+/* ============================================
+   REDUCED MOTION
+   Tier 2 renders as a static frame (pieces stay scattered at their
+   generated positions); tiers 1/3 reduce to a fade.
+   ============================================ */
+
 @media (prefers-reduced-motion: reduce) {
+    .celebrate-overlay,
+    .celebrate-body {
+        animation: none;
+    }
+
+    .celebrate-piece {
+        animation: none;
+        opacity: 0.9;
+    }
+
+    .billrain-bill {
+        display: none;
+    }
+
+    /* Payout: money glow fade instead of the rain */
+    .billrain::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        box-shadow: inset 0 0 44px -10px color-mix(in srgb, var(--db-money) 55%, transparent);
+        animation: billrain-glow 1.2s ease-out both;
+    }
+
+    @keyframes billrain-glow {
+        0% { opacity: 0; }
+        30% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+
     .confetti-piece {
         animation: confetti-fade 2s ease-out forwards;
     }
-    
+
     @keyframes confetti-fade {
         0% {
             opacity: 1;

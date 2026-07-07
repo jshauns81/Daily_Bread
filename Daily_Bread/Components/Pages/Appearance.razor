@@ -4,18 +4,15 @@
 
 <PageTitle>Appearance - Daily Bread</PageTitle>
 
+@* Appearance (design #16a/#16b): theme preview cards + mode segmented. *@
 <div class="appearance-container">
-    <h1 class="mb-2">🎨 Appearance</h1>
-    <p class="appearance-subtitle">Choose a color and light or dark mode. Your choice is saved on this device.</p>
+    <h1 class="appearance-title">Appearance</h1>
+    <p class="appearance-subtitle">Choose a theme and light or dark mode. Saved on this device.</p>
 
-    <div class="ds-card">
-        <div class="ds-card-body">
-            <ThemePicker />
-        </div>
-    </div>
+    <ThemePicker />
 
     <p class="appearance-foot">
-        Bread stays gold and a Help alert stays red in every theme, so what matters never gets lost.
+        Money keeps its role color in every theme; chore tiles follow the theme's palette.
     </p>
 </div>
 
@@ -25,13 +22,20 @@
         margin: 0 auto;
         padding: var(--ds-space-5) var(--ds-space-4);
     }
+    .appearance-title {
+        font-size: 20px;
+        font-weight: var(--ds-font-bold);
+        letter-spacing: -.3px;
+        color: var(--db-text);
+        margin: 0;
+    }
     .appearance-subtitle {
         color: var(--ds-text-muted);
         font-size: var(--ds-text-sm);
-        margin-bottom: var(--ds-space-5);
+        margin: 4px 0 var(--ds-space-5);
     }
     .appearance-foot {
-        color: var(--ds-text-muted);
+        color: var(--db-text3);
         font-size: var(--ds-text-xs);
         margin-top: var(--ds-space-4);
         text-align: center;

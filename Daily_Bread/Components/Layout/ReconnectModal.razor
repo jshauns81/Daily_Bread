@@ -1,31 +1,36 @@
-﻿<script type="module" src="@Assets["Components/Layout/ReconnectModal.razor.js"]"></script>
+<script type="module" src="@Assets["Components/Layout/ReconnectModal.razor.js"]"></script>
 
+@* Reconnect overlay (design #19c): quiet centered pill over a scrim — accent spinner
+   while retrying, risk pill + Reload when the circuit is dead. The app stays visible
+   (dimmed) behind the scrim. State classes + element ids are Blazor's contract —
+   do not rename them; ReconnectModal.razor.js keeps the circuit-retry behavior. *@
 <dialog id="components-reconnect-modal" data-nosnippet>
     <div class="components-reconnect-container">
-        <div class="components-rejoining-animation" aria-hidden="true">
-            <div></div>
-            <div></div>
+
+        @* Retrying: accent pill + spinner *@
+        <div class="db-rc-pill db-rc-retrying components-reconnect-first-attempt-visible components-reconnect-repeated-attempt-visible">
+            <span class="db-rc-spinner" aria-hidden="true"></span>
+            <span class="db-rc-text">
+                Reconnecting&hellip;<span class="components-reconnect-repeated-attempt-visible db-rc-count"> retrying in <span id="components-seconds-to-next-attempt"></span>s</span>
+            </span>
         </div>
-        <p class="components-reconnect-first-attempt-visible">
-            Rejoining the server...
-        </p>
-        <p class="components-reconnect-repeated-attempt-visible">
-            Rejoin failed... trying again in <span id="components-seconds-to-next-attempt"></span> seconds.
-        </p>
-        <p class="components-reconnect-failed-visible">
-            Failed to rejoin.<br />Please retry or reload the page.
-        </p>
-        <button id="components-reconnect-button" class="components-reconnect-failed-visible">
-            Retry
-        </button>
-        <p class="components-pause-visible">
-            The session has been paused by the server.
-        </p>
-        <button id="components-resume-button" class="components-pause-visible">
-            Resume
-        </button>
-        <p class="components-resume-failed-visible">
-            Failed to resume the session.<br />Please reload the page.
-        </p>
+
+        @* Dead: risk pill + Reload (wired to retry → reconnect/resume → reload) *@
+        <div class="db-rc-pill db-rc-dead components-reconnect-failed-visible">
+            <span class="db-rc-text db-rc-text-risk">Connection lost</span>
+            <button id="components-reconnect-button" class="db-rc-btn">Reload</button>
+        </div>
+
+        @* Paused by the server *@
+        <div class="db-rc-pill db-rc-dead components-pause-visible">
+            <span class="db-rc-text db-rc-text-risk">Session paused by the server</span>
+            <button id="components-resume-button" class="db-rc-btn">Resume</button>
+        </div>
+
+        @* Resume failed *@
+        <div class="db-rc-pill db-rc-dead components-resume-failed-visible">
+            <span class="db-rc-text db-rc-text-risk">Couldn't resume &mdash; please reload the page.</span>
+        </div>
+
     </div>
 </dialog>

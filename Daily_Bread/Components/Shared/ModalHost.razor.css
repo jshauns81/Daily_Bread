@@ -11,9 +11,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in srgb, var(--ds-bg-base) 75%, transparent);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    /* Scrim per #19b: rgba(6,4,10,.6) — app dimmed, not hidden. */
+    background: color-mix(in srgb, #06040A 60%, transparent);
     padding: var(--ds-space-4);
     /* Ensure full viewport coverage */
     width: 100vw;
@@ -32,9 +31,9 @@
     max-height: 90vh;
     max-height: 90dvh;
     background: var(--db-bg2);
-    border: 1px solid var(--db-border);
+    border: 1px solid color-mix(in srgb, var(--db-bg3) 65%, var(--db-text) 8%); /* #2F2547-equivalent per #19b */
     border-radius: 18px; /* modal shell per #18a/#19b */
-    box-shadow: var(--ds-shadow-xl);
+    box-shadow: 0 20px 48px -12px rgba(0, 0, 0, .55);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -155,26 +154,45 @@
 }
 
 /* ===========================================
-   MOBILE: Centered modal (not bottom sheet)
+   MOBILE: bottom sheet (#14c/#18a — 20px top radius,
+   grab handle, slides up from the bottom edge)
    =========================================== */
 
 @media (max-width: 640px) {
     .modal-host-backdrop {
-        padding: var(--ds-space-4);
-        align-items: center;      /* Vertical center */
-        justify-content: center;  /* Horizontal center */
+        padding: 0;
+        align-items: flex-end;    /* Sheet pins to the bottom */
+        justify-content: center;
     }
-    
+
     .modal-host-container {
-        max-width: calc(100% - var(--ds-space-8));
+        max-width: 100%;
         max-height: calc(100dvh - var(--ds-space-8));
-        border-radius: 18px; /* modal shell per #18a/#19b */
-        margin: auto;  /* Fallback centering */
+        border-radius: 20px 20px 0 0;
+        border-bottom: 0;
+        margin: 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        animation: modalSheetIn 0.28s var(--ds-ease-default, ease-out);
     }
-    
+
+    /* Grab handle */
+    .modal-host-container::before {
+        content: "";
+        position: absolute;
+        top: 7px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--db-bg3);
+        z-index: 11;
+    }
+
     .chore-form-modal .modal-header,
     .modal-host-container .modal-header {
         padding: 0.875rem 1rem;
+        padding-top: 1.125rem; /* room for the grab handle */
         padding-right: 3rem;
     }
     
@@ -192,7 +210,24 @@
     }
 }
 
+@keyframes modalSheetIn {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Ensure body doesn't scroll when modal is open */
 body:has(.modal-host-backdrop) {
     overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-host-container {
+        animation: none;
+    }
 }

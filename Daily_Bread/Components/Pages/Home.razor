@@ -20,8 +20,14 @@
 
 <PageTitle>Daily Bread - Home</PageTitle>
 
-@* Confetti celebration when all chores complete *@
-<Confetti IsActive="_showConfetti" OnComplete="() => _showConfetti = false" ParticleCount="60" />
+@* Day-complete takeover (tier 2, design #19d) when all chores complete *@
+<Confetti IsActive="_showConfetti"
+          OnComplete="() => _showConfetti = false"
+          ParticleCount="60"
+          Amount="_childData?.TodayEarnings"
+          Balance="_childData?.Balance"
+          StreakDays="_childData?.CurrentStreak"
+          KidName="@_childData?.DisplayName" />
 
 @if (_isLoading)
 {

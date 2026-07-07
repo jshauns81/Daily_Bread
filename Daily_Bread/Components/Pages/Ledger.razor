@@ -97,6 +97,10 @@
     {
         <!-- Balance hero (#3c): mint border tint + glow. No savings-goal card (removed per amendments). -->
         <div class="lg-hero">
+            @* Payout recorded (tier 3, design #19d): money bill-rain over the balance card. *@
+            <Confetti IsActive="_showBillRain"
+                      Variant="Confetti.CelebrationVariant.BillRain"
+                      OnComplete="() => _showBillRain = false" />
             <div class="lg-hero-top">
                 <span class="lg-hero-label">CURRENT BALANCE</span>
                 @if (SelectedBalance.CanCashOut)
@@ -285,6 +289,8 @@
     private bool ShowPenalty { get; set; }
     private bool ShowAdjustment { get; set; }
 
+    private bool _showBillRain;
+
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -460,6 +466,7 @@
             ShowCashOut = false;
             ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
             await LoadTransactionsAsync();
+            _showBillRain = true;
         }
         else
         {

@@ -1,72 +1,142 @@
-@* Confetti Celebration Component *@
+@* Celebration component (design #19d) — three tiers, bolder by owner decision:
+   tier 1 (chore done) lives on the chore row (TrackerChoreCard burst);
+   tier 2 (day complete) = this full-screen takeover, reusing the existing
+   all-done triggers (Home/Tracker, 500ms delay). Auto-dismiss 2.5s or tap.
+   tier 3 (payout) = BillRain variant, money bill-rain over the Ledger balance card.
+   prefers-reduced-motion: tier 2 renders as a static frame; tiers 1/3 fade. *@
+@namespace Daily_Bread.Components.Shared
+@implements IDisposable
 
 @if (IsVisible)
 {
-    <div class="confetti-container @(IsActive ? "active" : "")">
-        @for (int i = 0; i < ParticleCount; i++)
-        {
-            var delay = Random.Shared.NextDouble() * 0.5;
-            var duration = 2.5 + Random.Shared.NextDouble() * 1.5;
-            var left = Random.Shared.Next(0, 100);
-            var rotation = Random.Shared.Next(0, 360);
-            var color = Colors[i % Colors.Length];
-            var size = 8 + Random.Shared.Next(0, 8);
-            var shape = Shapes[i % Shapes.Length];
-            
-            <div class="confetti-piece @shape"
-                 style="left: @(left)%; 
-                        animation-delay: @(delay.ToString("F2"))s; 
-                        animation-duration: @(duration.ToString("F1"))s;
-                        --rotation: @(rotation)deg;
-                        --color: @color;
-                        --size: @(size)px;">
+    @if (Variant == CelebrationVariant.DayComplete)
+    {
+        <div class="celebrate-overlay" @onclick="DismissAsync" role="status" aria-live="polite">
+            @foreach (var p in _pieces)
+            {
+                <span class="celebrate-piece"
+                      style="left:@(p.Left)%; top:@(p.Top)%; --piece-color:var(--tile-@(p.Slot)-a); --rotation:@(p.Rotation)deg; animation-delay:@(p.Delay.ToString("F2"))s; animation-duration:@(p.Duration.ToString("F1"))s;"></span>
+            }
+            <div class="celebrate-body">
+                <div class="celebrate-check" aria-hidden="true">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                </div>
+                <div class="celebrate-kicker">DAY COMPLETE</div>
+                @if (Amount is > 0)
+                {
+                    <div class="celebrate-amount">+$@Amount.Value.ToString("F2")</div>
+                }
+                <div class="celebrate-msg">Every chore done.@(string.IsNullOrEmpty(KidName) ? " Nice work." : $" Nice work, {KidName}.")</div>
+                @if (StreakDays is > 1 || Balance.HasValue)
+                {
+                    <div class="celebrate-chips">
+                        @if (StreakDays is > 1)
+                        {
+                            <span class="celebrate-chip celebrate-chip-streak">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+                                @StreakDays-day streak
+                            </span>
+                        }
+                        @if (Balance.HasValue)
+                        {
+                            <span class="celebrate-chip celebrate-chip-balance">Balance $@Balance.Value.ToString("F2")</span>
+                        }
+                    </div>
+                }
+                <div class="celebrate-hint">tap anywhere to continue</div>
             </div>
-        }
-    </div>
+        </div>
+    }
+    else if (Variant == CelebrationVariant.BillRain)
+    {
+        <div class="billrain" aria-hidden="true">
+            @foreach (var p in _pieces)
+            {
+                <span class="billrain-bill"
+                      style="left:@(p.Left)%; --rotation:@(p.Rotation)deg; animation-delay:@(p.Delay.ToString("F2"))s;"></span>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="confetti-container active">
+            @foreach (var p in _pieces)
+            {
+                <div class="confetti-piece @p.Shape"
+                     style="left: @(p.Left)%;
+                            animation-delay: @(p.Delay.ToString("F2"))s;
+                            animation-duration: @(p.Duration.ToString("F1"))s;
+                            --rotation: @(p.Rotation)deg;
+                            --color: var(--tile-@(p.Slot)-a);
+                            --size: @(p.Size)px;">
+                </div>
+            }
+        </div>
+    }
 }
 
 @code {
+    /// <summary>Celebration tiers per design #19d.</summary>
+    public enum CelebrationVariant
+    {
+        /// <summary>Tier 2 — day complete: full-screen takeover, confetti in the 5 tile hues.</summary>
+        DayComplete,
+        /// <summary>Tier 3 — payout recorded: money bill-rain over the balance card (1.2s).</summary>
+        BillRain,
+        /// <summary>Legacy full-screen confetti fall (no takeover frame).</summary>
+        Classic
+    }
+
     [Parameter] public bool IsActive { get; set; }
+    [Parameter] public CelebrationVariant Variant { get; set; } = CelebrationVariant.DayComplete;
     [Parameter] public int ParticleCount { get; set; } = 50;
-    [Parameter] public int DurationMs { get; set; } = 4000;
+    /// <summary>0 = variant default (DayComplete 2500ms, BillRain 1200ms, Classic 4000ms).</summary>
+    [Parameter] public int DurationMs { get; set; }
     [Parameter] public EventCallback OnComplete { get; set; }
-    
+
+    /// <summary>Money earned to headline (DayComplete).</summary>
+    [Parameter] public decimal? Amount { get; set; }
+    /// <summary>New balance chip (DayComplete).</summary>
+    [Parameter] public decimal? Balance { get; set; }
+    /// <summary>Streak chip, shown when &gt; 1 (DayComplete).</summary>
+    [Parameter] public int? StreakDays { get; set; }
+    /// <summary>First name for the message (DayComplete).</summary>
+    [Parameter] public string? KidName { get; set; }
+
     private bool IsVisible { get; set; }
     private System.Timers.Timer? _timer;
-    
-    private static readonly string[] Colors = [
-        "#8B5CF6", // Violet
-        "#F472B6", // Pink
-        "#2DD4BF", // Mint
-        "#60A5FA", // Blue
-        "#FBBF24"  // Amber
-    ];
-    
-    private static readonly string[] Shapes = [
-        "square",
-        "circle", 
-        "triangle",
-        "rectangle"
-    ];
-    
+    private List<Piece> _pieces = [];
+
+    private record Piece(int Left, int Top, int Rotation, double Delay, double Duration, int Size, int Slot, string Shape);
+
+    private static readonly string[] Shapes = ["square", "circle", "triangle", "rectangle"];
+
+    private int EffectiveDurationMs => DurationMs > 0 ? DurationMs : Variant switch
+    {
+        CelebrationVariant.DayComplete => 2500,
+        CelebrationVariant.BillRain => 1200,
+        _ => 4000
+    };
+
     protected override void OnParametersSet()
     {
         if (IsActive && !IsVisible)
         {
-            StartConfetti();
+            StartCelebration();
         }
         else if (!IsActive && IsVisible)
         {
-            StopConfetti();
+            StopCelebration();
         }
     }
-    
-    private void StartConfetti()
+
+    private void StartCelebration()
     {
         IsVisible = true;
-        
+        _pieces = GeneratePieces();
+
         _timer?.Dispose();
-        _timer = new System.Timers.Timer(DurationMs);
+        _timer = new System.Timers.Timer(EffectiveDurationMs);
         _timer.Elapsed += async (s, e) =>
         {
             _timer?.Stop();
@@ -80,14 +150,41 @@
         _timer.AutoReset = false;
         _timer.Start();
     }
-    
-    private void StopConfetti()
+
+    private List<Piece> GeneratePieces()
+    {
+        var count = Variant == CelebrationVariant.BillRain ? Math.Min(ParticleCount, 16) : ParticleCount;
+        var pieces = new List<Piece>(count);
+        for (var i = 0; i < count; i++)
+        {
+            pieces.Add(new Piece(
+                Left: Random.Shared.Next(2, 96),
+                Top: Random.Shared.Next(4, 72),               // static-frame scatter (reduced motion)
+                Rotation: Random.Shared.Next(-60, 60),
+                Delay: Random.Shared.NextDouble() * (Variant == CelebrationVariant.BillRain ? 0.35 : 0.5),
+                Duration: 2.5 + Random.Shared.NextDouble() * 1.5,
+                Size: 8 + Random.Shared.Next(0, 8),
+                Slot: (i % 5) + 1,                            // 5 tile hues, re-mapped per theme
+                Shape: Shapes[i % Shapes.Length]));
+        }
+        return pieces;
+    }
+
+    /// <summary>Tap anywhere to dismiss (DayComplete).</summary>
+    private async Task DismissAsync()
+    {
+        _timer?.Stop();
+        IsVisible = false;
+        await OnComplete.InvokeAsync();
+    }
+
+    private void StopCelebration()
     {
         _timer?.Stop();
         _timer?.Dispose();
         IsVisible = false;
     }
-    
+
     public void Dispose()
     {
         _timer?.Dispose();

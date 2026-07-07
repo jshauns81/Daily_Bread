@@ -18,8 +18,12 @@
 
 <PageTitle>@(IsParent ? "Activity" : "My Day")</PageTitle>
 
-@* Confetti celebration when all labors complete *@
-<Confetti IsActive="_showConfetti" OnComplete="() => _showConfetti = false" ParticleCount="60" />
+@* Day-complete takeover (tier 2, design #19d) when all labors complete *@
+<Confetti IsActive="_showConfetti"
+          OnComplete="() => _showConfetti = false"
+          ParticleCount="60"
+          Amount="@ChoreItems.Where(c => c.IsCompleted).Sum(c => c.Value)"
+          Balance="@(IsParent ? (decimal?)null : Balance)" />
 
 <div class="tracker-container @(IsParent ? "" : "myday")">
     @if (!IsParent)
@@ -198,6 +202,19 @@
                                     <IconTile IconName="check" Mono="true" Size="14" />
                                 }
                             </button>
+                            @if (_burstItemId == item.ChoreDefinitionId)
+                            {
+                                <span class="md-burst" aria-hidden="true">
+                                    @for (var b = 0; b < 6; b++)
+                                    {
+                                        <span class="md-burst-dot" style="--a:@(b * 60)deg"></span>
+                                    }
+                                    @if (item.Value > 0)
+                                    {
+                                        <span class="md-burst-amt">+$@item.Value.ToString("F2")</span>
+                                    }
+                                </span>
+                            }
                         </div>
                     }
                 </div>
@@ -437,6 +454,7 @@
     private bool _showConfetti;
     private int _previousCompletedCount;
     private int? _processingItemId;
+    private int? _burstItemId; // tier-1 celebration (design #19d): particle burst + earned amount fly on the just-completed row
 
     // ---- Kid "My Day" view (#11a): time-of-day sections derived in the component ----
 
@@ -800,10 +818,11 @@
                 
                 if (newStatus == ChoreStatus.Approved || newStatus == ChoreStatus.Completed)
                 {
-                    var message = item.EarnValue > 0 
-                        ? $"'{item.ChoreName}' +${item.EarnValue:F2}" 
+                    var message = item.EarnValue > 0
+                        ? $"'{item.ChoreName}' +${item.EarnValue:F2}"
                         : $"'{item.ChoreName}' marked as complete.";
                     ToastService.ShowSuccess("Done!", message);
+                    _ = FlashEarnBurstAsync(item.ChoreDefinitionId);
                 }
                 else if (newStatus == ChoreStatus.Pending)
                 {
@@ -825,6 +844,19 @@
         {
             _processingItemId = null;
             StateHasChanged();
+        }
+    }
+
+    /// <summary>Tier-1 celebration (design #19d): flash the particle burst + earned-amount fly on the just-completed row, then clear.</summary>
+    private async Task FlashEarnBurstAsync(int choreDefinitionId)
+    {
+        _burstItemId = choreDefinitionId;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(750);
+        if (_burstItemId == choreDefinitionId)
+        {
+            _burstItemId = null;
+            await InvokeAsync(StateHasChanged);
         }
     }
 

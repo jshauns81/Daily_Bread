@@ -3,154 +3,141 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#2E3440" />
+    <meta name="theme-color" content="#0D0A14" />
     <title>Offline - Daily Bread</title>
     <style>
-        :root {
-            --nord0: #2E3440;
-            --nord1: #3B4252;
-            --nord4: #D8DEE9;
-            --nord6: #ECEFF4;
-            --nord8: #88C0D0;
-            --nord10: #5E81AC;
-        }
-        
+        /* Static Ultraviolet-dark values (design #19c) — tokens may not be cached offline. */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         html, body {
             height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--nord0);
-            color: var(--nord6);
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0D0A14;
+            color: #F1EDF9;
         }
-        
+
         .offline-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            min-height: 100dvh;
             padding: 20px;
             text-align: center;
         }
-        
-        .offline-icon {
-            font-size: 5rem;
-            margin-bottom: 1.5rem;
+
+        .offline-card {
+            width: 100%;
+            max-width: 360px;
+            border-radius: 16px;
+            background: #12101E;
+            border: 1px solid #251C38;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Amber-gold splash loaf per the brand-mark spec */
+        .offline-loaf {
             animation: float 3s ease-in-out infinite;
         }
-        
+
         @keyframes float {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-6px); }
         }
-        
+
         h1 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--nord6);
+            font-size: 16px;
+            font-weight: 700;
+            color: #F1EDF9;
+            margin-top: 12px;
         }
-        
+
         p {
-            color: var(--nord4);
-            margin-bottom: 2rem;
-            max-width: 400px;
-            line-height: 1.6;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #A79FC0;
+            margin-top: 5px;
+            max-width: 240px;
         }
-        
+
         .retry-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: linear-gradient(135deg, var(--nord10) 0%, var(--nord8) 100%);
-            color: var(--nord6);
+            margin-top: 14px;
+            padding: 9px 20px;
+            border-radius: 11px;
+            background: #8B5CF6;
+            color: #fff;
             border: none;
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 700;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: filter 0.2s, box-shadow 0.2s;
         }
-        
+
         .retry-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(136, 192, 208, 0.3);
+            filter: brightness(1.08);
+            box-shadow: 0 0 18px -4px rgba(139, 92, 246, 0.65);
         }
-        
+
         .retry-btn:active {
-            transform: translateY(0);
+            filter: brightness(0.95);
         }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #BF616A;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
+
         .status-text {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            color: var(--nord4);
-            font-size: 0.875rem;
-            margin-top: 2rem;
+            gap: 7px;
+            color: #6F6690;
+            font-size: 11px;
+            margin-top: 22px;
         }
-        
-        .brand {
-            position: absolute;
-            bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--nord4);
-            font-size: 0.875rem;
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #F472B6;
+            animation: pulse 2s ease-in-out infinite;
         }
-        
-        .brand img {
-            width: 24px;
-            height: 24px;
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .offline-loaf,
+            .status-dot {
+                animation: none;
+            }
         }
     </style>
 </head>
 <body>
     <div class="offline-container">
-        <div class="offline-icon">??</div>
-        <h1>You're Offline</h1>
-        <p>
-            It looks like you've lost your internet connection. 
-            Don't worry - your chore data is safe! 
-            Please check your connection and try again.
-        </p>
-        <button class="retry-btn" onclick="window.location.reload()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        <div class="offline-card">
+            <svg class="offline-loaf" width="40" height="40" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 13a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="#FBBF24"></path>
+                <path d="m8.2 12.2 2.8-3.4M12.8 13.6l2.8-3.4" stroke="#12101E" stroke-width="1.6" stroke-linecap="round" fill="none"></path>
             </svg>
-            Try Again
-        </button>
+            <h1>You're offline</h1>
+            <p>Daily Bread needs a connection. It'll pick right back up when you're online.</p>
+            <button class="retry-btn" onclick="window.location.reload()">Try again</button>
+        </div>
         <div class="status-text">
             <div class="status-dot"></div>
-            <span>Waiting for connection...</span>
-        </div>
-        <div class="brand">
-            <img src="/images/bread-icon.png" alt="" />
-            <span>Daily Bread</span>
+            <span>Waiting for connection&hellip;</span>
         </div>
     </div>
-    
+
     <script>
         // Auto-reload when back online
         window.addEventListener('online', () => {

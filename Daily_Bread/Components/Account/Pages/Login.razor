@@ -1,75 +1,76 @@
-﻿@page "/Account/Login"
+@page "/Account/Login"
 @attribute [AllowAnonymous]
 @layout Daily_Bread.Components.Layout.MinimalLayout
 @using Microsoft.AspNetCore.Authorization
+@using Daily_Bread.Components.Shared
 
 <PageTitle>Login - Daily Bread</PageTitle>
 
+@* Login (design #15a/#15b): always renders Ultraviolet dark — theme prefs are
+   per-device and load post-auth. Functionally identical to live: username/password
+   POST to /Account/PerformLogin, remember-me, optional Authentik SSO, 4 error states. *@
 <div class="login-container">
     <div class="login-card">
         <div class="login-header">
-            <img src="/images/bread-icon.png" alt="Daily Bread" class="brand-icon" />
+            <span class="brand-tile" aria-hidden="true">
+                <LoafMark Size="30" />
+            </span>
             <h1>Daily Bread</h1>
             <p class="tagline">Earn your daily bread, one chore at a time</p>
         </div>
-        
-        @if (Error == "invalid")
+
+        @if (ErrorMessage is not null)
         {
-            <div class="alert alert-danger" role="alert">
-                Invalid username or password.
-            </div>
-        }
-        else if (Error == "lockout")
-        {
-            <div class="alert alert-danger" role="alert">
-                Your account has been locked due to too many failed attempts. Please try again later.
-            </div>
-        }
-        else if (Error == "notauthorized")
-        {
-            <div class="alert alert-danger" role="alert">
-                That account isn't set up for Daily Bread. Please contact a parent.
-            </div>
-        }
-        else if (Error == "external")
-        {
-            <div class="alert alert-danger" role="alert">
-                Sign-in with Authentik didn't complete. Please try again.
+            @* All four server error states share this shell (#15b): risk-tint alert. *@
+            <div class="login-alert" role="alert">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                </svg>
+                <span>@ErrorMessage</span>
             </div>
         }
 
         <form method="post" action="/Account/PerformLogin@(string.IsNullOrEmpty(ReturnUrl) ? "" : $"?ReturnUrl={Uri.EscapeDataString(ReturnUrl)}")">
             <AntiforgeryToken />
-            <div class="mb-4">
+            <div class="login-field">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" 
-                       name="Input.UserName" 
-                       id="username" 
-                       class="ds-input" 
-                       autocomplete="username" 
+                <input type="text"
+                       name="Input.UserName"
+                       id="username"
+                       class="ds-input"
+                       autocomplete="username"
                        autocapitalize="off"
                        autocorrect="off"
                        spellcheck="false"
                        required
                        placeholder="Enter your username" />
             </div>
-            
-            <div class="mb-4">
+
+            <div class="login-field">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" 
-                       name="Input.Password" 
-                       id="password" 
-                       class="ds-input" 
-                       autocomplete="current-password"
-                       required
-                       placeholder="Enter your password" />
+                <div class="input-group login-password-group">
+                    <input type="password"
+                           name="Input.Password"
+                           id="password"
+                           class="ds-input"
+                           autocomplete="current-password"
+                           required
+                           placeholder="Enter your password" />
+                    @* Static SSR page (no Blazor circuit) — reveal is wired with inline vanilla JS. *@
+                    <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password" title="Show password"
+                            onclick="var i=document.getElementById('password'),s=this.querySelector('span'),h=i.type==='password';i.type=h?'text':'password';s.className=h?'bi bi-eye-slash':'bi bi-eye';this.setAttribute('aria-label',h?'Hide password':'Show password');this.setAttribute('title',h?'Hide password':'Show password');">
+                        <span class="bi bi-eye"></span>
+                    </button>
+                </div>
             </div>
-            
-            <div class="form-check mb-4">
+
+            <div class="form-check login-remember">
                 <input type="checkbox" name="Input.RememberMe" value="true" class="form-check-input" id="rememberMe" />
                 <label class="form-check-label" for="rememberMe">Remember me on this device</label>
             </div>
-            
+
             <button type="submit" class="btn btn-primary btn-login">
                 <span class="bi bi-box-arrow-in-right me-2"></span>
                 <span>Sign In</span>
@@ -80,7 +81,7 @@
         {
             <div class="login-or"><span>or</span></div>
             <a href="/Account/ExternalLogin@(string.IsNullOrEmpty(ReturnUrl) ? "" : $"?returnUrl={Uri.EscapeDataString(ReturnUrl)}")"
-               class="btn btn-secondary btn-login">
+               class="btn btn-secondary btn-login btn-login-sso">
                 <span class="bi bi-shield-lock me-2"></span>
                 <span>Sign in with Authentik</span>
             </a>
@@ -95,6 +96,16 @@
 
     [SupplyParameterFromQuery(Name = "error")]
     private string? Error { get; set; }
+
+    // The four server error states (#15b copy map — copy unchanged).
+    private string? ErrorMessage => Error switch
+    {
+        "invalid" => "Invalid username or password.",
+        "lockout" => "Your account has been locked due to too many failed attempts. Please try again later.",
+        "notauthorized" => "That account isn't set up for Daily Bread. Please contact a parent.",
+        "external" => "Sign-in with Authentik didn't complete. Please try again.",
+        _ => null
+    };
 
     // Only show the Authentik button when SSO is configured for this deployment.
     private bool OidcEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OIDC_AUTHORITY"));

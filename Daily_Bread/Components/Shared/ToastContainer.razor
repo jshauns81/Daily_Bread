@@ -16,12 +16,12 @@
                 {
                     <div class="toast-message">@toast.Message</div>
                 }
-                @if (toast.IsClickable)
-                {
-                    <div class="toast-action-hint">Tap to respond</div>
-                }
             </div>
-            <button type="button" 
+            @if (toast.IsClickable)
+            {
+                <span class="toast-open">Open</span>
+            }
+            <button type="button"
                     class="toast-close" 
                     aria-label="Close"
                     @onclick="() => Dismiss(toast.Id)"

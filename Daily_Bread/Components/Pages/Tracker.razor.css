@@ -702,10 +702,65 @@
 
 /* --- Rows --- */
 .md-row {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 11px;
     padding: 9px 14px;
+}
+
+/* Tier-1 celebration (design #19d): particle burst + earned-amount fly on the just-completed row */
+.md-burst {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.md-burst-dot {
+    position: absolute;
+    left: -3px;
+    top: -3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--db-money);
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(2px);
+    animation: md-burst-pop 0.5s ease-out forwards;
+}
+
+@keyframes md-burst-pop {
+    0% { opacity: 1; transform: rotate(var(--a)) translateX(2px) scale(1); }
+    100% { opacity: 0; transform: rotate(var(--a)) translateX(22px) scale(0.3); }
+}
+
+.md-burst-amt {
+    position: absolute;
+    right: 0;
+    top: 0;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-money);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--db-money) 55%, transparent);
+    transform: translateY(-50%);
+    animation: md-earn-fly 0.75s ease-out forwards;
+}
+
+@keyframes md-earn-fly {
+    0% { opacity: 0; transform: translate(0, -50%) scale(0.8); }
+    25% { opacity: 1; transform: translate(0, -50%) scale(1.05); }
+    100% { opacity: 0; transform: translate(-6px, -260%) scale(0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .md-burst-dot { animation: none; opacity: 0; }
+    .md-burst-amt { animation: md-earn-fade 0.75s ease-out forwards; }
+    @keyframes md-earn-fade { 0%, 60% { opacity: 1; transform: translate(0, -50%); } 100% { opacity: 0; transform: translate(0, -50%); } }
 }
 
 .md-section.is-future .md-row {

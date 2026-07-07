@@ -1,52 +1,109 @@
 @inject IJSRuntime JS
 
+@* Theme preview cards (design #16a desktop 2x2 / #16b phone rows). Each card renders
+   its theme's REAL hexes in the currently selected mode; selection ring + check use
+   that theme's own accent. Persistence stays on DBTheme.setTheme/setMode (per device). *@
 <div class="theme-picker">
-    <div class="tp-section-label">Color</div>
-    <div class="tp-dots" role="radiogroup" aria-label="App color theme">
-        @foreach (var t in Themes)
-        {
-            <button type="button"
-                    class="tp-dot @(t.Key == _theme ? "active" : "")"
-                    style="--c:@t.Color"
-                    title="@t.Name"
-                    aria-label="@t.Name"
-                    aria-pressed="@(t.Key == _theme)"
-                    @onclick="() => SetTheme(t.Key)">
-                @if (t.Key == _theme)
-                {
-                    <span class="bi bi-check-lg"></span>
-                }
-            </button>
-        }
+    <div class="tp-section tp-section-theme">
+        <div class="tp-section-label">Theme</div>
+        <div class="tp-grid" role="radiogroup" aria-label="App color theme">
+            @foreach (var t in Themes)
+            {
+                var s = _mode == "light" ? t.Light : t.Dark;
+                var selected = t.Key == _theme;
+                <button type="button"
+                        class="tp-card @(selected ? "selected" : "")"
+                        style="--tc-accent:@s.Accent; --tc-on-accent:@s.OnAccent"
+                        role="radio"
+                        aria-checked="@(selected ? "true" : "false")"
+                        aria-label="@t.Name theme"
+                        @onclick="() => SetTheme(t.Key)">
+                    @* Desktop preview: heading skeleton, chore row with tile + money, Approve + progress. *@
+                    <span class="tp-preview" style="background:@s.Bg" aria-hidden="true">
+                        <span class="tp-skel tp-skel-head" style="background:@s.Line"></span>
+                        <span class="tp-prow" style="background:@s.Surface; border-color:@s.Line">
+                            <span class="tp-tile" style="background:linear-gradient(140deg,@s.TileA,@s.TileB)"></span>
+                            <span class="tp-skel tp-skel-line" style="background:@s.Line"></span>
+                            <span class="tp-money" style="color:@s.Money">$4.00</span>
+                        </span>
+                        <span class="tp-pactions">
+                            <span class="tp-approve" style="background:@s.Accent; color:@s.OnAccent">Approve</span>
+                            <span class="tp-bar" style="background:@s.Line">
+                                <span class="tp-bar-fill" style="background:@BarFill(t.Key, s)"></span>
+                            </span>
+                        </span>
+                    </span>
+                    @* Phone mini swatch (#16b). *@
+                    <span class="tp-mini" style="background:@s.Bg; border-color:@s.Line" aria-hidden="true">
+                        <span class="tp-mini-dot" style="background:@s.Accent"></span>
+                        <span class="tp-mini-dot" style="background:@s.Money"></span>
+                        <span class="tp-mini-dot" style="background:@s.Screentime"></span>
+                    </span>
+                    <span class="tp-foot">
+                        <span class="tp-foot-text">
+                            <span class="tp-name">@t.Name</span>
+                            <span class="tp-tagline">@t.Tagline</span>
+                        </span>
+                        <span class="tp-dots" aria-hidden="true">
+                            <span class="tp-dot" style="background:@s.Accent"></span>
+                            <span class="tp-dot" style="background:@s.Money"></span>
+                            <span class="tp-dot" style="background:@s.Screentime"></span>
+                            <span class="tp-dot" style="background:@s.Risk"></span>
+                        </span>
+                        @if (selected)
+                        {
+                            <span class="tp-check" aria-hidden="true"><span class="bi bi-check-lg"></span></span>
+                        }
+                    </span>
+                </button>
+            }
+        </div>
     </div>
-    <div class="tp-name">@CurrentName</div>
 
-    <div class="tp-section-label">Mode</div>
-    <div class="tp-mode-toggle">
-        <button type="button" class="tp-mode @(_mode == "dark" ? "active" : "")" @onclick='() => SetMode("dark")'>
-            <span class="bi bi-moon-stars-fill"></span> Dark
-        </button>
-        <button type="button" class="tp-mode @(_mode == "light" ? "active" : "")" @onclick='() => SetMode("light")'>
-            <span class="bi bi-sun-fill"></span> Light
-        </button>
+    <div class="tp-section tp-section-mode">
+        <div class="tp-section-label">Mode</div>
+        <div class="tp-mode-toggle">
+            <button type="button" class="tp-mode @(_mode == "dark" ? "active" : "")" @onclick='() => SetMode("dark")'>
+                <span class="bi bi-moon-stars-fill"></span> Dark
+            </button>
+            <button type="button" class="tp-mode @(_mode == "light" ? "active" : "")" @onclick='() => SetMode("light")'>
+                <span class="bi bi-sun-fill"></span> Light
+            </button>
+        </div>
     </div>
 </div>
 
 @code {
-    private record ThemeOption(string Key, string Name, string Color);
+    /// <summary>One theme's real hexes for a single mode — rendered inside preview cards.</summary>
+    private record Swatch(string Bg, string Surface, string Line, string Accent, string OnAccent,
+                          string Money, string Screentime, string Risk, string TileA, string TileB);
 
+    private record ThemeOption(string Key, string Name, string Tagline, Swatch Dark, Swatch Light);
+
+    // Hexes mirror wwwroot/css/design-system.css theme blocks (source of truth).
     private static readonly ThemeOption[] Themes =
     [
-        new("ultraviolet", "Ultraviolet", "#8B5CF6"),
-        new("voltage",     "Voltage",     "#CDFF3D"),
-        new("cobalt",      "Cobalt",      "#4D8DFF"),
-        new("tangerine",   "Tangerine",   "#FF7A1A"),
+        new("ultraviolet", "Ultraviolet", "violet · pink · mint money",
+            new("#0D0A14", "#191327", "#251C38", "#8B5CF6", "#FFFFFF", "#2DD4BF", "#FBBF24", "#F472B6", "#8B5CF6", "#6D28D9"),
+            new("#FAF9FD", "#FFFFFF", "#E8E3F4", "#7C3AED", "#FFFFFF", "#0D9488", "#D97706", "#DB2777", "#8B5CF6", "#6D28D9")),
+        new("voltage", "Voltage", "electric lime is the money",
+            new("#0E1116", "#171C23", "#222933", "#CDFF3D", "#10140A", "#CDFF3D", "#FBBF24", "#FF6B6B", "#CDFF3D", "#84CC16"),
+            new("#FAFBFA", "#FFFFFF", "#E4E9E4", "#84CC16", "#10140A", "#4D7C0F", "#D97706", "#DC2626", "#CDFF3D", "#84CC16")),
+        new("cobalt", "Cobalt", "ink navy · sunshine money",
+            new("#0B1220", "#141E33", "#1F2C47", "#4D8DFF", "#FFFFFF", "#FFC53D", "#FF8A4C", "#FF6B6B", "#4D8DFF", "#2563EB"),
+            new("#F5F8FF", "#FFFFFF", "#D8E2F2", "#2563EB", "#FFFFFF", "#B45309", "#EA580C", "#DC2626", "#4D8DFF", "#2563EB")),
+        new("tangerine", "Tangerine", "crust energy · green money",
+            new("#131114", "#1E1B1F", "#2B272C", "#FF7A1A", "#1F1206", "#5FD068", "#60A5FA", "#FF5C5C", "#FF7A1A", "#EA580C"),
+            new("#FAF8F7", "#FFFFFF", "#E8E1DC", "#EA580C", "#FFFFFF", "#1D8A3E", "#2563EB", "#DC2626", "#FF7A1A", "#EA580C")),
     ];
 
     private string _theme = "ultraviolet";
     private string _mode = "dark";
 
-    private string CurrentName => Themes.FirstOrDefault(t => t.Key == _theme)?.Name ?? "Ultraviolet";
+    // Ultraviolet's progress bar shows the signature violet→pink gradient (#16a);
+    // the other themes fill with their accent.
+    private static string BarFill(string key, Swatch s) =>
+        key == "ultraviolet" ? $"linear-gradient(90deg,{s.Accent},{s.Risk})" : s.Accent;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
