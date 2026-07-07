@@ -1,6 +1,6 @@
 # 🍞 Daily Bread
 
-[![Version](https://img.shields.io/badge/version-1.0.10-blue.svg)](https://github.com/jshauns81/Daily_Bread/releases)
+[![Version](https://img.shields.io/badge/version-1.0.11-blue.svg)](https://github.com/jshauns81/Daily_Bread/releases)
 [![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Blazor](https://img.shields.io/badge/Blazor-Server-blueviolet.svg)](https://blazor.net/)
 
@@ -11,9 +11,10 @@ Daily Bread is a comprehensive family management and chore tracking application 
 -   **Chore Management**: Schedule, track, and manage daily and weekly chores.
 -   **Financial Ledger**: Track earnings, payouts, and balances for each child.
 -   **Savings Goals**: Help children set and track progress toward specific purchase goals.
--   **Achievements**: Gamify chores with unlockable milestones and rewards.
+-   **Achievements**: Gamify chores with unlockable milestones and approval-gated reward claims, managed via a parent Achievement Manager.
+-   **Driving Log**: Teen driving-hours tracking with parent approvals and role-guarded CSV export.
 -   **Family Dashboard**: A centralized view for parents to monitor progress and approve tasks.
--   **Push Notifications**: Integrated WebPush support for reminders and updates.
+-   **Push Notifications**: Integrated WebPush + ntfy support for reminders and updates.
 -   **Chore Planner**: Visual weekly wage board for scheduling and tracking earnings.
 -   **Printable Chore Charts**: Generate fridge-ready weekly charts for kids.
 
@@ -124,7 +125,7 @@ By default, the container listens on port `8080`. You can map this to any port o
 
 ## 🔒 Security & Identity
 
--   **Authentication**: Uses ASP.NET Core Identity with hardened cookie settings (HttpOnly, SameSite=Lax).
+-   **Authentication**: ASP.NET Core Identity with hardened cookie settings (HttpOnly, SameSite=Lax), plus optional **Authentik OIDC** single sign-on.
 -   **Authorization**: Implements a "Default Deny" policy; all pages require login unless explicitly marked for anonymous access (like the Login page).
 -   **Reverse Proxy**: The app is configured to handle `X-Forwarded-For` and `X-Forwarded-Proto` headers, making it safe to host behind Nginx, Caddy, or Traefik.
 
@@ -136,7 +137,14 @@ This project is licensed under the terms specified in the repository.
 
 ## 📋 Version History
 
-### 1.0.10 (Current)
+### 1.0.11 (Current)
+- 🔐 Added **Authentik OIDC** single sign-on; removed Kid Mode / PIN
+- 🚗 **Driving log**: teen driving-hours tracking with parent approvals and CSV export
+- 🏆 Parent **Achievement Manager** (CRUD + soft-delete) and approval-gated reward claims
+- 🔔 ntfy alert integration; theming refinements
+- 🐛 Fixes: weekly-frequency chore counting, reward-approval replay safety, SignalR client
+
+### 1.0.10
 - ✨ Redesigned NavMenu sidebar with active page indicators
 - ✨ Added section divider before Management section
 - ✨ Moved pending blessings badge to Book of Deeds nav item
