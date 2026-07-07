@@ -1,19 +1,26 @@
 # 🍞 Daily Bread
 
-[![Version](https://img.shields.io/badge/version-1.0.10-blue.svg)](https://github.com/jshauns81/Daily_Bread/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0--beta-orange.svg)](https://github.com/jshauns81/Daily_Bread/releases)
 [![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Blazor](https://img.shields.io/badge/Blazor-Server-blueviolet.svg)](https://blazor.net/)
+
+> ⚠️ **This is the `beta` branch — active development.** It contains in-progress work
+> (screen-time penalty mechanics, driving log, quality-of-life routines) and an ongoing
+> UI overhaul. For the stable release, use the [`master`](https://github.com/jshauns81/Daily_Bread/tree/master) branch.
 
 Daily Bread is a comprehensive family management and chore tracking application built with **.NET 9** and **Blazor Server**. It is designed to help families manage daily responsibilities, track chores, maintain a financial ledger for kids, and gamify tasks with achievements and savings goals.
 
 ## 🚀 Key Features
 
 -   **Chore Management**: Schedule, track, and manage daily and weekly chores.
--   **Financial Ledger**: Track earnings, payouts, and balances for each child.
+-   **Financial Ledger**: Earn-only ledger — kids can only ever *fail to earn*, nothing is deducted from their balance.
+-   **Screen-Time Penalty System** _(beta)_: Screen time is the sole penalty axis. Missing chores reduces a child's weekly screen-time budget using an importance-share model with per-pool at-risk budgets, threshold pay, and live minute-price display.
+-   **Quality-of-Life Routines** _(beta)_: "Vacuum-fill" read/active/brain routine targets that grow as screen-time budget is lost.
+-   **Driving Log** _(beta)_: Teen driving-hours tracking with parent approvals and role-guarded CSV export.
 -   **Savings Goals**: Help children set and track progress toward specific purchase goals.
--   **Achievements**: Gamify chores with unlockable milestones and rewards.
+-   **Achievements**: Gamify chores with unlockable milestones and approval-gated reward claims.
 -   **Family Dashboard**: A centralized view for parents to monitor progress and approve tasks.
--   **Push Notifications**: Integrated WebPush support for reminders and updates.
+-   **Push Notifications**: Integrated WebPush + ntfy support for reminders and updates.
 -   **Chore Planner**: Visual weekly wage board for scheduling and tracking earnings.
 -   **Printable Chore Charts**: Generate fridge-ready weekly charts for kids.
 
@@ -124,7 +131,7 @@ By default, the container listens on port `8080`. You can map this to any port o
 
 ## 🔒 Security & Identity
 
--   **Authentication**: Uses ASP.NET Core Identity with hardened cookie settings (HttpOnly, SameSite=Lax).
+-   **Authentication**: ASP.NET Core Identity with hardened cookie settings (HttpOnly, SameSite=Lax), plus optional **Authentik OIDC** single sign-on.
 -   **Authorization**: Implements a "Default Deny" policy; all pages require login unless explicitly marked for anonymous access (like the Login page).
 -   **Reverse Proxy**: The app is configured to handle `X-Forwarded-For` and `X-Forwarded-Proto` headers, making it safe to host behind Nginx, Caddy, or Traefik.
 
@@ -136,7 +143,16 @@ This project is licensed under the terms specified in the repository.
 
 ## 📋 Version History
 
-### 1.0.10 (Current)
+### 1.1.0-beta (Current — `beta` branch)
+- 🖥️ **Screen-time penalty mechanics**: importance-share model, per-pool at-risk budgets, threshold pay, live minute-price UI
+- 💰 Money model is now **earn-only** (no balance deductions)
+- 🧩 **Quality-of-life routines**: read/active/brain targets that grow as screen-time is lost
+- 🚗 **Driving log**: teen driving-hours tracking with parent approvals and CSV export
+- 🔁 Screen-time-aware weekly reconciliation + hosted background reconciler
+- 🔐 Authentik OIDC single sign-on; ntfy alert integration
+- 🚧 UI overhaul in progress
+
+### 1.0.10
 - ✨ Redesigned NavMenu sidebar with active page indicators
 - ✨ Added section divider before Management section
 - ✨ Moved pending blessings badge to Book of Deeds nav item
