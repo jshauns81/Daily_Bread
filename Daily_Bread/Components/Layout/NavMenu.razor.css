@@ -1,5 +1,8 @@
 /* ============================================
-   NAVMENU - RESPONSIVE NAVIGATION
+   NAVMENU — design #14a sidebar content
+   Brand loaf mark, mono Lucide links, accent-tint
+   active pill, MANAGE label, profile footer + menu.
+   All colors from theme tokens (design-system.css).
    ============================================ */
 
 /* ===========================================
@@ -7,65 +10,53 @@
    =========================================== */
 
 .nav-header {
-    /* Left gutter (1.5rem) matches the nav-link icon column:
-       0.5rem link margin + 1rem link padding = 1.5rem. */
-    padding: 1rem 1rem 1rem 1.5rem;
-    border-bottom: none;
+    /* Left gutter aligns the loaf with the nav-link icon column:
+       12px link margin + 10px link padding = 22px ≈ 18px header pad. */
+    padding: 18px 18px 14px;
     flex-shrink: 0;
 }
 
 .nav-brand {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    color: var(--ds-text-primary);
+    gap: 10px;
+    color: var(--db-text);
     text-decoration: none;
-    font-weight: 600;
-    font-size: 1.25rem;
+    min-width: 0;
 }
 
-/* Logo tile: bread glyph in a rounded gold gradient square (matches preview) */
-.nav-brand-logo {
-    width: 42px;
-    height: 42px;
+.nav-brand ::deep .loaf-mark {
     flex-shrink: 0;
-    border-radius: 13px;
-    display: grid;
-    place-items: center;
-    font-size: 1.4rem;
-    line-height: 1;
-    /* Color-emoji font so the bread glyph renders in full color */
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-    background: linear-gradient(135deg, var(--ds-semantic-highlight), color-mix(in srgb, var(--ds-semantic-highlight) 55%, #fff));
-    box-shadow: 0 0 22px color-mix(in srgb, var(--ds-semantic-highlight) 40%, transparent);
-    transition: transform 0.3s ease;
-}
-
-.nav-brand:hover .nav-brand-logo {
-    transform: rotate(-8deg) scale(1.06);
 }
 
 .nav-brand-titles {
     display: flex;
     flex-direction: column;
-    line-height: 1.15;
+    line-height: 1.2;
     min-width: 0;
 }
 
 .nav-brand-text {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--db-text);
     white-space: nowrap;
 }
 
 .nav-brand-sub {
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--ds-text-muted);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    color: var(--db-text3);
     white-space: nowrap;
 }
 
 @media (max-width: 767px) {
+    /* Drawer keeps the brand (mobile header shows it too, but the drawer
+       covers it while open), slightly tighter. */
     .nav-header {
-        display: none;
+        padding-top: 14px;
     }
 }
 
@@ -77,34 +68,33 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0.5rem 0;
+    padding: 4px 0;
     -webkit-overflow-scrolling: touch;
     min-height: 0;
     scrollbar-width: thin;
-    scrollbar-color: var(--ds-bg-muted) transparent;
+    scrollbar-color: var(--ds-divider) transparent;
 }
 
-/* Section divider - subtle line before management section */
+/* Section divider before the MANAGE group */
 .nav-section-divider {
     height: 1px;
-    background: linear-gradient(90deg, transparent 0%, var(--ds-bg-muted) 20%, var(--ds-bg-muted) 80%, transparent 100%);
-    margin: var(--ds-space-4) var(--ds-space-4) 0 var(--ds-space-4);
+    background: var(--ds-divider);
+    margin: 10px 20px 8px;
 }
 
-/* Section labels */
+/* Section label — 9.5px/700, +1.4px tracking (spec #14a) */
 .nav-section-label {
-    /* Quiet, muted label on the shared 1.5rem gutter (matches preview's "MANAGE") */
-    padding: var(--ds-space-3) 1.5rem var(--ds-space-2) 1.5rem;
-    font-size: 0.65rem;
+    padding: 0 22px 6px;
+    font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--ds-text-muted);
+    letter-spacing: 1.4px;
+    color: var(--db-text3);
     flex-shrink: 0;
 }
 
 /* ===========================================
-   NAV LINKS - Simple inline layout
+   NAV LINKS
    =========================================== */
 
 /* NOTE: NavLink is a framework child component, so its rendered <a> does NOT
@@ -115,96 +105,88 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.875rem 1rem;
-    margin: 0.125rem 0.5rem;
-    color: var(--ds-text-muted);
+    gap: 10px;
+    padding: 8px 10px;
+    margin: 1px 12px;
+    color: var(--db-text2);
     text-decoration: none;
-    border-radius: var(--ds-radius-md);
-    font-size: 0.95rem;
+    border-radius: 9px;
+    font-size: 13px;
     font-weight: 500;
-    min-height: 48px;
+    min-height: 40px;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
-    border: 1px solid transparent;
-    /* Smooth transitions */
-    transition: background-color var(--ds-duration-fast) var(--ds-ease-default),
-                color var(--ds-duration-fast) var(--ds-ease-default),
-                border-color var(--ds-duration-fast) var(--ds-ease-default),
-                box-shadow var(--ds-duration-fast) var(--ds-ease-default);
+    transition: background-color var(--ds-transition), color var(--ds-transition);
 }
 
-/* Icon - inline, fixed width (emoji) */
-.nav-link .nav-ico {
-    font-size: 1.25rem;
-    width: 24px;
-    text-align: center;
+/* Icon column — mono Lucide stroke, inherits row color */
+.nav-menu ::deep .nav-ico {
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
-    line-height: 1;
-    opacity: 1;
-    /* Color-emoji font so nav glyphs render in full color, not faint mono glyphs */
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--db-text3);
+    transition: color var(--ds-transition);
 }
 
-/* Text - grows to fill space */
-.nav-link-text {
+.nav-menu ::deep .nav-link-text {
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* Badge - stays at end */
-.nav-badge {
+/* Pending-approvals badge — risk pill (spec: count on Activity) */
+.nav-menu ::deep .nav-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    background: var(--ds-semantic-highlight);
-    color: var(--ds-bg-base);
-    border-radius: 10px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    background: var(--db-risk);
+    color: var(--db-bg);
+    border-radius: var(--ds-radius-pill);
     flex-shrink: 0;
-    animation: badge-pulse 2s ease-in-out infinite;
     margin-left: var(--ds-space-2);
 }
 
-@keyframes badge-pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
-/* Hover state */
+/* Hover — row lightens, never scales */
 .nav-menu ::deep .nav-link:hover {
-    background-color: color-mix(in srgb, var(--ds-accent-primary) 10%, transparent);
-    color: var(--ds-text-primary);
+    background-color: var(--ds-bg-selected);
+    color: var(--db-text);
 }
 
-.nav-menu ::deep .nav-link:hover .bi {
-    color: var(--ds-accent-primary);
+.nav-menu ::deep .nav-link:hover .nav-ico {
+    color: var(--db-text2);
 }
 
-/* Active state - glowing accent pill */
+/* Active — accent tint pill, accent-light text (spec #14a) */
 .nav-menu ::deep .nav-link.active {
-    background: color-mix(in srgb, var(--ds-accent-primary) 16%, transparent);
-    color: var(--ds-accent-primary);
-    border-color: color-mix(in srgb, var(--ds-accent-primary) 30%, transparent);
-    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--ds-accent-primary) 60%, transparent);
+    background: color-mix(in srgb, var(--db-accent) 14%, transparent);
+    color: var(--ds-accent-light);
+    font-weight: 600;
 }
 
-.nav-menu ::deep .nav-link.active .bi {
-    color: var(--ds-accent-primary);
+.nav-menu ::deep .nav-link.active .nav-ico {
+    color: var(--ds-accent-text);
+}
+
+.nav-menu ::deep .nav-link:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 /* ===========================================
-   NAV FOOTER
+   NAV FOOTER — profile button + popover menu
    =========================================== */
 
 .nav-footer {
-    padding: 0.75rem 1rem;
+    padding: 12px;
     flex-shrink: 0;
     position: relative;
 }
@@ -213,34 +195,40 @@
 .nav-profile {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
+    gap: 10px;
     width: 100%;
-    padding: 0.6rem 0.7rem;
-    border: 1px solid var(--ds-bg-muted);
-    background: var(--ds-bg-hover);
-    border-radius: 16px;
+    padding: 9px 10px;
+    border: 1px solid var(--db-border);
+    background: var(--db-bg2);
+    border-radius: 11px;
     cursor: pointer;
-    color: var(--ds-text-primary);
+    color: var(--db-text);
     text-align: left;
-    transition: border-color var(--ds-duration-fast) ease, transform var(--ds-duration-fast) ease;
+    transition: border-color var(--ds-transition), background-color var(--ds-transition);
     -webkit-tap-highlight-color: transparent;
 }
 
 .nav-profile:hover {
-    border-color: color-mix(in srgb, var(--ds-accent-primary) 45%, var(--ds-bg-muted));
+    background: var(--ds-bg-selected);
 }
 
+.nav-profile:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Gradient avatar — accent → risk (brand gradient, spec #14a) */
 .nav-profile-av {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
     flex: 0 0 auto;
-    border-radius: 999px;
+    border-radius: 50%;
     display: grid;
     place-items: center;
     font-weight: 700;
-    font-size: 0.9rem;
-    color: var(--ds-on-accent, #fff);
-    background: linear-gradient(135deg, var(--ds-accent-primary), color-mix(in srgb, var(--ds-accent-primary) 45%, var(--ds-semantic-highlight)));
+    font-size: 13px;
+    color: var(--db-on-accent);
+    background: linear-gradient(140deg, var(--db-accent), var(--db-risk));
 }
 
 .nav-profile-who {
@@ -248,29 +236,30 @@
     flex-direction: column;
     flex: 1;
     min-width: 0;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .nav-profile-name {
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-size: 12.5px;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .nav-profile-role {
-    font-size: 0.72rem;
-    color: var(--ds-text-muted);
+    font-size: 10px;
+    color: var(--db-text3);
 }
 
 .nav-profile-cv {
-    color: var(--ds-text-muted);
-    font-size: 0.7rem;
+    color: var(--ds-accent-text);
     flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
 }
 
-/* Upward-opening user menu */
+/* Upward-opening user menu (popover above the profile pill) */
 .nav-user-backdrop {
     position: fixed;
     inset: 0;
@@ -279,119 +268,83 @@
 
 .nav-user-menu {
     position: absolute;
-    left: 1rem;
-    right: 1rem;
-    bottom: calc(100% - 0.35rem);
-    background: var(--ds-bg-elevated);
-    border: 1px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-md);
-    box-shadow: var(--ds-shadow-lg);
-    padding: var(--ds-space-2) 0;
+    left: 12px;
+    right: 12px;
+    bottom: calc(100% - 4px);
+    background: var(--ds-bg-selected);
+    border: 1px solid var(--db-bg3);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.7);
+    padding: 6px;
     z-index: 1200;
+    display: flex;
+    flex-direction: column;
 }
 
 .nav-user-menu form {
     margin: 0;
+    display: contents;
 }
 
 .nav-user-item {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 9px;
     width: 100%;
-    padding: 0.6rem 1rem;
+    padding: 8px 10px;
     background: transparent;
     border: 0;
+    border-radius: 8px;
     cursor: pointer;
-    color: var(--ds-text-primary);
+    color: var(--db-text);
     text-decoration: none;
-    font-size: 0.875rem;
+    font-size: 12.5px;
+    font-weight: 500;
     text-align: left;
-    transition: background-color var(--ds-duration-fast) ease;
+    transition: background-color var(--ds-transition);
+}
+
+.nav-user-item ::deep .icon-tile-mono {
+    color: var(--db-text2);
+    flex-shrink: 0;
 }
 
 .nav-user-item:hover {
-    background: var(--ds-bg-hover);
+    background: var(--db-bg3);
 }
 
-.nav-user-item .bi {
-    font-size: 1rem;
-    opacity: 0.8;
-}
-
+/* Log out — risk-light (spec #14a) */
 .nav-user-item-danger {
-    color: var(--ds-semantic-error);
+    color: var(--ds-risk-light);
+    font-weight: 600;
+}
+
+.nav-user-item-danger ::deep .icon-tile-mono {
+    color: var(--ds-risk-light);
 }
 
 .nav-user-divider {
-    margin: 0.4rem 0;
+    margin: 5px 8px;
     border: 0;
-    border-top: 1px solid var(--ds-bg-muted);
-    opacity: 0.5;
-}
-
-.kid-mode-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    color: var(--ds-text-primary);
-    text-decoration: none;
-    background: linear-gradient(135deg, var(--ds-accent-primary) 0%, var(--ds-accent-blue) 100%);
-    box-shadow: 0 2px 8px rgba(94, 129, 172, 0.3);
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: transform var(--ds-duration-fast) var(--ds-ease-default),
-                box-shadow var(--ds-duration-fast) var(--ds-ease-default);
-}
-
-.kid-mode-link:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(94, 129, 172, 0.4);
-}
-
-.kid-mode-link .bi {
-    font-size: 1rem;
+    border-top: 1px solid var(--db-bg3);
 }
 
 /* ===========================================
-   MOBILE OPTIMIZATIONS
+   MOBILE (drawer) OPTIMIZATIONS
    =========================================== */
 
 @media (max-width: 767px) {
     .nav-menu {
-        padding-bottom: 1rem;
-    }
-    
-    .nav-menu ::deep .nav-link {
-        padding: 1rem;
-        min-height: 52px;
-        font-size: 1rem;
+        padding-bottom: 12px;
     }
 
-    .nav-link .nav-ico {
-        font-size: 1.35rem;
-        width: 28px;
+    .nav-menu ::deep .nav-link {
+        min-height: 48px;
+        font-size: 14px;
     }
-    
-    .nav-section-label {
-        padding: 1.25rem 1rem 0.5rem 1rem;
-        font-size: 0.7rem;
-    }
-    
-    .nav-section-divider {
-        margin-top: var(--ds-space-5);
-    }
-    
+
     .nav-footer {
-        padding: 1rem;
-    }
-    
-    .kid-mode-link {
-        padding: 1rem;
-        font-size: 1rem;
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
     }
 }
 
@@ -401,32 +354,21 @@
 
 @media (hover: none) and (pointer: coarse) {
     .nav-menu ::deep .nav-link {
-        min-height: 52px;
+        min-height: 48px;
     }
 
     .nav-menu ::deep .nav-link:active {
-        background-color: color-mix(in srgb, var(--ds-accent-primary) 15%, transparent);
+        background-color: var(--ds-bg-selected);
     }
 
-    /* Disable hover effects on touch */
+    /* Disable hover styles on touch */
     .nav-menu ::deep .nav-link:hover {
         background-color: transparent;
     }
 
-    .nav-menu ::deep .nav-link:hover .bi {
-        color: inherit;
-    }
-
+    .nav-menu ::deep .nav-link.active,
     .nav-menu ::deep .nav-link.active:hover {
-        background-color: color-mix(in srgb, var(--ds-accent-primary) 16%, transparent);
-    }
-    
-    .kid-mode-link:hover {
-        transform: none;
-    }
-    
-    .kid-mode-link:active {
-        transform: scale(0.98);
+        background: color-mix(in srgb, var(--db-accent) 14%, transparent);
     }
 }
 
@@ -436,19 +378,10 @@
 
 @media (prefers-reduced-motion: reduce) {
     .nav-menu ::deep .nav-link,
-    .nav-menu ::deep .nav-link .bi,
-    .kid-mode-link,
-    .nav-brand-logo {
+    .nav-menu ::deep .nav-ico,
+    .nav-profile,
+    .nav-user-item {
         transition: none;
-    }
-
-    .nav-badge {
-        animation: none;
-    }
-
-    .nav-brand:hover .nav-brand-logo,
-    .kid-mode-link:hover {
-        transform: none;
     }
 }
 
@@ -465,12 +398,12 @@
 }
 
 .nav-menu::-webkit-scrollbar-thumb {
-    background-color: var(--ds-bg-muted);
+    background-color: var(--ds-divider);
     border-radius: 3px;
 }
 
 .nav-menu::-webkit-scrollbar-thumb:hover {
-    background-color: var(--ds-text-muted);
+    background-color: var(--db-text3);
 }
 
 @media (max-width: 767px) {
@@ -478,7 +411,7 @@
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
-    
+
     .nav-menu::-webkit-scrollbar {
         display: none;
     }

@@ -9,7 +9,7 @@
 
 <div class="nav-header">
     <a class="nav-brand" href="">
-        <span class="nav-brand-logo" aria-hidden="true">🍞</span>
+        <LoafMark Size="26" />
         <span class="nav-brand-titles">
             <span class="nav-brand-text">Daily Bread</span>
             <span class="nav-brand-sub">give us this day</span>
@@ -29,9 +29,9 @@
                     <div class="nav-section-divider"></div>
                     <div class="nav-section-label">@item.Section</div>
                 }
-                
+
                 <NavLink class="nav-link" href="@item.Route.TrimStart('/')" Match="@GetNavLinkMatch(item.Route)" @onclick="HandleNavigation">
-                    <span class="nav-ico" aria-hidden="true">@item.Icon</span>
+                    <span class="nav-ico" aria-hidden="true"><IconTile Mono IconName="@NavIcons.ForRoute(item.Route)" Size="16" /></span>
                     <span class="nav-link-text">@item.Label</span>
                     @if (HasPendingBadge(item))
                     {
@@ -53,20 +53,20 @@
                     @if (_isParent)
                     {
                         <a href="/settings" class="nav-user-item" role="menuitem" @onclick="CloseUserMenu">
-                            <span class="bi bi-gear-fill" aria-hidden="true"></span> Settings
+                            <IconTile Mono IconName="settings" Size="14" /> Settings
                         </a>
                     }
                     <a href="/appearance" class="nav-user-item" role="menuitem" @onclick="CloseUserMenu">
-                        <span class="bi bi-palette-fill" aria-hidden="true"></span> Appearance
+                        <IconTile Mono IconName="palette" Size="14" /> Appearance
                     </a>
                     <a href="/account/change-password" class="nav-user-item" role="menuitem" @onclick="CloseUserMenu">
-                        <span class="bi bi-key" aria-hidden="true"></span> Change Password
+                        <IconTile Mono IconName="key-round" Size="14" /> Change Password
                     </a>
                     <hr class="nav-user-divider" />
                     <form method="post" action="/Account/Logout">
                         <AntiforgeryToken />
                         <button type="submit" class="nav-user-item nav-user-item-danger" role="menuitem">
-                            <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Logout
+                            <IconTile Mono IconName="log-out" Size="14" /> Log out
                         </button>
                     </form>
                 </div>
@@ -77,7 +77,7 @@
                     <span class="nav-profile-name">@_userName</span>
                     <span class="nav-profile-role">@_roleLabel</span>
                 </span>
-                <span class="bi bi-chevron-up nav-profile-cv" aria-hidden="true"></span>
+                <span class="nav-profile-cv" aria-hidden="true"><IconTile Mono IconName="chevron-up" Size="13" /></span>
             </button>
         </div>
     </Authorized>

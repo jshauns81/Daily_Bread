@@ -15,11 +15,8 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
-    background: rgba(59, 66, 82, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(216, 222, 233, 0.1);
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    background: var(--ds-bg-recessed);
+    border-top: 1px solid var(--ds-divider);
     z-index: 100;
 }
 
@@ -29,11 +26,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     padding: 8px 4px;
-    color: var(--ds-text-muted);
+    color: var(--db-text3);
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: color var(--ds-transition);
     -webkit-tap-highlight-color: transparent;
     position: relative;
     min-height: 60px;
@@ -41,45 +38,31 @@
 
 .bottom-nav__icon {
     font-size: 1.35rem;
-    transition: transform 0.2s ease, color 0.2s ease;
+    transition: color var(--ds-transition);
 }
 
 .bottom-nav__label {
-    font-size: 0.7rem;
-    font-weight: 500;
+    font-size: 10px;
+    font-weight: 600;
     letter-spacing: 0.02em;
 }
 
 .bottom-nav__item:hover,
 .bottom-nav__item:focus {
-    color: var(--ds-text-primary);
+    color: var(--db-text2);
     outline: none;
 }
 
 .bottom-nav__item--active {
-    color: var(--ds-accent-cyan);
+    color: var(--ds-accent-text);
 }
 
-.bottom-nav__item--active .bottom-nav__icon {
-    transform: scale(1.1);
-    filter: drop-shadow(0 0 8px rgba(136, 192, 208, 0.5));
+.bottom-nav__item--active .bottom-nav__label {
+    color: var(--ds-accent-light);
+    font-weight: 700;
 }
 
-/* Active indicator dot */
-.bottom-nav__item--active::before {
-    content: '';
-    position: absolute;
-    top: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    background: var(--ds-accent-cyan);
-    border-radius: 50%;
-    box-shadow: 0 0 8px rgba(136, 192, 208, 0.6);
-}
-
-/* Badge for notification counts */
+/* Badge for notification counts — risk pill */
 .bottom-nav__badge {
     position: absolute;
     top: 6px;
@@ -87,25 +70,21 @@
     min-width: 16px;
     height: 16px;
     padding: 0 4px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    background: var(--ds-semantic-error);
-    color: var(--ds-text-primary);
-    border-radius: 8px;
+    font-size: 9.5px;
+    font-weight: 700;
+    background: var(--db-risk);
+    color: var(--db-bg);
+    border-radius: var(--ds-radius-pill);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-/* Touch feedback */
+/* Touch feedback — color only, never scale */
 @media (hover: none) and (pointer: coarse) {
     .bottom-nav__item:active {
-        background: rgba(136, 192, 208, 0.1);
-        transform: scale(0.95);
-    }
-    
-    .bottom-nav__item:active .bottom-nav__icon {
-        transform: scale(0.9);
+        background: color-mix(in srgb, var(--db-accent) 12%, transparent);
+        border-radius: 9px;
     }
 }
 
@@ -120,10 +99,6 @@
 @media (max-width: 480px) {
     .bottom-nav__icon {
         font-size: 1.25rem;
-    }
-    
-    .bottom-nav__label {
-        font-size: 0.65rem;
     }
 }
 

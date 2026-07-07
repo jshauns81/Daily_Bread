@@ -33,12 +33,11 @@
             </span>
         </button>
         <a href="/" class="mobile-brand">
-            <img src="images/bread-icon.png" alt="" class="mobile-brand-icon" />
+            <LoafMark Size="20" />
             <span>Daily Bread</span>
         </a>
         <div class="mobile-header-actions">
             <button class="quick-theme" data-theme-toggle type="button" title="Toggle light / dark">🌙</button>
-            <LoginDisplay />
         </div>
     </header>
 
@@ -47,7 +46,7 @@
         <!-- Desktop Top Bar -->
         <div class="desktop-header">
             <div class="page-title">
-                <span class="page-title-icon" aria-hidden="true">@_currentPageIcon</span>
+                <span class="page-title-icon" aria-hidden="true"><IconTile Mono IconName="@_currentPageIconName" Size="17" /></span>
                 <span class="page-title-text">@_currentPageTitle</span>
             </div>
             <div class="desktop-header-actions">
@@ -64,14 +63,63 @@
     @if (_showBottomNav && _mobileNavItems.Count > 0)
     {
         <nav class="mobile-bottom-nav" aria-label="Main navigation">
-            @foreach (var item in _mobileNavItems)
+            @if (_useKidNav)
             {
-                <a href="@item.Route" class="bottom-nav-item @(IsCurrentPage(item.Route) ? "active" : "")">
-                    <span class="nav-ico" aria-hidden="true">@item.Icon</span>
+                @* Kid PWA nav (#14c): Home · My Day · Money · More — overflow lives in the More sheet *@
+                @foreach (var item in KidBottomNavItems())
+                {
+                    <a href="@item.Route" class="bottom-nav-item @(IsCurrentPage(item.Route) ? "active" : "")">
+                        <span class="nav-ico" aria-hidden="true"><IconTile Mono IconName="@NavIcons.ForRoute(item.Route)" Size="19" /></span>
+                        <span class="bottom-nav-label">@GetMobileLabel(item.Label)</span>
+                    </a>
+                }
+                <button type="button" class="bottom-nav-item @(_moreSheetOpen ? "active" : "")" @onclick="ToggleMoreSheet"
+                        aria-haspopup="true" aria-expanded="@_moreSheetOpen">
+                    <span class="nav-ico" aria-hidden="true"><IconTile Mono IconName="ellipsis" Size="19" /></span>
+                    <span class="bottom-nav-label">More</span>
+                </button>
+            }
+            else
+            {
+                @* Parent nav (#14b): the real 5 items, pending badge on Activity *@
+                @foreach (var item in _mobileNavItems)
+                {
+                    <a href="@item.Route" class="bottom-nav-item @(IsCurrentPage(item.Route) ? "active" : "")">
+                        <span class="nav-ico" aria-hidden="true">
+                            <IconTile Mono IconName="@NavIcons.ForRoute(item.Route)" Size="19" />
+                            @if (_isParent && item.Route == "/tracker" && _pendingCount > 0)
+                            {
+                                <span class="bottom-nav-badge">@_pendingCount</span>
+                            }
+                        </span>
+                        <span class="bottom-nav-label">@GetMobileLabel(item.Label)</span>
+                    </a>
+                }
+            }
+        </nav>
+    }
+
+    @* Kid "More" bottom sheet (#14c) — overflow behind the 4-item nav *@
+    @if (_useKidNav && _moreSheetOpen)
+    {
+        <div class="more-sheet-scrim" @onclick="CloseMoreSheet"></div>
+        <div class="more-sheet" role="menu" aria-label="More">
+            <div class="more-sheet-handle" aria-hidden="true"></div>
+            @foreach (var item in KidMoreSheetItems())
+            {
+                <a href="@item.Route" class="more-sheet-item" role="menuitem" @onclick="CloseMoreSheet">
+                    <IconTile Mono IconName="@NavIcons.ForRoute(item.Route)" Size="17" />
                     <span>@GetMobileLabel(item.Label)</span>
                 </a>
             }
-        </nav>
+            <form method="post" action="/Account/Logout">
+                <AntiforgeryToken />
+                <button type="submit" class="more-sheet-item more-sheet-logout" role="menuitem">
+                    <IconTile Mono IconName="log-out" Size="17" />
+                    <span>Log out</span>
+                </button>
+            </form>
+        </div>
     }
 </div>
 
@@ -134,7 +182,15 @@
     private IReadOnlyList<NavItem> _mobileNavItems = [];
     private IReadOnlyList<NavItem> _allNavItems = [];
     private string _currentPageTitle = "Daily Bread";
-    private string _currentPageIcon = "🏠";
+    private string _currentPageIconName = "home";
+
+    // Kid PWA chrome (#14c): 4-item bottom nav + "More" sheet
+    private bool _useKidNav;
+    private bool _moreSheetOpen;
+
+    // Pending-approvals badge on the mobile Activity item (#14b)
+    private int _pendingCount;
+    private bool _badgeSubscribed;
     
     private DotNetObjectReference<MainLayout>? _signalRReference;
     private string? _currentUserId;
@@ -164,9 +220,28 @@
         if (firstRender && !_signalRInitialized)
         {
             await InitializeSignalRAsync();
-            
+
             // Check for deep link query parameter after SignalR is ready
             await CheckForHelpRequestDeepLinkAsync();
+        }
+
+        if (firstRender && _isParent && _pendingCount == 0)
+        {
+            // Bottom-nav badge parity with the sidebar: if the cache is cold
+            // (e.g. direct navigation to a non-home page), load it once.
+            try
+            {
+                var data = await AppState.GetParentDashboardAsync(forceRefresh: false);
+                if (data != null && data.PendingApprovals.Count != _pendingCount)
+                {
+                    _pendingCount = data.PendingApprovals.Count;
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // Not critical if the badge doesn't show immediately
+            }
         }
     }
 
@@ -234,6 +309,18 @@
 
                 // All nav items (used to derive the current page title for the top bar)
                 _allNavItems = NavService.GetNavItems(_isParent, _isChild, isAdmin);
+
+                // Kid-only users get the 4-item nav + More sheet (#14c);
+                // parent (and parent+child) users keep the real 5-item nav (#14b).
+                _useKidNav = _isChild && !_isParent;
+
+                // Parents: keep the bottom-nav Activity badge in sync with pending approvals
+                if (_isParent && !_badgeSubscribed)
+                {
+                    _pendingCount = AppState.CachedPendingApprovalsCount;
+                    AppState.OnParentDashboardChanged += OnParentDashboardChangedForBadge;
+                    _badgeSubscribed = true;
+                }
             }
         }
         catch
@@ -585,15 +672,68 @@
     
     /// <summary>
     /// Gets a shortened label for mobile bottom nav (max ~8 chars).
+    /// Kid chrome renames Activity/Balance to the #12a vocabulary.
     /// </summary>
-    private static string GetMobileLabel(string label)
+    private string GetMobileLabel(string label)
     {
         // Use shorter labels for mobile to prevent overflow
         return label switch
         {
             "Achievements" => "Badges",
+            "Activity" when _useKidNav => "My Day",
+            "Balance" when _useKidNav => "Money",
             _ => label
         };
+    }
+
+    /// <summary>Routes pinned to the kid 4-item bottom nav, in display order (#14c).</summary>
+    private static readonly string[] KidNavRoutes = ["/", "/tracker", "/my-balance"];
+
+    /// <summary>
+    /// Kid bottom nav = Home · My Day (/tracker) · Money (/my-balance), then the More button.
+    /// Derived from the NavigationService mobile items so routes stay the single source of truth.
+    /// </summary>
+    private IEnumerable<NavItem> KidBottomNavItems()
+    {
+        foreach (var route in KidNavRoutes)
+        {
+            var item = _mobileNavItems.FirstOrDefault(i => i.Route == route)
+                       ?? _allNavItems.FirstOrDefault(i => i.Route == route);
+            if (item != null)
+            {
+                yield return item;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Everything the kid can reach that didn't earn a bottom-nav slot (#14c):
+    /// Badges · Calendar · (Goals) · Driving Log · Appearance. Order per spec.
+    /// </summary>
+    private IEnumerable<NavItem> KidMoreSheetItems()
+    {
+        return _allNavItems
+            .Where(i => !KidNavRoutes.Contains(i.Route))
+            .OrderBy(i => i.Route switch
+            {
+                "/achievements" => 0,
+                "/calendar" => 1,
+                "/goals" => 2,
+                "/driving-log" => 3,
+                "/appearance" => 4,
+                _ => 9
+            });
+    }
+
+    private void ToggleMoreSheet() => _moreSheetOpen = !_moreSheetOpen;
+
+    private void CloseMoreSheet() => _moreSheetOpen = false;
+
+    private void OnParentDashboardChangedForBadge()
+    {
+        // Cache is fresh when this fires — read the count, no DB query
+        _pendingCount = AppState.CachedPendingApprovalsCount;
+        InvokeAsync(StateHasChanged);
     }
 
     private void CloseSidebar()
@@ -607,6 +747,9 @@
     {
         // Update the top-bar page title for the new route
         UpdatePageTitle();
+
+        // Close the kid More sheet on navigation
+        _moreSheetOpen = false;
 
         // Close sidebar on navigation (mobile)
         if (_sidebarOpen)
@@ -648,12 +791,12 @@
         if (match != null)
         {
             _currentPageTitle = match.Label;
-            _currentPageIcon = match.Icon;
+            _currentPageIconName = NavIcons.ForRoute(match.Route);
         }
         else
         {
             _currentPageTitle = "Daily Bread";
-            _currentPageIcon = "🏠";
+            _currentPageIconName = "home";
         }
     }
 
@@ -663,6 +806,11 @@
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
         AppState.OnHelpRequestOpened -= HandleHelpRequestOpened;
+
+        if (_badgeSubscribed)
+        {
+            AppState.OnParentDashboardChanged -= OnParentDashboardChangedForBadge;
+        }
 
         if (_signalRInitialized)
         {

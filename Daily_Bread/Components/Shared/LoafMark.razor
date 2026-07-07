@@ -1,0 +1,15 @@
+@namespace Daily_Bread.Components.Shared
+
+@* Daily Bread brand mark (design_handoff README §12): rounded-arch loaf with two
+   diagonal score lines. Pink fill in app chrome; score lines cut through in the
+   page background color so they read as slashes in the crust. *@
+
+<svg class="loaf-mark" width="@Size" height="@Size" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M4 13a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="#F472B6" />
+    <path d="m8.2 12.2 2.8-3.4M12.8 13.6l2.8-3.4" stroke="var(--db-bg, #0D0A14)" stroke-width="1.6" stroke-linecap="round" fill="none" />
+</svg>
+
+@code {
+    /// <summary>Mark size in px (26 sidebar brand, 20 mobile header, 56 login tile).</summary>
+    [Parameter] public int Size { get; set; } = 26;
+}

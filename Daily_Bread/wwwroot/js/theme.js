@@ -29,10 +29,16 @@ window.DBTheme = (function () {
     }
 
     // Keep every quick-toggle button's icon in sync with the current mode.
+    // Mono Lucide stroke icon from the app sprite (design #14 shell).
+    function toggleIcon(name) {
+        return '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<use href="/images/lucide-sprite.svg#lucide-' + name + '"/></svg>';
+    }
     function syncToggles() {
         var m = current()[1];
         document.querySelectorAll('[data-theme-toggle]').forEach(function (el) {
-            el.textContent = m === 'light' ? '☀️' : '🌙'; // ☀️ / 🌙
+            el.innerHTML = toggleIcon(m === 'light' ? 'sun' : 'moon');
             el.setAttribute('aria-label', m === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
         });
     }

@@ -1,7 +1,9 @@
 /* ============================================
-   MAINLAYOUT - RESPONSIVE DESIGN
-   Mobile-first approach with PWA safe area support
-   APP SHELL PATTERN: Fixed header, scrollable content, fixed footer
+   MAINLAYOUT — design #14 app shell
+   Mobile-first with PWA safe area support.
+   Desktop (#14a): 228px sidebar rail one step darker than the page.
+   Mobile (#14b/#14c): header + bottom nav; drawer = the same sidebar over a scrim.
+   All colors from theme tokens (design-system.css) — no palette hexes here.
    ============================================ */
 
 /* ===========================================
@@ -37,7 +39,7 @@
     height: 100vh;
     /* Modern dynamic viewport height (overrides 100vh where supported) */
     height: 100dvh;
-    background-color: var(--ds-bg-base);
+    background-color: var(--db-bg);
     overflow: hidden; /* Prevent page-level scrolling */
     /* Safe area insets for notched devices - LEFT and RIGHT only */
     /* Top is handled by mobile-header, bottom by content/footer */
@@ -45,7 +47,7 @@
     padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* 
+/*
  * iOS PWA standalone mode fix
  * Use fixed positioning to ensure full viewport coverage
  * This prevents the grey gap at the bottom on iOS PWA
@@ -68,7 +70,7 @@ main {
     display: flex;
     flex-direction: column;
     min-height: 0; /* Allow flex shrinking - CRITICAL for scroll to work */
-    background-color: var(--ds-bg-base);
+    background-color: var(--db-bg);
     /* Ensure main content doesn't overlap mobile header */
     position: relative;
     z-index: 1;
@@ -78,7 +80,7 @@ main {
     -webkit-overflow-scrolling: touch;
     /* Prevent overscroll bounce */
     overscroll-behavior-y: contain;
-    /* 
+    /*
      * CRITICAL: Total offset = header height + safe area inset
      * The header sits BELOW the safe area, so we need both values
      * to push content below the header
@@ -98,34 +100,34 @@ main.has-bottom-nav {
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     /* Content itself doesn't scroll - main scrolls */
     overflow: visible;
-    background-color: var(--ds-bg-base);
+    background-color: var(--db-bg);
     /* Prevent content from extending beyond viewport */
     max-width: 100vw;
     box-sizing: border-box;
 }
 
 /* ===========================================
-   MOBILE HEADER (fixed at top)
-   
+   MOBILE HEADER (fixed at top) — #14b
+   hamburger · loaf brand · quick theme toggle
+
    iOS Safe Area Strategy:
    - The header is positioned BELOW the safe area (top: env(safe-area-inset-top))
    - A ::before pseudo-element extends the background color INTO the safe area
-   - This creates a seamless visual where the status bar/Dynamic Island
-     has the same background color as the header
-   - The header CONTENT (hamburger, brand, actions) remains below the safe area
-     and is never obscured by the notch or Dynamic Island
+   - The header CONTENT remains below the safe area and is never obscured
+     by the notch or Dynamic Island
    =========================================== */
 
 .mobile-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 11px;
     height: var(--header-height, 52px);
     padding: 0 1rem;
-    background-color: var(--ds-bg-elevated);
-    border-bottom: 1px solid var(--ds-bg-muted);
+    background-color: var(--db-bg);
+    border-bottom: 1px solid var(--ds-divider);
     position: fixed;
-    /* 
+    /*
      * KEY: Position header BELOW the safe area inset
      * On devices with notch/Dynamic Island, this pushes the header down
      * On devices without, env() returns 0px and header is at top
@@ -139,14 +141,11 @@ main.has-bottom-nav {
     padding-right: max(1rem, env(safe-area-inset-right, 0px));
     flex-shrink: 0;
     -webkit-tap-highlight-color: transparent;
-    /* CRITICAL: Allow dropdown to overflow */
     overflow: visible;
 }
 
-/* 
+/*
  * Extend background color INTO the safe area (behind Dynamic Island/notch)
- * This creates a seamless colored area from the top of the screen
- * through the status bar area and into the header
  */
 .mobile-header::before {
     content: '';
@@ -170,6 +169,7 @@ main.has-bottom-nav {
     width: 48px;
     height: 48px;
     padding: 0;
+    margin-left: -12px;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -177,13 +177,13 @@ main.has-bottom-nav {
     /* Ensure touch target is properly sized */
     min-width: 48px;
     min-height: 48px;
-    border-radius: var(--ds-radius-md);
-    transition: background-color var(--ds-duration-fast) ease;
+    border-radius: 9px;
+    transition: background-color var(--ds-transition);
 }
 
 .hamburger-btn:hover,
 .hamburger-btn:focus {
-    background-color: var(--ds-bg-hover);
+    background-color: var(--ds-bg-selected);
     outline: none;
 }
 
@@ -191,15 +191,15 @@ main.has-bottom-nav {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    width: 24px;
-    height: 18px;
+    width: 20px;
+    height: 14px;
 }
 
 .hamburger-icon span {
     display: block;
     height: 2px;
     width: 100%;
-    background-color: var(--ds-text-primary);
+    background-color: var(--db-text2);
     border-radius: 2px;
     transition: transform 0.3s ease, opacity 0.3s ease;
     transform-origin: center;
@@ -207,7 +207,7 @@ main.has-bottom-nav {
 
 /* Hamburger animation when sidebar is open */
 .sidebar-open .hamburger-icon span:nth-child(1) {
-    transform: translateY(8px) rotate(45deg);
+    transform: translateY(6px) rotate(45deg);
 }
 
 .sidebar-open .hamburger-icon span:nth-child(2) {
@@ -216,26 +216,25 @@ main.has-bottom-nav {
 }
 
 .sidebar-open .hamburger-icon span:nth-child(3) {
-    transform: translateY(-8px) rotate(-45deg);
+    transform: translateY(-6px) rotate(-45deg);
 }
 
 .mobile-brand {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: var(--ds-text-primary);
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    color: var(--db-text);
     text-decoration: none;
-    font-weight: 600;
-    font-size: 1.1rem;
+    font-weight: 700;
+    font-size: 14.5px;
     /* Prevent text from being cut off */
     white-space: nowrap;
     overflow: hidden;
 }
 
-.mobile-brand-icon {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
+.mobile-brand ::deep .loaf-mark {
     flex-shrink: 0;
 }
 
@@ -243,13 +242,12 @@ main.has-bottom-nav {
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    /* CRITICAL: Allow dropdown to overflow */
     overflow: visible;
     position: relative;
 }
 
 /* ===========================================
-   MOBILE BOTTOM NAVIGATION
+   MOBILE BOTTOM NAVIGATION — #14b / #14c
    =========================================== */
 
 .mobile-bottom-nav {
@@ -262,13 +260,10 @@ main.has-bottom-nav {
     right: 0;
     height: calc(60px + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
-    background: color-mix(in srgb, var(--ds-bg-elevated) 92%, transparent);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid var(--ds-bg-muted);
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    padding-left: max(6px, env(safe-area-inset-left, 0px));
+    padding-right: max(6px, env(safe-area-inset-right, 0px));
+    background: var(--ds-bg-recessed);
+    border-top: 1px solid var(--ds-divider);
     z-index: 100;
 }
 
@@ -278,71 +273,171 @@ main.has-bottom-nav {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     padding: 8px 4px;
-    color: var(--ds-text-muted);
+    color: var(--db-text3);
+    background: transparent;
+    border: none;
+    cursor: pointer;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: color var(--ds-transition);
     -webkit-tap-highlight-color: transparent;
     position: relative;
     min-height: 60px;
 }
 
 .bottom-nav-item .nav-ico {
-    font-size: 1.35rem;
+    position: relative;
+    display: inline-flex;
     line-height: 1;
-    transition: transform 0.2s ease, filter 0.2s ease;
 }
 
-.bottom-nav-item span:last-child {
-    font-size: 0.7rem;
-    font-weight: 500;
+.bottom-nav-label {
+    font-size: 10px;
+    font-weight: 600;
     letter-spacing: 0.02em;
 }
 
 .bottom-nav-item:hover,
 .bottom-nav-item:focus {
-    color: var(--ds-text-primary);
+    color: var(--db-text2);
     outline: none;
 }
 
+.bottom-nav-item:focus-visible {
+    box-shadow: inset 0 0 0 3px var(--color-focus-ring);
+    border-radius: 9px;
+}
+
+/* Active — accent icon + accent-light label (#14b) */
 .bottom-nav-item.active {
-    color: var(--ds-accent-cyan);
+    color: var(--ds-accent-text);
 }
 
-.bottom-nav-item.active .nav-ico {
-    transform: scale(1.1);
-    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--ds-accent-primary) 55%, transparent));
+.bottom-nav-item.active .bottom-nav-label {
+    color: var(--ds-accent-light);
+    font-weight: 700;
 }
 
-/* Active indicator dot */
-.bottom-nav-item.active::before {
-    content: '';
+.bottom-nav-item.active ::deep .icon-tile-mono {
+    stroke-width: 2;
+}
+
+/* Pending-approvals badge on Activity — risk pill (#14b) */
+.bottom-nav-badge {
     position: absolute;
-    top: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    background: var(--ds-accent-cyan);
-    border-radius: 50%;
-    box-shadow: 0 0 8px color-mix(in srgb, var(--ds-accent-primary) 60%, transparent);
+    top: -5px;
+    right: -11px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--db-risk);
+    color: var(--db-bg);
+    font-size: 9.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
 }
 
-/* Touch feedback */
+/* Touch feedback — color only, never scale */
 @media (hover: none) and (pointer: coarse) {
     .bottom-nav-item:active {
-        background: color-mix(in srgb, var(--ds-accent-primary) 12%, transparent);
-        transform: scale(0.95);
-    }
-    
-    .bottom-nav-item:active .nav-ico {
-        transform: scale(0.9);
+        background: color-mix(in srgb, var(--db-accent) 12%, transparent);
+        border-radius: 9px;
     }
 }
 
 /* ===========================================
-   DESKTOP HEADER (visible on desktop)
+   KID "MORE" BOTTOM SHEET — #14c
+   =========================================== */
+
+.more-sheet-scrim {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--db-bg) 62%, transparent);
+    z-index: 1150;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.more-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1160;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    animation: sheetUp 0.25s ease-out;
+}
+
+@keyframes sheetUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.more-sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--db-bg3);
+    margin: 2px auto 10px;
+}
+
+.more-sheet form {
+    margin: 0;
+}
+
+/* 52px rows — big thumb targets */
+.more-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 13px 8px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--ds-divider);
+    cursor: pointer;
+    color: var(--db-text);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color var(--ds-transition);
+}
+
+.more-sheet-item:hover,
+.more-sheet-item:active {
+    background: var(--ds-bg-selected);
+}
+
+.more-sheet-item ::deep .icon-tile-mono {
+    color: var(--ds-accent-text);
+    flex-shrink: 0;
+}
+
+/* Log out — risk-light, last row (no divider) */
+.more-sheet-logout {
+    color: var(--ds-risk-light);
+    border-bottom: none;
+}
+
+.more-sheet-logout ::deep .icon-tile-mono {
+    color: var(--ds-risk-light);
+}
+
+/* ===========================================
+   DESKTOP HEADER (top bar) — #14a
+   route-derived title + quick theme toggle
    =========================================== */
 
 .desktop-header {
@@ -357,27 +452,22 @@ main.has-bottom-nav {
 .page-title {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 9px;
     min-width: 0;
 }
 
 .page-title-icon {
     flex: 0 0 auto;
-    width: 40px;
-    height: 40px;
-    display: grid;
-    place-items: center;
-    font-size: 1.2rem;
-    border-radius: var(--ds-radius-md);
-    color: var(--ds-accent-primary);
-    background: color-mix(in srgb, var(--ds-accent-primary) 14%, transparent);
+    display: inline-flex;
+    align-items: center;
+    color: var(--ds-accent-text);
 }
 
 .page-title-text {
-    font-size: 1.4rem;
-    font-weight: var(--ds-font-bold);
-    letter-spacing: -0.02em;
-    color: var(--ds-text-primary);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--db-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -392,39 +482,41 @@ main.has-bottom-nav {
 
 /* Quick light/dark toggle (top bar + mobile header) */
 .quick-theme {
-    width: 42px;
-    height: 42px;
+    width: 32px;
+    height: 32px;
     flex: 0 0 auto;
-    border-radius: var(--ds-radius-md);
-    border: 1px solid var(--ds-bg-muted);
-    background: var(--ds-bg-elevated);
-    color: var(--ds-text-secondary);
-    font-size: 1.05rem;
+    border-radius: 9px;
+    border: 1px solid var(--db-border);
+    background: var(--db-bg2);
+    color: var(--db-text2);
+    font-size: 0.9rem;
     line-height: 1;
     cursor: pointer;
     display: grid;
     place-items: center;
-    transition: border-color var(--ds-duration-fast) ease, transform var(--ds-duration-fast) ease;
+    transition: border-color var(--ds-transition), color var(--ds-transition);
     -webkit-tap-highlight-color: transparent;
 }
 
 .quick-theme:hover {
-    border-color: var(--ds-accent-primary);
-    transform: translateY(-1px);
+    border-color: var(--db-accent);
+    color: var(--db-text);
+}
+
+.quick-theme:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 @media (max-width: 480px) {
     .quick-theme {
-        width: 40px;
-        height: 40px;
-        border: none;
-        background: transparent;
-        font-size: 1.2rem;
+        width: 30px;
+        height: 30px;
     }
 }
 
 /* ===========================================
-   SIDEBAR OVERLAY (mobile)
+   SIDEBAR OVERLAY (mobile drawer scrim)
    =========================================== */
 
 .sidebar-overlay {
@@ -433,7 +525,7 @@ main.has-bottom-nav {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: color-mix(in srgb, var(--db-bg) 62%, transparent);
     z-index: 1050; /* Above everything except sidebar */
     opacity: 1;
     animation: fadeIn 0.25s ease-out;
@@ -444,16 +536,17 @@ main.has-bottom-nav {
 }
 
 @keyframes fadeIn {
-    from { 
-        opacity: 0; 
+    from {
+        opacity: 0;
     }
-    to { 
-        opacity: 1; 
+    to {
+        opacity: 1;
     }
 }
 
 /* ===========================================
-   SIDEBAR
+   SIDEBAR — one surface for desktop rail (#14a)
+   and the mobile over-scrim drawer (#14b)
    =========================================== */
 
 .sidebar {
@@ -461,10 +554,10 @@ main.has-bottom-nav {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 220px;
+    width: 228px;
     max-width: 85vw; /* Don't exceed viewport on very small screens */
-    background-color: var(--ds-bg-elevated);
-    border-right: none;
+    background-color: var(--ds-bg-recessed);
+    border-right: 1px solid var(--db-border);
     z-index: 1100; /* Above overlay */
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -483,7 +576,7 @@ main.has-bottom-nav {
     overflow: hidden;
 }
 
-/* Sidebar visible when .open class is added */
+/* Sidebar visible when .open class is added (mobile drawer) */
 .sidebar.open {
     transform: translateX(0);
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
@@ -497,7 +590,7 @@ main.has-bottom-nav {
 }
 
 /* ===========================================
-   DESKTOP LAYOUT (768px and up)
+   DESKTOP LAYOUT (768px and up) — #14a
    =========================================== */
 
 @media (min-width: 768px) {
@@ -510,34 +603,29 @@ main.has-bottom-nav {
         padding-left: 0;
         padding-right: 0;
     }
-    
+
     /* On desktop, the mobile header is fully replaced by the top bar +
        the sidebar profile footer, so hide it entirely. */
     .mobile-header {
         display: none;
     }
-    
+
     .desktop-header {
         /* Desktop top bar - sticky within the scrolling main content */
         display: flex;
         position: sticky;
         top: 0;
-        padding: 0.85rem 2rem;
-        background: color-mix(in srgb, var(--ds-bg-base) 80%, transparent);
+        padding: 14px 24px;
+        background: color-mix(in srgb, var(--db-bg) 82%, transparent);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
-        border-bottom: 1px solid var(--ds-bg-muted);
-        min-height: 64px;
+        border-bottom: 1px solid var(--db-border);
+        min-height: 58px;
         z-index: 50; /* Above content but below mobile-header */
     }
 
     .sidebar {
-        /* Floating "pill" sidebar on desktop - detached, rounded, elevated */
-        position: fixed;
-        top: 16px;
-        left: 16px;
-        bottom: 16px;
-        height: auto;
+        /* Attached 228px rail, one step darker than the page (#14a) */
         transform: translateX(0);
         flex-shrink: 0;
         max-width: none;
@@ -545,11 +633,7 @@ main.has-bottom-nav {
         padding-top: 0;
         padding-bottom: 0;
         z-index: 100;
-        width: 248px;
-        border-radius: 26px;
-        border: 1px solid var(--ds-bg-muted);
-        box-shadow: 0 18px 50px -14px rgba(0, 0, 0, 0.55);
-        overflow: hidden;
+        width: 228px;
     }
 
     .sidebar-overlay {
@@ -565,8 +649,8 @@ main.has-bottom-nav {
         height: 100vh;
         height: 100dvh;
         padding-top: 0;
-        /* Offset for the floating sidebar (width 248 + left 16 + gap 16) */
-        margin-left: 280px;
+        /* Offset for the fixed 228px sidebar rail */
+        margin-left: 228px;
     }
 
     /* Desktop: no bottom nav, so no extra padding needed */
@@ -574,18 +658,20 @@ main.has-bottom-nav {
         padding-bottom: 0;
     }
 
-    .mobile-bottom-nav {
+    .mobile-bottom-nav,
+    .more-sheet,
+    .more-sheet-scrim {
         display: none;
     }
 
     .content {
-        padding: 2rem;
+        padding: 24px;
         max-width: 1400px;
         margin: 0 auto;
         width: 100%;
         overflow-x: visible;
         /* No safe area padding needed on desktop */
-        padding-bottom: 2rem;
+        padding-bottom: 24px;
     }
 
     /* Parent dashboard fills the available width (cards reach the edges);
@@ -600,16 +686,8 @@ main.has-bottom-nav {
    =========================================== */
 
 @media (min-width: 1200px) {
-    .sidebar {
-        width: 264px;
-    }
-
-    main {
-        margin-left: 296px;
-    }
-
     .content {
-        padding: 2rem 2.5rem;
+        padding: 24px 40px;
     }
 }
 
@@ -622,44 +700,25 @@ main.has-bottom-nav {
         padding: 0 0.75rem;
         /* Height controlled by CSS custom property at top of file */
     }
-    
+
     .mobile-brand {
-        font-size: 1rem;
+        font-size: 14px;
     }
-    
-    .mobile-brand-icon {
-        width: 28px;
-        height: 28px;
-    }
-    
+
     .content {
         padding: 0.5rem; /* Reduced padding on small screens */
     }
-    
+
     .sidebar {
-        width: 220px;
+        width: 228px;
         max-width: 90vw;
     }
-    
-    .bottom-nav-item .nav-ico {
-        font-size: 1.25rem;
-    }
-    
-    .bottom-nav-item span:last-child {
-        font-size: 0.65rem;
-    }
-    
+
     /* main padding-top is calculated from CSS custom property automatically */
 }
 
 /* ===========================================
    PWA STANDALONE MODE ADJUSTMENTS
-   
-   When running as installed PWA (standalone mode):
-   - iOS hides the browser chrome
-   - The safe area insets become critical
-   - black-translucent status bar style means content
-     renders behind the status bar
    =========================================== */
 
 :global(body.pwa-standalone) main {
@@ -673,13 +732,13 @@ main.has-bottom-nav {
 
 @media (hover: none) and (pointer: coarse) {
     .hamburger-btn:active {
-        background-color: var(--ds-bg-hover);
+        background-color: var(--ds-bg-selected);
     }
-    
+
     .mobile-brand:active {
         opacity: 0.8;
     }
-    
+
     .hamburger-btn {
         width: 48px;
         height: 48px;
@@ -694,17 +753,21 @@ main.has-bottom-nav {
     .sidebar {
         transition: none;
     }
-    
+
     .hamburger-icon span {
         transition: none;
     }
-    
-    .sidebar-overlay {
+
+    .sidebar-overlay,
+    .more-sheet-scrim {
         animation: none;
     }
-    
-    .bottom-nav-item,
-    .bottom-nav-item .bi {
+
+    .more-sheet {
+        animation: none;
+    }
+
+    .bottom-nav-item {
         transition: none;
     }
 }
@@ -717,19 +780,19 @@ main.has-bottom-nav {
     .sidebar {
         width: 260px;
     }
-    
+
     .content {
         padding: 0.5rem;
     }
-    
+
     .mobile-bottom-nav {
         height: calc(50px + env(safe-area-inset-bottom, 0px));
     }
-    
+
     .bottom-nav-item {
         min-height: 50px;
     }
-    
+
     /* Landscape: smaller bottom nav */
     main.has-bottom-nav {
         padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px));
@@ -741,8 +804,8 @@ main.has-bottom-nav {
    =========================================== */
 
 #blazor-error-ui {
-    background: var(--ds-bg-elevated);
-    border-top: 3px solid var(--ds-semantic-warning);
+    background: var(--db-bg2);
+    border-top: 3px solid var(--db-screentime);
     bottom: 0;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
@@ -752,7 +815,7 @@ main.has-bottom-nav {
     position: fixed;
     width: 100%;
     z-index: 2000;
-    color: var(--ds-text-primary);
+    color: var(--db-text);
 }
 
 #blazor-error-ui .dismiss {
@@ -760,7 +823,7 @@ main.has-bottom-nav {
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
-    color: var(--ds-text-muted);
+    color: var(--db-text3);
 }
 
 /* ===========================================
@@ -773,19 +836,21 @@ main.has-bottom-nav {
     .sidebar,
     .sidebar-overlay,
     .mobile-bottom-nav,
+    .more-sheet,
+    .more-sheet-scrim,
     #blazor-error-ui {
         display: none !important;
     }
-    
+
     .page {
         display: block;
     }
-    
+
     main {
         display: block;
         padding-top: 0;
     }
-    
+
     .content {
         padding: 0;
         max-width: none;
