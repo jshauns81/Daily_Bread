@@ -1,7 +1,7 @@
 // Daily Bread Service Worker
 // Provides offline caching and PWA functionality
 
-const CACHE_NAME = 'daily-bread-v3';
+const CACHE_NAME = 'daily-bread-v4';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
