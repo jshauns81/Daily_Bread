@@ -62,9 +62,10 @@
                 <h5 class="mb-0">@(EditingChore?.Id > 0 ? "Edit Chore" : "Create New Chore")</h5>
             </div>
             <div class="card-body">
-                <ChoreForm Chore="EditingChore" 
-                           Users="Users" 
-                           OnSubmit="HandleFormSubmit" 
+                <ChoreForm Chore="EditingChore"
+                           Users="Users"
+                           OnSubmit="HandleFormSubmit"
+                           OnDelete="HandleDeleteFromForm"
                            OnCancel="HideForm" />
             </div>
         </div>
@@ -279,6 +280,16 @@
         ChoreToDelete = chore;
         ShowDeleteConfirm = true;
         ClearMessages();
+    }
+
+    /// <summary>Delete action inside the chore form (#18a) — routes to the existing confirm flow.</summary>
+    private void HandleDeleteFromForm()
+    {
+        var chore = Chores.FirstOrDefault(c => c.Id == EditingChore?.Id);
+        if (chore == null) return;
+
+        HideForm();
+        HandleDelete(chore);
     }
 
     private void CancelDelete()

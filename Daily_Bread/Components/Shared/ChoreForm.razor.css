@@ -1,90 +1,63 @@
 /* ============================================
-   CHORE FORM - Refined & Elegant
-   Follows Daily Bread Design System v1.0
-   
+   CHORE FORM — design reference #18a
+   Token-only styling (Phase 1 tokens): recessed sections,
+   tracked uppercase section labels, semantic color teaching
+   (money = mint, schedule = accent, screen-time = amber).
+
    Uses ::deep to target Blazor-generated inputs.
    app.css has reset rules for .chore-form .form-control
    so this file has full styling control.
    ============================================ */
 
-/* ===========================================
-   FORM CONTAINER
-   =========================================== */
-
 .chore-form {
     display: flex;
     flex-direction: column;
-    gap: var(--ds-space-5);
+    gap: 16px;
     max-width: 480px;
     width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
 }
 
-/* ===========================================
-   FORM SECTIONS
-   =========================================== */
-
 .chore-form .form-section {
     display: flex;
     flex-direction: column;
-    gap: var(--ds-space-3);
+    gap: 7px;
     width: 100%;
 }
 
+/* Tracked uppercase section label — 10px/700, 1.4px tracking (#18a) */
 .chore-form .section-label {
-    text-align: center;
-    width: 100%;
     display: block;
-    margin-top: var(--ds-space-3);
-    margin-bottom: var(--ds-space-2);
-    font-size: var(--ds-text-xs);
-    color: var(--ds-text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: var(--ds-font-semibold);
-    opacity: 0.8;
+    color: var(--db-text3);
+}
+
+.chore-form .section-label--amber {
+    /* Same tracked label; sits in the amber importance block */
+    color: var(--db-text3);
 }
 
 /* ===========================================
-   IDENTITY SECTION (Emoji + Name)
-   Unified field appearance
+   IDENTITY — 46px tile trigger + recessed name field
    =========================================== */
 
 .chore-form .identity-section {
-    display: flex;
     flex-direction: row;
-    align-items: stretch;
-    gap: 0;
-    background: var(--ds-bg-base);
-    border-radius: var(--ds-radius-lg);
-    border: 1px solid var(--ds-bg-muted);
-    overflow: hidden;
-    transition: border-color var(--ds-duration-fast) ease, box-shadow var(--ds-duration-fast) ease;
-    margin-bottom: var(--ds-space-2);
-}
-
-.chore-form .identity-section:focus-within {
-    border-color: var(--ds-accent-cyan);
-    box-shadow: var(--ds-glow-primary);
+    align-items: flex-start;
+    gap: 12px;
 }
 
 .chore-form .icon-picker {
-    width: 56px;
-    min-width: 56px;
-    height: 56px;
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    background: var(--ds-bg-hover);
-    border-right: 1px solid var(--ds-bg-muted);
-    cursor: pointer;
-    transition: background-color var(--ds-duration-fast) ease;
-}
-
-.chore-form .icon-picker:hover {
-    background: var(--ds-bg-muted);
+    width: 44px;
+    height: 44px;
 }
 
 .chore-form .name-field {
@@ -94,254 +67,216 @@
     flex-direction: column;
 }
 
-/* Name input - seamless with identity section */
 ::deep input.ds-input--name,
 .chore-form .ds-input--name {
-    height: 56px;
-    padding: var(--ds-space-3) var(--ds-space-4);
-    font-size: var(--ds-text-lg);
-    font-weight: var(--ds-font-medium);
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    background-color: transparent;
-    color: var(--ds-text-primary);
+    height: 44px;
+    padding: 0 14px;
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--ds-bg-recessed);
+    background-color: var(--ds-bg-recessed);
+    border: 1px solid var(--db-border);
+    border-radius: var(--ds-radius-input);
+    color: var(--db-text);
     letter-spacing: -0.01em;
+    transition: border-color var(--ds-transition), box-shadow var(--ds-transition);
 }
 
 ::deep input.ds-input--name:focus,
 .chore-form .ds-input--name:focus {
-    box-shadow: none;
-    border: none;
     outline: none;
-    background: transparent;
-    background-color: transparent;
+    border-color: var(--db-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+    background: var(--ds-bg-recessed);
+    background-color: var(--ds-bg-recessed);
 }
 
 ::deep input.ds-input--name::placeholder {
-    color: var(--ds-text-muted);
-    opacity: 0.7;
+    color: var(--db-text3);
 }
 
 /* Validation messages */
 .chore-form .validation-msg {
-    font-size: var(--ds-text-xs);
-    color: var(--ds-semantic-error);
-    margin-top: var(--ds-space-1);
-    padding-left: var(--ds-space-4);
+    font-size: 11px;
+    color: var(--db-risk);
+    margin-top: 4px;
+    padding-left: 4px;
 }
 
 /* ===========================================
-   SEGMENTED CONTROL - Earns/Expected
-   With sliding pill animation
+   SEGMENTED CONTROLS (#18a)
+   Recessed rail; active segment = semantic tint
    =========================================== */
 
-.chore-form .type-section {
+.chore-form .seg {
     display: flex;
-    justify-content: center;
-}
-
-/* Sliding pill container setup */
-.chore-form .seg2 {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-    background: var(--ds-bg-base);
-    border: 1px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-lg);
-    padding: var(--ds-space-1);
-    gap: 0; /* Remove gap so pill slides cleanly */
+    gap: 6px;
+    background: var(--ds-bg-recessed);
+    border: 1px solid var(--db-border);
+    border-radius: var(--ds-radius-input);
+    padding: 4px;
     box-sizing: border-box;
+    width: 100%;
 }
 
-/* The sliding pill background */
-.chore-form .seg2::before {
-    content: '';
-    position: absolute;
-    top: var(--ds-space-1);
-    left: var(--ds-space-1);
-    width: calc(50% - var(--ds-space-1));
-    height: calc(100% - var(--ds-space-2));
-    background: var(--ds-bg-elevated);
-    border-radius: var(--ds-radius-md);
-    box-shadow: var(--ds-shadow-sm);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 0;
+.chore-form .seg__item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--db-text3);
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color var(--ds-transition), color var(--ds-transition), border-color var(--ds-transition);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
 }
 
-/* Slide pill to second position when second button is active */
-.chore-form .seg2:has(.seg2__btn:last-child.seg2__btn--active)::before {
-    transform: translateX(100%);
+.chore-form .seg__item:hover:not(.seg__item--active) {
+    color: var(--db-text2);
 }
 
-/* Ensure buttons are above the sliding pill */
-.chore-form .seg2__btn {
-    position: relative;
-    z-index: 1;
+.chore-form .seg__item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.chore-form .seg__label {
+    line-height: 1.2;
+    flex-shrink: 0;
+}
+
+/* Earns — money is mint (#18a) */
+.chore-form .seg__item--earns.seg__item--active {
+    flex: 1.4;
+    background: color-mix(in srgb, var(--db-money) 14%, transparent);
+    border-color: color-mix(in srgb, var(--db-money) 40%, transparent);
+    color: var(--ds-money-light);
+    font-weight: 700;
+}
+
+/* Expected — accent tint */
+.chore-form .seg__item--expected.seg__item--active {
+    background: color-mix(in srgb, var(--db-accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--db-accent) 40%, transparent);
+    color: var(--ds-accent-text);
+    font-weight: 700;
+}
+
+/* Schedule rule — active segment is solid accent (#18a) */
+.chore-form .seg__item--schedule.seg__item--active {
+    background: var(--db-accent);
+    border-color: var(--db-accent);
+    color: var(--db-on-accent);
+    font-weight: 700;
+}
+
+/* ===========================================
+   PAY STEPPER — inline − / + in the active Earns segment
+   =========================================== */
+
+.chore-form .pay-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    cursor: default;
+}
+
+.chore-form .pay-stepper__btn {
+    width: 22px;
+    height: 22px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--ds-space-2);
-    min-height: var(--ds-touch-target-lg);
-    padding: 0 var(--ds-space-3);
+    padding: 0;
     border: none;
-    border-radius: var(--ds-radius-md);
-    background: transparent; /* Remove individual backgrounds - pill handles it */
-    color: var(--ds-text-muted);
-    font-size: var(--ds-text-sm);
-    font-weight: var(--ds-font-semibold);
+    border-radius: 6px;
+    background: var(--db-bg2);
+    color: var(--db-text2);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    line-height: 1;
     cursor: pointer;
-    transition: color var(--ds-duration-fast) ease;
-    white-space: nowrap;
-    overflow: hidden;
+    transition: background-color var(--ds-transition), color var(--ds-transition);
 }
 
-.chore-form .seg2__btn:hover:not(.seg2__btn--active) {
-    background: transparent; /* Keep transparent, pill handles background */
-    color: var(--ds-text-secondary);
+.chore-form .pay-stepper__btn:hover {
+    background: var(--db-bg3);
+    color: var(--db-text);
 }
 
-/* Active button - transparent background since pill handles it */
-.chore-form .seg2__btn--active {
-    background: transparent;
-    color: var(--ds-text-primary);
-    box-shadow: none; /* Remove shadow, pill has it */
+.chore-form .pay-stepper__btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
-.chore-form .seg2__label {
-    line-height: var(--ds-leading-tight);
-    flex-shrink: 0;
-}
-
-/* Amount badge inside Earns button */
-.chore-form .seg2__amount {
+.chore-form .pay-stepper__amount {
     display: inline-flex;
     align-items: center;
-    gap: var(--ds-space-1);
-    height: 28px;
-    padding: 0 var(--ds-space-2);
-    background: var(--ds-bg-base);
-    border: 1px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-sm);
-    flex-shrink: 0;
+    gap: 1px;
 }
 
-.chore-form .seg2__btn:not(.seg2__btn--active) .seg2__amount {
-    display: none;
+.chore-form .pay-stepper__currency {
+    color: var(--db-money);
+    font-weight: 700;
+    font-size: 13.5px;
 }
 
-.chore-form .seg2__currency {
-    color: var(--ds-semantic-success);
-    font-weight: var(--ds-font-bold);
-    font-size: var(--ds-text-sm);
-}
-
-/* Amount input - CRITICAL: constrain width with ::deep */
-::deep input.seg2__input,
-.chore-form .seg2__input {
+/* CRITICAL: constrain the pay input width with ::deep */
+::deep input.pay-stepper__input,
+.chore-form .pay-stepper__input {
     width: 48px !important;
     min-width: 48px !important;
     max-width: 48px !important;
-    height: 24px !important;
-    padding: 0 var(--ds-space-1) !important;
+    height: 22px !important;
+    padding: 0 2px !important;
     border: none !important;
-    border-radius: var(--ds-radius-sm) !important;
+    border-radius: 6px !important;
     background: transparent !important;
     background-color: transparent !important;
-    color: var(--ds-text-primary) !important;
-    font-size: var(--ds-text-sm) !important;
-    font-weight: var(--ds-font-semibold) !important;
+    color: var(--db-money) !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
     text-align: center !important;
     box-sizing: border-box !important;
 }
 
-::deep input.seg2__input:focus {
+::deep input.pay-stepper__input:focus {
     outline: none !important;
-    background: var(--ds-bg-hover) !important;
-    background-color: var(--ds-bg-hover) !important;
-}
-
-/* Glow bar - fades in with delay after slide */
-.chore-form .seg2__bar {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%) scaleX(0);
-    bottom: 6px;
-    width: 75%;
-    height: 4px;
-    border-radius: var(--ds-radius-full);
-    opacity: 0;
-    transition: opacity 0.2s ease 0.15s, transform 0.2s ease 0.15s; /* 0.15s delay after slide */
-    z-index: 2;
-}
-
-.chore-form .seg2__btn--active .seg2__bar {
-    opacity: 1;
-    transform: translateX(-50%) scaleX(1);
-}
-
-/* Earns button - green glow */
-.chore-form .seg2--money .seg2__btn--earns .seg2__bar {
-    background: linear-gradient(90deg, var(--ds-semantic-success), var(--ds-accent-teal));
-    box-shadow: var(--ds-glow-success);
-}
-
-/* Expected button - blue glow */
-.chore-form .seg2--money .seg2__btn--expected .seg2__bar {
-    background: linear-gradient(90deg, var(--ds-accent-primary), var(--ds-accent-blue));
-    box-shadow: var(--ds-glow-primary);
-}
-
-/* Schedule variant */
-.chore-form .seg2--schedule {
-    max-width: 100%;
-}
-
-.chore-form .seg2--schedule .seg2__btn {
-    min-height: 40px;
-    padding: 0 var(--ds-space-3);
-    font-size: var(--ds-text-sm);
-    font-weight: var(--ds-font-medium);
-}
-
-.chore-form .seg2--schedule .seg2__bar {
-    bottom: 6px;
-    height: 4px;
-    width: 75%;
-}
-
-/* Fixed days - green glow */
-.chore-form .seg2--schedule .seg2__btn--fixed .seg2__bar {
-    background: var(--ds-semantic-success);
-    box-shadow: var(--ds-glow-success);
-}
-
-/* Weekly goal - orange/warning glow */
-.chore-form .seg2--schedule .seg2__btn--weekly .seg2__bar {
-    background: var(--ds-semantic-warning);
-    box-shadow: var(--ds-glow-warning);
+    background: var(--db-bg2) !important;
+    background-color: var(--db-bg2) !important;
 }
 
 /* ===========================================
-   ASSIGN SECTION
+   ASSIGN SECTION ("For" — renders only with 2+ users)
    =========================================== */
 
 .chore-form .assign-section {
-    display: flex;
+    flex-direction: row;
     justify-content: center;
-    padding: var(--ds-space-2) 0;
+    padding: 2px 0;
 }
 
 .chore-form .field-row {
     display: flex;
     align-items: center;
-    gap: var(--ds-space-3);
+    gap: 10px;
 }
 
 .chore-form .field-label {
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-muted);
+    font-size: 12.5px;
+    color: var(--db-text3);
     white-space: nowrap;
 }
 
@@ -350,152 +285,160 @@
     flex: 1;
     max-width: 200px;
     height: 40px;
-    padding: 0 var(--ds-space-4);
-    padding-right: var(--ds-space-8);
-    background: var(--ds-bg-base);
-    background-color: var(--ds-bg-base);
-    border: 1px solid var(--ds-bg-muted);
+    padding: 0 36px 0 14px;
+    background: var(--ds-bg-recessed);
+    background-color: var(--ds-bg-recessed);
+    border: 1px solid var(--db-border);
     border-radius: var(--ds-radius-md);
-    color: var(--ds-text-primary);
-    font-size: var(--ds-text-sm);
+    color: var(--db-text);
+    font-size: 12.5px;
     cursor: pointer;
-    transition: all var(--ds-duration-fast) ease;
+    transition: border-color var(--ds-transition), box-shadow var(--ds-transition);
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23D8DEE9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236F6690' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
 }
 
 ::deep select.ds-select:hover,
 .chore-form .ds-select:hover {
-    border-color: var(--ds-text-muted);
+    border-color: var(--db-text3);
 }
 
 ::deep select.ds-select:focus,
 .chore-form .ds-select:focus {
-    border-color: var(--ds-accent-cyan);
-    box-shadow: var(--ds-glow-primary);
+    border-color: var(--db-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
     outline: none;
 }
 
 /* ===========================================
-   SCHEDULE SECTION - Day Pills
+   SCHEDULE SECTION — day chips (#18a)
    =========================================== */
 
 .chore-form .schedule-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ds-space-4);
-    align-items: center;
-    width: 100%;
+    gap: 7px;
 }
 
-/* Fixed height container for schedule content (days or frequency) 
-   Prevents modal from changing size when switching modes 
-   Height accounts for: day chips (40px) + padding + scale transform headroom */
+/* Fixed height so the modal doesn't resize when switching modes */
 .chore-form .days-row,
 .chore-form .frequency-row {
-    min-height: 52px;
-    height: 52px;
+    min-height: 42px;
     display: flex;
     align-items: center;
-    justify-content: center;
     box-sizing: border-box;
 }
 
 .chore-form .days-row {
-    gap: var(--ds-space-2);
+    gap: 6px;
     width: 100%;
-    padding: var(--ds-space-1);
-}
-
-.chore-form .frequency-row {
-    gap: var(--ds-space-2);
-    white-space: nowrap;
-    padding: var(--ds-space-2) var(--ds-space-4);
-    background: var(--ds-bg-base);
-    border-radius: var(--ds-radius-lg);
-    border: 1px solid var(--ds-bg-muted);
+    margin-top: 4px;
 }
 
 .chore-form .day-chip {
-    width: 40px;
-    height: 40px;
+    flex: 1;
+    min-width: 0;
+    height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-full);
-    background: var(--ds-bg-base);
-    color: var(--ds-text-muted);
-    font-size: var(--ds-text-xs);
-    font-weight: var(--ds-font-bold);
-    letter-spacing: 0.02em;
-    cursor: pointer;
-    transition: all var(--ds-duration-fast) ease;
     padding: 0;
+    border: 1px solid var(--db-border);
+    border-radius: 10px;
+    background: var(--ds-bg-recessed);
+    color: var(--db-text3);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
     text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color var(--ds-transition), color var(--ds-transition), border-color var(--ds-transition);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .chore-form .day-chip:hover:not(.day-chip--selected) {
-    background: var(--ds-bg-hover);
-    color: var(--ds-text-primary);
-    transform: translateY(-2px);
+    background: var(--ds-bg-selected);
+    color: var(--db-text2);
+}
+
+.chore-form .day-chip:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .chore-form .day-chip--selected {
-    background: linear-gradient(135deg, var(--ds-accent-primary), var(--ds-accent-blue));
-    border-color: transparent;
-    color: var(--ds-text-primary);
-    box-shadow: var(--ds-glow-primary);
-    transform: scale(1.05);
+    background: var(--db-accent);
+    border-color: var(--db-accent);
+    color: var(--db-on-accent);
+    font-weight: 700;
 }
 
 /* ===========================================
-   FREQUENCY ROW - CRITICAL WIDTH CONSTRAINT
+   FREQUENCY ROW — "up to N × weekly" + Bonus
    =========================================== */
 
 .chore-form .frequency-row {
-    display: flex;
-    align-items: center;
     justify-content: center;
-    gap: var(--ds-space-2);
+    gap: 8px;
     white-space: nowrap;
-    padding: var(--ds-space-3) var(--ds-space-4);
-    background: var(--ds-bg-base);
-    border-radius: var(--ds-radius-lg);
-    border: 1px solid var(--ds-bg-muted);
+    padding: 6px 14px;
+    margin-top: 4px;
+    background: var(--ds-bg-recessed);
+    border: 1px solid var(--db-border);
+    border-radius: var(--ds-radius-input);
 }
 
 .chore-form .frequency-row__text {
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-secondary);
+    font-size: 12.5px;
+    color: var(--db-text2);
     white-space: nowrap;
 }
 
 /* CRITICAL: constrain the frequency input width with ::deep */
 ::deep input.frequency-row__input,
 .chore-form .frequency-row__input {
-    width: 52px !important;
-    min-width: 52px !important;
-    max-width: 52px !important;
-    height: 34px !important;
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    height: 30px !important;
     padding: 0 !important;
-    border: 1px solid var(--ds-bg-muted) !important;
-    border-radius: var(--ds-radius-sm) !important;
-    background: var(--ds-bg-elevated) !important;
-    background-color: var(--ds-bg-elevated) !important;
-    color: var(--ds-text-primary) !important;
-    font-size: var(--ds-text-sm) !important;
-    font-weight: var(--ds-font-bold) !important;
+    border: 1px solid var(--db-border) !important;
+    border-radius: 8px !important;
+    background: var(--db-bg2) !important;
+    background-color: var(--db-bg2) !important;
+    color: var(--db-text) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
     text-align: center !important;
     box-sizing: border-box !important;
 }
 
 ::deep input.frequency-row__input:focus {
     outline: none !important;
-    border-color: var(--ds-accent-cyan) !important;
-    box-shadow: var(--ds-glow-primary) !important;
+    border-color: var(--db-accent) !important;
+    box-shadow: 0 0 0 3px var(--color-focus-ring) !important;
+}
+
+/* Bonus toggle — money-semantic (earning beyond target) */
+::deep .bonus-toggle,
+.chore-form .bonus-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 10px;
+    padding: 2px 0 2px 12px;
+    font-size: 12.5px;
+    color: var(--db-text2);
+    cursor: pointer;
+    border-left: 1px solid var(--ds-divider);
+}
+
+::deep .bonus-toggle input[type="checkbox"],
+.chore-form .bonus-toggle input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--db-money);
+    cursor: pointer;
 }
 
 /* ===========================================
@@ -504,6 +447,7 @@
 
 ::deep input[type="number"] {
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 ::deep input[type="number"]::-webkit-inner-spin-button,
@@ -513,57 +457,117 @@
 }
 
 /* ===========================================
-   BONUS CHECKBOX
+   IMPORTANCE — #6b anatomy, rendered DISABLED
+   (field lands with the screen-time mechanics; the block is
+   inert: amber track, muted, cursor not-allowed, tooltip)
    =========================================== */
 
-.chore-form .bonus-check {
+.chore-form .importance-section {
+    gap: 0;
+    cursor: not-allowed;
+    opacity: 0.55;
+    user-select: none;
+}
+
+.chore-form .importance-head {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--ds-space-2);
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-secondary);
-    cursor: pointer;
-    padding: var(--ds-space-2) var(--ds-space-3);
-    border-radius: var(--ds-radius-md);
-    transition: background-color var(--ds-duration-fast) ease;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 7px;
 }
 
-.chore-form .bonus-check:hover {
-    background: var(--ds-bg-hover);
+.chore-form .importance-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--db-screentime);
 }
 
-::deep .bonus-check input[type="checkbox"],
-.chore-form .bonus-check input[type="checkbox"] {
+/* 8px amber track, 0–10 */
+.chore-form .importance-slider {
+    position: relative;
+    height: 8px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--ds-bg-recessed);
+    margin-bottom: 5px;
+}
+
+.chore-form .importance-slider__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: var(--ds-radius-pill);
+    background: linear-gradient(90deg, var(--ds-screentime-deep), var(--db-screentime));
+}
+
+.chore-form .importance-slider__thumb {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
     width: 16px;
     height: 16px;
-    accent-color: var(--ds-semantic-success);
-    cursor: pointer;
+    border-radius: 50%;
+    background: var(--db-screentime);
+    border: 2.5px solid var(--db-bg2);
+    box-sizing: border-box;
+}
+
+.chore-form .importance-scale {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.chore-form .importance-scale span {
+    font-size: 9.5px;
+    color: var(--db-text3);
+}
+
+/* Consequence line — plain English; pay reassurance is mint */
+.chore-form .importance-consequence {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--db-text2);
+}
+
+.chore-form .importance-consequence__amber {
+    color: var(--ds-screentime-text);
+    font-weight: 700;
+}
+
+.chore-form .importance-consequence__mint {
+    color: var(--ds-money-light);
+}
+
+.chore-form .importance-coming {
+    margin: 4px 0 0;
+    font-size: 9.5px;
+    font-style: italic;
+    color: var(--db-text3);
 }
 
 /* ===========================================
-   OPTIONS SECTION - Collapsible
+   OPTIONS — collapsed <details> row (#18a)
    =========================================== */
 
 .chore-form .options-section {
     border: none;
-    margin-top: var(--ds-space-2);
+    margin-top: 2px;
 }
 
 .chore-form .options-summary {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-2) var(--ds-space-3);
-    color: var(--ds-text-muted);
-    font-size: var(--ds-text-xs);
-    font-weight: var(--ds-font-semibold);
+    gap: 8px;
+    padding: 11px 12px;
+    border-radius: 11px;
+    background: var(--ds-bg-recessed);
+    border: 1px solid var(--db-border);
     cursor: pointer;
     user-select: none;
     list-style: none;
-    border-radius: var(--ds-radius-md);
-    transition: all var(--ds-duration-fast) ease;
+    transition: border-color var(--ds-transition), background-color var(--ds-transition);
 }
 
 .chore-form .options-summary::-webkit-details-marker {
@@ -575,33 +579,57 @@
 }
 
 .chore-form .options-summary:hover {
-    background: var(--ds-bg-hover);
-    color: var(--ds-text-secondary);
+    background: var(--ds-bg-selected);
 }
 
-.chore-form .options-icon {
-    font-size: var(--ds-text-sm);
-    transition: transform var(--ds-duration-fast) ease;
+.chore-form .options-summary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
-.chore-form .options-section[open] .options-icon {
+.chore-form .options-summary__gear {
+    color: var(--db-text3);
+    flex-shrink: 0;
+}
+
+.chore-form .options-summary__title {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--db-text2);
+}
+
+.chore-form .options-summary__hint {
+    font-size: 10px;
+    color: var(--db-text3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chore-form .options-summary__chevron {
+    color: var(--db-text3);
+    flex-shrink: 0;
+    transition: transform var(--ds-transition);
+}
+
+.chore-form .options-section[open] .options-summary__chevron {
     transform: rotate(180deg);
 }
 
 .chore-form .options-section[open] .options-summary {
-    margin-bottom: var(--ds-space-3);
-    color: var(--ds-text-secondary);
+    margin-bottom: 10px;
 }
 
 .chore-form .options-content {
     display: flex;
     flex-direction: column;
-    gap: var(--ds-space-4);
-    padding: var(--ds-space-4);
-    background: var(--ds-bg-base);
-    border-radius: var(--ds-radius-lg);
-    border: 1px solid var(--ds-bg-muted);
-    animation: choreFormSlideDown var(--ds-duration-normal) ease;
+    gap: 14px;
+    padding: 14px;
+    background: var(--ds-bg-recessed);
+    border: 1px solid var(--db-border);
+    border-radius: var(--ds-radius-input);
+    animation: choreFormSlideDown 0.2s ease;
 }
 
 @keyframes choreFormSlideDown {
@@ -619,18 +647,18 @@
 .chore-form .option-check {
     display: flex;
     align-items: center;
-    gap: var(--ds-space-3);
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-secondary);
+    gap: 10px;
+    font-size: 12.5px;
+    color: var(--db-text2);
     cursor: pointer;
-    padding: var(--ds-space-2);
-    margin: calc(var(--ds-space-2) * -1);
+    padding: 6px;
+    margin: -6px;
     border-radius: var(--ds-radius-md);
-    transition: background-color var(--ds-duration-fast) ease;
+    transition: background-color var(--ds-transition);
 }
 
 .chore-form .option-check:hover {
-    background: var(--ds-bg-hover);
+    background: var(--ds-bg-selected);
 }
 
 /* Disabled option checkbox - shown but not interactive */
@@ -645,14 +673,14 @@
 }
 
 .chore-form .option-check--disabled:hover {
-    background: transparent;  /* Override hover state */
+    background: transparent;
 }
 
 ::deep .option-check input[type="checkbox"],
 .chore-form .option-check input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: var(--ds-accent-primary);
+    accent-color: var(--db-accent);
     cursor: pointer;
     flex-shrink: 0;
 }
@@ -661,137 +689,174 @@
 .chore-form .date-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--ds-space-3);
+    gap: 10px;
 }
 
 .chore-form .date-field {
     display: flex;
     flex-direction: column;
-    gap: var(--ds-space-2);
+    gap: 6px;
+    min-width: 0;
 }
 
 .chore-form .date-field > span {
-    font-size: var(--ds-text-xs);
-    color: var(--ds-text-muted);
-    font-weight: var(--ds-font-semibold);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    color: var(--db-text3);
 }
 
-/* Date inputs */
 ::deep input.ds-input--date,
 .chore-form .ds-input--date {
-    height: 40px;
-    padding: var(--ds-space-2) var(--ds-space-3);
-    font-size: var(--ds-text-sm);
-    background: var(--ds-bg-base);
-    background-color: var(--ds-bg-base);
-    border: 1px solid var(--ds-bg-muted);
+    height: 38px;
+    padding: 0 10px;
+    font-size: 12.5px;
+    background: var(--db-bg2);
+    background-color: var(--db-bg2);
+    border: 1px solid var(--db-border);
     border-radius: var(--ds-radius-md);
-    color: var(--ds-text-primary);
+    color: var(--db-text);
+    transition: border-color var(--ds-transition), box-shadow var(--ds-transition);
 }
 
 ::deep input.ds-input--date:focus {
-    border-color: var(--ds-accent-cyan);
-    box-shadow: var(--ds-glow-primary);
+    border-color: var(--db-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
     outline: none;
 }
 
 /* Textarea */
 ::deep textarea.ds-input--textarea,
 .chore-form .ds-input--textarea {
-    padding: var(--ds-space-3) var(--ds-space-4);
-    font-size: var(--ds-text-sm);
+    padding: 10px 12px;
+    font-size: 12.5px;
     resize: none;
-    min-height: 80px;
-    line-height: var(--ds-leading-relaxed);
-    background: var(--ds-bg-base);
-    background-color: var(--ds-bg-base);
-    border: 1px solid var(--ds-bg-muted);
+    min-height: 72px;
+    line-height: 1.5;
+    background: var(--db-bg2);
+    background-color: var(--db-bg2);
+    border: 1px solid var(--db-border);
     border-radius: var(--ds-radius-md);
-    color: var(--ds-text-primary);
+    color: var(--db-text);
+    transition: border-color var(--ds-transition), box-shadow var(--ds-transition);
 }
 
 ::deep textarea.ds-input--textarea:focus {
-    border-color: var(--ds-accent-cyan);
-    box-shadow: var(--ds-glow-primary);
+    border-color: var(--db-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
     outline: none;
 }
 
+::deep textarea.ds-input--textarea::placeholder {
+    color: var(--db-text3);
+}
+
 /* ===========================================
-   FORM ACTIONS
+   ACTIONS — Cancel (surface) · Save (accent, primary)
+   Delete = risk color, never in a primary position
    =========================================== */
 
 .chore-form .form-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--ds-space-3);
-    padding-top: var(--ds-space-5);
-    margin-top: var(--ds-space-3);
-    border-top: 1px solid var(--ds-bg-muted);
+    display: flex;
+    gap: 9px;
+    padding-top: 14px;
+    margin-top: 2px;
+    border-top: 1px solid var(--ds-divider);
+}
+
+.chore-form .btn-delete {
+    flex: none;
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--db-risk) 35%, transparent);
+    border-radius: 11px;
+    background: transparent;
+    color: var(--db-risk);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color var(--ds-transition), border-color var(--ds-transition);
+}
+
+.chore-form .btn-delete:hover {
+    background: color-mix(in srgb, var(--db-risk) 10%, transparent);
+    border-color: color-mix(in srgb, var(--db-risk) 55%, transparent);
+}
+
+.chore-form .btn-delete:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--db-risk) 25%, transparent);
 }
 
 .chore-form .btn-cancel {
-    height: var(--ds-touch-target-lg);
-    padding: 0 var(--ds-space-4);
-    border: 1px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-md);
-    background: transparent;
-    color: var(--ds-text-muted);
-    font-size: var(--ds-text-sm);
-    font-weight: var(--ds-font-semibold);
+    flex: 1;
+    height: 42px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 11px;
+    background: var(--db-bg3);
+    color: var(--db-text2);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
-    transition: all var(--ds-duration-fast) ease;
+    transition: background-color var(--ds-transition), color var(--ds-transition);
 }
 
 .chore-form .btn-cancel:hover {
-    background: var(--ds-bg-base);
-    color: var(--ds-text-primary);
-    border-color: var(--ds-text-muted);
+    background: color-mix(in srgb, var(--db-bg3) 80%, var(--db-text3));
+    color: var(--db-text);
+}
+
+.chore-form .btn-cancel:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .chore-form .btn-submit {
-    height: var(--ds-touch-target-lg);
-    padding: 0 var(--ds-space-5);
+    flex: 1.6;
+    height: 42px;
+    padding: 0 18px;
     border: none;
-    border-radius: var(--ds-radius-md);
-    background: linear-gradient(135deg, var(--ds-accent-primary), var(--ds-accent-blue));
-    color: var(--ds-text-primary);
-    font-size: var(--ds-text-sm);
-    font-weight: var(--ds-font-bold);
+    border-radius: 11px;
+    background: var(--db-accent);
+    color: var(--db-on-accent);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
     letter-spacing: 0.02em;
     cursor: pointer;
-    transition: all var(--ds-duration-normal) ease;
+    transition: box-shadow var(--ds-transition), opacity var(--ds-transition);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--ds-space-2);
-    position: relative;
-    overflow: hidden;
+    gap: 8px;
 }
 
 .chore-form .btn-submit:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: var(--ds-shadow-lg), var(--ds-glow-primary);
+    box-shadow: 0 4px 16px -4px color-mix(in srgb, var(--db-accent) 60%, transparent);
 }
 
-.chore-form .btn-submit:active:not(:disabled) {
-    transform: translateY(0);
+.chore-form .btn-submit:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .chore-form .btn-submit:disabled {
-    opacity: 0.4;
+    opacity: 0.45;
     cursor: not-allowed;
 }
 
-/* Loading spinner */
+/* Submit spinner */
 .chore-form .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--ds-bg-muted);
-    border-top-color: var(--ds-text-primary);
-    border-radius: var(--ds-radius-full);
-    animation: choreFormSpin var(--ds-duration-slow) linear infinite;
+    width: 14px;
+    height: 14px;
+    border: 2px solid color-mix(in srgb, var(--db-on-accent) 30%, transparent);
+    border-top-color: var(--db-on-accent);
+    border-radius: 50%;
+    animation: choreFormSpin 0.7s linear infinite;
 }
 
 @keyframes choreFormSpin {
@@ -801,57 +866,37 @@
 }
 
 /* ===========================================
-   BONUS TOGGLE - Inline with frequency row
-   =========================================== */
-
-::deep .bonus-toggle,
-.chore-form .bonus-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-    margin-left: var(--ds-space-4);
-    padding: var(--ds-space-1) var(--ds-space-2);
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-secondary);
-    cursor: pointer;
-    border-left: 1px solid var(--ds-bg-muted);
-}
-
-::deep .bonus-toggle input[type="checkbox"],
-.chore-form .bonus-toggle input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-    accent-color: var(--ds-semantic-success);
-    cursor: pointer;
-}
-
-/* ===========================================
    TOUCH DEVICE OPTIMIZATIONS
    =========================================== */
 
 @media (hover: none) and (pointer: coarse) {
-    .chore-form .seg2__btn {
-        min-height: 52px;
+    .chore-form .seg__item {
+        min-height: 46px;
     }
 
     .chore-form .day-chip {
-        width: var(--ds-touch-target);
-        height: var(--ds-touch-target);
+        height: 42px;
+    }
+
+    .chore-form .pay-stepper__btn {
+        width: 28px;
+        height: 28px;
     }
 
     ::deep input.frequency-row__input,
     .chore-form .frequency-row__input {
-        min-height: 40px !important;
+        min-height: 38px !important;
     }
 
     ::deep select.ds-select,
     .chore-form .ds-select {
-        height: var(--ds-touch-target);
+        height: 44px;
     }
 
+    .chore-form .btn-delete,
     .chore-form .btn-cancel,
     .chore-form .btn-submit {
-        height: 54px;
+        height: 50px;
     }
 }
 
@@ -871,206 +916,106 @@
 
 /* ===========================================
    MOBILE / PWA VARIANT (480px and below)
-   Target: iPhone 15+ (393px width minimum)
    Same layout, proportionally tightened
    =========================================== */
 
 @media (max-width: 480px) {
-    /* ----- FORM CONTAINER ----- */
     .chore-form {
-        padding: var(--ds-space-4);
-        gap: var(--ds-space-4);
+        gap: 14px;
     }
 
-    /* ----- SECTION SPACING ----- */
-    .chore-form .form-section {
-        gap: var(--ds-space-2);
-    }
-
-    .chore-form .section-label {
-        font-size: 0.625rem;
-        letter-spacing: 0.08em;
-        margin-top: var(--ds-space-1);
-        margin-bottom: var(--ds-space-1);
-    }
-
-    /* ----- IDENTITY SECTION (keep horizontal layout) ----- */
     .chore-form .identity-section {
-        flex-direction: row;
+        gap: 10px;
     }
 
-    .chore-form .icon-picker {
-        width: 48px;
-        min-width: 48px;
-        height: 48px;
-        border-right: 1px solid var(--ds-bg-muted);
-        border-bottom: none;
+    ::deep input.ds-input--name,
+    .chore-form .ds-input--name {
+        height: 42px;
+        font-size: 14px;
     }
 
-    .chore-form .name-field {
-        flex: 1;
-        min-width: 0;
+    .chore-form .seg__item {
+        min-height: 42px;
+        padding: 0 6px;
+        gap: 6px;
+        font-size: 12px;
     }
 
-    ::deep .ds-input--name,
-    ::deep input.ds-input--name {
-        height: 48px;
-        text-align: left;  /* Align left, not center */
-        font-size: var(--ds-text-base);
+    .chore-form .pay-stepper {
+        gap: 5px;
     }
 
-    /* ----- SEGMENTED CONTROLS (keep 2-column) ----- */
-    .chore-form .seg2 {
-        grid-template-columns: 1fr 1fr;
-        padding: 3px;
-        gap: 0;
-    }
-
-    .chore-form .seg2__btn {
-        min-height: var(--ds-touch-target);
-        padding: 0 var(--ds-space-2);
-        font-size: var(--ds-text-sm);
-    }
-
-    /* Sliding pill - adjusted for 3px padding */
-    .chore-form .seg2::before {
-        top: 3px;
-        left: 3px;
-        width: calc(50% - 3px);
-        height: calc(100% - 6px);
-    }
-
-    /* Glow bar - slightly smaller on mobile */
-    .chore-form .seg2__bar {
-        bottom: 5px;
-        height: 3px;
-        width: 70%;
-    }
-
-    /* Amount badge inside Earns button */
-    .chore-form .seg2__amount {
-        height: 26px;
-        padding: 0 var(--ds-space-1);
-        gap: 2px;
-    }
-
-    ::deep .seg2__input,
-    ::deep .seg2__input[type="number"],
-    ::deep input.seg2__input {
+    ::deep input.pay-stepper__input,
+    .chore-form .pay-stepper__input {
         width: 44px !important;
         min-width: 44px !important;
         max-width: 44px !important;
-        height: 22px !important;
-        font-size: var(--ds-text-xs) !important;
+        font-size: 12.5px !important;
     }
 
-    .chore-form .seg2__currency {
-        font-size: var(--ds-text-xs);
-    }
-
-    /* ----- DAY CHIPS ----- */
     .chore-form .days-row {
-        gap: var(--ds-space-1);
-        padding: 0;
+        gap: 4px;
     }
 
-    .chore-form .day-chip {
-        width: 38px;
-        height: 38px;
-        font-size: 0.65rem;
-    }
-
-    /* ----- FREQUENCY ROW ----- */
     .chore-form .frequency-row {
-        padding: var(--ds-space-2) var(--ds-space-3);
-        gap: var(--ds-space-2);
+        padding: 5px 10px;
+        gap: 6px;
     }
 
     .chore-form .frequency-row__text {
-        font-size: var(--ds-text-xs);
+        font-size: 11.5px;
     }
 
-    ::deep .frequency-row__input,
-    ::deep .frequency-row__input[type="number"],
-    ::deep input.frequency-row__input {
-        width: 44px !important;
-        min-width: 44px !important;
-        max-width: 44px !important;
-        height: 32px !important;
-        font-size: var(--ds-text-sm) !important;
-    }
-
-    /* Bonus toggle */
     ::deep .bonus-toggle,
     .chore-form .bonus-toggle {
-        margin-left: var(--ds-space-2);
-        padding: var(--ds-space-1);
-        font-size: var(--ds-text-xs);
-        border-left: 1px solid var(--ds-bg-muted);
+        margin-left: 6px;
+        padding-left: 8px;
+        font-size: 11.5px;
     }
 
-    /* ----- SCHEDULE SECTION ----- */
-    .chore-form .schedule-section {
-        gap: var(--ds-space-3);
-        min-height: 80px;
-    }
-
-    /* ----- OPTIONS SECTION ----- */
-    .chore-form .options-summary {
-        padding: var(--ds-space-2);
-        font-size: 0.65rem;
+    .chore-form .options-summary__hint {
+        display: none;
     }
 
     .chore-form .options-content {
-        padding: var(--ds-space-3);
-        gap: var(--ds-space-3);
-        overflow: hidden;  /* Prevent content from expanding container */
-    }
-
-    .chore-form .option-check {
-        font-size: var(--ds-text-xs);
-        gap: var(--ds-space-2);
-    }
-
-    /* ----- DATE FIELDS FIX ----- */
-    .chore-form .date-row {
-        grid-template-columns: 1fr 1fr;
-        gap: var(--ds-space-2);
-        width: 100%;
-        overflow: hidden;  /* Clip overflow */
-    }
-
-    .chore-form .date-field {
-        min-width: 0;  /* CRITICAL: Allow grid items to shrink below content size */
+        padding: 12px;
+        gap: 12px;
         overflow: hidden;
     }
 
-    ::deep .ds-input--date,
-    ::deep input.ds-input--date {
+    .chore-form .date-row {
+        gap: 8px;
         width: 100%;
-        min-width: 0;  /* Allow shrinking */
+        overflow: hidden;
+    }
+
+    .chore-form .date-field {
+        overflow: hidden;
+    }
+
+    ::deep input.ds-input--date,
+    .chore-form .ds-input--date {
+        width: 100%;
+        min-width: 0;
         height: 36px;
-        font-size: var(--ds-text-xs);
-        padding: var(--ds-space-1) var(--ds-space-2);  /* Tighter padding */
+        font-size: 11.5px;
+        padding: 0 8px;
     }
 
-    ::deep .ds-input--textarea {
+    ::deep textarea.ds-input--textarea {
         min-height: 60px;
-        font-size: var(--ds-text-xs);
+        font-size: 11.5px;
     }
 
-    /* ----- FORM ACTIONS ----- */
     .chore-form .form-actions {
-        grid-template-columns: 1fr 1fr;
-        gap: var(--ds-space-2);
-        padding-top: var(--ds-space-3);
-        margin-top: var(--ds-space-2);
+        gap: 8px;
+        padding-top: 12px;
     }
 
+    .chore-form .btn-delete,
     .chore-form .btn-cancel,
     .chore-form .btn-submit {
-        height: var(--ds-touch-target);
-        font-size: var(--ds-text-sm);
-        padding: 0 var(--ds-space-3);
+        height: 46px;
+        font-size: 13px;
     }
 }

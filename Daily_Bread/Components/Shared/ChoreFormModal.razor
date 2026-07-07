@@ -1,16 +1,19 @@
-﻿@using Daily_Bread.Data.Models
+@using Daily_Bread.Data.Models
 @using Daily_Bread.Services
 
 <div class="chore-form-modal">
-    <button class="modal-close-absolute" @onclick="HandleCancel" aria-label="Close">×</button>
+    <button class="modal-close-absolute" @onclick="HandleCancel" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+    </button>
     <div class="modal-header">
         <h2>@Title</h2>
     </div>
     <div class="modal-body">
-        <ChoreForm 
+        <ChoreForm
             Chore="Chore"
             Users="Users"
             OnSubmit="OnSubmit"
+            OnDelete="OnDelete"
             OnCancel="HandleCancel" />
     </div>
 </div>
@@ -21,6 +24,8 @@
     [Parameter] public List<UserSelectItem> Users { get; set; } = [];
     [Parameter] public EventCallback<ChoreDefinitionDto> OnSubmit { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+    /// <summary>Optional: forwards to ChoreForm's risk-colored Delete action (renders only when editing).</summary>
+    [Parameter] public EventCallback OnDelete { get; set; }
 
     private async Task HandleCancel() => await OnCancel.InvokeAsync();
 }

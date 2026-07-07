@@ -31,8 +31,9 @@
     max-width: 500px;
     max-height: 90vh;
     max-height: 90dvh;
-    background: var(--ds-bg-elevated);
-    border-radius: var(--ds-radius-lg);
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: 18px; /* modal shell per #18a/#19b */
     box-shadow: var(--ds-shadow-xl);
     overflow: hidden;
     display: flex;
@@ -167,7 +168,7 @@
     .modal-host-container {
         max-width: calc(100% - var(--ds-space-8));
         max-height: calc(100dvh - var(--ds-space-8));
-        border-radius: var(--ds-radius-lg);
+        border-radius: 18px; /* modal shell per #18a/#19b */
         margin: auto;  /* Fallback centering */
     }
     

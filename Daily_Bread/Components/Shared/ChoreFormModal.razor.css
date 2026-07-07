@@ -1,8 +1,10 @@
 /* ============================================
-   CHORE FORM MODAL - Scoped styles
+   CHORE FORM MODAL — #18a shell
+   Title row inside the padded card (no header band),
+   X anchored top-right. Card chrome (radius/border/bg)
+   comes from the modal host container.
    ============================================ */
 
-/* Wrapper provides positioning context for absolute close button */
 .chore-form-modal {
     position: relative;
     display: flex;
@@ -12,55 +14,59 @@
     overflow: hidden;
 }
 
-/* Close button - absolute positioned in top-right */
+/* Close button — plain glyph, top-right (#18a) */
 .modal-close-absolute {
     position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
+    top: 18px;
+    right: 18px;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    line-height: 1;
-    color: var(--ds-text-muted);
+    padding: 0;
+    color: var(--db-text3);
     background: transparent;
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition: background-color var(--ds-transition), color var(--ds-transition);
     z-index: 10;
 }
 
 .modal-close-absolute:hover {
-    background: var(--ds-bg-hover);
-    color: var(--ds-text-primary);
+    background: var(--ds-bg-selected);
+    color: var(--db-text);
 }
 
-/* Modal header - with padding for close button */
+.modal-close-absolute:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Header — title only, on the card surface */
 .modal-header {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    padding: 1rem 1.25rem;
-    padding-right: 3rem;
-    background: var(--ds-bg-hover);
-    border-bottom: 1px solid var(--ds-bg-muted);
+    padding: 20px 20px 14px;
+    padding-right: 56px;
+    background: transparent;
+    border-bottom: none;
     flex-shrink: 0;
 }
 
 .modal-header h2 {
     margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--ds-text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--db-text);
 }
 
 /* Modal body */
 .modal-body {
     flex: 1;
-    padding: 1.25rem;
+    padding: 0 20px 20px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
@@ -68,16 +74,21 @@
 
 /* Mobile adjustments */
 @media (max-width: 640px) {
+    .modal-close-absolute {
+        top: 14px;
+        right: 14px;
+    }
+
     .modal-header {
-        padding: 0.875rem 1rem;
-        padding-right: 3rem;
+        padding: 16px 16px 12px;
+        padding-right: 52px;
     }
-    
+
     .modal-header h2 {
-        font-size: 1rem;
+        font-size: 15px;
     }
-    
+
     .modal-body {
-        padding: 1rem;
+        padding: 0 16px 16px;
     }
 }

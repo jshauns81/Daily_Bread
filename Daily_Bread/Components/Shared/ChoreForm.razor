@@ -1,12 +1,17 @@
-﻿@using Daily_Bread.Data.Models
+@using Daily_Bread.Data.Models
 @using Daily_Bread.Services
 @using System.ComponentModel.DataAnnotations
+
+@* Chore form — design reference #18a (SCREENS_ADDENDUM §18).
+   Field model UNCHANGED from beta: identity → Earns/Expected → schedule rule →
+   importance (disabled until screen-time mechanics land) → collapsed options → actions.
+   Semantic colors teach the form: money = mint, schedule = accent, screen-time = amber. *@
 
 <div class="chore-form">
     <EditForm Model="FormModel" OnValidSubmit="HandleSubmit">
         <DataAnnotationsValidator />
 
-        <!-- GROUP 1: Identity -->
+        <!-- GROUP 1: Identity — tile trigger (#18b picker) + name -->
         <div class="form-section identity-section">
             <div class="icon-picker">
                 <IconPicker @bind-IconName="FormModel.LucideIconName" @bind-TileSlot="FormModel.TileSlot" />
@@ -17,29 +22,32 @@
             </div>
         </div>
 
-        <!-- GROUP 2: Type Selector - Luminous segmented control -->
+        <!-- GROUP 2: Earns/Expected — money things are mint -->
         <div class="form-section type-section">
-            <div class="seg2 seg2--money">
-                <button type="button" 
-                        class="seg2__btn seg2__btn--earns @(FormModel.ChoreType == ChoreTypeOption.Earning ? "seg2__btn--active" : "")"
-                        @onclick="() => SetChoreType(ChoreTypeOption.Earning)">
-                    <span class="seg2__label">Earns</span>
+            <div class="seg seg--type">
+                <div class="seg__item seg__item--earns @(FormModel.ChoreType == ChoreTypeOption.Earning ? "seg__item--active" : "")"
+                     role="button" tabindex="0"
+                     @onclick="() => SetChoreType(ChoreTypeOption.Earning)"
+                     @onkeydown="e => HandleSegKey(e, () => SetChoreType(ChoreTypeOption.Earning))">
+                    <span class="seg__label">Earns</span>
                     @if (FormModel.ChoreType == ChoreTypeOption.Earning)
                     {
-                        <span class="seg2__amount">
-                            <span class="seg2__currency">$</span>
-                            <InputNumber @bind-Value="FormModel.EarnValue" class="seg2__input" step="0.25" min="0" @onclick:stopPropagation="true" />
+                        <span class="pay-stepper" @onclick:stopPropagation="true">
+                            <button type="button" class="pay-stepper__btn" aria-label="Decrease pay" @onclick="DecrementPay">−</button>
+                            <span class="pay-stepper__amount">
+                                <span class="pay-stepper__currency">$</span>
+                                <InputNumber @bind-Value="FormModel.EarnValue" class="pay-stepper__input" step="0.25" min="0" />
+                            </span>
+                            <button type="button" class="pay-stepper__btn" aria-label="Increase pay" @onclick="IncrementPay">+</button>
                         </span>
                     }
-                    <span class="seg2__bar"></span>
-                </button>
-                
-                <button type="button" 
-                        class="seg2__btn seg2__btn--expected @(FormModel.ChoreType == ChoreTypeOption.Expectation ? "seg2__btn--active" : "")"
-                        @onclick="() => SetChoreType(ChoreTypeOption.Expectation)">
-                    <span class="seg2__label">Expected</span>
-                    <span class="seg2__bar"></span>
-                </button>
+                </div>
+                <div class="seg__item seg__item--expected @(FormModel.ChoreType == ChoreTypeOption.Expectation ? "seg__item--active" : "")"
+                     role="button" tabindex="0"
+                     @onclick="() => SetChoreType(ChoreTypeOption.Expectation)"
+                     @onkeydown="e => HandleSegKey(e, () => SetChoreType(ChoreTypeOption.Expectation))">
+                    <span class="seg__label">Expected</span>
+                </div>
             </div>
         </div>
 
@@ -60,32 +68,29 @@
             </div>
         }
 
-        <!-- GROUP 3: Schedule -->
+        <!-- GROUP 3: Schedule — schedule things are accent -->
         <div class="form-section schedule-section">
             <span class="section-label">Schedule rule</span>
-            <div class="seg2 seg2--schedule">
+            <div class="seg seg--schedule">
                 <button type="button"
-                        class="seg2__btn seg2__btn--fixed @(FormModel.ScheduleType == ChoreScheduleType.SpecificDays ? "seg2__btn--active" : "")"
+                        class="seg__item seg__item--schedule @(FormModel.ScheduleType == ChoreScheduleType.SpecificDays ? "seg__item--active" : "")"
                         @onclick="() => SetScheduleType(ChoreScheduleType.SpecificDays)">
-                    <span class="seg2__label">Fixed days</span>
-                    <span class="seg2__bar"></span>
+                    <span class="seg__label">Fixed days</span>
                 </button>
                 <button type="button"
-                        class="seg2__btn seg2__btn--weekly @(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "seg2__btn--active" : "")"
+                        class="seg__item seg__item--schedule @(FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "seg__item--active" : "")"
                         @onclick="() => SetScheduleType(ChoreScheduleType.WeeklyFrequency)">
-                    <span class="seg2__label">Weekly goal</span>
-                    <span class="seg2__bar"></span>
+                    <span class="seg__label">Weekly goal</span>
                 </button>
             </div>
 
             <!-- EITHER days OR frequency, not both -->
             @if (FormModel.ScheduleType == ChoreScheduleType.SpecificDays)
             {
-                <!-- Fixed Days: show day picker -->
                 <div class="days-row">
                     @foreach (var day in DayOptions)
                     {
-                        <button type="button" 
+                        <button type="button"
                                 class="day-chip @(IsDaySelected(day.Value) ? "day-chip--selected" : "")"
                                 @onclick="() => ToggleDay(day.Value)">
                             @day.Label
@@ -95,12 +100,11 @@
             }
             else
             {
-                <!-- Weekly Goal: show frequency with inline bonus toggle -->
                 <div class="frequency-row">
                     <span class="frequency-row__text">up to</span>
                     <InputNumber @bind-Value="FormModel.WeeklyTargetCount" class="frequency-row__input" min="1" max="7" />
                     <span class="frequency-row__text">× weekly</span>
-                    
+
                     @if (FormModel.ChoreType == ChoreTypeOption.Earning)
                     {
                         <label class="bonus-toggle">
@@ -112,15 +116,51 @@
             }
         </div>
 
+        <!-- GROUP 4: Importance (#6b, amber) — DISABLED until screen-time mechanics ship.
+             Display-only: shows the stored weight but never writes it. -->
+        <div class="form-section importance-section"
+             title="Importance affects screen time — coming with the screen-time update">
+            <div class="importance-head">
+                <span class="section-label section-label--amber">Importance</span>
+                <span class="importance-value">@FormModel.Importance</span>
+            </div>
+            <div class="importance-slider"
+                 role="slider"
+                 aria-label="Importance"
+                 aria-valuemin="0" aria-valuemax="10" aria-valuenow="@FormModel.Importance"
+                 aria-disabled="true">
+                <div class="importance-slider__fill" style="width:@(FormModel.Importance * 10)%"></div>
+                <span class="importance-slider__thumb" style="left:@(FormModel.Importance * 10)%"></span>
+            </div>
+            <div class="importance-scale">
+                <span>0 · no penalty</span>
+                <span>10 · max</span>
+            </div>
+            <p class="importance-consequence">
+                @if (FormModel.Importance > 0)
+                {
+                    <text>Missing this deducts <span class="importance-consequence__amber">screen time at weight @FormModel.Importance of 10</span>. </text>
+                }
+                else
+                {
+                    <text>Missing this deducts <span class="importance-consequence__amber">no screen time</span>. </text>
+                }
+                <span class="importance-consequence__mint">Pay is never affected.</span>
+            </p>
+            <p class="importance-coming">Coming with the screen-time update</p>
+        </div>
+
         <!-- Options (collapsed) - reduced visual weight -->
         <details class="options-section">
             <summary class="options-summary">
-                <span class="options-icon">⚙</span>
-                <span>Options</span>
+                <svg class="options-summary__gear" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span class="options-summary__title">Options</span>
+                <span class="options-summary__hint">auto-approve · active · dates · notes</span>
+                <svg class="options-summary__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
             </summary>
             <div class="options-content">
                 <label class="option-check @(FormModel.ChoreType != ChoreTypeOption.Earning ? "option-check--disabled" : "")">
-                    <InputCheckbox @bind-Value="FormModel.AutoApprove" 
+                    <InputCheckbox @bind-Value="FormModel.AutoApprove"
                                    disabled="@(FormModel.ChoreType != ChoreTypeOption.Earning)" />
                     <span>Auto-approve completions</span>
                 </label>
@@ -142,8 +182,12 @@
             </div>
         </details>
 
-        <!-- Actions -->
+        <!-- Actions: delete = risk color, never a primary position -->
         <div class="form-actions">
+            @if (IsEditing && OnDelete.HasDelegate)
+            {
+                <button type="button" class="btn-delete" @onclick="HandleDelete">Delete</button>
+            }
             <button type="button" class="btn-cancel" @onclick="HandleCancel">Cancel</button>
             <button type="submit" class="btn-submit" disabled="@IsSubmitting">
                 @if (IsSubmitting) { <span class="spinner"></span> }
@@ -160,6 +204,8 @@
     [Parameter] public List<UserSelectItem> Users { get; set; } = [];
     [Parameter] public EventCallback<ChoreDefinitionDto> OnSubmit { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+    /// <summary>Optional: when supplied (and editing), renders the risk-colored Delete action.</summary>
+    [Parameter] public EventCallback OnDelete { get; set; }
 
     private ChoreFormModel FormModel { get; set; } = new();
     private bool IsEditing => Chore?.Id > 0;
@@ -190,6 +236,10 @@
                 TileSlot = Chore.TileSlot is >= 1 and <= 5 ? Chore.TileSlot : 1,
                 AssignedUserId = Chore.AssignedUserId,
                 EarnValue = Chore.EarnValue,
+                Importance = Chore.Importance,
+                AllOrNothing = Chore.AllOrNothing,
+                IsInverseFill = Chore.IsInverseFill,
+                InverseFillBaselineMinutes = Chore.InverseFillBaselineMinutes,
                 ScheduleType = Chore.ScheduleType,
                 ActiveDays = Chore.ActiveDays,
                 WeeklyTargetCount = Chore.WeeklyTargetCount,
@@ -216,7 +266,7 @@
                 EarnValue = 1.00m
             };
         }
-        
+
         if (Users.Count == 1 && string.IsNullOrEmpty(FormModel.AssignedUserId))
             FormModel.AssignedUserId = Users[0].Id;
     }
@@ -236,6 +286,18 @@
         }
     }
 
+    private void HandleSegKey(KeyboardEventArgs e, Action action)
+    {
+        if (e.Key is "Enter" or " " or "Spacebar")
+            action();
+    }
+
+    private void DecrementPay() =>
+        FormModel.EarnValue = Math.Max(0m, FormModel.EarnValue - 0.25m);
+
+    private void IncrementPay() =>
+        FormModel.EarnValue = Math.Min(10000m, FormModel.EarnValue + 0.25m);
+
     private void SetScheduleType(ChoreScheduleType type)
     {
         FormModel.ScheduleType = type;
@@ -249,8 +311,8 @@
 
     private void ToggleDay(DaysOfWeek day)
     {
-        FormModel.ActiveDays = FormModel.ActiveDays.HasFlag(day) 
-            ? FormModel.ActiveDays & ~day 
+        FormModel.ActiveDays = FormModel.ActiveDays.HasFlag(day)
+            ? FormModel.ActiveDays & ~day
             : FormModel.ActiveDays | day;
     }
 
@@ -270,10 +332,16 @@
                 AssignedUserId = string.IsNullOrEmpty(FormModel.AssignedUserId) ? null : FormModel.AssignedUserId,
                 Kind = FormModel.ChoreType == ChoreTypeOption.Earning ? ChoreKind.Task : ChoreKind.Routine,
                 EarnValue = FormModel.ChoreType == ChoreTypeOption.Earning ? FormModel.EarnValue : 0,
+                // Importance is display-only until the screen-time mechanics UI lands (Phase 8):
+                // the disabled slider never writes it, but the stored weight round-trips untouched.
+                Importance = FormModel.Importance,
+                AllOrNothing = FormModel.AllOrNothing,
+                IsInverseFill = FormModel.IsInverseFill,
+                InverseFillBaselineMinutes = FormModel.InverseFillBaselineMinutes,
                 ScheduleType = FormModel.ScheduleType,
                 ActiveDays = FormModel.ActiveDays,
                 WeeklyTargetCount = FormModel.WeeklyTargetCount,
-                IsRepeatable = FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ChoreType == ChoreTypeOption.Earning 
+                IsRepeatable = FormModel.ScheduleType == ChoreScheduleType.WeeklyFrequency && FormModel.ChoreType == ChoreTypeOption.Earning
                     ? FormModel.IsRepeatable : false,
                 StartDate = FormModel.StartDate,
                 EndDate = FormModel.EndDate,
@@ -287,6 +355,8 @@
     }
 
     private async Task HandleCancel() => await OnCancel.InvokeAsync();
+
+    private async Task HandleDelete() => await OnDelete.InvokeAsync();
 
     private class ChoreFormModel
     {
@@ -304,6 +374,14 @@
         public string? AssignedUserId { get; set; }
         [Range(0, 10000)]
         public decimal EarnValue { get; set; }
+        /// <summary>Screen-time importance weight 0–10. Display-only in this form (Phase 8 edits it).</summary>
+        public int Importance { get; set; }
+        /// <summary>Mechanics passthrough — not edited here; preserved so saving never wipes it.</summary>
+        public bool AllOrNothing { get; set; } = true;
+        /// <summary>Mechanics passthrough — not edited here; preserved so saving never wipes it.</summary>
+        public bool IsInverseFill { get; set; }
+        /// <summary>Mechanics passthrough — not edited here; preserved so saving never wipes it.</summary>
+        public int InverseFillBaselineMinutes { get; set; } = 20;
         public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
         public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
         [Range(1, 7)]
