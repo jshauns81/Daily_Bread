@@ -1,0 +1,505 @@
+@page "/driving-log"
+@attribute [Authorize(Roles = "Parent,Child")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using System.Security.Claims
+
+@inject IDrivingLogService DrivingLogService
+@inject IChildProfileService ProfileService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IToastService ToastService
+
+<PageTitle>Driving Log</PageTitle>
+
+<div class="dl-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@EmojiConstants.Car Driving Log</h1>
+        @if (IsParent)
+        {
+            <a href="/driving-log/approvals" class="btn btn-outline-secondary btn-sm">Pending Approvals</a>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @SuccessMessage
+            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (IsParent && ChildProfiles.Count > 1)
+        {
+            <div class="card mb-4">
+                <div class="card-body">
+                    <label class="form-label">Select Child</label>
+                    <select class="form-select" @bind="SelectedChildUserId" @bind:after="OnChildChangedAsync">
+                        @foreach (var profile in ChildProfiles)
+                        {
+                            <option value="@profile.UserId">@profile.DisplayName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        }
+
+        @if (IsParent && ChildProfiles.Count == 0)
+        {
+            <EmptyState Type="EmptyStateType.NoChildren"
+                        Icon="👨‍👩‍👧‍👦"
+                        Title="No Children Added"
+                        Message="Add a child profile before logging driving sessions." />
+        }
+        else if (string.IsNullOrEmpty(SelectedChildUserId))
+        {
+            <EmptyState Type="EmptyStateType.Error"
+                        Icon="🚗"
+                        Title="No Profile Found"
+                        Message="Please contact a parent to set up your profile." />
+        }
+        else
+        {
+            <!-- Progress card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Progress</h5>
+                        @if (IsParent)
+                        {
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleGoalEditor">
+                                @(ShowGoalEditor ? "Cancel" : "Edit Goal")
+                            </button>
+                        }
+                    </div>
+
+                    @if (ShowGoalEditor)
+                    {
+                        <div class="dl-goal-editor">
+                            <div class="filter-item filter-item-sm">
+                                <label class="form-label">Total hours goal</label>
+                                <input type="number" min="0" step="0.5" class="form-control" @bind="GoalTotalHoursInput" />
+                            </div>
+                            <div class="filter-item filter-item-sm">
+                                <label class="form-label">Night hours goal</label>
+                                <input type="number" min="0" step="0.5" class="form-control" @bind="GoalNightHoursInput" />
+                            </div>
+                            <div class="filter-item filter-item-btn">
+                                <label class="form-label d-none d-md-block">&nbsp;</label>
+                                <button class="btn btn-primary" disabled="@IsBusy" @onclick="SaveGoalAsync">Save</button>
+                            </div>
+                        </div>
+                    }
+                    else if (Progress is { TotalGoalHours: null } && !IsParent)
+                    {
+                        <p class="text-muted mb-0">Total logged: @Progress.TotalHours.ToString("0.##") hrs (@Progress.NightHours.ToString("0.##") at night). Ask a parent to set a goal to see progress.</p>
+                    }
+                    else if (Progress is { TotalGoalHours: null })
+                    {
+                        <p class="text-muted mb-0">No goal configured yet. Click "Edit Goal" to set one.</p>
+                    }
+                    else if (Progress != null)
+                    {
+                        <div class="dl-pbar">
+                            <div class="dl-pbar-track">
+                                <div class="dl-pbar-fill" style="width: @TotalFillPercent().ToString("0.##")%"></div>
+                            </div>
+                            <div class="dl-pbar-labels">
+                                <span>@Progress.TotalHours.ToString("0.##") / @Progress.TotalGoalHours?.ToString("0.##") hrs total</span>
+                            </div>
+                        </div>
+
+                        @if (Progress.NightGoalHours.HasValue)
+                        {
+                            <div class="dl-pbar">
+                                <div class="dl-pbar-track">
+                                    <div class="dl-pbar-fill dl-pbar-fill-night" style="width: @NightFillPercent().ToString("0.##")%"></div>
+                                </div>
+                                <div class="dl-pbar-labels">
+                                    <span>@Progress.NightHours.ToString("0.##") / @Progress.NightGoalHours?.ToString("0.##") hrs at night</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Log a session -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Log a Session</h5>
+                </div>
+                <div class="card-body">
+                    <div class="dl-form-row">
+                        <div class="filter-item filter-item-sm">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" @bind="FormDate" />
+                        </div>
+                        <div class="filter-item filter-item-sm">
+                            <label class="form-label">Start</label>
+                            <input type="time" class="form-control" @bind="FormStartTime" />
+                        </div>
+                        <div class="filter-item filter-item-sm">
+                            <label class="form-label">End</label>
+                            <input type="time" class="form-control" @bind="FormEndTime" />
+                        </div>
+                        <div class="filter-item-btn">
+                            <label class="form-label d-none d-md-block">&nbsp;</label>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="SetDateTimeToNow" title="Fill in today's date and the current time">
+                                Now
+                            </button>
+                        </div>
+                        <div class="filter-item filter-item-sm">
+                            <label class="form-label">Night driving</label>
+                            <select class="form-select" @bind="FormNightOverrideOption">
+                                <option value="auto">Auto-detect</option>
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div class="filter-item filter-item-sm">
+                            <label class="form-label">Weather</label>
+                            <select class="form-select" @bind="FormWeather">
+                                @foreach (var condition in Enum.GetValues<WeatherCondition>())
+                                {
+                                    <option value="@condition">@condition</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="dl-form-row mt-3">
+                        @if (IsParent)
+                        {
+                            <div class="filter-item">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selfSupervisor" @bind="FormUseSelfAsSupervisor" />
+                                    <label class="form-check-label" for="selfSupervisor">I supervised this drive</label>
+                                </div>
+                            </div>
+                        }
+                        @if (!IsParent || !FormUseSelfAsSupervisor)
+                        {
+                            <div class="filter-item">
+                                <label class="form-label">Supervisor name</label>
+                                <input type="text" class="form-control" placeholder="e.g. Grandma, Driving instructor" @bind="FormSupervisorName" />
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label">Route / notes</label>
+                        <textarea class="form-control" rows="2" placeholder="Optional - e.g. highway practice, parallel parking" @bind="FormRouteNotes"></textarea>
+                    </div>
+
+                    <div class="mt-3">
+                        <button class="btn btn-primary" disabled="@IsBusy" @onclick="SubmitEntryAsync">
+                            Log Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 dl-no-print">
+                    <h5 class="mb-0">History</h5>
+                    <div class="d-flex align-items-end gap-2 flex-wrap">
+                        <div class="filter-item filter-item-sm">
+                            <label class="form-label">From</label>
+                            <input type="date" class="form-control" @bind="FromDate" @bind:after="LoadEntriesAsync" />
+                        </div>
+                        <div class="filter-item filter-item-sm">
+                            <label class="form-label">To</label>
+                            <input type="date" class="form-control" @bind="ToDate" @bind:after="LoadEntriesAsync" />
+                        </div>
+                        <a class="btn btn-outline-primary" href="@ExportUrl()" target="_blank">Export CSV</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Entries.Count == 0)
+                    {
+                        <EmptyState Type="EmptyStateType.NoData"
+                                    Icon="🚗"
+                                    Title="No Sessions Logged"
+                                    Message="Log a session above to start tracking hours." />
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Duration</th>
+                                        <th>Night</th>
+                                        <th>Supervisor</th>
+                                        <th>Weather</th>
+                                        <th>Status</th>
+                                        <th class="dl-no-print"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var entry in Entries)
+                                    {
+                                        <tr>
+                                            <td>@entry.Date.ToString("MMM d, yyyy")</td>
+                                            <td>@entry.StartTime.ToString("h:mm tt") - @entry.EndTime.ToString("h:mm tt")</td>
+                                            <td>@((entry.DurationMinutes / 60m).ToString("0.##")) hrs</td>
+                                            <td>@(entry.IsNightDriving ? "Yes" : "No")</td>
+                                            <td>@entry.SupervisorLabel</td>
+                                            <td>@entry.Weather</td>
+                                            <td>
+                                                <span class="dl-badge dl-badge-@entry.Status.ToString().ToLowerInvariant()" title="@entry.RejectionReason">
+                                                    @entry.Status
+                                                </span>
+                                            </td>
+                                            <td class="dl-no-print">
+                                                @if (IsParent || entry.Status == DrivingLogStatus.PendingApproval)
+                                                {
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEntryAsync(entry.Id)">Delete</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<ChildProfileSummary> ChildProfiles { get; set; } = [];
+    private string? SelectedChildUserId { get; set; }
+    private int SelectedChildProfileId { get; set; }
+    private DrivingLogProgress? Progress { get; set; }
+    private List<DrivingLogEntryDisplay> Entries { get; set; } = [];
+    private DateOnly? FromDate { get; set; }
+    private DateOnly? ToDate { get; set; }
+
+    private bool IsParent { get; set; }
+    private string? CurrentUserId { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsBusy { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    private bool ShowGoalEditor { get; set; }
+    private decimal? GoalTotalHoursInput { get; set; }
+    private decimal? GoalNightHoursInput { get; set; }
+
+    private DateOnly FormDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    private TimeOnly FormStartTime { get; set; } = new(16, 0);
+    private TimeOnly FormEndTime { get; set; } = new(17, 0);
+    private WeatherCondition FormWeather { get; set; } = WeatherCondition.Clear;
+    private string? FormRouteNotes { get; set; }
+    private bool FormUseSelfAsSupervisor { get; set; }
+    private string? FormSupervisorName { get; set; }
+    private string FormNightOverrideOption { get; set; } = "auto";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        CurrentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        IsParent = authState.User.IsInRole("Parent");
+        FormUseSelfAsSupervisor = IsParent;
+
+        if (IsParent)
+        {
+            ChildProfiles = await ProfileService.GetAllChildProfilesAsync();
+            if (ChildProfiles.Count > 0)
+            {
+                SelectedChildUserId = ChildProfiles[0].UserId;
+                SelectedChildProfileId = ChildProfiles[0].ProfileId;
+                await LoadChildDataAsync();
+            }
+        }
+        else if (!string.IsNullOrEmpty(CurrentUserId))
+        {
+            var profile = await ProfileService.GetProfileByUserIdAsync(CurrentUserId);
+            if (profile != null)
+            {
+                SelectedChildUserId = CurrentUserId;
+                SelectedChildProfileId = profile.Id;
+                await LoadChildDataAsync();
+            }
+        }
+
+        IsLoading = false;
+    }
+
+    private void SetDateTimeToNow()
+    {
+        var now = DateTime.Now;
+        FormDate = DateOnly.FromDateTime(now);
+        FormStartTime = TimeOnly.FromDateTime(now);
+    }
+
+    private async Task OnChildChangedAsync()
+    {
+        var profile = ChildProfiles.FirstOrDefault(p => p.UserId == SelectedChildUserId);
+        SelectedChildProfileId = profile?.ProfileId ?? 0;
+        ShowGoalEditor = false;
+        await LoadChildDataAsync();
+    }
+
+    private async Task LoadChildDataAsync()
+    {
+        if (string.IsNullOrEmpty(SelectedChildUserId)) return;
+
+        Progress = await DrivingLogService.GetProgressAsync(SelectedChildUserId);
+        GoalTotalHoursInput = Progress.TotalGoalHours;
+        GoalNightHoursInput = Progress.NightGoalHours;
+
+        await LoadEntriesAsync();
+    }
+
+    private async Task LoadEntriesAsync()
+    {
+        if (string.IsNullOrEmpty(SelectedChildUserId)) return;
+
+        Entries = await DrivingLogService.GetEntriesAsync(SelectedChildUserId, FromDate, ToDate);
+    }
+
+    private void ToggleGoalEditor() => ShowGoalEditor = !ShowGoalEditor;
+
+    private async Task SaveGoalAsync()
+    {
+        if (SelectedChildProfileId == 0) return;
+
+        IsBusy = true;
+        try
+        {
+            var result = await ProfileService.UpdateDrivingGoalAsync(SelectedChildProfileId, GoalTotalHoursInput, GoalNightHoursInput);
+            if (result.Success)
+            {
+                ToastService.ShowSuccess("Goal updated");
+                ShowGoalEditor = false;
+                await LoadChildDataAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error", result.ErrorMessage);
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task SubmitEntryAsync()
+    {
+        if (string.IsNullOrEmpty(SelectedChildUserId) || string.IsNullOrEmpty(CurrentUserId)) return;
+
+        ErrorMessage = null;
+        SuccessMessage = null;
+        IsBusy = true;
+
+        try
+        {
+            var draft = new DrivingLogEntry
+            {
+                ChildUserId = SelectedChildUserId,
+                Date = FormDate,
+                StartTime = FormStartTime,
+                EndTime = FormEndTime,
+                Weather = FormWeather,
+                RouteNotes = string.IsNullOrWhiteSpace(FormRouteNotes) ? null : FormRouteNotes,
+                CreatedByUserId = CurrentUserId
+            };
+
+            if (IsParent && FormUseSelfAsSupervisor)
+            {
+                draft.SupervisorUserId = CurrentUserId;
+            }
+            else
+            {
+                draft.SupervisorName = FormSupervisorName;
+            }
+
+            if (FormNightOverrideOption != "auto")
+            {
+                draft.IsNightDriving = FormNightOverrideOption == "yes";
+                draft.NightDrivingSource = NightDrivingSource.ManualOverride;
+            }
+
+            var result = await DrivingLogService.CreateEntryAsync(draft, CurrentUserId, IsParent);
+
+            if (result.Success)
+            {
+                SuccessMessage = IsParent ? "Session logged and approved." : "Session submitted - waiting on parent approval.";
+                FormRouteNotes = null;
+                FormSupervisorName = null;
+                FormNightOverrideOption = "auto";
+                await LoadChildDataAsync();
+            }
+            else
+            {
+                ErrorMessage = result.ErrorMessage;
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task DeleteEntryAsync(int entryId)
+    {
+        if (string.IsNullOrEmpty(CurrentUserId)) return;
+
+        var result = await DrivingLogService.DeleteEntryAsync(entryId, CurrentUserId, IsParent);
+        if (result.Success)
+        {
+            ToastService.ShowSuccess("Entry deleted");
+            await LoadChildDataAsync();
+        }
+        else
+        {
+            ToastService.ShowError("Error", result.ErrorMessage);
+        }
+    }
+
+    private decimal TotalFillPercent()
+    {
+        if (Progress?.TotalGoalHours is not > 0) return 0;
+        return Math.Clamp((Progress.TotalHours / Progress.TotalGoalHours.Value) * 100m, 0m, 100m);
+    }
+
+    private decimal NightFillPercent()
+    {
+        if (Progress?.NightGoalHours is not > 0) return 0;
+        return Math.Clamp((Progress.NightHours / Progress.NightGoalHours.Value) * 100m, 0m, 100m);
+    }
+
+    private string ExportUrl()
+    {
+        var url = $"/api/driving-log/export?childUserId={Uri.EscapeDataString(SelectedChildUserId ?? "")}";
+        if (FromDate.HasValue) url += $"&from={FromDate.Value:yyyy-MM-dd}";
+        if (ToDate.HasValue) url += $"&to={ToDate.Value:yyyy-MM-dd}";
+        return url;
+    }
+}
