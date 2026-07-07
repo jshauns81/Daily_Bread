@@ -1,32 +1,139 @@
-﻿@using Daily_Bread.Data.Models
+@using Daily_Bread.Data.Models
 @using Daily_Bread.Services
 
-<!-- Wage Grid -->
-<div class="wage-grid">
-    <!-- Day Headers -->
+@* Planner grid — design #3a (desktop) / #3b (mobile cards), full cell state matrix per
+   SCREENS_ADDENDUM §13 (#13a states, #13b reorder mechanics, #13c mobile tappable cells).
+   Day-cell click = this-week override only; the expanded inline panel edits the
+   recurring schedule. Past columns are read-only (35% opacity, no affordances). *@
+
+<!-- Desktop grid -->
+<div class="wage-grid @(EnableReorder ? "has-grip" : "")">
+    <!-- Header row: JOB | SUN..SAT | PAY -->
     <div class="grid-header">
         @if (EnableReorder)
         {
-            <div class="header-cell drag-header"></div>
+            <div class="grip-header"></div>
         }
-        <div class="header-cell job-header">Job</div>
+        <div class="job-header">Job</div>
         @foreach (var day in PlannerData.DayColumns)
         {
-            <div class="header-cell day-header @(day.IsToday ? "today" : "") @(day.IsPast ? "past" : "")">
+            <div class="day-header @(day.IsToday ? "today" : "") @(day.IsPast ? "past" : "")">
                 <span class="day-name">@day.DayName</span>
                 <span class="day-num">@day.DayNumber</span>
+                @if (day.IsToday)
+                {
+                    <span class="today-dot"></span>
+                }
             </div>
         }
-        <div class="header-cell wage-header">Pay</div>
+        <div class="pay-header">Pay</div>
     </div>
 
-    <!-- Chore Rows -->
+    <!-- Chore rows -->
     @foreach (var chore in EarningChores)
     {
         var isBeingDragged = _draggedChore?.ChoreDefinitionId == chore.ChoreDefinitionId;
         var isDropTarget = _dropTargetChore?.ChoreDefinitionId == chore.ChoreDefinitionId && !isBeingDragged;
-        
-        <div class="chore-row @(isBeingDragged ? "dragging" : "") @(isDropTarget ? "drop-target" : "")" 
+        var isExpanded = ExpandedChoreId == chore.ChoreDefinitionId;
+
+        <div class="row-block @(isExpanded ? "expanded" : "") @(isDropTarget ? "drop-target" : "") @(!chore.IsActive ? "inactive" : "")"
+             @key="chore.ChoreDefinitionId">
+            <div class="chore-row @(isBeingDragged ? "dragging" : "")"
+                 draggable="@(EnableReorder ? "true" : "false")"
+                 @ondragstart="() => HandleDragStart(chore)"
+                 @ondragend="HandleDragEnd"
+                 @ondragover="() => HandleDragOver(chore)"
+                 @ondragover:preventDefault="@EnableReorder"
+                 @ondrop="() => HandleDrop(chore)"
+                 @ondrop:preventDefault="@EnableReorder">
+                @if (EnableReorder)
+                {
+                    <div class="grip-cell" title="Drag to reorder">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+                    </div>
+                }
+                <!-- Job info: click = expand inline settings (recurring schedule) -->
+                <div class="job-cell" @onclick="() => OnToggleExpand.InvokeAsync(chore)">
+                    <span class="row-chevron" aria-hidden="true">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                    </span>
+                    <IconTile IconName="@chore.LucideIconName" Slot="@chore.TileSlot" Size="28" />
+                    <div class="job-details">
+                        <span class="job-name">@chore.ChoreName</span>
+                        @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                        {
+                            <span class="job-meta weekly">@chore.WeeklyApprovedCount of @chore.WeeklyTargetCount this week · any day</span>
+                        }
+                        else if (!chore.IsDailyChore)
+                        {
+                            <span class="job-meta">@GetScheduleSummary(chore)</span>
+                        }
+                        @if (string.IsNullOrEmpty(SelectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
+                        {
+                            <span class="job-assignee">@chore.AssignedUserName</span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Day cells (this-week overrides) -->
+                @foreach (var cell in chore.Cells)
+                {
+                    var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
+                    var isUpdating = UpdatingCellKey == cellKey;
+                    var state = GetCellState(chore, cell);
+
+                    <div class="day-cell @state @(cell.IsToday ? "today" : "") @(cell.IsPast ? "past" : "") @(isUpdating ? "saving" : "")"
+                         style="--dot-hue:var(--tile-@(SafeSlot(chore))-a);"
+                         @onclick="() => HandleCellTap(chore, cell)"
+                         title="@GetCellTooltip(cell, state)"
+                         @key="cellKey">
+                        @if (isUpdating)
+                        {
+                            <svg class="cell-arc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 1-9 9"/></svg>
+                        }
+                        else if (state == "removed")
+                        {
+                            <span class="cell-x">✕</span>
+                        }
+                        else if (state is "usual" or "eligible" or "added")
+                        {
+                            <span class="cell-dot"></span>
+                            @if (state == "added")
+                            {
+                                <span class="cell-badge">⚡</span>
+                            }
+                        }
+                    </div>
+                }
+
+                <!-- Pay -->
+                <div class="wage-cell">
+                    <span class="wage-amount">$@chore.Value.ToString("F2")</span>
+                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency && chore.WeeklyTargetCount > 1)
+                    {
+                        <span class="wage-multiplier">×@chore.WeeklyTargetCount</span>
+                    }
+                </div>
+            </div>
+
+            @if (isExpanded)
+            {
+                <div class="row-settings-host">@SettingsPanel(chore)</div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Mobile card view (#3b / #13c): 7 tappable day-toggles per card, same override
+     semantics as the desktop cells. Whole week fits portrait; nothing scrolls sideways. -->
+<div class="wage-cards">
+    @foreach (var chore in EarningChores)
+    {
+        var isBeingDragged = _draggedChore?.ChoreDefinitionId == chore.ChoreDefinitionId;
+        var isDropTarget = _dropTargetChore?.ChoreDefinitionId == chore.ChoreDefinitionId && !isBeingDragged;
+        var isExpanded = ExpandedChoreId == chore.ChoreDefinitionId;
+
+        <div class="wage-card @(!chore.IsActive ? "inactive" : "") @(isExpanded ? "expanded" : "") @(isBeingDragged ? "dragging" : "") @(isDropTarget ? "drop-target" : "")"
              @key="chore.ChoreDefinitionId"
              draggable="@(EnableReorder ? "true" : "false")"
              @ondragstart="() => HandleDragStart(chore)"
@@ -35,131 +142,82 @@
              @ondragover:preventDefault="@EnableReorder"
              @ondrop="() => HandleDrop(chore)"
              @ondrop:preventDefault="@EnableReorder">
-            @if (EnableReorder)
-            {
-                <div class="drag-handle-cell">
-                    <span class="drag-handle" title="Drag to reorder">
-                        <span class="bi bi-grip-vertical"></span>
-                    </span>
-                </div>
-            }
-            <!-- Job Info -->
-            <div class="job-cell" @onclick="() => OnEditChore.InvokeAsync(chore)">
-                <IconTile IconName="@chore.LucideIconName" Slot="@chore.TileSlot" Size="28" />
-                <div class="job-details">
-                    <span class="job-name">@chore.ChoreName</span>
-                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
-                    {
-                        <span class="job-meta weekly">@chore.WeeklyApprovedCount/@chore.WeeklyTargetCount this week</span>
-                    }
-                    else if (!chore.IsDailyChore)
-                    {
-                        <span class="job-meta">@chore.ScheduleDescription</span>
-                    }
-                    @if (string.IsNullOrEmpty(SelectedUserId) && !string.IsNullOrEmpty(chore.AssignedUserName))
-                    {
-                        <span class="job-assignee">@chore.AssignedUserName</span>
-                    }
-                </div>
-            </div>
 
-            <!-- Day Cells -->
-            @foreach (var cell in chore.Cells)
-            {
-                var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
-                var isUpdating = UpdatingCellKey == cellKey;
-
-                <div class="day-cell @GetCellClasses(cell)"
-                     @onclick="() => OnCellClick.InvokeAsync((chore, cell))"
-                     title="@GetCellTooltip(chore, cell)"
-                     @key="cellKey">
-                    @if (isUpdating)
-                    {
-                        <span class="cell-spinner"></span>
-                    }
-                    else
-                    {
-                        <span class="cell-indicator">
-                            @if (cell.IsScheduled)
-                            {
-                                @if (cell.HasOverride)
-                                {
-                                    <span class="indicator override"><IconTile IconName="zap" Mono="true" Size="14" /></span>
-                                }
-                                else
-                                {
-                                    @* Day cells show an 11px dot in the chore's slot hue, not the icon (README planner rule) *@
-                                    <span class="indicator scheduled scheduled-dot" style="--dot-hue:var(--tile-@(chore.TileSlot is >= 1 and <= 5 ? chore.TileSlot : 1)-a);"></span>
-                                }
-                            }
-                            else if (cell.Status == ChoreCellStatus.Available)
-                            {
-                                <span class="indicator available">○</span>
-                            }
-                            else if (cell.HasOverride && cell.OverrideType == ScheduleOverrideType.Remove)
-                            {
-                                <span class="indicator removed">✕</span>
-                            }
-                            else
-                            {
-                                <span class="indicator empty"></span>
-                            }
-                        </span>
-                    }
-                </div>
-            }
-
-            <!-- Wage -->
-            <div class="wage-cell">
-                <span class="wage-amount">$@chore.Value.ToString("F2")</span>
-                @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency && chore.WeeklyTargetCount > 1)
+            <!-- Card header: tap = expand inline settings (the usual schedule) -->
+            <div class="wage-card-header" @onclick="() => OnToggleExpand.InvokeAsync(chore)">
+                @if (EnableReorder)
                 {
-                    <span class="wage-multiplier">×@chore.WeeklyTargetCount</span>
+                    <span class="card-grip" title="Drag to reorder">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+                    </span>
                 }
-            </div>
-        </div>
-    }
-</div>
-
-<!-- Mobile card view: visual summary only (Phase 1). Tapping a card opens the
-     existing Edit Task modal; individual week-cells are not yet tappable. -->
-<div class="wage-cards">
-    @foreach (var chore in EarningChores)
-    {
-        <div class="wage-card @(!chore.IsActive ? "inactive" : "")"
-             @key="chore.ChoreDefinitionId"
-             @onclick="() => OnEditChore.InvokeAsync(chore)">
-
-            <div class="wage-card-header">
                 <IconTile IconName="@chore.LucideIconName" Slot="@chore.TileSlot" Size="30" />
                 <div class="wage-card-title">
                     <span class="wage-card-name">@chore.ChoreName</span>
-                    <span class="wage-card-subtitle">@GetScheduleSummary(chore)</span>
+                    <span class="wage-card-subtitle">
+                        @(chore.ScheduleType == ChoreScheduleType.WeeklyFrequency
+                            ? $"{chore.WeeklyApprovedCount} of {chore.WeeklyTargetCount} this week · any day"
+                            : GetScheduleSummary(chore))
+                    </span>
                 </div>
                 <div class="wage-card-value">
                     @if (chore.IsEarningChore)
                     {
                         <span class="wage-card-pay">$@chore.Value.ToString("F2")</span>
                     }
-                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                    @if (chore.ScheduleType == ChoreScheduleType.WeeklyFrequency && chore.WeeklyTargetCount > 1)
                     {
-                        <span class="wage-card-goal">@chore.WeeklyTargetCount / wk</span>
+                        <span class="wage-card-goal">×@chore.WeeklyTargetCount</span>
                     }
                 </div>
+                <span class="row-chevron" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                </span>
             </div>
 
+            <!-- 7 tappable day-toggles: 34px drawn, 44px hit area (5px invisible padding) -->
             <div class="week-strip">
                 @for (int i = 0; i < chore.Cells.Count; i++)
                 {
                     var cell = chore.Cells[i];
-                    var isWeeklyGoal = chore.ScheduleType == ChoreScheduleType.WeeklyFrequency;
+                    var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
+                    var isUpdating = UpdatingCellKey == cellKey;
+                    var state = GetCellState(chore, cell);
+                    var letter = DayLetters[i];
 
-                    <div class="week-cell @(isWeeklyGoal ? "eligible" : (cell.IsScheduled ? "filled" : "empty"))"
-                         data-day-index="@i">
-                        <span class="week-cell-label">@DayLetters[i]</span>
-                    </div>
+                    <button type="button"
+                            class="m-cell-hit @(cell.IsPast ? "past" : "")"
+                            disabled="@cell.IsPast"
+                            title="@GetCellTooltip(cell, state)"
+                            @onclick="() => HandleCellTap(chore, cell)"
+                            @key="cellKey">
+                        <span class="m-cell @state @(cell.IsToday ? "today" : "") @(isUpdating ? "saving" : "")"
+                              style="--dot-hue:var(--tile-@(SafeSlot(chore))-a);">
+                            @if (isUpdating)
+                            {
+                                <svg class="cell-arc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 1-9 9"/></svg>
+                            }
+                            else if (state == "removed")
+                            {
+                                <span class="m-x">✕</span>
+                            }
+                            else
+                            {
+                                @letter
+                                @if (state == "added")
+                                {
+                                    <span class="cell-badge">⚡</span>
+                                }
+                            }
+                        </span>
+                    </button>
                 }
             </div>
+
+            @if (isExpanded)
+            {
+                @SettingsPanel(chore)
+            }
         </div>
     }
 </div>
@@ -171,38 +229,184 @@
     [Parameter] public string? UpdatingCellKey { get; set; }
     [Parameter] public EventCallback<ChorePlannerRow> OnEditChore { get; set; }
     [Parameter] public EventCallback<(ChorePlannerRow Chore, ChorePlannerCell Cell)> OnCellClick { get; set; }
-    
+
     /// <summary>
-    /// Enable drag-and-drop reordering. When true, shows drag handles.
+    /// Enable drag-and-drop reordering. When true, shows the grip rail.
     /// </summary>
     [Parameter] public bool EnableReorder { get; set; } = true;
-    
+
     /// <summary>
     /// Called when chores are reordered via drag-and-drop.
     /// Returns list of (ChoreId, NewSortOrder) tuples.
     /// </summary>
     [Parameter] public EventCallback<List<(int ChoreId, int SortOrder)>> OnReorder { get; set; }
 
+    /// <summary>Chore whose inline settings panel is currently expanded (null = none).</summary>
+    [Parameter] public int? ExpandedChoreId { get; set; }
+
+    /// <summary>Full details for the expanded chore (loaded by the parent on expand).</summary>
+    [Parameter] public ChoreDefinitionDto? ExpandedChoreDetails { get; set; }
+
+    /// <summary>Row/card header click: toggle the inline settings panel.</summary>
+    [Parameter] public EventCallback<ChorePlannerRow> OnToggleExpand { get; set; }
+
+    /// <summary>Instant-save from the inline panel (pay / usual days / auto-approve / weekly goal).</summary>
+    [Parameter] public EventCallback<ChoreDefinitionDto> OnQuickUpdate { get; set; }
+
     private ChorePlannerRow? _draggedChore;
     private ChorePlannerRow? _dropTargetChore;
 
-    private string GetCellClasses(ChorePlannerCell cell)
+    private static readonly string[] DayLetters = ["S", "M", "T", "W", "T", "F", "S"];
+
+    private static readonly DaysOfWeek[] DayFlags =
+    [
+        DaysOfWeek.Sunday, DaysOfWeek.Monday, DaysOfWeek.Tuesday, DaysOfWeek.Wednesday,
+        DaysOfWeek.Thursday, DaysOfWeek.Friday, DaysOfWeek.Saturday
+    ];
+
+    private static int SafeSlot(ChorePlannerRow chore) => chore.TileSlot is >= 1 and <= 5 ? chore.TileSlot : 1;
+
+    /// <summary>
+    /// Maps a cell to its §13 state: usual / added / removed / eligible (weekly ×N) / open.
+    /// today / past / saving are orthogonal modifiers handled in markup.
+    /// </summary>
+    private static string GetCellState(ChorePlannerRow chore, ChorePlannerCell cell)
     {
-        var classes = new List<string>();
-        if (cell.IsToday) classes.Add("today");
-        if (cell.IsPast) classes.Add("past");
-        if (cell.HasOverride) classes.Add("override");
-        if (cell.IsScheduled) classes.Add("scheduled");
-        else if (cell.Status == ChoreCellStatus.Available) classes.Add("available");
-        else classes.Add("empty");
-        return string.Join(" ", classes);
+        if (cell.IsScheduled)
+        {
+            return cell.HasOverride ? "added" : "usual";
+        }
+        if (cell.HasOverride && cell.OverrideType == ScheduleOverrideType.Remove)
+        {
+            return "removed";
+        }
+        return chore.ScheduleType == ChoreScheduleType.WeeklyFrequency ? "eligible" : "open";
     }
 
-    private string GetCellTooltip(ChorePlannerRow chore, ChorePlannerCell cell)
+    /// <summary>
+    /// Tooltip names the exact action. Past cells are read-only: no tooltip, no action (§13 "Past").
+    /// </summary>
+    private static string? GetCellTooltip(ChorePlannerCell cell, string state)
     {
-        var action = cell.IsScheduled ? "Remove from" : "Add to";
-        return $"{cell.Date:dddd, MMM d} — Click to {action.ToLower()} this day";
+        if (cell.IsPast) return null;
+
+        var day = cell.Date.ToString("ddd, MMM d");
+        return state switch
+        {
+            "usual" => $"{day} — skip just this week",
+            "added" => $"{day} — un-add (back to an open day)",
+            "removed" => $"{day} — restore the usual day",
+            _ => $"{day} — add just this week"
+        };
     }
+
+    private async Task HandleCellTap(ChorePlannerRow chore, ChorePlannerCell cell)
+    {
+        // Past columns are read-only; history fixes go through Time Machine.
+        if (cell.IsPast) return;
+
+        // Ignore taps while this cell's save is in flight.
+        var cellKey = $"{chore.ChoreDefinitionId}_{cell.Date:yyyyMMdd}";
+        if (UpdatingCellKey == cellKey) return;
+
+        await OnCellClick.InvokeAsync((chore, cell));
+    }
+
+    /* ---- Inline settings panel (shared by desktop row + mobile card) ---- */
+
+    private RenderFragment SettingsPanel(ChorePlannerRow chore)
+    {
+        if (ExpandedChoreDetails is null || ExpandedChoreDetails.Id != chore.ChoreDefinitionId)
+        {
+            return @<div class="row-settings loading"><span class="settings-spinner" aria-label="Loading settings"></span></div>;
+        }
+
+        var dto = ExpandedChoreDetails;
+        return
+            @<div class="row-settings">
+                <div class="settings-field">
+                    <span class="settings-label">Pay</span>
+                    <div class="pay-stepper">
+                        <button type="button" class="step-btn" aria-label="Decrease pay" @onclick="() => StepPayAsync(-0.25m)">−</button>
+                        <span class="pay-value">$@dto.EarnValue.ToString("F2")</span>
+                        <button type="button" class="step-btn" aria-label="Increase pay" @onclick="() => StepPayAsync(0.25m)">+</button>
+                    </div>
+                </div>
+                @if (dto.ScheduleType == ChoreScheduleType.WeeklyFrequency)
+                {
+                    <div class="settings-field">
+                        <span class="settings-label">Times per week</span>
+                        <div class="pay-stepper">
+                            <button type="button" class="step-btn" aria-label="Fewer times per week" @onclick="() => StepWeeklyTargetAsync(-1)">−</button>
+                            <span class="pay-value target">×@dto.WeeklyTargetCount</span>
+                            <button type="button" class="step-btn" aria-label="More times per week" @onclick="() => StepWeeklyTargetAsync(1)">+</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="settings-field">
+                        <span class="settings-label">Usual days</span>
+                        <div class="day-chips">
+                            @for (int i = 0; i < 7; i++)
+                            {
+                                var idx = i;
+                                var on = dto.ActiveDays.HasFlag(DayFlags[idx]);
+                                <button type="button" class="day-chip @(on ? "on" : "")"
+                                        aria-pressed="@(on ? "true" : "false")"
+                                        @onclick="() => ToggleUsualDayAsync(DayFlags[idx])">@DayLetters[idx]</button>
+                            }
+                        </div>
+                    </div>
+                }
+                <div class="settings-field">
+                    <span class="settings-label">Auto-approve</span>
+                    <button type="button" class="aa-toggle @(dto.AutoApprove ? "on" : "")"
+                            role="switch" aria-checked="@(dto.AutoApprove ? "true" : "false")"
+                            @onclick="ToggleAutoApproveAsync"><span class="aa-knob"></span></button>
+                </div>
+                <div class="settings-side">
+                    <span class="settings-note">Changes save instantly</span>
+                    <button type="button" class="all-settings-link" @onclick="() => OnEditChore.InvokeAsync(chore)">All settings →</button>
+                </div>
+            </div>;
+    }
+
+    private async Task StepPayAsync(decimal delta)
+    {
+        if (ExpandedChoreDetails is null) return;
+        // Floor at $0.25 — at $0 the chore would stop being an earning chore and vanish
+        // from the Tasks tab. Zeroing pay is an "All settings →" (modal) decision.
+        var next = Math.Max(0.25m, ExpandedChoreDetails.EarnValue + delta);
+        if (next == ExpandedChoreDetails.EarnValue) return;
+        ExpandedChoreDetails.EarnValue = next;
+        await OnQuickUpdate.InvokeAsync(ExpandedChoreDetails);
+    }
+
+    private async Task StepWeeklyTargetAsync(int delta)
+    {
+        if (ExpandedChoreDetails is null) return;
+        var next = Math.Clamp(ExpandedChoreDetails.WeeklyTargetCount + delta, 1, 7);
+        if (next == ExpandedChoreDetails.WeeklyTargetCount) return;
+        ExpandedChoreDetails.WeeklyTargetCount = next;
+        await OnQuickUpdate.InvokeAsync(ExpandedChoreDetails);
+    }
+
+    private async Task ToggleUsualDayAsync(DaysOfWeek flag)
+    {
+        if (ExpandedChoreDetails is null) return;
+        ExpandedChoreDetails.ActiveDays ^= flag;
+        await OnQuickUpdate.InvokeAsync(ExpandedChoreDetails);
+    }
+
+    private async Task ToggleAutoApproveAsync()
+    {
+        if (ExpandedChoreDetails is null) return;
+        ExpandedChoreDetails.AutoApprove = !ExpandedChoreDetails.AutoApprove;
+        await OnQuickUpdate.InvokeAsync(ExpandedChoreDetails);
+    }
+
+    /* ---- Drag reorder (existing machinery, #13b visuals) ---- */
 
     private void HandleDragStart(ChorePlannerRow chore)
     {
@@ -232,9 +436,9 @@
 
         // Calculate new sort orders
         var updates = CalculateNewSortOrders(_draggedChore, targetChore);
-        
+
         HandleDragEnd();
-        
+
         if (updates.Count > 0)
         {
             await OnReorder.InvokeAsync(updates);
@@ -244,11 +448,11 @@
     private List<(int ChoreId, int SortOrder)> CalculateNewSortOrders(ChorePlannerRow draggedChore, ChorePlannerRow targetChore)
     {
         var updates = new List<(int ChoreId, int SortOrder)>();
-        
+
         var choreList = EarningChores.ToList();
         var draggedIndex = choreList.FindIndex(c => c.ChoreDefinitionId == draggedChore.ChoreDefinitionId);
         var targetIndex = choreList.FindIndex(c => c.ChoreDefinitionId == targetChore.ChoreDefinitionId);
-        
+
         if (draggedIndex == -1 || targetIndex == -1 || draggedIndex == targetIndex)
             return updates;
 
@@ -265,8 +469,6 @@
 
         return updates;
     }
-
-    private static readonly string[] DayLetters = ["S", "M", "T", "W", "T", "F", "S"];
 
     private static string GetScheduleSummary(ChorePlannerRow chore)
     {

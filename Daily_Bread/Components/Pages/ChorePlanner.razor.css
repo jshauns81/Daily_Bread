@@ -1,29 +1,21 @@
 /* ============================================
-   LABOR PLANNER - CHORE PLANNER PAGE SHELL
-   Container, Header, Navigation, Summary, Toasts
+   PLANNER PAGE SHELL — design #3a (desktop) / #3b (mobile)
+   Header (loaf mark + week pill + segmented tabs + Add),
+   footer (weekly potential · overrides · hint), toasts.
    ============================================ */
 
-/* ===========================================
-   CSS CUSTOM PROPERTIES
-   =========================================== */
-
 .labor-planner {
-    --board-bg: var(--ds-bg-elevated);
-    --board-surface: var(--ds-bg-hover);
-    --board-border: var(--ds-bg-muted);
-    --board-text: var(--ds-text-primary);
-    --board-muted: var(--ds-text-muted);
-    --board-accent: var(--ds-accent-primary);
-    --board-success: var(--ds-semantic-success);
-    --board-warning: var(--ds-semantic-highlight);
-    --board-danger: var(--ds-semantic-error);
-    --board-info: var(--ds-accent-cyan);
-    
-    --cell-size: 52px;
-    --cell-radius: 12px;
-    --card-radius: 16px;
-    --transition-smooth: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    
+    /* Legacy aliases kept for shared loading/empty/override rules below. */
+    --board-bg: var(--db-bg);
+    --board-surface: var(--db-bg2);
+    --board-border: var(--db-border);
+    --board-text: var(--db-text);
+    --board-muted: var(--db-text3);
+    --board-accent: var(--db-accent);
+    --board-success: var(--db-money);
+    --board-danger: var(--db-risk);
+    --board-info: var(--ds-accent-text);
+
     max-width: 1100px;
     margin: 0 auto;
     padding: var(--ds-space-4);
@@ -34,236 +26,188 @@
    =========================================== */
 
 .board-header {
-    margin-bottom: var(--ds-space-6);
+    margin-bottom: var(--ds-space-4);
 }
 
 .header-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--ds-space-4);
-    margin-bottom: var(--ds-space-4);
+    gap: var(--ds-space-3);
+    flex-wrap: wrap;
 }
 
-.header-left {
+.header-brand {
     display: flex;
     align-items: center;
-    gap: var(--ds-space-6);
+    gap: var(--ds-space-4);
 }
 
 .board-title {
     display: flex;
     align-items: center;
-    gap: var(--ds-space-2);
+    gap: 12px;
     margin: 0;
-    font-size: 1.75rem;
+    font-size: 22px;
     font-weight: 700;
-    color: var(--board-text);
+    letter-spacing: -.4px;
+    color: var(--db-text);
 }
 
-.title-icon {
-    font-size: 1.5rem;
+.header-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
+/* Week nav pill */
+.week-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: 10px;
+    padding: 6px 10px;
+}
+
+.week-pill .nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 4px;
+    margin: -4px;
+    color: var(--db-text2);
+    cursor: pointer;
+    transition: color var(--ds-transition);
+}
+
+.week-pill .nav-btn:hover:not(:disabled) {
+    color: var(--db-text);
+}
+
+.week-pill .nav-btn:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+.week-pill .week-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--db-text);
+    white-space: nowrap;
+}
+
+.today-link {
+    border: none;
+    background: color-mix(in srgb, var(--db-accent) 14%, transparent);
+    color: var(--ds-accent-text);
+    border-radius: 99px;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 3px 9px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color var(--ds-transition);
+}
+
+.today-link:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--db-accent) 22%, transparent);
+}
+
+/* Segmented Tasks/Routines control */
+.seg-control {
+    display: flex;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: 10px;
+    padding: 3px;
+}
+
+.seg-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    color: var(--db-text2);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color var(--ds-transition), color var(--ds-transition);
+}
+
+.seg-btn:hover:not(.active) {
+    color: var(--db-text);
+}
+
+.seg-btn.active {
+    background: var(--db-accent);
+    color: var(--db-on-accent);
+}
+
+.seg-count {
+    font-size: 11px;
+    font-weight: 700;
+    opacity: .85;
+}
+
+/* + Add */
+.add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: var(--db-accent);
+    color: var(--db-on-accent);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter var(--ds-transition), box-shadow var(--ds-transition);
+}
+
+.add-btn:hover {
+    filter: brightness(1.06);
+    box-shadow: var(--ds-glow-accent);
+}
+
+/* Child selector (renders only with 2+ kids) */
 .child-selector {
     position: relative;
 }
 
 .child-select {
     appearance: none;
-    background: var(--board-surface);
-    border: 1px solid var(--board-border);
-    border-radius: var(--ds-radius-md);
-    color: var(--board-text);
-    padding: 0.5rem 2rem 0.5rem 1rem;
-    font-size: 0.9rem;
-    font-weight: 500;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: 10px;
+    color: var(--db-text);
+    padding: 6px 28px 6px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition-smooth);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23D8DEE9' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    transition: border-color var(--ds-transition);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236F6690' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 0.75rem center;
+    background-position: right 10px center;
 }
 
 .child-select:hover,
 .child-select:focus {
-    border-color: var(--board-accent);
+    border-color: var(--db-accent);
     outline: none;
-}
-
-.header-actions {
-    display: flex;
-    gap: var(--ds-space-2);
-}
-
-.action-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-1);
-    padding: 0.6rem 1rem;
-    border: none;
-    border-radius: var(--ds-radius-md);
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-smooth);
-}
-
-.print-btn {
-    background: var(--board-surface);
-    color: var(--board-muted);
-}
-
-.print-btn:hover {
-    background: var(--board-border);
-    color: var(--board-text);
-}
-
-.add-btn {
-    background: linear-gradient(135deg, var(--board-accent), var(--ds-accent-blue));
-    color: white;
-    box-shadow: 0 4px 12px rgba(94, 129, 172, 0.3);
-}
-
-.add-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(94, 129, 172, 0.4);
-}
-
-/* ===========================================
-   WEEK NAVIGATION
-   =========================================== */
-
-.week-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--ds-space-4);
-    padding: var(--ds-space-4);
-    background: var(--board-surface);
-    border-radius: var(--card-radius);
-    margin-bottom: var(--ds-space-4);
-}
-
-.nav-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 50%;
-    background: var(--board-bg);
-    color: var(--board-muted);
-    cursor: pointer;
-    transition: all var(--transition-smooth);
-}
-
-.nav-btn:hover:not(:disabled) {
-    background: var(--board-accent);
-    color: white;
-    transform: scale(1.1);
-}
-
-.nav-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.week-display {
-    text-align: center;
-    min-width: 200px;
-}
-
-.week-label {
-    display: block;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--board-text);
-}
-
-.today-link {
-    display: inline-block;
-    margin-top: 4px;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--board-accent);
-    font-size: 0.8rem;
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-.today-link:hover {
-    color: var(--board-info);
-}
-
-/* ===========================================
-   TAB BAR
-   =========================================== */
-
-.tab-bar {
-    display: flex;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-1);
-    background: var(--board-surface);
-    border-radius: var(--card-radius);
-}
-
-.tab-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-4);
-    border: none;
-    border-radius: calc(var(--card-radius) - 4px);
-    background: transparent;
-    color: var(--board-muted);
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-smooth);
-}
-
-.tab-btn:hover:not(.active) {
-    background: var(--board-bg);
-    color: var(--board-text);
-}
-
-.tab-btn.active {
-    background: linear-gradient(135deg, var(--board-accent), var(--ds-accent-blue));
-    color: white;
-    box-shadow: 0 4px 12px rgba(94, 129, 172, 0.25);
-}
-
-.tab-icon {
-    font-size: 1.2rem;
-}
-
-.tab-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 6px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.15);
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.tab-btn:not(.active) .tab-count {
-    background: var(--board-bg);
 }
 
 /* ===========================================
    ROUTINES FILTER BAR
-   Slim toolbar strip above the routines table -
-   not a table column, just a quiet list filter.
    =========================================== */
 
 .routines-filter-bar {
@@ -309,6 +253,7 @@
     font-size: 4rem;
     margin-bottom: var(--ds-space-4);
     opacity: 0.7;
+    color: var(--board-muted);
 }
 
 .empty-state h3 {
@@ -325,81 +270,109 @@
     display: inline-flex;
     align-items: center;
     gap: var(--ds-space-2);
-    padding: var(--ds-space-4) var(--ds-space-6);
+    padding: 10px 18px;
     border: none;
-    border-radius: var(--ds-radius-md);
-    background: linear-gradient(135deg, var(--board-accent), var(--ds-accent-blue));
-    color: white;
-    font-size: 1rem;
-    font-weight: 500;
+    border-radius: 10px;
+    background: var(--db-accent);
+    color: var(--db-on-accent);
+    font-size: 0.95rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition-smooth);
+    transition: filter var(--ds-transition), box-shadow var(--ds-transition);
 }
 
 .primary-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(94, 129, 172, 0.4);
+    filter: brightness(1.06);
+    box-shadow: var(--ds-glow-accent);
 }
 
 /* ===========================================
-   WEEKLY SUMMARY
+   FOOTER — weekly potential · overrides · hint (no legend)
    =========================================== */
 
-.weekly-summary {
+.planner-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--ds-space-4);
-    margin-top: var(--ds-space-6);
-    padding: var(--ds-space-6);
-    background: linear-gradient(135deg, rgba(163, 190, 140, 0.1), rgba(163, 190, 140, 0.05));
-    border: 1px solid rgba(163, 190, 140, 0.2);
-    border-radius: var(--card-radius);
+    gap: var(--ds-space-3);
+    flex-wrap: wrap;
+    margin-top: var(--ds-space-4);
 }
 
-.summary-card {
-    text-align: center;
-}
-
-.summary-card .summary-label {
-    display: block;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--board-muted);
-    margin-bottom: var(--ds-space-1);
-}
-
-.summary-card .summary-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--board-success);
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-}
-
-.overrides-toggle {
+.pf-left {
     display: flex;
     align-items: center;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-2) var(--ds-space-4);
-    border: 1px solid var(--board-border);
-    border-radius: var(--ds-radius-md);
-    background: var(--board-surface);
-    color: var(--board-info);
-    font-size: 0.85rem;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.pf-potential {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.pf-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--db-text3);
+}
+
+.pf-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--db-money);
+}
+
+.pf-overrides {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--db-risk);
     cursor: pointer;
-    transition: all var(--transition-smooth);
 }
 
-.overrides-toggle:hover {
-    background: var(--board-bg);
+.pf-overrides .bi {
+    font-size: 10px;
+    color: var(--db-text3);
 }
 
+.pf-zap {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--db-risk);
+    color: var(--db-bg);
+    font-size: 8.5px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pf-hint {
+    font-size: 11px;
+    color: var(--db-text3);
+}
+
+.pf-hint-mobile {
+    display: none;
+}
+
+/* Overrides detail list */
 .overrides-list {
-    margin-top: var(--ds-space-4);
-    padding: var(--ds-space-4);
-    background: var(--board-surface);
-    border-radius: var(--ds-radius-md);
+    margin-top: var(--ds-space-3);
+    padding: var(--ds-space-3) var(--ds-space-4);
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: 12px;
 }
 
 .override-item {
@@ -408,7 +381,7 @@
     gap: var(--ds-space-2);
     padding: var(--ds-space-2) 0;
     font-size: 0.85rem;
-    border-bottom: 1px solid var(--board-border);
+    border-bottom: 1px solid var(--ds-divider);
 }
 
 .override-item:last-child {
@@ -416,67 +389,34 @@
 }
 
 .override-icon {
-    color: var(--board-info);
+    color: var(--db-risk);
+    display: flex;
 }
 
 .override-chore {
-    font-weight: 500;
-    color: var(--board-text);
+    font-weight: 600;
+    color: var(--db-text);
 }
 
 .override-action {
-    color: var(--board-muted);
+    color: var(--db-text3);
 }
 
 .override-action.add {
-    color: var(--board-success);
+    color: var(--db-risk);
 }
 
 .override-action.remove {
-    color: var(--board-danger);
+    color: var(--db-text2);
 }
 
 .override-date {
     margin-left: auto;
-    color: var(--board-muted);
+    color: var(--db-text3);
 }
 
 /* ===========================================
-   LEGEND
-   =========================================== */
-
-.legend {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: var(--ds-space-4);
-    margin-top: var(--ds-space-6);
-    padding: var(--ds-space-4);
-    font-size: 0.8rem;
-    color: var(--board-muted);
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-1);
-}
-
-.legend-item .indicator {
-    font-size: 0.9rem;
-}
-
-.legend-tip {
-    flex-basis: 100%;
-    text-align: center;
-    margin-top: var(--ds-space-1);
-    font-size: 0.75rem;
-    opacity: 0.8;
-}
-
-/* ===========================================
-   TOAST MESSAGES
+   TOAST MESSAGES (existing pattern, retokened)
    =========================================== */
 
 .toast-message {
@@ -487,10 +427,13 @@
     display: flex;
     align-items: center;
     gap: var(--ds-space-2);
-    padding: var(--ds-space-4) var(--ds-space-6);
-    border-radius: var(--ds-radius-md);
+    padding: var(--ds-space-3) var(--ds-space-5);
+    border-radius: 12px;
     font-size: 0.9rem;
     font-weight: 500;
+    background: var(--ds-bg-selected);
+    color: var(--db-text);
+    border: 1px solid var(--db-border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     animation: slideUp 0.3s ease-out;
@@ -508,13 +451,19 @@
 }
 
 .toast-message.success {
-    background: var(--board-success);
-    color: var(--ds-bg-base);
+    border-color: color-mix(in srgb, var(--db-money) 35%, transparent);
+}
+
+.toast-message.success .bi {
+    color: var(--db-money);
 }
 
 .toast-message.error {
-    background: var(--board-danger);
-    color: white;
+    border-color: color-mix(in srgb, var(--db-risk) 40%, transparent);
+}
+
+.toast-message.error .bi {
+    color: var(--db-risk);
 }
 
 .toast-close {
@@ -530,89 +479,6 @@
 
 .toast-close:hover {
     opacity: 1;
-}
-
-/* ===========================================
-   MODAL
-   =========================================== */
-
-.modal-backdrop {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    z-index: 9000;
-    padding: var(--ds-space-4);
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    top: 0;
-    left: 0;
-}
-
-.modal-dialog {
-    width: 100%;
-    max-width: 600px;
-    max-height: 90vh;
-    background: var(--board-bg);
-    border-radius: var(--card-radius);
-    overflow: hidden;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
-    animation: modalIn 0.3s ease-out;
-}
-
-@keyframes modalIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--ds-space-6);
-    background: var(--board-surface);
-    border-bottom: 1px solid var(--board-border);
-}
-
-.modal-header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--board-text);
-}
-
-.modal-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: var(--board-muted);
-    cursor: pointer;
-    transition: all var(--transition-smooth);
-}
-
-.modal-close:hover {
-    background: var(--board-border);
-    color: var(--board-text);
-}
-
-.modal-body {
-    padding: var(--ds-space-6);
-    max-height: calc(90vh - 120px);
-    overflow-y: auto;
 }
 
 /* ===========================================
@@ -652,8 +518,7 @@
         padding: 0;
     }
 
-    .toast-message,
-    .modal-backdrop {
+    .toast-message {
         display: none !important;
     }
 }
@@ -669,67 +534,82 @@
 }
 
 /* ===========================================
-   RESPONSIVE - MOBILE
+   RESPONSIVE - MOBILE (#3b)
    =========================================== */
 
 @media (max-width: 768px) {
     .header-content {
-        flex-direction: column;
-        align-items: stretch;
         gap: var(--ds-space-2);
     }
-    
-    .header-left {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--ds-space-2);
-    }
-    
+
     .board-title {
-        font-size: 1.4rem;
+        font-size: 20px;
+        letter-spacing: -.3px;
     }
-    
+
+    .header-tools {
+        width: 100%;
+        gap: 8px;
+    }
+
+    .week-pill {
+        flex: 1;
+        justify-content: space-between;
+        order: 1;
+    }
+
+    .add-btn {
+        order: 2;
+        border-radius: 99px;
+        padding: 7px 14px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .add-btn .bi {
+        font-size: 11px;
+    }
+
+    .seg-control {
+        order: 3;
+        width: 100%;
+        border-radius: 12px;
+        padding: 4px;
+    }
+
+    .seg-btn {
+        flex: 1;
+        padding: 7px 0;
+        border-radius: 9px;
+        font-size: 12px;
+    }
+
     .child-select {
-        width: 100%;
+        max-width: 140px;
     }
-    
-    .header-actions {
-        justify-content: flex-end;
+
+    /* Footer becomes a card (#3b / #13c) */
+    .planner-footer {
+        background: var(--db-bg2);
+        border: 1px solid var(--db-border);
+        border-radius: 12px;
+        padding: 10px 14px;
     }
-    
-    .action-btn .btn-text {
+
+    .pf-value {
+        font-size: 13.5px;
+    }
+
+    .pf-hint {
+        font-size: 10.5px;
+    }
+
+    .pf-hint-desktop {
         display: none;
     }
-    
-    .tab-btn {
-        padding: var(--ds-space-2);
-    }
-    
-    .tab-label {
-        display: none;
-    }
-    
-    .tab-icon {
-        font-size: 1.4rem;
-    }
-    
-    .weekly-summary {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .overrides-toggle {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .legend {
-        padding: var(--ds-space-2);
-        font-size: 0.7rem;
-    }
-    
-    .legend-tip {
-        display: none;
+
+    .pf-hint-mobile {
+        display: block;
     }
 }
 
@@ -738,18 +618,6 @@
    =========================================== */
 
 @media (max-width: 480px) {
-    .labor-planner {
-        padding: var(--ds-space-1);
-    }
-    
-    .week-nav {
-        padding: var(--ds-space-2);
-    }
-    
-    .week-label {
-        font-size: 0.95rem;
-    }
-    
     .toast-message {
         left: var(--ds-space-2);
         right: var(--ds-space-2);

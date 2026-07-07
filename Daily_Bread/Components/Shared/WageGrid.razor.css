@@ -1,238 +1,197 @@
 /* ============================================
-   WAGE GRID COMPONENT STYLES
-   Grid display for earning chores in Labor Planner
+   PLANNER GRID — design #3a (desktop) / #3b + #13c (mobile cards)
+   Full cell state matrix per SCREENS_ADDENDUM §13.
+   All colors are theme tokens; the spec's rgba() values are the
+   Ultraviolet rendering of these color-mix() tints.
    ============================================ */
 
 /* ===========================================
-   DRAG HANDLE STYLES
-   =========================================== */
-
-.grid-header .drag-header {
-    width: 40px;
-    min-width: 40px;
-    position: sticky;
-    left: 0;
-    z-index: 6;
-    background: var(--ds-bg-elevated);
-}
-
-.drag-handle-cell {
-    width: 40px;
-    min-width: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: sticky;
-    left: 0;
-    z-index: 6;
-    background: var(--ds-bg-hover);
-}
-
-.drag-handle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    color: var(--ds-text-muted);
-    cursor: grab;
-    border-radius: var(--ds-radius-sm);
-    transition: all var(--ds-duration-fast) ease;
-}
-
-.drag-handle:hover {
-    color: var(--ds-text-secondary);
-    background: var(--ds-bg-hover);
-}
-
-.drag-handle:active {
-    cursor: grabbing;
-}
-
-.drag-handle .bi {
-    font-size: 1.1rem;
-}
-
-/* Dragging state */
-.chore-row.dragging {
-    opacity: 0.5;
-    background: var(--ds-bg-muted) !important;
-}
-
-/* Drop target indicator */
-.chore-row.drop-target {
-    border-top: 2px solid var(--ds-accent-cyan) !important;
-    position: relative;
-}
-
-.chore-row.drop-target::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -2px;
-    height: 2px;
-    background: var(--ds-accent-cyan);
-    box-shadow: 0 0 8px var(--ds-accent-cyan);
-    z-index: 10;
-}
-
-/* ===========================================
-   WAGE GRID
+   DESKTOP GRID CARD
    =========================================== */
 
 .wage-grid {
-    background: var(--ds-bg-hover);
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
     border-radius: 16px;
     overflow: hidden;
-    margin-top: var(--ds-space-6);
+    margin-top: var(--ds-space-5);
+}
+
+.grid-header,
+.chore-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 190px) repeat(7, 1fr) 84px;
+    gap: 0;
+    align-items: center;
+    padding: 9px 14px;
+}
+
+.has-grip .grid-header,
+.has-grip .chore-row {
+    grid-template-columns: 24px minmax(150px, 190px) repeat(7, 1fr) 84px;
 }
 
 .grid-header {
-    display: grid;
-    grid-template-columns: 40px minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
-    gap: 2px;
-    padding: var(--ds-space-2);
-    background: var(--ds-bg-elevated);
-    border-bottom: 2px solid var(--ds-bg-muted);
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--db-border);
 }
 
-/* When drag header is not present (EnableReorder=false) */
-.grid-header:not(:has(.drag-header)) {
-    grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
-}
-
-.header-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--ds-space-2);
-    font-weight: 600;
-    color: var(--ds-text-muted);
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.5px;
-}
-
-.job-header {
-    align-items: flex-start;
-    font-size: 0.75rem;
-}
-
-/* Sticky job column: stays put while day columns scroll underneath on mobile.
-   Left offset accounts for the 40px drag-handle column when present. */
 .job-header,
-.job-cell {
-    position: sticky;
-    left: 40px;
-    z-index: 5;
+.pay-header {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--db-text3);
 }
 
-.grid-header:not(:has(.drag-header)) .job-header,
-.chore-row:not(:has(.drag-handle-cell)) .job-cell {
-    left: 0;
-}
-
-.job-header {
-    background: var(--ds-bg-elevated);
-}
-
-.job-cell {
-    background: var(--ds-bg-hover);
-}
-
-.chore-row.dragging .job-cell {
-    background: var(--ds-bg-muted);
-}
-
-/* Right-edge shadow on the pinned column to signal it's layered above scrolling content */
-.job-header::after,
-.job-cell::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: -2px;
-    bottom: 0;
-    width: 8px;
-    box-shadow: 4px 0 6px -2px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
+.pay-header {
+    text-align: right;
 }
 
 .day-header {
-    min-height: 50px;
-    border-radius: var(--ds-radius-sm);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
 }
 
 .day-header .day-name {
-    font-size: 0.65rem;
-    margin-bottom: 2px;
+    display: block;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--db-text3);
 }
 
 .day-header .day-num {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--ds-text-primary);
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--db-text2);
+    margin-top: 1px;
 }
 
-.day-header.today {
-    background: linear-gradient(135deg, var(--ds-accent-primary), var(--ds-accent-blue));
-    color: white;
+/* Today column: accent day-name + glowing 4px dot under the date */
+.day-header.today .day-name {
+    color: var(--ds-accent-text);
 }
 
-.day-header.today .day-name,
 .day-header.today .day-num {
-    color: white;
+    color: var(--db-text);
+    font-weight: 700;
 }
 
+.day-header .today-dot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--db-accent);
+    box-shadow: 0 0 8px 2px color-mix(in srgb, var(--db-accent) 70%, transparent);
+    margin: 3px auto 0;
+}
+
+/* Past columns: whole column at 35% (§13 "Past") */
 .day-header.past {
-    opacity: 0.5;
-}
-
-.wage-header {
-    color: var(--ds-semantic-success);
+    opacity: .35;
 }
 
 /* ===========================================
-   CHORE ROWS
+   ROWS
    =========================================== */
 
-.chore-row {
-    display: grid;
-    grid-template-columns: 40px minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
-    gap: 2px;
-    padding: var(--ds-space-2);
-    border-bottom: 1px solid var(--ds-bg-muted);
-    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.row-block {
+    position: relative;
+    border-bottom: 1px solid var(--ds-divider);
 }
 
-/* When drag handle cell is not present (EnableReorder=false) */
-.chore-row:not(:has(.drag-handle-cell)) {
-    grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr);
-}
-
-.chore-row:last-child {
+.row-block:last-child {
     border-bottom: none;
 }
 
-.chore-row:hover {
-    background: rgba(136, 192, 208, 0.05);
+.row-block.expanded {
+    background: var(--ds-bg-selected);
 }
 
-/* Job Cell */
+.row-block.inactive {
+    opacity: .55;
+}
+
+.chore-row {
+    transition: background-color var(--ds-transition);
+}
+
+@media (hover: hover) {
+    .row-block:not(.expanded) .chore-row:hover {
+        background: color-mix(in srgb, var(--db-bg3) 45%, transparent);
+    }
+}
+
+/* Grip rail (always visible on desktop, 24px col) */
+.grip-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ds-text-faint);
+    cursor: grab;
+}
+
+.grip-cell:active {
+    cursor: grabbing;
+}
+
+@media (hover: hover) {
+    .grip-cell:hover {
+        color: var(--db-text3);
+    }
+}
+
+/* Lifted (dragged) row: selected bg + accent border + shadow (#13b) */
+.chore-row.dragging {
+    background: var(--ds-bg-selected);
+    outline: 1px solid color-mix(in srgb, var(--db-accent) 50%, transparent);
+    outline-offset: -1px;
+    border-radius: 12px;
+    box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .65);
+}
+
+.chore-row.dragging .grip-cell {
+    color: var(--ds-accent-text);
+}
+
+/* Drop slot: 2px accent line with glow */
+.row-block.drop-target::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    top: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--db-accent);
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--db-accent) 70%, transparent);
+    z-index: 5;
+}
+
+/* Job cell: click = expand inline settings */
 .job-cell {
     display: flex;
     align-items: center;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-2);
+    gap: 9px;
+    min-width: 0;
     cursor: pointer;
-    border-radius: var(--ds-radius-md);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.job-cell:hover {
-    background: var(--ds-bg-elevated);
+.row-chevron {
+    display: flex;
+    flex: none;
+    color: var(--db-text3);
+    transition: transform var(--ds-duration-fast) var(--ds-ease-out), color var(--ds-transition);
+}
+
+.row-block.expanded .row-chevron,
+.wage-card.expanded .row-chevron {
+    transform: rotate(90deg);
+    color: var(--ds-accent-text);
 }
 
 .job-details {
@@ -242,191 +201,434 @@
 }
 
 .job-name {
+    font-size: 12.5px;
     font-weight: 600;
-    color: var(--ds-text-primary);
-    font-size: 0.9rem;
+    color: var(--db-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .job-meta {
-    font-size: 0.75rem;
-    color: var(--ds-text-muted);
-}
-
-.job-meta.weekly {
-    color: var(--ds-semantic-success);
+    font-size: 10px;
+    color: var(--db-text3);
 }
 
 .job-assignee {
-    font-size: 0.7rem;
-    color: var(--ds-accent-cyan);
+    font-size: 10px;
+    color: var(--ds-accent-text);
     text-transform: capitalize;
 }
 
-/* Day Cells */
+/* ===========================================
+   DAY CELLS — the state matrix (§13a)
+   44×34, radius 9. States: usual / eligible / open / added / removed
+   + modifiers today / past / saving.
+   =========================================== */
+
 .day-cell {
+    width: 44px;
+    max-width: 100%;
+    height: 34px;
+    border-radius: 9px;
+    justify-self: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 52px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color var(--ds-transition), border-color var(--ds-transition),
+                box-shadow var(--ds-transition), opacity var(--ds-transition);
 }
 
-.day-cell:hover:not(.past) {
-    transform: scale(1.1);
-    z-index: 1;
+/* Usual day (recurring schedule) + weekly ×N eligible: accent tint + hue dot, 75% */
+.day-cell.usual,
+.day-cell.eligible {
+    background: color-mix(in srgb, var(--db-accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--db-accent) 35%, transparent);
+    opacity: .75;
 }
 
-.day-cell.today {
-    background: rgba(94, 129, 172, 0.15);
-    box-shadow: inset 0 0 0 2px var(--ds-accent-primary);
+/* Usual day · today: full opacity, stronger border + accent glow */
+.day-cell.usual.today,
+.day-cell.eligible.today {
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--db-accent) 50%, transparent);
+    box-shadow: 0 0 16px -4px color-mix(in srgb, var(--db-accent) 60%, transparent);
 }
 
-.day-cell.past {
-    opacity: 0.4;
-    cursor: not-allowed;
+/* Open day: dashed, tappable */
+.day-cell.open {
+    border: 1px dashed color-mix(in srgb, var(--db-text3) 42%, transparent);
 }
 
-.day-cell.scheduled {
-    background: rgba(163, 190, 140, 0.15);
+/* Added this week (override): risk tint + glow + ⚡ badge */
+.day-cell.added {
+    background: color-mix(in srgb, var(--db-risk) 16%, transparent);
+    border-color: color-mix(in srgb, var(--db-risk) 55%, transparent);
+    box-shadow: 0 0 16px -4px color-mix(in srgb, var(--db-risk) 60%, transparent);
 }
 
-.day-cell.override {
-    background: rgba(136, 192, 208, 0.15);
+/* Removed this week: bare ✕ in text-faint */
+.cell-x {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ds-text-faint);
+    line-height: 1;
 }
 
-.day-cell.available {
-    background: var(--ds-bg-elevated);
-}
-
-.day-cell.empty {
-    background: transparent;
-}
-
-/* Cell Indicators */
-.cell-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-}
-
-.cell-indicator .indicator {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Scheduled day cells show an 11px round dot in the chore's slot hue (--dot-hue is set
-   inline from --tile-N-a) — icons stay out of the 35-cell grid per the design README. */
-.cell-indicator .indicator.scheduled-dot {
-    display: inline-block;
+.cell-dot {
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    background: var(--dot-hue, var(--ds-accent-primary));
-    box-shadow: 0 0 4px color-mix(in srgb, var(--dot-hue, var(--ds-accent-primary)) 40%, transparent);
+    background: var(--dot-hue, var(--ds-accent-text));
 }
 
-.cell-indicator .indicator.available {
-    color: var(--ds-text-muted);
-    font-size: 0.8rem;
-}
-
-.cell-indicator .indicator.override {
-    color: var(--ds-accent-cyan);
-    filter: drop-shadow(0 0 4px rgba(136, 192, 208, 0.4));
-}
-
-.cell-indicator .indicator.removed {
-    color: var(--ds-semantic-error);
-    opacity: 0.6;
-    font-size: 0.9rem;
-}
-
-.cell-indicator .indicator.empty {
-    width: 8px;
-    height: 8px;
+.cell-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    background: var(--ds-bg-muted);
-    opacity: 0.3;
+    background: var(--db-risk);
+    color: var(--db-bg);
+    font-size: 8.5px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.cell-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--ds-bg-muted);
-    border-top-color: var(--ds-accent-primary);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+/* Past: read-only — no pointer, no hover, no tooltip (title omitted in markup) */
+.day-cell.past {
+    opacity: .35;
+    cursor: default;
+    pointer-events: none;
 }
 
-@keyframes spin {
+/* Saving: dimmed tint + rotating arc; taps ignored until it settles */
+.day-cell.saving {
+    background: color-mix(in srgb, var(--db-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-accent) 30%, transparent);
+    box-shadow: none;
+    opacity: 1;
+    cursor: progress;
+}
+
+.cell-arc {
+    width: 14px;
+    height: 14px;
+    color: var(--ds-accent-text);
+    animation: cell-arc-spin .7s linear infinite;
+}
+
+@keyframes cell-arc-spin {
     to { transform: rotate(360deg); }
 }
 
-/* Wage Cell */
+@media (prefers-reduced-motion: reduce) {
+    .cell-arc {
+        animation-duration: 1.6s;
+    }
+}
+
+/* Hover (web only): fill +1 step, border brightens — never scales (§13a) */
+@media (hover: hover) {
+    .day-cell.usual:not(.saving):hover,
+    .day-cell.eligible:not(.saving):hover {
+        background: color-mix(in srgb, var(--db-accent) 26%, transparent);
+        border-color: color-mix(in srgb, var(--db-accent) 65%, transparent);
+        opacity: 1;
+    }
+
+    .day-cell.usual:not(.saving):hover .cell-dot,
+    .day-cell.eligible:not(.saving):hover .cell-dot {
+        filter: brightness(1.15);
+    }
+
+    .day-cell.open:not(.saving):hover {
+        background: color-mix(in srgb, var(--db-accent) 8%, transparent);
+        border-color: color-mix(in srgb, var(--db-text3) 75%, transparent);
+    }
+
+    .day-cell.added:not(.saving):hover {
+        background: color-mix(in srgb, var(--db-risk) 26%, transparent);
+        border-color: color-mix(in srgb, var(--db-risk) 75%, transparent);
+    }
+
+    .day-cell.removed:not(.saving):hover .cell-x {
+        color: var(--db-text3);
+    }
+}
+
+/* Pay column */
 .wage-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    padding: var(--ds-space-2);
+    text-align: right;
 }
 
 .wage-amount {
-    font-size: 1rem;
+    display: block;
+    font-size: 13px;
     font-weight: 700;
-    color: var(--ds-semantic-success);
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    color: var(--db-money);
 }
 
 .wage-multiplier {
-    font-size: 0.7rem;
-    color: var(--ds-text-muted);
-    font-weight: 500;
+    display: block;
+    font-size: 10px;
+    color: var(--db-text3);
 }
 
 /* ===========================================
-   MOBILE CARD VIEW
-   Additive fork of the matrix above for narrow viewports.
-   Hidden on desktop; swapped in for .wage-grid at <=768px (see media query below).
-   No horizontal scroll anywhere in this section - week-strip cells are flex:1
-   so 7 of them always sum to exactly the card width.
+   INLINE SETTINGS PANEL (expanded row / card)
+   Inset panel, radius 12 — recurring schedule edits, instant save.
+   =========================================== */
+
+.row-settings-host {
+    padding: 0 14px 12px 32px;
+}
+
+.has-grip .row-settings-host {
+    padding-left: 56px;
+}
+
+.row-settings {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 20px;
+    padding: 12px 14px 14px;
+    background: var(--db-bg3);
+    border-radius: 12px;
+}
+
+.row-settings.loading {
+    justify-content: center;
+    min-height: 56px;
+}
+
+.settings-spinner {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2.5px solid color-mix(in srgb, var(--db-accent) 25%, transparent);
+    border-top-color: var(--ds-accent-text);
+    animation: cell-arc-spin .7s linear infinite;
+}
+
+.settings-label {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--db-text3);
+    margin-bottom: 6px;
+}
+
+.pay-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    border: none;
+    background: var(--db-bg2);
+    color: var(--db-text2);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color var(--ds-transition), background-color var(--ds-transition);
+}
+
+@media (hover: hover) {
+    .step-btn:hover {
+        color: var(--db-text);
+    }
+}
+
+.pay-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--db-money);
+    min-width: 48px;
+    text-align: center;
+}
+
+.pay-value.target {
+    color: var(--db-text);
+    min-width: 30px;
+}
+
+.day-chips {
+    display: flex;
+    gap: 5px;
+}
+
+.day-chip {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    border: none;
+    background: var(--db-bg2);
+    color: var(--db-text3);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--ds-transition), color var(--ds-transition);
+}
+
+.day-chip.on {
+    background: var(--db-accent);
+    color: var(--db-on-accent);
+    font-weight: 700;
+}
+
+@media (hover: hover) {
+    .day-chip:not(.on):hover {
+        color: var(--db-text);
+    }
+}
+
+/* Auto-approve: money-colored when on (approving grants money) */
+.aa-toggle {
+    width: 36px;
+    height: 20px;
+    border-radius: 99px;
+    border: none;
+    background: var(--db-bg2);
+    position: relative;
+    cursor: pointer;
+    transition: background-color var(--ds-transition);
+    padding: 0;
+}
+
+.aa-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--db-text3);
+    transition: left var(--ds-duration-fast) var(--ds-ease-out), background-color var(--ds-transition);
+}
+
+.aa-toggle.on {
+    background: var(--db-money);
+}
+
+.aa-toggle.on .aa-knob {
+    left: 18px;
+    background: var(--db-bg);
+}
+
+.settings-side {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.settings-note {
+    font-size: 11px;
+    color: var(--db-text3);
+}
+
+.all-settings-link {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ds-accent-text);
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .all-settings-link:hover {
+        color: var(--ds-accent-light);
+    }
+}
+
+/* ===========================================
+   MOBILE CARD VIEW (#3b / #13c)
+   Hidden on desktop; swaps in for .wage-grid at <=768px.
+   Cells draw 34px, hit areas 44px (5px invisible padding);
+   tap feedback = fill darkens 120ms, no scale. Nothing scrolls sideways.
    =========================================== */
 
 .wage-cards {
     display: none;
     flex-direction: column;
-    gap: var(--ds-space-3);
-    margin-top: var(--ds-space-6);
+    gap: 10px;
+    margin-top: var(--ds-space-4);
 }
 
 .wage-card {
-    background: var(--ds-bg-elevated);
-    border: 1px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-lg);
-    padding: var(--ds-space-3);
-    cursor: pointer;
-    transition: background-color var(--ds-duration-fast) ease;
-}
-
-.wage-card:hover {
-    background: var(--ds-bg-hover);
+    position: relative;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: 16px;
+    padding: 12px 14px;
+    transition: background-color var(--ds-transition), border-color var(--ds-transition);
 }
 
 .wage-card.inactive {
-    opacity: 0.5;
+    opacity: .55;
+}
+
+.wage-card.expanded {
+    background: var(--ds-bg-selected);
+    border-color: color-mix(in srgb, var(--db-accent) 40%, transparent);
+}
+
+.wage-card.dragging {
+    outline: 1px solid color-mix(in srgb, var(--db-accent) 50%, transparent);
+    outline-offset: -1px;
+    box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .65);
+    background: var(--ds-bg-selected);
+}
+
+.wage-card.drop-target::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    top: -6px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--db-accent);
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--db-accent) 70%, transparent);
 }
 
 .wage-card-header {
     display: flex;
-    align-items: flex-start;
-    gap: var(--ds-space-2);
-    margin-bottom: var(--ds-space-3);
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.card-grip {
+    display: flex;
+    color: var(--ds-text-faint);
+    flex: none;
+}
+
+.wage-card.dragging .card-grip {
+    color: var(--ds-accent-text);
 }
 
 .wage-card-title {
@@ -437,125 +639,162 @@
 }
 
 .wage-card-name {
+    font-size: 13px;
     font-weight: 600;
-    color: var(--ds-text-primary);
-    font-size: 1rem;
+    color: var(--db-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .wage-card-subtitle {
-    font-size: 0.8rem;
-    color: var(--ds-text-muted);
+    font-size: 10px;
+    color: var(--db-text3);
 }
 
 .wage-card-value {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
+    align-items: baseline;
+    gap: 4px;
     flex-shrink: 0;
 }
 
 .wage-card-pay {
+    font-size: 12.5px;
     font-weight: 700;
-    font-size: 1rem;
-    color: var(--ds-semantic-success);
-    font-family: var(--ds-font-mono);
+    color: var(--db-money);
 }
 
 .wage-card-goal {
-    font-size: 0.7rem;
+    font-size: 10px;
     font-weight: 500;
-    color: var(--ds-text-muted);
+    color: var(--db-text3);
 }
 
+/* Week strip: 7 tappable toggles, hit padding pulled out of the card gutters
+   so the drawn 34px cells align with the card padding. */
 .week-strip {
     display: flex;
-    gap: 4px;
+    justify-content: space-between;
+    margin: 0 -5px -5px;
 }
 
-.week-cell {
-    flex: 1;
+.m-cell-hit {
+    padding: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     display: flex;
-    flex-direction: column;
+}
+
+.m-cell-hit:disabled {
+    cursor: default;
+}
+
+/* Past: whole column read-only at 35% */
+.m-cell-hit.past {
+    opacity: .35;
+}
+
+.m-cell {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    min-height: var(--ds-touch-target);
-    border-radius: var(--ds-radius-sm);
+    position: relative;
+    border: 1px solid transparent;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--db-text3);
+    transition: background-color 120ms ease-out, border-color 120ms ease-out,
+                box-shadow 120ms ease-out;
 }
 
-.week-cell-label {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    color: var(--ds-text-muted);
+.m-cell.usual,
+.m-cell.eligible {
+    background: color-mix(in srgb, var(--db-accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--db-accent) 35%, transparent);
+    color: var(--ds-accent-text);
 }
 
-/* Fixed days, scheduled: solid info-token fill. */
-.week-cell.filled {
-    background: var(--ds-accent-primary);
+.m-cell.usual.today,
+.m-cell.eligible.today {
+    background: color-mix(in srgb, var(--db-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--db-accent) 60%, transparent);
+    box-shadow: var(--ds-glow-accent);
+    color: var(--ds-accent-light);
 }
 
-.week-cell.filled .week-cell-label {
-    color: var(--ds-on-accent);
-    font-weight: 500;
+.m-cell.open {
+    border: 1px dashed color-mix(in srgb, var(--db-text3) 42%, transparent);
+    font-weight: 600;
 }
 
-/* Fixed days, unscheduled: plain outline, tertiary (muted) tier. */
-.week-cell.empty {
-    background: transparent;
-    border: 1px solid var(--ds-bg-muted);
+.m-cell.added {
+    background: color-mix(in srgb, var(--db-risk) 18%, transparent);
+    border-color: color-mix(in srgb, var(--db-risk) 60%, transparent);
+    box-shadow: var(--ds-glow-risk);
+    color: var(--ds-risk-light);
 }
 
-/* Weekly goal: eligible any day, never filled solid - dashed outline signals
-   "not assigned to specific days" rather than "scheduled". No --ds-border-*
-   token exists in this codebase (confirmed gap - see WageGrid review notes),
-   so --ds-text-secondary stands in as the "secondary" tier border color. */
-.week-cell.eligible {
-    background: transparent;
-    border: 1px dashed var(--ds-text-secondary);
+.m-cell.removed .m-x,
+.m-cell .m-x {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ds-text-faint);
 }
 
-.week-cell.eligible .week-cell-label {
-    color: var(--ds-text-secondary);
+.m-cell .cell-badge {
+    width: 13px;
+    height: 13px;
+    font-size: 8px;
+}
+
+.m-cell.saving {
+    background: color-mix(in srgb, var(--db-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-accent) 30%, transparent);
+    box-shadow: none;
+}
+
+.m-cell .cell-arc {
+    width: 13px;
+    height: 13px;
+}
+
+/* Tap feedback: fill steps up 120ms, no scale (§13c) */
+.m-cell-hit:not(:disabled):active .m-cell.usual,
+.m-cell-hit:not(:disabled):active .m-cell.eligible {
+    background: color-mix(in srgb, var(--db-accent) 26%, transparent);
+}
+
+.m-cell-hit:not(:disabled):active .m-cell.open {
+    background: color-mix(in srgb, var(--db-accent) 10%, transparent);
+}
+
+.m-cell-hit:not(:disabled):active .m-cell.added {
+    background: color-mix(in srgb, var(--db-risk) 28%, transparent);
+}
+
+/* Expanded card hosts the same inline settings panel */
+.wage-card .row-settings {
+    margin-top: 12px;
+}
+
+.wage-card .settings-side {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
 }
 
 /* ===========================================
-   RESPONSIVE - TABLET
-   =========================================== */
-
-@media (max-width: 992px) {
-    .grid-header,
-    .chore-row {
-        grid-template-columns: 40px minmax(120px, 1.2fr) repeat(7, 1fr) minmax(60px, 0.6fr);
-    }
-    
-    .grid-header:not(:has(.drag-header)),
-    .chore-row:not(:has(.drag-handle-cell)) {
-        grid-template-columns: minmax(120px, 1.2fr) repeat(7, 1fr) minmax(60px, 0.6fr);
-    }
-    
-    .job-name {
-        font-size: 0.8rem;
-    }
-    
-    .cell-indicator {
-        font-size: 1rem;
-    }
-    
-    .day-cell {
-        min-height: 44px;
-    }
-}
-
-/* ===========================================
-   RESPONSIVE - MOBILE
+   RESPONSIVE SWAP
    =========================================== */
 
 @media (max-width: 768px) {
-    /* Mobile card fork: hide the matrix, show the card list instead. */
     .wage-grid {
         display: none;
     }
@@ -563,130 +802,52 @@
     .wage-cards {
         display: flex;
     }
+}
 
-    .grid-header,
-    .chore-row {
-        min-width: 640px;
-        grid-template-columns: 40px 100px repeat(7, 55px) 60px;
+/* Very narrow phones: shave the invisible hit padding so 7 cells still fit
+   portrait with zero sideways scroll. */
+@media (max-width: 350px) {
+    .m-cell-hit {
+        padding: 3px;
     }
-    
-    .grid-header:not(:has(.drag-header)),
-    .chore-row:not(:has(.drag-handle-cell)) {
-        min-width: 600px;
-        grid-template-columns: 100px repeat(7, 55px) 60px;
+
+    .week-strip {
+        margin: 0 -3px -3px;
     }
-    
-    .job-cell {
-        padding: var(--ds-space-1);
-    }
-    
-    .job-name {
-        font-size: 0.75rem;
-    }
-    
-    .job-meta,
-    .job-assignee {
-        display: none;
-    }
-    
-    .day-cell {
-        min-height: 40px;
-        border-radius: 8px;
-    }
-    
-    .day-header .day-num {
-        font-size: 0.95rem;
-    }
-    
-    /* Larger drag handle on mobile for touch targets */
-    .drag-handle {
-        width: 36px;
-        height: 36px;
-    }
-    
-    .drag-handle .bi {
-        font-size: 1.3rem;
+
+    .m-cell {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
     }
 }
 
 /* ===========================================
-   RESPONSIVE - SMALL MOBILE
-   =========================================== */
-
-@media (max-width: 480px) {
-    .grid-header,
-    .chore-row {
-        min-width: 560px;
-        grid-template-columns: 40px 85px repeat(7, 48px) 50px;
-    }
-    
-    .grid-header:not(:has(.drag-header)),
-    .chore-row:not(:has(.drag-handle-cell)) {
-        min-width: 520px;
-        grid-template-columns: 85px repeat(7, 48px) 50px;
-    }
-    
-    .job-emoji {
-        font-size: 1rem;
-    }
-    
-    .job-name {
-        font-size: 0.7rem;
-    }
-    
-    .day-cell {
-        min-height: 36px;
-    }
-    
-    .cell-indicator {
-        font-size: 0.9rem;
-    }
-    
-    .wage-amount {
-        font-size: 0.85rem;
-    }
-}
-
-/* ===========================================
-   TOUCH DEVICE OPTIMIZATIONS
-   =========================================== */
-
-@media (hover: none) and (pointer: coarse) {
-    .drag-handle {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .drag-handle .bi {
-        font-size: 1.4rem;
-    }
-    
-    /* Always show drag handle clearly on touch */
-    .drag-handle {
-        color: var(--ds-text-secondary);
-    }
-}
-
-/* ===========================================
-   PRINT STYLES
+   PRINT
    =========================================== */
 
 @media print {
     .wage-grid {
-        border: 2px solid var(--ds-bg-muted);
+        display: block !important;
+        border: 1px solid var(--db-border);
+    }
+
+    .wage-cards {
+        display: none !important;
+    }
+
+    .grip-cell,
+    .grip-header {
+        display: none !important;
+    }
+
+    .has-grip .grid-header,
+    .has-grip .chore-row {
+        grid-template-columns: minmax(150px, 190px) repeat(7, 1fr) 84px;
     }
 
     .day-cell {
-        border: 1px solid var(--ds-bg-muted) !important;
-    }
-    
-    .drag-handle-cell,
-    .drag-header {
-        display: none !important;
-    }
-    
-    .grid-header,
-    .chore-row {
-        grid-template-columns: minmax(150px, 1.5fr) repeat(7, 1fr) minmax(80px, 0.8fr) !important;
+        border: 1px solid var(--db-border) !important;
+        box-shadow: none !important;
     }
 }

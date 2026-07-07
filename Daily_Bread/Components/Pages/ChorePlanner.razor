@@ -19,12 +19,12 @@
 <PageTitle>Planner</PageTitle>
 
 <div class="labor-planner">
-    <!-- Header -->
+    <!-- Header (#3a / #3b): loaf mark + title · week nav pill · segmented tabs · + Add -->
     <header class="board-header no-print">
         <div class="header-content">
-            <div class="header-left">
+            <div class="header-brand">
                 <h1 class="board-title">
-                    <span class="title-icon"><IconTile IconName="calendar" Mono="true" Size="20" /></span>
+                    <LoafMark Size="26" />
                     <span>Planner</span>
                 </h1>
                 @if (_childProfiles.Count > 1)
@@ -40,47 +40,39 @@
                     </div>
                 }
             </div>
-            <div class="header-actions">
-                <button class="action-btn add-btn" @onclick="ShowCreateChoreForm" title="Add new labor">
-                    <span class="bi bi-plus-lg"></span>
+            <div class="header-tools">
+                <div class="week-pill">
+                    <button class="nav-btn" @onclick="PreviousWeek" disabled="@_isNavigating" aria-label="Previous week">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <span class="week-label">@(_plannerData?.WeekLabel ?? "Loading...")</span>
+                    @if (_weekOffset != 0)
+                    {
+                        <button class="today-link" @onclick="GoToCurrentWeek" disabled="@_isNavigating">
+                            Back to this week
+                        </button>
+                    }
+                    <button class="nav-btn" @onclick="NextWeek" disabled="@_isNavigating" aria-label="Next week">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                    </button>
+                </div>
+                <div class="seg-control">
+                    <button class="seg-btn @(_activeTab == TabView.Wages ? "active" : "")"
+                            @onclick="() => SetActiveTab(TabView.Wages)">
+                        <span>Tasks</span>
+                        <span class="seg-count">@_earningChores.Count</span>
+                    </button>
+                    <button class="seg-btn @(_activeTab == TabView.Routines ? "active" : "")"
+                            @onclick="() => SetActiveTab(TabView.Routines)">
+                        <span>Routines</span>
+                        <span class="seg-count">@_routineChores.Count</span>
+                    </button>
+                </div>
+                <button class="add-btn" @onclick="ShowCreateChoreForm" title="Add a task">
+                    <span class="bi bi-plus-lg" aria-hidden="true"></span>
                     <span class="btn-text">Add</span>
                 </button>
             </div>
-        </div>
-
-        <!-- Week Navigation -->
-        <div class="week-nav">
-            <button class="nav-btn" @onclick="PreviousWeek" disabled="@_isNavigating">
-                <span class="bi bi-chevron-left"></span>
-            </button>
-            <div class="week-display">
-                <span class="week-label">@(_plannerData?.WeekLabel ?? "Loading...")</span>
-                @if (_weekOffset != 0)
-                {
-                    <button class="today-link" @onclick="GoToCurrentWeek" disabled="@_isNavigating">
-                        Back to this week
-                    </button>
-                }
-            </div>
-            <button class="nav-btn" @onclick="NextWeek" disabled="@_isNavigating">
-                <span class="bi bi-chevron-right"></span>
-            </button>
-        </div>
-
-        <!-- Tab Selector -->
-        <div class="tab-bar">
-            <button class="tab-btn @(_activeTab == TabView.Wages ? "active" : "")"
-                    @onclick="() => SetActiveTab(TabView.Wages)">
-                <span class="tab-icon"><IconTile IconName="wallet" Mono="true" Size="16" /></span>
-                <span class="tab-label">Tasks</span>
-                <span class="tab-count">@_earningChores.Count</span>
-            </button>
-            <button class="tab-btn @(_activeTab == TabView.Routines ? "active" : "")"
-                    @onclick="() => SetActiveTab(TabView.Routines)">
-                <span class="tab-icon"><IconTile IconName="calendar" Mono="true" Size="16" /></span>
-                <span class="tab-label">Routines</span>
-                <span class="tab-count">@_routineChores.Count</span>
-            </button>
         </div>
     </header>
 
@@ -121,7 +113,7 @@
             }
             else
             {
-                <WageGrid 
+                <WageGrid
                     PlannerData="_plannerData"
                     EarningChores="_earningChores"
                     SelectedUserId="_selectedUserId"
@@ -129,23 +121,30 @@
                     OnEditChore="ShowEditChoreForm"
                     OnCellClick="HandleCellClickFromGrid"
                     EnableReorder="@(!string.IsNullOrEmpty(_selectedUserId))"
-                    OnReorder="HandleWageReorder" />
+                    OnReorder="HandleWageReorder"
+                    ExpandedChoreId="_expandedChoreId"
+                    ExpandedChoreDetails="_expandedChoreDetails"
+                    OnToggleExpand="HandleToggleExpand"
+                    OnQuickUpdate="HandleQuickUpdate" />
 
-                <!-- Weekly Summary -->
-                <div class="weekly-summary">
-                    <div class="summary-card potential">
-                        <span class="summary-label">Weekly Potential</span>
-                        <span class="summary-value">$@_plannerData.TotalWeeklyPotential.ToString("F2")</span>
+                <!-- Footer: weekly potential + override count + hint (no legend, per #3a) -->
+                <div class="planner-footer no-print">
+                    <div class="pf-left">
+                        <span class="pf-potential">
+                            <span class="pf-label">Weekly potential</span>
+                            <span class="pf-value">$@_plannerData.TotalWeeklyPotential.ToString("F2")</span>
+                        </span>
+                        @if (_plannerData.Overrides.Any())
+                        {
+                            <button class="pf-overrides" @onclick="() => _showOverrides = !_showOverrides">
+                                <span class="pf-zap" aria-hidden="true">⚡</span>
+                                <span>@_plannerData.Overrides.Count override@(_plannerData.Overrides.Count != 1 ? "s" : "") this week</span>
+                                <span class="bi @(_showOverrides ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></span>
+                            </button>
+                        }
                     </div>
-                    @if (_plannerData.Overrides.Any())
-                    {
-                        <button class="overrides-toggle @(_showOverrides ? "expanded" : "")"
-                                @onclick="() => _showOverrides = !_showOverrides">
-                            <span class="bi bi-lightning-fill"></span>
-                            <span>@_plannerData.Overrides.Count override@(_plannerData.Overrides.Count != 1 ? "s" : "") this week</span>
-                            <span class="bi @(_showOverrides ? "bi-chevron-up" : "bi-chevron-down")"></span>
-                        </button>
-                    }
+                    <span class="pf-hint pf-hint-desktop">Tap a day = just this week · Open a row = the usual schedule</span>
+                    <span class="pf-hint pf-hint-mobile">Tap a day = just this week · Open the card = the usual schedule</span>
                 </div>
 
                 @if (_showOverrides && _plannerData.Overrides.Any())
@@ -164,15 +163,6 @@
                         }
                     </div>
                 }
-
-                <!-- Legend -->
-                <div class="legend no-print">
-                    <span class="legend-item"><span class="indicator scheduled">●</span> Scheduled</span>
-                    <span class="legend-item"><span class="indicator available">○</span> Available</span>
-                    <span class="legend-item"><span class="indicator override"><IconTile IconName="zap" Mono="true" Size="12" /></span> Override</span>
-                    <span class="legend-item"><span class="indicator removed">✕</span> Removed</span>
-                    <span class="legend-tip"><IconTile IconName="lightbulb" Mono="true" Size="12" /> Click a cell to toggle schedule</span>
-                </div>
             }
         }
 
@@ -257,6 +247,10 @@
     private List<UserSelectItem> _assignableUsers = [];
     private ChoreDefinitionDto? _editingChore;
     private string? _updatingCellKey;
+
+    // Inline settings panel (expanded row/card) — recurring-schedule quick edits.
+    private int? _expandedChoreId;
+    private ChoreDefinitionDto? _expandedChoreDetails;
 
     // Filtered chore lists - visual only, all chores still loaded
     private List<ChorePlannerRow> _earningChores = [];
@@ -440,30 +434,7 @@
             if (choreDetails != null)
             {
                 _isRoutineMode = choreDetails.Kind == ChoreKind.Routine;
-                _editingChore = new ChoreDefinitionDto
-                {
-                    Id = choreDetails.Id,
-                    Name = choreDetails.Name,
-                    Description = choreDetails.Description,
-                    Icon = choreDetails.Icon,
-                    LucideIconName = choreDetails.LucideIconName,
-                    TileSlot = choreDetails.TileSlot,
-                    AssignedUserId = choreDetails.AssignedUserId,
-                    Kind = choreDetails.Kind,
-                    EarnValue = choreDetails.EarnValue,
-                    Importance = choreDetails.Importance,
-                    AllOrNothing = choreDetails.AllOrNothing,
-                    IsInverseFill = choreDetails.IsInverseFill,
-                    InverseFillBaselineMinutes = choreDetails.InverseFillBaselineMinutes,
-                    ScheduleType = choreDetails.ScheduleType,
-                    ActiveDays = choreDetails.ActiveDays,
-                    WeeklyTargetCount = choreDetails.WeeklyTargetCount,
-                    StartDate = choreDetails.StartDate,
-                    EndDate = choreDetails.EndDate,
-                    IsActive = choreDetails.IsActive,
-                    AutoApprove = choreDetails.AutoApprove,
-                    SortOrder = choreDetails.SortOrder
-                };
+                _editingChore = ToDto(choreDetails);
                 _showChoreForm = true;
                 OpenChoreModal();
             }
@@ -471,6 +442,110 @@
         catch (Exception ex)
         {
             _errorMessage = $"Error loading chore: {ex.Message}";
+        }
+    }
+
+    private static ChoreDefinitionDto ToDto(ChoreDefinition c) => new()
+    {
+        Id = c.Id,
+        Name = c.Name,
+        Description = c.Description,
+        Icon = c.Icon,
+        LucideIconName = c.LucideIconName,
+        TileSlot = c.TileSlot,
+        AssignedUserId = c.AssignedUserId,
+        Kind = c.Kind,
+        EarnValue = c.EarnValue,
+        Importance = c.Importance,
+        AllOrNothing = c.AllOrNothing,
+        IsInverseFill = c.IsInverseFill,
+        InverseFillBaselineMinutes = c.InverseFillBaselineMinutes,
+        ScheduleType = c.ScheduleType,
+        ActiveDays = c.ActiveDays,
+        WeeklyTargetCount = c.WeeklyTargetCount,
+        IsRepeatable = c.IsRepeatable,
+        StartDate = c.StartDate,
+        EndDate = c.EndDate,
+        IsActive = c.IsActive,
+        AutoApprove = c.AutoApprove,
+        SortOrder = c.SortOrder
+    };
+
+    /// <summary>
+    /// Row/card header tap: toggle the inline settings panel and load full details
+    /// for it (pay, usual days, auto-approve — the recurring schedule).
+    /// </summary>
+    private async Task HandleToggleExpand(ChorePlannerRow chore)
+    {
+        if (_expandedChoreId == chore.ChoreDefinitionId)
+        {
+            _expandedChoreId = null;
+            _expandedChoreDetails = null;
+            return;
+        }
+
+        _expandedChoreId = chore.ChoreDefinitionId;
+        _expandedChoreDetails = null;
+
+        try
+        {
+            var details = await ChoreManagementService.GetChoreByIdAsync(chore.ChoreDefinitionId);
+            if (details != null && _expandedChoreId == chore.ChoreDefinitionId)
+            {
+                _expandedChoreDetails = ToDto(details);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading chore: {ex.Message}";
+            _expandedChoreId = null;
+            ClearMessageAfterDelay();
+        }
+    }
+
+    /// <summary>
+    /// Instant save from the inline panel. On failure the panel reverts to the
+    /// stored values and the existing error toast shows.
+    /// </summary>
+    private async Task HandleQuickUpdate(ChoreDefinitionDto dto)
+    {
+        _errorMessage = null;
+
+        try
+        {
+            var result = await ChoreManagementService.UpdateChoreAsync(dto);
+
+            if (result.Success)
+            {
+                await LoadDataAsync();
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage;
+                ClearMessageAfterDelay();
+                await RefreshExpandedDetailsAsync(dto.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            ClearMessageAfterDelay();
+            await RefreshExpandedDetailsAsync(dto.Id);
+        }
+    }
+
+    private async Task RefreshExpandedDetailsAsync(int choreId)
+    {
+        if (_expandedChoreId != choreId) return;
+
+        try
+        {
+            var details = await ChoreManagementService.GetChoreByIdAsync(choreId);
+            _expandedChoreDetails = details != null ? ToDto(details) : null;
+        }
+        catch
+        {
+            // Keep the last known panel state; the toast already reported the failure.
         }
     }
 
@@ -512,6 +587,10 @@
             _successMessage = isEdit ? "Updated!" : "Created!";
             HideChoreForm();
             await LoadDataAsync();
+            if (isEdit)
+            {
+                await RefreshExpandedDetailsAsync(dto.Id);
+            }
             ClearMessageAfterDelay();
         }
         else
