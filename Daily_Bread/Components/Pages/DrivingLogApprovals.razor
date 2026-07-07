@@ -1,0 +1,151 @@
+@page "/driving-log/approvals"
+@attribute [Authorize(Roles = "Parent")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using System.Security.Claims
+
+@inject IDrivingLogService DrivingLogService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Driving Approvals</PageTitle>
+
+<div class="dla-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@EmojiConstants.Car Driving Approvals</h1>
+        <a href="/driving-log" class="btn btn-outline-secondary btn-sm">Back to Driving Log</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @SuccessMessage
+            <button type="button" class="btn-close" @onclick="() => SuccessMessage = null"></button>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (Entries.Count == 0)
+    {
+        <div class="dla-empty">
+            <span class="dla-empty-icon">@EmojiConstants.CheckMark</span>
+            <p>No driving sessions waiting on a decision.</p>
+        </div>
+    }
+    else
+    {
+        <div class="dla-list">
+            @foreach (var entry in Entries)
+            {
+                <div class="dla-card">
+                    <div class="dla-icon">@EmojiConstants.Car</div>
+                    <div class="dla-info">
+                        <div class="dla-title">@entry.ChildName • @entry.Date.ToString("MMM d, yyyy")</div>
+                        <div class="dla-meta">
+                            @entry.StartTime.ToString("h:mm tt") - @entry.EndTime.ToString("h:mm tt")
+                            (@((entry.DurationMinutes / 60m).ToString("0.##")) hrs@(entry.IsNightDriving ? ", night" : ""))
+                            • supervised by @entry.SupervisorLabel • @entry.Weather
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(entry.RouteNotes))
+                        {
+                            <div class="dla-notes">@entry.RouteNotes</div>
+                        }
+                    </div>
+                    <div class="dla-actions">
+                        <button class="dla-btn dla-btn-approve" @onclick="() => ApproveAsync(entry.Id)" disabled="@IsBusy">
+                            @EmojiConstants.ThumbsUp Approve
+                        </button>
+                        <button class="dla-btn dla-btn-reject" @onclick="() => RejectAsync(entry.Id)" disabled="@IsBusy">
+                            @EmojiConstants.ThumbsDown Reject
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<DrivingLogEntryDisplay> Entries { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private bool IsBusy { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+    private string? _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        await LoadEntriesAsync();
+    }
+
+    private async Task LoadEntriesAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Entries = await DrivingLogService.GetPendingApprovalsAsync();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ApproveAsync(int entryId)
+    {
+        if (string.IsNullOrEmpty(_currentUserId)) return;
+
+        await RunDecisionAsync(() => DrivingLogService.ApproveEntryAsync(entryId, _currentUserId),
+            "Session approved.");
+    }
+
+    private async Task RejectAsync(int entryId)
+    {
+        if (string.IsNullOrEmpty(_currentUserId)) return;
+
+        await RunDecisionAsync(() => DrivingLogService.RejectEntryAsync(entryId, _currentUserId),
+            "Session rejected.");
+    }
+
+    private async Task RunDecisionAsync(Func<Task<ServiceResult>> action, string successMessage)
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+        IsBusy = true;
+
+        try
+        {
+            var result = await action();
+            if (result.Success)
+            {
+                SuccessMessage = successMessage;
+                await LoadEntriesAsync();
+            }
+            else
+            {
+                ErrorMessage = result.ErrorMessage;
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}

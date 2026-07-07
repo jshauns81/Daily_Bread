@@ -66,6 +66,12 @@ public interface IChildProfileService
     /// Validates that a user has access to an account (Parent can access any, Child only their own).
     /// </summary>
     Task<bool> CanAccessAccountAsync(string userId, bool isParent, int accountId);
+
+    /// <summary>
+    /// Sets a child's driving-log hours goal (total + night sub-goal). Pass null for either
+    /// to clear it (hides the progress bar for that dimension in the UI).
+    /// </summary>
+    Task<ServiceResult> UpdateDrivingGoalAsync(int profileId, decimal? totalHours, decimal? nightHours);
 }
 
 public class ChildProfileService : IChildProfileService
@@ -272,5 +278,22 @@ public class ChildProfileService : IChildProfileService
         // Children can only access accounts linked to their profile
         return await context.LedgerAccounts
             .AnyAsync(a => a.Id == accountId && a.ChildProfile.UserId == userId);
+    }
+
+    public async Task<ServiceResult> UpdateDrivingGoalAsync(int profileId, decimal? totalHours, decimal? nightHours)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var profile = await context.ChildProfiles.FirstOrDefaultAsync(p => p.Id == profileId);
+        if (profile == null)
+            return ServiceResult.Fail("Child profile not found.");
+
+        profile.DrivingGoalTotalHours = totalHours;
+        profile.DrivingGoalNightHours = nightHours;
+        profile.ModifiedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        return ServiceResult.Ok();
     }
 }

@@ -28,6 +28,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AchievementProgress> AchievementProgress => Set<AchievementProgress>();
     public DbSet<UserAchievementBonus> UserAchievementBonuses => Set<UserAchievementBonus>();
     public DbSet<AchievementRewardClaim> AchievementRewardClaims => Set<AchievementRewardClaim>();
+    public DbSet<DrivingLogEntry> DrivingLogEntries => Set<DrivingLogEntry>();
     public DbSet<FamilySettings> FamilySettings => Set<FamilySettings>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<Household> Households => Set<Household>();
@@ -142,6 +143,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DisplayName).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.DrivingGoalTotalHours).HasPrecision(6, 2);
+            entity.Property(e => e.DrivingGoalNightHours).HasPrecision(6, 2);
             
             entity.HasIndex(e => e.UserId).IsUnique();
             entity.HasIndex(e => e.IsActive);
@@ -410,6 +413,39 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // DrivingLogEntry configuration
+        builder.Entity<DrivingLogEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SupervisorName).HasMaxLength(100);
+            entity.Property(e => e.RouteNotes).HasMaxLength(1000);
+            entity.Property(e => e.RejectionReason).HasMaxLength(500);
+            entity.Property(e => e.Version).IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.ChildUserId, e.Date });
+            entity.HasIndex(e => e.Status);
+
+            entity.HasOne(e => e.ChildUser)
+                .WithMany()
+                .HasForeignKey(e => e.ChildUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.SupervisorUser)
+                .WithMany()
+                .HasForeignKey(e => e.SupervisorUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.DecidedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.DecidedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

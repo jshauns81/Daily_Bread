@@ -34,6 +34,17 @@ public class ChildProfile
     /// </summary>
     public DateTime? ModifiedAt { get; set; }
 
+    /// <summary>
+    /// Total supervised-driving hours goal (e.g. state permit requirement).
+    /// Null = driving log goal not configured for this child (hides the progress bar).
+    /// </summary>
+    public decimal? DrivingGoalTotalHours { get; set; }
+
+    /// <summary>
+    /// Night-driving hours sub-goal (subset of DrivingGoalTotalHours). Null = not configured.
+    /// </summary>
+    public decimal? DrivingGoalNightHours { get; set; }
+
     // Navigation properties
     public ICollection<LedgerAccount> LedgerAccounts { get; set; } = [];
 }

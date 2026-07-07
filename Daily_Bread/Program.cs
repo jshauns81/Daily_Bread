@@ -310,6 +310,8 @@ builder.Services.AddScoped<IAchievementConditionEvaluator, AchievementConditionE
 builder.Services.AddScoped<IAchievementRewardClaimService, AchievementRewardClaimService>();
 builder.Services.AddScoped<IAchievementBonusService, AchievementBonusService>();
 
+builder.Services.AddScoped<IDrivingLogService, DrivingLogService>();
+
 // Add health checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>();
@@ -498,6 +500,23 @@ app.MapRazorComponents<App>()
 
 // Map additional Identity endpoints
 app.MapAdditionalIdentityEndpoints();
+
+// Driving log CSV export - caller must be a Parent, or the Child requesting their own data
+app.MapGet("/api/driving-log/export", async (
+    string childUserId, DateOnly? from, DateOnly? to,
+    HttpContext ctx, IDrivingLogService drivingLogService) =>
+{
+    var requestingUserId = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (!ctx.User.IsInRole("Parent") && requestingUserId != childUserId)
+    {
+        return Results.Forbid();
+    }
+
+    var entries = await drivingLogService.GetEntriesAsync(childUserId, from, to);
+    var csv = Daily_Bread.Services.DrivingLogCsvBuilder.Build(entries);
+    var fileName = $"driving-log-{childUserId}-{DateTime.Now:yyyyMMdd}.csv";
+    return Results.File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
+});
 
 app.Run();
 
