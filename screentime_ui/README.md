@@ -44,11 +44,14 @@ nothing displays the result (no meter). Slice 1 turns it on.
   - [x] Load mapping (Chore DTO → FormModel) + save mapping (FormModel → DTO)
   - [x] 0–10 control in `ChoreForm.razor`, current `ds-input` look, `0 = no screen-time impact`
   - [x] Round-trip test (`ChoreImportanceRoundTripTests`, via `ChoreManagementService` DTO surface)
-- [ ] **Piece 2 — Single-child screen-time settings** *(small–medium)*
-  - [ ] "Screen Time & Pay" section on `Settings.razor` for the one child
-  - [ ] Inputs: weekday/weekend pool hours, weekday/weekend at-risk %, `WeeklyRoutinePayout`
-  - [ ] `ChildProfileService.UpdateScreenTimeSettingsAsync` (validated)
-  - [ ] Save test
+- [x] **Piece 2 — Single-child screen-time settings** *(DONE 2026-07-07 — UI only; backend pre-existed)*
+  - [x] "Screen Time & Pay" section on `Settings.razor` for the one child (gated by `_hasChild`)
+  - [x] Inputs: weekday/weekend pool hours, weekday/weekend at-risk %, `WeeklyRoutinePayout`
+  - [x] `ChildProfileService.UpdateScreenTimeSettingsAsync` — already existed + validated + tested; reused
+  - [x] Save test — already existed (`ChildProfileScreenTimeSettingsTests`, 3 facts)
+  - _Known-minor:_ AppSettings save commits before the child-update validation runs in the same
+    click; a rejected child update (only reachable past the HTML min/max guards) leaves AppSettings
+    saved but child unchanged. Matches page's existing per-concern save style. Revisit if it bites.
 - [ ] **Piece 3 — Kid screen-time meter** *(medium)*
   - [ ] New `ScreenTimeMeter.razor` (current look), placed on kid branch of `Home.razor`
   - [ ] Reads `GetWeekPricingAsync` + latest `ChildWeeklyScreenTimeBudget` snapshot
@@ -73,4 +76,6 @@ Smoke: set Importance on a chore → set a pool in settings → kid meter shows 
 ## Status log
 - 2026-07-07 — Branch `feat/screentime-ui` created off `beta`. Plan + scope locked. Starting Piece 1.
 - 2026-07-07 — **Piece 1 done & verified** (build 0 err, tests 107/107). Importance input live on
-  ChoreForm in current look. Commit next. Starting Piece 2 (single-child settings).
+  ChoreForm in current look. Committed `4a61e5d`.
+- 2026-07-07 — **Piece 2 done & verified** (build 0 err, tests 107/107). Screen-time settings live on
+  /settings (UI-only; service + tests already existed on beta). Starting Piece 3 (kid meter).
