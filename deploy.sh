@@ -105,14 +105,54 @@ case "$COMMAND" in
   rebuild)
     log "${YELLOW}=== Rebuilding Daily Bread ===${NC}"
 
+    # --- Drift guard -------------------------------------------------------
+    # Prod must build from a clean checkout of origin/master. Building from a
+    # dirty tree or an off-branch checkout is how prod silently drifts from the
+    # repo (features "sneak into" prod). Detect and surface it before building.
+    CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+    if [ "$CURRENT_BRANCH" != "master" ]; then
+      log_always "${YELLOW}WARNING: deploying from branch '${CURRENT_BRANCH}', expected 'master'.${NC}"
+    fi
+    DIRTY="$(git status --porcelain)"
+    if [ -n "$DIRTY" ]; then
+      log_always "${YELLOW}WARNING: working tree has uncommitted changes before deploy:${NC}"
+      log_always "$(git status --short)"
+      if [ "${DEPLOY_STRICT:-0}" = "1" ]; then
+        log_always "${RED}DEPLOY_STRICT=1 set - aborting to prevent off-process drift.${NC}"
+        exit 1
+      fi
+    fi
+
     log "Pulling latest code..."
     run git pull origin master
+
+    # Always emit the exact deployed commit so cron/webhook logs record what shipped.
+    DEPLOY_SHA="$(git rev-parse --short HEAD 2>/dev/null)"
+    DEPLOY_DESC="$(git log -1 --pretty=format:'%s' 2>/dev/null)"
+    log_always "Deploying commit: ${DEPLOY_SHA} - ${DEPLOY_DESC}"
 
     log "Stopping containers..."
     run $COMPOSE_CMD down
 
     log "Rebuilding and starting..."
     run $COMPOSE_CMD up -d --build
+
+    # --- Migration drift check (best-effort; never blocks the deploy) -------
+    # Compares the newest migration in the repo against the newest applied in the
+    # DB. A mismatch means either startup migrations haven't finished yet, or the
+    # running code and schema are out of sync. Purely informational.
+    (
+      [ -f .env ] && { set -a; . ./.env; set +a; }
+      LATEST_REPO_MIG="$(ls Daily_Bread/Migrations/ 2>/dev/null | grep -oE '[0-9]{14}_[A-Za-z]+' | sort -u | tail -1)"
+      LATEST_DB_MIG="$(docker exec dailybread-postgres psql -U "${POSTGRES_USER:-dailybread}" -d "${POSTGRES_DB:-dailybread}" -tA -c 'SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY 1 DESC LIMIT 1;' 2>/dev/null | tr -d '[:space:]')"
+      if [ -n "$LATEST_REPO_MIG" ] && [ -n "$LATEST_DB_MIG" ]; then
+        if [ "$LATEST_REPO_MIG" = "$LATEST_DB_MIG" ]; then
+          log "Migrations in sync: ${LATEST_DB_MIG}"
+        else
+          log_always "${YELLOW}WARNING: migration drift - repo latest '${LATEST_REPO_MIG}' != DB latest '${LATEST_DB_MIG}' (may be mid-startup).${NC}"
+        fi
+      fi
+    ) || true
 
     # These lines are parsed by the webhook script - always output them
     log_always "Daily Bread rebuilt and started!"
