@@ -457,3 +457,426 @@
         transition: none;
     }
 }
+
+/* ===========================================
+   KID "MY DAY" — design #11a (day flow)
+   Token-only styling; parent Activity view above
+   is untouched.
+   =========================================== */
+
+.tracker-container.myday {
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--ds-space-6));
+}
+
+/* --- Header: title + day nav left · balance pill + progress ring right --- */
+.md-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.md-head-left {
+    min-width: 0;
+}
+
+.md-title {
+    font-size: 20px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: -.3px;
+    color: var(--db-text);
+    margin: 0 0 3px;
+}
+
+/* Compact the shared DateNavigator into the #11a date row */
+.md-head-left ::deep .date-navigation {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+}
+
+.md-head-left ::deep .date-navigation .date-display {
+    font-size: 12px;
+    font-weight: var(--ds-font-semibold);
+    color: var(--db-text2);
+}
+
+.md-head-left ::deep .date-navigation .today-badge {
+    font-size: 9px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: .5px;
+    padding: 2px 7px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--db-accent);
+    color: var(--db-on-accent);
+}
+
+.md-head-left ::deep .date-navigation .nav-btn {
+    background: none;
+    border: none;
+    padding: 0 2px;
+    color: var(--db-text2);
+    font-size: 12px;
+}
+
+.md-head-left ::deep .date-navigation .nav-btn:disabled {
+    color: var(--ds-text-faint);
+}
+
+.md-head-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+}
+
+.md-balance {
+    padding: 6px 12px;
+    border-radius: var(--ds-radius-pill);
+    background: color-mix(in srgb, var(--db-money) 12%, transparent);
+    font-size: 12px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-money);
+    font-family: var(--ds-font-mono);
+}
+
+.md-ring {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.md-ring-inner {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--db-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-text);
+}
+
+/* --- Retired section receipt: recessed one-liner --- */
+.md-receipt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: var(--ds-bg-recessed);
+    border: 1px solid var(--ds-divider);
+    border-radius: 12px;
+    padding: 9px 13px;
+    opacity: .75;
+    cursor: pointer;
+    text-align: left;
+    transition: opacity var(--ds-transition);
+}
+
+.md-receipt:hover {
+    opacity: .95;
+}
+
+.md-receipt-check {
+    color: var(--ds-money-light);
+    display: flex;
+    flex: none;
+}
+
+.md-receipt-title {
+    font-size: 11px;
+    font-weight: var(--ds-font-bold);
+    color: var(--ds-money-light);
+    white-space: nowrap;
+}
+
+.md-receipt-names {
+    flex: 1;
+    min-width: 0;
+    font-size: 10px;
+    color: var(--db-text3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.md-receipt-chevron {
+    color: var(--db-text3);
+    display: flex;
+    flex: none;
+}
+
+/* --- Sections --- */
+.md-section {
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: var(--ds-radius-card);
+    padding: 4px 0;
+}
+
+.md-section.is-now {
+    background: var(--db-bg2);
+    border-color: color-mix(in srgb, var(--db-accent) 35%, transparent);
+    box-shadow: 0 0 24px -10px color-mix(in srgb, var(--db-accent) 45%, transparent);
+}
+
+.md-section.is-future {
+    background: var(--ds-bg-recessed);
+    border-color: var(--ds-divider);
+    border-radius: 14px;
+    opacity: .7;
+}
+
+.md-section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px 6px;
+}
+
+.md-section-icon {
+    display: flex;
+    flex: none;
+}
+
+.md-section-icon.sun {
+    color: var(--db-screentime);
+}
+
+.md-section-icon.moon {
+    color: var(--ds-accent-text);
+}
+
+.md-section-label {
+    font-size: 11px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 1px;
+    color: var(--db-text);
+}
+
+.md-section.is-future .md-section-label {
+    color: var(--db-text2);
+}
+
+.md-now-pill {
+    font-size: 9px;
+    font-weight: var(--ds-font-bold);
+    padding: 2px 7px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--db-accent);
+    color: var(--db-on-accent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--db-accent) 60%, transparent);
+}
+
+.md-section-collapse {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: auto;
+    color: var(--db-text3);
+    display: flex;
+    cursor: pointer;
+}
+
+.md-section-count {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--db-text3);
+}
+
+.md-section-collapse + .md-section-count {
+    margin-left: 8px;
+}
+
+/* --- Rows --- */
+.md-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 14px;
+}
+
+.md-section.is-future .md-row {
+    padding: 8px 14px;
+}
+
+.md-row.is-done {
+    opacity: .55;
+}
+
+.md-row.is-excused {
+    opacity: .6;
+}
+
+.md-row-tile {
+    display: flex;
+    flex: none;
+}
+
+.md-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.md-row-name {
+    font-size: 13px;
+    font-weight: var(--ds-font-semibold);
+    color: var(--db-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.md-section.is-future .md-row-name {
+    font-size: 12px;
+    color: var(--db-text2);
+}
+
+.md-row.is-done .md-row-name {
+    text-decoration: line-through;
+    text-decoration-color: var(--ds-text-faint);
+}
+
+.md-row-sub {
+    font-size: 10.5px;
+    color: var(--db-text3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.md-chip {
+    font-size: 9px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: .5px;
+    padding: 2px 7px;
+    border-radius: var(--ds-radius-pill);
+    white-space: nowrap;
+}
+
+.md-chip.help {
+    background: color-mix(in srgb, var(--db-accent) 16%, transparent);
+    color: var(--ds-accent-text);
+}
+
+.md-chip.missed {
+    background: color-mix(in srgb, var(--db-risk) 16%, transparent);
+    color: var(--ds-risk-light);
+}
+
+.md-chip.excused {
+    background: var(--ds-bg-selected);
+    color: var(--db-text3);
+}
+
+.md-row-pay {
+    font-size: 12px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-money);
+    font-family: var(--ds-font-mono);
+    white-space: nowrap;
+}
+
+.md-section.is-future .md-row-pay {
+    font-size: 11px;
+    opacity: .8;
+}
+
+/* Check circle: empty ring → mint filled */
+.md-check {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--ds-text-faint);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    padding: 0;
+    cursor: pointer;
+    color: transparent;
+    transition: border-color var(--ds-transition), background-color var(--ds-transition);
+}
+
+.md-check:hover:not(:disabled) {
+    border-color: var(--db-money);
+}
+
+.md-check.checked {
+    background: var(--db-money);
+    border-color: var(--db-money);
+    color: var(--db-bg);
+}
+
+.md-check:disabled {
+    cursor: default;
+    opacity: .6;
+}
+
+.md-check .spinner-border {
+    width: 12px;
+    height: 12px;
+    color: var(--db-text3);
+}
+
+/* --- Footer: one honest line --- */
+.md-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--db-bg2);
+    border: 1px solid var(--ds-bg-selected);
+    margin-top: 4px;
+}
+
+.md-footer-earned {
+    font-size: 11px;
+    color: var(--db-text2);
+}
+
+.md-footer-earned b {
+    color: var(--db-money);
+    font-family: var(--ds-font-mono);
+}
+
+.md-footer-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.md-footer-bar {
+    width: 120px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--ds-bg-selected);
+    overflow: hidden;
+    display: block;
+}
+
+.md-footer-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--db-accent), var(--db-risk));
+}
+
+.md-footer-count {
+    font-size: 10px;
+    color: var(--db-text3);
+}

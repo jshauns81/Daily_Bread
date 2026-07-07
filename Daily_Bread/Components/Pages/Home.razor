@@ -267,355 +267,186 @@ else if ((_isParent || _isAdmin) && _parentData == null)
 }
 else if (_childData != null)
 {
-    <!-- Child Dashboard - Redesigned for 13-year-old UX -->
-    <div class="child-dashboard">
+    <!-- Kid money home (design #12a merged with #12b records strip; goal/ETA block removed) -->
+    <div class="kid-home">
+        @* Achievement unlock celebration (emoji allowed: celebration surface) *@
         @if (_childData.NewAchievements.Count > 0)
         {
-            <div class="achievement-celebration">
+            <div class="kh-unlock">
                 @foreach (var achievement in _childData.NewAchievements)
                 {
-                    <div class="achievement-toast animate-bounce">
-                        <span class="achievement-icon">@achievement.Icon</span>
-                        <div class="achievement-toast-content">
-                            <strong>🎉 Unlocked!</strong>
-                            <span class="achievement-toast-name">@achievement.Name</span>
-                        </div>
-                    </div>
+                    <a href="/achievements" class="kh-unlock-row">
+                        <span class="kh-unlock-badge">@achievement.Icon</span>
+                        <span class="kh-unlock-info">
+                            <span class="kh-unlock-name">@achievement.Name</span>
+                            <span class="kh-unlock-desc">Unlocked! @achievement.Description</span>
+                        </span>
+                        <span class="kh-unlock-pts">+@achievement.Points pts</span>
+                    </a>
                 }
             </div>
         }
 
-        <!-- TODAY HERO: Gamified Level-Up Theme -->
-        <div class="today-hero gamified">
-            @* Animated background particles *@
-            <div class="hero-particles">
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-            </div>
-            
-            @* Level Badge *@
-            <div class="level-badge-container">
-                <div class="level-badge @GetLevelClass()">
-                    <span class="level-icon">@GetLevelIcon()</span>
-                    <span class="level-number">LVL @GetTodayLevel()</span>
-                </div>
-                <span class="level-title">@GetLevelTitle()</span>
-            </div>
-            
-            @* XP Progress Bar *@
-            <div class="xp-section">
-                <div class="xp-header">
-                    <span class="xp-label">TODAY'S PROGRESS</span>
-                    <span class="xp-value">@_childData.TodayCompletedCount / @_childData.TodayTotalCount XP</span>
-                </div>
-                <div class="xp-bar-container">
-                    <div class="xp-bar">
-                        <div class="xp-fill @(GetProgressPercent() == 100 ? "complete" : "")" style="width: @GetProgressPercent()%">
-                            <div class="xp-glow"></div>
-                        </div>
-                    </div>
-                    @* Milestone markers *@
-                    <div class="xp-milestones">
-                        <div class="milestone @(GetProgressPercent() >= 25 ? "achieved" : "")" style="left: 25%">
-                            <span class="milestone-icon">⚡</span>
-                        </div>
-                        <div class="milestone @(GetProgressPercent() >= 50 ? "achieved" : "")" style="left: 50%">
-                            <span class="milestone-icon">🔥</span>
-                        </div>
-                        <div class="milestone @(GetProgressPercent() >= 75 ? "achieved" : "")" style="left: 75%">
-                            <span class="milestone-icon">💎</span>
-                        </div>
-                        <div class="milestone @(GetProgressPercent() >= 100 ? "achieved" : "")" style="left: 100%">
-                            <span class="milestone-icon">👑</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="xp-status">
-                    @if (_childData.TodayTotalCount > 0 && _childData.TodayCompletedCount == _childData.TodayTotalCount)
-                    {
-                        <span class="status-complete">🎉 QUEST COMPLETE!</span>
-                    }
-                    else if (_childData.TodayTotalCount > 0)
-                    {
-                        <span class="status-progress">@(_childData.TodayTotalCount - _childData.TodayCompletedCount) quests remaining</span>
-                    }
-                    else
-                    {
-                        <span class="status-rest">😎 Rest Day - No Quests</span>
-                    }
-                </div>
-            </div>
-            
-            @* Stats Row - Enhanced with Goals & Achievements *@
-            <div class="hero-widgets">
-                @* Row 1: Balance and Streak *@
-                <div class="widget-row primary">
-                    <a href="/my-balance" class="hero-stat balance">
-                        <span class="hero-stat-icon">💰</span>
-                        <AnimatedCounter
-                            Value="@_childData.Balance"
-                            Prefix="$"
-                            CssClass="hero-stat-value"
-                            Duration="600" />
-                        <span class="hero-stat-label">balance</span>
-                    </a>
-                    
-                    @if (_childData.CurrentStreak > 0)
-                    {
-                        <div class="hero-stat streak">
-                            <span class="hero-stat-icon">🔥</span>
-                            <span class="hero-stat-value">@_childData.CurrentStreak</span>
-                            <span class="hero-stat-label">day streak</span>
-                        </div>
-                    }
-                    
-                    @if (_childData.TodayEarnings > 0)
-                    {
-                        <div class="hero-stat earnings">
-                            <span class="hero-stat-icon">✨</span>
-                            <span class="hero-stat-value">+$@_childData.TodayEarnings.ToString("F2")</span>
-                            <span class="hero-stat-label">today</span>
-                        </div>
-                    }
-                </div>
-                
-                @* Row 2: Goal Progress *@
-                @if (_childData.PrimaryGoal != null)
+        <!-- Balance hero: balance is net worth -->
+        <a href="/ledger" class="kh-hero">
+            <div class="kh-hero-label">BALANCE</div>
+            <div class="kh-hero-row">
+                <AnimatedCounter Value="@_childData.Balance"
+                                 Prefix="$"
+                                 CssClass="kh-hero-amt"
+                                 Duration="600" />
+                @if (_childData.TodayEarnings > 0)
                 {
-                    <a href="/goals" class="widget-card goal-widget">
-                        <div class="widget-header">
-                            <span class="widget-icon">🎯</span>
-                            <span class="widget-title">SAVING FOR</span>
-                        </div>
-                        <div class="goal-content">
-                            <span class="goal-name">@_childData.PrimaryGoal.Name</span>
-                            <div class="goal-progress-bar">
-                                <div class="goal-progress-fill" style="width: @_childData.PrimaryGoal.ProgressPercent%"></div>
-                            </div>
-                            <div class="goal-stats">
-                                <span class="goal-current">$@_childData.Balance.ToString("F2")</span>
-                                <span class="goal-separator">/</span>
-                                <span class="goal-target">$@_childData.PrimaryGoal.TargetAmount.ToString("F2")</span>
-                            </div>
-                        </div>
-                        @if (_childData.PrimaryGoal.CanComplete)
-                        {
-                            <div class="goal-ready-badge">🎉 Ready!</div>
-                        }
-                    </a>
+                    <span class="kh-hero-today">+$@_childData.TodayEarnings.ToString("F2") today</span>
                 }
-                else
-                {
-                    <a href="/goals" class="widget-card goal-widget empty">
-                        <div class="widget-header">
-                            <span class="widget-icon">🎯</span>
-                            <span class="widget-title">GOALS</span>
-                        </div>
-                        <div class="goal-empty">
-                            <span>Set a savings goal!</span>
-                            <span class="goal-cta">Tap to create →</span>
-                        </div>
-                    </a>
-                }
-                
-                @* Row 3: Achievements *@
-                <div class="widget-row achievements">
-                    @* Recent Achievement *@
-                    @if (_childData.RecentAchievements.Count > 0)
-                    {
-                        var recent = _childData.RecentAchievements.First();
-                        <a href="/achievements" class="widget-card achievement-widget recent">
-                            <div class="widget-header">
-                                <span class="widget-icon">🏆</span>
-                                <span class="widget-title">LATEST</span>
-                            </div>
-                            <div class="achievement-content">
-                                <span class="achievement-badge-icon @GetRarityClass(recent.Rarity)">@recent.Icon</span>
-                                <span class="achievement-badge-name">@recent.Name</span>
-                            </div>
-                            <div class="achievement-points">+@recent.Points pts</div>
-                        </a>
-                    }
-                    else
-                    {
-                        <a href="/achievements" class="widget-card achievement-widget recent empty">
-                            <div class="widget-header">
-                                <span class="widget-icon">🏆</span>
-                                <span class="widget-title">ACHIEVEMENTS</span>
-                            </div>
-                            <div class="achievement-empty">
-                                <span>Complete quests to unlock!</span>
-                            </div>
-                        </a>
-                    }
-                    
-                    @* Achievement Progress *@
-                    <a href="/achievements" class="widget-card achievement-widget progress">
-                        <div class="achievement-score">
-                            <span class="score-value">@_childData.AchievementsEarned</span>
-                            <span class="score-separator">/</span>
-                            <span class="score-total">@_childData.TotalAchievements</span>
-                        </div>
-                        <span class="achievement-label">BADGES</span>
-                        <div class="achievement-mini-bar">
-                            <div class="achievement-mini-fill" style="width: @GetAchievementPercent()%"></div>
-                        </div>
-                    </a>
-                </div>
             </div>
+            <div class="kh-hero-sub">nothing ever gets taken back</div>
+        </a>
+
+        <!-- Records strip (#12b): his numbers, all verifiable-real -->
+        <div class="kh-records">
+            <div class="kh-cell">
+                <div class="kh-cell-label">EARNED</div>
+                <div class="kh-cell-value money">$@_childData.WeeklyStats.ThisWeekEarnings.ToString("F2")</div>
+                <div class="kh-cell-sub">last week: $@_childData.WeeklyStats.LastWeekEarnings.ToString("F2")</div>
+            </div>
+            @if (FirstWeeklyProgress is { } weekly)
+            {
+                <div class="kh-cell">
+                    <div class="kh-cell-label">@weekly.ChoreDefinition.Name.ToUpperInvariant()</div>
+                    <div class="kh-cell-value">@weekly.CompletedCount<span class="kh-cell-denom">/@weekly.TargetCount</span></div>
+                    <div class="kh-cell-sub">@WeeklyCellSub(weekly)</div>
+                </div>
+            }
+            else
+            {
+                <div class="kh-cell">
+                    <div class="kh-cell-label">TODAY</div>
+                    <div class="kh-cell-value">@_childData.TodayCompletedCount<span class="kh-cell-denom">/@_childData.TodayTotalCount</span></div>
+                    <div class="kh-cell-sub">done so far</div>
+                </div>
+            }
+            <div class="kh-cell">
+                <div class="kh-cell-label">STREAK</div>
+                <div class="kh-cell-value">@_childData.CurrentStreak <span class="kh-cell-unit">@(_childData.CurrentStreak == 1 ? "day" : "days")</span></div>
+                <div class="kh-cell-sub">best: @_childData.BestStreak @(_childData.BestStreak == 1 ? "day" : "days")</div>
+            </div>
+            <a href="/achievements" class="kh-cell">
+                <div class="kh-cell-label">BADGES</div>
+                <div class="kh-cell-value">@_childData.AchievementsEarned<span class="kh-cell-denom">/@_childData.TotalAchievements</span></div>
+                <div class="kh-cell-sub">achievements unlocked</div>
+            </a>
         </div>
 
-        <!-- NEXT UP: Primary action card (most prominent) -->
+        @* At-risk strip + screen-time bar intentionally not rendered: screen-time stakes are
+           Phase 8, and the spec forbids an empty warning shell. *@
+
+        <!-- NEXT UP: exactly one big next action -->
         @if (_childData.PendingChores.Count > 0)
         {
             var nextChore = _childData.PendingChores.First();
             var remainingChores = _childData.PendingChores.Skip(1).ToList();
-            
-            <div class="next-up-section">
-                <div class="next-up-header">
-                    <span class="next-up-badge">NEXT UP</span>
-                </div>
-                
-                <div class="next-up-card">
-                    <SwipeableChoreCard
-                        Chore="@nextChore"
-                        OnComplete="HandleChoreComplete"
-                        OnRequestHelp="HandleHelpRequest"
-                        OnUndo="HandleChoreUndo"
-                        IsProcessing="@(_processingChoreId == nextChore.ChoreDefinitionId)" />
-                </div>
-                
-                <div class="swipe-hint">
-                    <div class="swipe-hint-item help">
-                        <span class="swipe-hint-arrow">←</span>
-                        <span class="swipe-hint-text">Help</span>
-                    </div>
-                    <span class="swipe-hint-divider">swipe</span>
-                    <div class="swipe-hint-item done">
-                        <span class="swipe-hint-text">Done</span>
-                        <span class="swipe-hint-arrow">→</span>
+
+            <div class="kh-next">
+                <div class="kh-next-label">NEXT UP</div>
+                <div class="kh-next-body">
+                    <span class="kh-next-tile">
+                        <IconTile IconName="@nextChore.LucideIconName" Slot="@nextChore.TileSlot" Size="40" />
+                    </span>
+                    <div class="kh-next-card">
+                        <SwipeableChoreCard
+                            Chore="@nextChore"
+                            OnComplete="HandleChoreComplete"
+                            OnRequestHelp="HandleHelpRequest"
+                            OnUndo="HandleChoreUndo"
+                            IsProcessing="@(_processingChoreId == nextChore.ChoreDefinitionId)" />
                     </div>
                 </div>
+                <div class="kh-swipe-hint">
+                    <span class="kh-hint-help">← Help</span>
+                    <span class="kh-hint-divider">swipe</span>
+                    <span class="kh-hint-done">Done →</span>
+                </div>
+                @if (remainingChores.Count > 0)
+                {
+                    <button type="button" class="kh-more-toggle" @onclick="ToggleMoreToday">
+                        @remainingChores.Count more today @(_moreExpanded ? "↑" : "→")
+                    </button>
+                }
             </div>
-            
-            <!-- MORE TODAY: Secondary list of remaining chores -->
-            @if (remainingChores.Count > 0)
+
+            @if (_moreExpanded && remainingChores.Count > 0)
             {
-                <div class="more-today-section">
-                    <div class="section-header-bar">
-                        <span class="section-header-title">More Today</span>
-                        <span class="section-header-count">@remainingChores.Count</span>
-                    </div>
-                    
-                    <div class="chore-stack">
-                        @foreach (var chore in remainingChores)
-                        {
-                            <SwipeableChoreCard
-                                Chore="@chore"
-                                OnComplete="HandleChoreComplete"
-                                OnRequestHelp="HandleHelpRequest"
-                                OnUndo="HandleChoreUndo"
-                                IsProcessing="@(_processingChoreId == chore.ChoreDefinitionId)" />
-                        }
-                    </div>
+                <div class="kh-more-list">
+                    @foreach (var chore in remainingChores)
+                    {
+                        <SwipeableChoreCard
+                            Chore="@chore"
+                            OnComplete="HandleChoreComplete"
+                            OnRequestHelp="HandleHelpRequest"
+                            OnUndo="HandleChoreUndo"
+                            IsProcessing="@(_processingChoreId == chore.ChoreDefinitionId)" />
+                    }
                 </div>
             }
         }
         else if (_childData.TodayTotalCount > 0)
         {
-            <!-- All Done State -->
-            <div class="celebration-banner">
-                <div class="celebration-icon">⭐</div>
-                <div class="celebration-text">
+            <!-- All Done State (celebration surface) -->
+            <div class="kh-banner kh-banner-done">
+                <div class="kh-banner-icon">⭐</div>
+                <div class="kh-banner-text">
                     <strong>Amazing work!</strong>
-                    <span>You finished all your chores today</span>
+                    <span>You finished everything today</span>
                 </div>
             </div>
         }
         else
         {
             <!-- No Chores Today -->
-            <div class="day-off-banner">
-                <div class="day-off-icon">😎</div>
-                <div class="day-off-text">
-                    <strong>Day Off!</strong>
-                    <span>No chores scheduled for today</span>
+            <div class="kh-banner">
+                <div class="kh-banner-icon-mono">
+                    <IconTile IconName="moon" Mono="true" Size="20" />
+                </div>
+                <div class="kh-banner-text">
+                    <strong>Day off</strong>
+                    <span>Nothing scheduled for today</span>
                 </div>
             </div>
         }
 
-        <!-- WEEKLY PROGRESS: Shows flexible chores progress -->
-        @if (_childData.WeeklyProgress?.ChoreProgress.Count > 0)
-        {
-            <div class="weekly-section">
-                <div class="section-header-bar">
-                    <span class="section-header-title">This Week</span>
-                    <span class="section-header-subtitle">@GetWeeklyCompletedCount() of @GetWeeklyTotalCount()</span>
-                </div>
-                <div class="weekly-grid">
-                    @foreach (var progress in _childData.WeeklyProgress.ChoreProgress)
-                    {
-                        var progressPercent = progress.TargetCount > 0 
-                            ? Math.Min(100, (progress.CompletedCount * 100 / progress.TargetCount)) 
-                            : 0;
-                        var isComplete = progress.CompletedCount >= progress.TargetCount;
-                        
-                        <div class="weekly-item @(isComplete ? "complete" : "")">
-                            <span class="weekly-item-icon">
-                                <IconTile IconName="@progress.ChoreDefinition.LucideIconName" Slot="@progress.ChoreDefinition.TileSlot" Size="22" />
-                            </span>
-                            <div class="weekly-item-info">
-                                <span class="weekly-item-name">@progress.ChoreDefinition.Name</span>
-                                <div class="weekly-item-progress">
-                                    <div class="weekly-progress-bar">
-                                        <div class="weekly-progress-fill" style="width: @progressPercent%"></div>
-                                    </div>
-                                    <span class="weekly-item-count">@progress.CompletedCount/@progress.TargetCount</span>
-                                </div>
-                            </div>
-                            @if (isComplete)
-                            {
-                                <span class="weekly-item-check">✓</span>
-                            }
-                        </div>
-                    }
-                </div>
-            </div>
-        }
-
-        <!-- COMPLETED: Collapsed section showing finished chores -->
+        <!-- COMPLETED: retired into a one-line receipt -->
         @if (_childData.CompletedChores.Count > 0)
         {
-            <div class="completed-section">
-                <button class="completed-toggle" @onclick="ToggleDoneSection">
-                    <span class="completed-toggle-title">Completed</span>
-                    <span class="completed-toggle-count">@_childData.CompletedChores.Count</span>
-                    <span class="completed-toggle-icon bi @(_doneExpanded ? "bi-chevron-up" : "bi-chevron-down")"></span>
+            <div class="kh-done">
+                <button type="button" class="kh-done-toggle" @onclick="ToggleDoneSection">
+                    <span class="kh-done-check">
+                        <IconTile IconName="check" Mono="true" Size="14" />
+                    </span>
+                    <span class="kh-done-title">Done · @_childData.CompletedChores.Count</span>
+                    <span class="kh-done-names">@DoneSummary()</span>
+                    <span class="kh-done-chevron">
+                        <IconTile IconName="@(_doneExpanded ? "chevron-up" : "chevron-down")" Mono="true" Size="14" />
+                    </span>
                 </button>
-                
+
                 @if (_doneExpanded)
                 {
-                    <div class="completed-list">
+                    <div class="kh-done-list">
                         @foreach (var chore in _childData.CompletedChores)
                         {
-                            <div class="completed-item @(chore.IsApproved ? "approved" : "pending")">
-                                <span class="completed-item-status">
-                                    @if (chore.IsApproved)
-                                    {
-                                        <span class="bi bi-check-circle-fill"></span>
-                                    }
-                                    else
-                                    {
-                                        <span class="bi bi-hourglass-split"></span>
-                                    }
+                            <div class="kh-done-item">
+                                <span class="kh-done-tile">
+                                    <IconTile IconName="@chore.LucideIconName" Slot="@chore.TileSlot" Size="22" />
                                 </span>
-                                <span class="completed-item-name">@chore.ChoreName</span>
+                                <span class="kh-done-name">@chore.ChoreName</span>
+                                @if (!chore.IsApproved)
+                                {
+                                    <span class="kh-done-waiting">waiting for approval</span>
+                                }
                                 @if (chore.EarnValue > 0)
                                 {
-                                    <span class="completed-item-value @(chore.IsApproved ? "earned" : "")">
+                                    <span class="kh-done-value @(chore.IsApproved ? "earned" : "")">
                                         @(chore.IsApproved ? "+" : "")$@chore.EarnValue.ToString("F2")
                                     </span>
                                 }
@@ -653,6 +484,7 @@ else
     
     // Child dashboard state
     private bool _doneExpanded = false;
+    private bool _moreExpanded = false;
     private int? _processingChoreId;
 
     private ParentDashboardData? _parentData;
@@ -690,96 +522,28 @@ else
         }
     }
 
-    // Gamified theme helper methods
-    private int GetProgressPercent()
+    /// <summary>First weekly-frequency chore's progress — records-strip cell (#12b "WALKS" cell).
+    /// Weekly chores always render as counters ("1 of 3"), never day slots.</summary>
+    private WeeklyChoreProgress? FirstWeeklyProgress => _childData?.WeeklyProgress?.ChoreProgress.FirstOrDefault();
+
+    private static string WeeklyCellSub(WeeklyChoreProgress weekly)
     {
-        if (_childData == null || _childData.TodayTotalCount == 0) return 0;
-        return (int)Math.Round((_childData.TodayCompletedCount * 100.0) / _childData.TodayTotalCount);
-    }
-    
-    private int GetAchievementPercent()
-    {
-        if (_childData == null || _childData.TotalAchievements == 0) return 0;
-        return (int)Math.Round((_childData.AchievementsEarned * 100.0) / _childData.TotalAchievements);
-    }
-    
-    private static string GetRarityClass(AchievementRarity rarity)
-    {
-        return rarity switch
-        {
-            AchievementRarity.Legendary => "rarity-legendary",
-            AchievementRarity.Epic => "rarity-epic",
-            AchievementRarity.Rare => "rarity-rare",
-            AchievementRarity.Uncommon => "rarity-uncommon",
-            _ => "rarity-common"
-        };
-    }
-    
-    private int GetTodayLevel()
-    {
-        var percent = GetProgressPercent();
-        return percent switch
-        {
-            100 => 5,
-            >= 75 => 4,
-            >= 50 => 3,
-            >= 25 => 2,
-            > 0 => 1,
-            _ => 0
-        };
-    }
-    
-    private string GetLevelClass()
-    {
-        return GetTodayLevel() switch
-        {
-            5 => "level-legendary",
-            4 => "level-epic",
-            3 => "level-rare",
-            2 => "level-uncommon",
-            1 => "level-common",
-            _ => "level-starter"
-        };
-    }
-    
-    private string GetLevelIcon()
-    {
-        return GetTodayLevel() switch
-        {
-            5 => "👑",
-            4 => "💎",
-            3 => "🔥",
-            2 => "⚡",
-            1 => "⭐",
-            _ => "🌱"
-        };
-    }
-    
-    private string GetLevelTitle()
-    {
-        return GetTodayLevel() switch
-        {
-            5 => "LEGENDARY",
-            4 => "EPIC",
-            3 => "RARE",
-            2 => "UNCOMMON",
-            1 => "COMMON",
-            _ => "STARTER"
-        };
+        if (weekly.QuotaMet) return "done for the week";
+        return weekly.PotentialEarnings > 0
+            ? $"{weekly.RemainingCount} more → ${weekly.PotentialEarnings:0.##}"
+            : $"{weekly.RemainingCount} more this week";
     }
 
-    private int GetWeeklyCompletedCount()
+    /// <summary>Inline receipt summary of today's finished chores (first few names).</summary>
+    private string DoneSummary()
     {
-        if (_childData?.WeeklyProgress?.ChoreProgress == null) return 0;
-        return _childData.WeeklyProgress.ChoreProgress.Sum(p => p.CompletedCount);
+        if (_childData == null) return string.Empty;
+        var names = _childData.CompletedChores.Select(c => c.ChoreName).ToList();
+        return names.Count <= 3
+            ? string.Join(" · ", names)
+            : string.Join(" · ", names.Take(3)) + $" +{names.Count - 3}";
     }
 
-    private int GetWeeklyTotalCount()
-    {
-        if (_childData?.WeeklyProgress?.ChoreProgress == null) return 0;
-        return _childData.WeeklyProgress.ChoreProgress.Sum(p => p.TargetCount);
-    }
-    
     private static string DayLetter(DateOnly d) => d.DayOfWeek switch
     {
         DayOfWeek.Sunday => "S",
@@ -1037,6 +801,11 @@ else
     private void ToggleDoneSection()
     {
         _doneExpanded = !_doneExpanded;
+    }
+
+    private void ToggleMoreToday()
+    {
+        _moreExpanded = !_moreExpanded;
     }
     
     private async Task HandleChoreComplete(TrackerChoreItem chore)

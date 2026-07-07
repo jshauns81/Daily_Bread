@@ -13,10 +13,23 @@
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>History</PageTitle>
+<PageTitle>Ledger</PageTitle>
 
 <div class="ledger-container">
-    <h1>History</h1>
+    <!-- Header (#3c): title + Record payout pill -->
+    <div class="lg-head">
+        <h1 class="lg-title">Ledger</h1>
+        @if (SelectedAccountId > 0 && SelectedBalance != null)
+        {
+            <button type="button"
+                    class="lg-payout-pill"
+                    @onclick="ShowCashOutModal"
+                    disabled="@(!SelectedBalance.CanCashOut)"
+                    title="@(SelectedBalance.CanCashOut ? "Record a payout" : $"Needs ${SelectedBalance.CashOutThreshold:F2} balance to cash out")">
+                Record payout
+            </button>
+        }
+    </div>
 
     <!-- Filters Card -->
     @if (IsParent)
@@ -82,23 +95,53 @@
     }
     else if (SelectedAccountId > 0 && SelectedBalance != null)
     {
-        <!-- Balance Card -->
-        <BalanceCard Balance="@CreateLegacyBalance()" 
-                     OnCashOut="ShowCashOutModal" 
-                     OnBonus="ShowBonusModal"
-                     OnPenalty="ShowPenaltyModal" />
-
-        <!-- Quick Stats -->
-        @if (Stats != null)
-        {
-            <div class="stats-grid">
-                <StatCard Value="@Stats.TotalEarnings.ToString("F2")" Label="Earnings" Prefix="$" Color="StatColor.Success" Background="StatBackground.SuccessSubtle" />
-                <StatCard Value="@Stats.TotalDeductions.ToString("F2")" Label="Deductions" Prefix="$" Color="StatColor.Danger" Background="StatBackground.DangerSubtle" />
-                <StatCard Value="@Stats.TotalBonuses.ToString("F2")" Label="Bonuses" Prefix="$" Color="StatColor.Info" Background="StatBackground.InfoSubtle" />
-                <StatCard Value="@Stats.TotalPenalties.ToString("F2")" Label="Penance" Prefix="$" Color="StatColor.Warning" Background="StatBackground.WarningSubtle" />
-                <StatCard Value="@Stats.TotalPayouts.ToString("F2")" Label="Paid Out" Prefix="$" Background="StatBackground.SecondarySubtle" />
-                <StatCard Value="@Stats.TransactionCount" Label="Transactions" />
+        <!-- Balance hero (#3c): mint border tint + glow. No savings-goal card (removed per amendments). -->
+        <div class="lg-hero">
+            <div class="lg-hero-top">
+                <span class="lg-hero-label">CURRENT BALANCE</span>
+                @if (SelectedBalance.CanCashOut)
+                {
+                    <span class="lg-ready-chip">CASH OUT READY</span>
+                }
             </div>
+            <div class="lg-hero-amt @(SelectedBalance.CurrentBalance < 0 ? "neg" : "")">$@SelectedBalance.CurrentBalance.ToString("F2")</div>
+            <div class="lg-hero-sub">
+                @if (ThisWeekEarned > 0)
+                {
+                    <span>+$@ThisWeekEarned.ToString("F2") earned this week</span>
+                }
+                else if (!SelectedBalance.CanCashOut)
+                {
+                    <span>needs $@SelectedBalance.CashOutThreshold.ToString("F2") to cash out</span>
+                }
+                else
+                {
+                    <span>nothing earned yet this week</span>
+                }
+            </div>
+        </div>
+
+        @if (IsParent)
+        {
+            <!-- Parent adjustments (bonus / penance / adjustment flows unchanged) -->
+            <div class="lg-actions">
+                <button type="button" class="lg-action-btn money" @onclick="ShowBonusModal">+ Bonus</button>
+                <button type="button" class="lg-action-btn risk" @onclick="ShowPenaltyModal">− Penance</button>
+                <button type="button" class="lg-action-btn" @onclick="ShowAdjustmentModal">± Adjustment</button>
+            </div>
+
+            <!-- Quick Stats (parent only) -->
+            @if (Stats != null)
+            {
+                <div class="stats-grid">
+                    <StatCard Value="@Stats.TotalEarnings.ToString("F2")" Label="Earnings" Prefix="$" Color="StatColor.Success" Background="StatBackground.SuccessSubtle" />
+                    <StatCard Value="@Stats.TotalDeductions.ToString("F2")" Label="Deductions" Prefix="$" Color="StatColor.Danger" Background="StatBackground.DangerSubtle" />
+                    <StatCard Value="@Stats.TotalBonuses.ToString("F2")" Label="Bonuses" Prefix="$" Color="StatColor.Info" Background="StatBackground.InfoSubtle" />
+                    <StatCard Value="@Stats.TotalPenalties.ToString("F2")" Label="Penance" Prefix="$" Color="StatColor.Warning" Background="StatBackground.WarningSubtle" />
+                    <StatCard Value="@Stats.TotalPayouts.ToString("F2")" Label="Paid Out" Prefix="$" Background="StatBackground.SecondarySubtle" />
+                    <StatCard Value="@Stats.TransactionCount" Label="Transactions" />
+                </div>
+            }
         }
     }
     else if (!IsParent && SelectedAccountId == 0)
@@ -132,78 +175,48 @@
 
     @if (SelectedAccountId > 0)
     {
-        <!-- Transactions Table -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Transaction History</h5>
-                @if (IsParent)
+        <!-- Transactions (#3c list: THIS WEEK, then earlier) -->
+        @if (IsLoading)
+        {
+            <div class="lg-list-skeleton">
+                @for (int i = 0; i < 5; i++)
                 {
-                    <button class="btn btn-outline-primary btn-sm" @onclick="ShowAdjustmentModal">
-                        + Add Adjustment
-                    </button>
+                    <Skeleton Type="SkeletonType.Text" Width="100%" Height="34px" />
                 }
             </div>
-            <div class="card-body">
-                @if (IsLoading)
-                {
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th><Skeleton Type="SkeletonType.Text" Width="80px" /></th>
-                                <th><Skeleton Type="SkeletonType.Text" Width="60px" /></th>
-                                <th><Skeleton Type="SkeletonType.Text" Width="150px" /></th>
-                                <th><Skeleton Type="SkeletonType.Text" Width="70px" /></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (int i = 0; i < 5; i++)
-                            {
-                                <Skeleton Type="SkeletonType.TableRow" Columns="4" />
-                            }
-                        </tbody>
-                    </table>
-                }
-                else if (Transactions.Count == 0)
-                {
-                    <EmptyState Type="EmptyStateType.NoTransactions" 
-                                CssClass="empty-state-compact" />
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                    <th class="text-end">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var txn in Transactions)
-                                {
-                                    <tr>
-                                        <td>@txn.TransactionDate.ToString("MMM d, yyyy")</td>
-                                        <td>
-                                            <span class="badge @GetTypeBadgeClass(txn.Type)">
-                                                @GetTypeDisplay(txn.Type)
-                                            </span>
-                                        </td>
-                                        <td>@txn.Description</td>
-                                        <td class="text-end">
-                                            <span class="@(txn.Amount >= 0 ? "text-success" : "text-danger") fw-bold">
-                                                @(txn.Amount >= 0 ? "+" : "")$@Math.Abs(txn.Amount).ToString("F2")
-                                            </span>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-        </div>
+        }
+        else if (Transactions.Count == 0)
+        {
+            <EmptyState Type="EmptyStateType.NoTransactions"
+                        CssClass="empty-state-compact" />
+        }
+        else
+        {
+            var weekStart = WeekStart;
+            var thisWeek = Transactions.Where(t => t.TransactionDate >= weekStart).ToList();
+            var earlier = Transactions.Where(t => t.TransactionDate < weekStart).ToList();
+
+            @if (thisWeek.Count > 0)
+            {
+                <div class="lg-group-label">THIS WEEK</div>
+                <div class="lg-list">
+                    @foreach (var txn in thisWeek)
+                    {
+                        @TransactionRow(txn)
+                    }
+                </div>
+            }
+            @if (earlier.Count > 0)
+            {
+                <div class="lg-group-label">EARLIER</div>
+                <div class="lg-list">
+                    @foreach (var txn in earlier)
+                    {
+                        @TransactionRow(txn)
+                    }
+                </div>
+            }
+        }
     }
 </div>
 
@@ -378,6 +391,12 @@
             Transactions = await LedgerService.GetAccountTransactionsAsync(SelectedAccountId, FromDate, ToDate);
             SelectedBalance = await PayoutService.GetAccountBalanceSummaryAsync(SelectedAccountId);
             Stats = await LedgerService.GetAccountTransactionStatsAsync(SelectedAccountId, FromDate, ToDate);
+
+            // Hero secondary line: this week's earnings regardless of the active date filter.
+            var weekTxns = await LedgerService.GetAccountTransactionsAsync(SelectedAccountId, WeekStart, DateProvider.Today);
+            ThisWeekEarned = weekTxns
+                .Where(t => t.Amount > 0 && t.Type is TransactionType.ChoreEarning or TransactionType.Bonus)
+                .Sum(t => t.Amount);
         }
         catch (Exception ex)
         {
@@ -506,16 +525,63 @@
         }
     }
 
-    private string GetTypeBadgeClass(TransactionType type) => type switch
+    /// <summary>Week start (Sunday) — same convention as DashboardService weekly earnings.</summary>
+    private DateOnly WeekStart => DateProvider.Today.AddDays(-(int)DateProvider.Today.DayOfWeek);
+
+    /// <summary>"+$X earned this week" for the balance hero, independent of the date filter.</summary>
+    private decimal ThisWeekEarned { get; set; }
+
+    /// <summary>Ledger row (#3c): chore tile (or type badge) · name + date/type sub · amount.</summary>
+    private RenderFragment<LedgerTransaction> TransactionRow => txn =>
+        @<div class="lg-row">
+            @if (txn.Type == TransactionType.Payout)
+            {
+                <span class="lg-badge payout">↓</span>
+            }
+            else if (txn.ChoreLog?.ChoreDefinition is { } chore)
+            {
+                <span class="lg-row-tile">
+                    <IconTile IconName="@chore.LucideIconName" Slot="@chore.TileSlot" Size="26" />
+                </span>
+            }
+            else
+            {
+                <span class="lg-badge @BadgeClass(txn.Type)">
+                    <IconTile IconName="@BadgeIcon(txn.Type)" Mono="true" Size="13" />
+                </span>
+            }
+            <div class="lg-row-info">
+                <div class="lg-row-name">@(string.IsNullOrWhiteSpace(txn.Description) ? GetTypeDisplay(txn.Type) : txn.Description)</div>
+                <div class="lg-row-sub">@DateLabel(txn.TransactionDate) · @GetTypeDisplay(txn.Type)</div>
+            </div>
+            <span class="lg-row-amt @(txn.Amount >= 0 ? "pos" : "neg")">
+                @(txn.Amount >= 0 ? "+" : "−")$@Math.Abs(txn.Amount).ToString("F2")
+            </span>
+        </div>;
+
+    private string DateLabel(DateOnly date)
     {
-        TransactionType.ChoreEarning => "bg-success",
-        TransactionType.ChoreDeduction => "bg-danger",
-        TransactionType.Bonus => "bg-info",
-        TransactionType.Penalty => "bg-warning text-dark",
-        TransactionType.Adjustment => "bg-secondary",
-        TransactionType.Payout => "bg-primary",
-        TransactionType.Transfer => "bg-purple",
-        _ => "bg-secondary"
+        var today = DateProvider.Today;
+        if (date == today) return "Today";
+        if (date == today.AddDays(-1)) return "Yesterday";
+        if (date >= WeekStart && date <= today) return date.ToString("dddd");
+        return date.ToString("MMM d, yyyy");
+    }
+
+    private static string BadgeClass(TransactionType type) => type switch
+    {
+        TransactionType.ChoreEarning or TransactionType.Bonus => "money",
+        TransactionType.ChoreDeduction or TransactionType.Penalty => "risk",
+        _ => ""
+    };
+
+    private static string BadgeIcon(TransactionType type) => type switch
+    {
+        TransactionType.ChoreEarning => "check",
+        TransactionType.Bonus => "gift",
+        TransactionType.ChoreDeduction or TransactionType.Penalty => "circle-x",
+        TransactionType.Transfer => "credit-card",
+        _ => "wallet"
     };
 
     private string GetTypeDisplay(TransactionType type) => type switch

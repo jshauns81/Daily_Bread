@@ -16,12 +16,37 @@
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Activity</PageTitle>
+<PageTitle>@(IsParent ? "Activity" : "My Day")</PageTitle>
 
 @* Confetti celebration when all labors complete *@
 <Confetti IsActive="_showConfetti" OnComplete="() => _showConfetti = false" ParticleCount="60" />
 
-<div class="tracker-container">
+<div class="tracker-container @(IsParent ? "" : "myday")">
+    @if (!IsParent)
+    {
+        <!-- Kid "My Day" header (design #11a): title + day nav left, balance pill + progress ring right -->
+        <div class="md-head">
+            <div class="md-head-left">
+                <h1 class="md-title">My Day</h1>
+                <DateNavigator SelectedDate="SelectedDate"
+                               SelectedDateChanged="OnDateChanged"
+                               Today="Today"
+                               AllowPastNavigation="false"
+                               AllowFutureNavigation="false" />
+            </div>
+            <div class="md-head-right">
+                <span class="md-balance">$@Balance.ToString("F2")</span>
+                @if (TotalDayCount > 0)
+                {
+                    <div class="md-ring" style="background: conic-gradient(var(--db-accent) 0 @(RingDegrees())deg, var(--ds-bg-selected) @(RingDegrees())deg 360deg)">
+                        <span class="md-ring-inner">@DoneDayCount/@TotalDayCount</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
     <div class="tracker-header">
         <h1>Activity</h1>
 
@@ -32,7 +57,7 @@
                            AllowPastNavigation="IsParent"
                            AllowFutureNavigation="IsParent" />
 
-            @if (IsParent && _childProfiles.Count > 0)
+            @if (_childProfiles.Count > 0)
             {
                 <div class="child-filter">
                     <select class="child-filter-select" @bind="_selectedChildUserId" @bind:after="OnChildFilterChanged">
@@ -56,6 +81,7 @@
             </div>
         }
     </div>
+    }
 
     @if (IsLoading)
     {
@@ -86,6 +112,108 @@
                         Title="No Tasks Scheduled"
                         Message="@GetEmptyMessage()" />
         }
+    }
+    else if (!IsParent)
+    {
+        <!-- Kid day flow (#11a): time-of-day sections — completed receipt / current NOW glow / future recessed -->
+        @foreach (var sec in BuildDaySections())
+        {
+            var isNow = IsToday && sec.Part == CurrentDayPart;
+            var isFuture = IsToday && sec.Part > CurrentDayPart;
+
+            @if (sec.IsRetired && !_expandedSections.Contains(sec.Part))
+            {
+                <!-- Retired section: one-line receipt (tap to expand so completions can still be reviewed/undone) -->
+                <button type="button" class="md-receipt" @onclick="() => ToggleSection(sec.Part)">
+                    <span class="md-receipt-check">
+                        <IconTile IconName="check" Mono="true" Size="14" />
+                    </span>
+                    <span class="md-receipt-title">@sec.Title · @sec.DoneCount of @sec.Items.Count</span>
+                    <span class="md-receipt-names">@sec.Summary</span>
+                    <span class="md-receipt-chevron">
+                        <IconTile IconName="chevron-down" Mono="true" Size="13" />
+                    </span>
+                </button>
+            }
+            else
+            {
+                <div class="md-section @(isNow ? "is-now" : "") @(isFuture ? "is-future" : "")">
+                    <div class="md-section-head">
+                        <span class="md-section-icon @(sec.Part == DayPart.Evening ? "moon" : "sun")">
+                            <IconTile IconName="@sec.IconName" Mono="true" Size="14" />
+                        </span>
+                        <span class="md-section-label">@sec.Label</span>
+                        @if (isNow)
+                        {
+                            <span class="md-now-pill">NOW</span>
+                        }
+                        @if (sec.IsRetired)
+                        {
+                            <button type="button" class="md-section-collapse" @onclick="() => ToggleSection(sec.Part)">
+                                <IconTile IconName="chevron-up" Mono="true" Size="13" />
+                            </button>
+                        }
+                        <span class="md-section-count">@sec.DoneCount of @sec.Items.Count</span>
+                    </div>
+                    @foreach (var item in sec.Items)
+                    {
+                        <div class="md-row @(item.IsCompleted ? "is-done" : "") @(item.IsMissed ? "is-missed" : "") @(item.IsSkipped ? "is-excused" : "")">
+                            <span class="md-row-tile">
+                                <IconTile IconName="@item.LucideIconName" Slot="@item.TileSlot" Size="@(isFuture ? 26 : 30)" />
+                            </span>
+                            <div class="md-row-info">
+                                <div class="md-row-name">@item.ChoreName</div>
+                                @if (RowSub(item) is { } sub)
+                                {
+                                    <div class="md-row-sub">@sub</div>
+                                }
+                            </div>
+                            @if (item.IsHelp)
+                            {
+                                <span class="md-chip help">HELP SENT</span>
+                            }
+                            else if (item.IsMissed)
+                            {
+                                <span class="md-chip missed">MISSED</span>
+                            }
+                            else if (item.IsSkipped)
+                            {
+                                <span class="md-chip excused">EXCUSED</span>
+                            }
+                            @if (item.Value > 0)
+                            {
+                                <span class="md-row-pay">$@item.Value.ToString("F2")</span>
+                            }
+                            <button type="button"
+                                    class="md-check @(item.IsCompleted ? "checked" : "")"
+                                    disabled="@(IsCheckboxDisabled(item) || _processingItemId == item.ChoreDefinitionId)"
+                                    title="@(item.IsCompleted ? "Tap to undo" : "Mark as done")"
+                                    @onclick="() => ToggleChore(item)">
+                                @if (_processingItemId == item.ChoreDefinitionId)
+                                {
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                }
+                                else if (item.IsCompleted)
+                                {
+                                    <IconTile IconName="check" Mono="true" Size="14" />
+                                }
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        <!-- One honest footer line (replaces the 4 stat boxes) -->
+        <div class="md-footer">
+            <span class="md-footer-earned"><b>$@EarnedToday.ToString("F2")</b> earned today</span>
+            <span class="md-footer-progress">
+                <span class="md-footer-bar">
+                    <span class="md-footer-fill" style="width: @(TotalDayCount > 0 ? DoneDayCount * 100 / TotalDayCount : 0)%"></span>
+                </span>
+                <span class="md-footer-count">@DoneDayCount of @TotalDayCount</span>
+            </span>
+        </div>
     }
     else
     {
@@ -309,6 +437,113 @@
     private bool _showConfetti;
     private int _previousCompletedCount;
     private int? _processingItemId;
+
+    // ---- Kid "My Day" view (#11a): time-of-day sections derived in the component ----
+
+    private enum DayPart { Morning, Daytime, Evening }
+
+    private sealed record DaySection(DayPart Part, string Title, string Label, string IconName, List<TrackerChoreItem> Items)
+    {
+        public int DoneCount => Items.Count(i => i.IsCompleted);
+
+        /// <summary>Retired = nothing left to act on (everything completed or excused).</summary>
+        public bool IsRetired => Items.Count > 0 && Items.All(i => i.IsCompleted || i.IsSkipped);
+
+        /// <summary>Inline receipt summary — first few chore names.</summary>
+        public string Summary
+        {
+            get
+            {
+                var names = Items.Select(i => i.ChoreName).ToList();
+                return names.Count <= 3
+                    ? string.Join(" · ", names)
+                    : string.Join(" · ", names.Take(3)) + $" +{names.Count - 3}";
+            }
+        }
+    }
+
+    /// <summary>Sections the kid has manually expanded past their receipt state.</summary>
+    private readonly HashSet<DayPart> _expandedSections = [];
+
+    private static readonly string[] MorningWords =
+        ["morning", "breakfast", "wake", "make bed", "get dressed", "backpack", "school bag"];
+
+    private static readonly string[] EveningWords =
+        ["evening", "night", "dinner", "supper", "bedtime", "curb", "dishes", "dishwasher", "set table", "clear table", "pajama"];
+
+    /// <summary>Best-effort time-of-day bucket from the chore's name/description.
+    /// There is no schedule-time field on ChoreDefinition, so anything unmatched
+    /// lands in Daytime ("anytime today").</summary>
+    private static DayPart ClassifyDayPart(TrackerChoreItem item)
+    {
+        var text = $"{item.ChoreName} {item.Description}".ToLowerInvariant();
+        if (EveningWords.Any(text.Contains)) return DayPart.Evening;
+        if (MorningWords.Any(text.Contains)) return DayPart.Morning;
+        return DayPart.Daytime;
+    }
+
+    private DayPart CurrentDayPart
+    {
+        get
+        {
+            // Razor code blocks can't hold relational switch patterns ("< 12" reads as a tag).
+            var hour = DateProvider.Now.Hour;
+            if (hour < 12) return DayPart.Morning;
+            return hour < 17 ? DayPart.Daytime : DayPart.Evening;
+        }
+    }
+
+    private List<DaySection> BuildDaySections()
+    {
+        var groups = FilteredChoreItems
+            .GroupBy(ClassifyDayPart)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var sections = new List<DaySection>();
+        foreach (var part in new[] { DayPart.Morning, DayPart.Daytime, DayPart.Evening })
+        {
+            if (groups.TryGetValue(part, out var items) && items.Count > 0)
+            {
+                var (title, icon) = part switch
+                {
+                    DayPart.Morning => ("Morning", "sunrise"),
+                    DayPart.Daytime => ("Daytime", "sun"),
+                    _ => ("Evening", "moon"),
+                };
+                sections.Add(new DaySection(part, title, title.ToUpperInvariant(), icon, items));
+            }
+        }
+        return sections;
+    }
+
+    private void ToggleSection(DayPart part)
+    {
+        if (!_expandedSections.Remove(part))
+        {
+            _expandedSections.Add(part);
+        }
+    }
+
+    /// <summary>Row sub line: weekly chores get a counter, never day slots.</summary>
+    private static string? RowSub(TrackerChoreItem item)
+    {
+        var parts = new List<string>();
+        if (item.IsWeeklyFlexible && item.WeeklyTargetCount > 0)
+        {
+            parts.Add($"{item.WeeklyCompletedCount} of {item.WeeklyTargetCount} this week · any day");
+        }
+        if (item.Status == ChoreStatus.Completed)
+        {
+            parts.Add("waiting for approval");
+        }
+        return parts.Count > 0 ? string.Join(" · ", parts) : null;
+    }
+
+    private decimal EarnedToday => FilteredChoreItems.Where(c => c.IsCompleted).Sum(c => c.Value);
+    private int DoneDayCount => FilteredChoreItems.Count(c => c.IsCompleted);
+    private int TotalDayCount => FilteredChoreItems.Count;
+
+    private int RingDegrees() => TotalDayCount > 0 ? DoneDayCount * 360 / TotalDayCount : 0;
     
     private bool _showMissConfirmation;
     private bool _showSkipConfirmation;

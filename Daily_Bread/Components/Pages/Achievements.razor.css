@@ -1,856 +1,473 @@
 /* ===========================================
-   ACHIEVEMENTS PAGE - App Theme
+   ACHIEVEMENTS — design #3d
+   Unlocked = brand-gradient medal circles.
+   Locked = conic progress rings (accent on
+   selected bg), grayscale emoji at .55.
+   Bonus-paying badges carry a mint chip.
    =========================================== */
 
 .achievements-container {
-    max-width: 900px;
+    max-width: 720px;
     margin: 0 auto;
-    padding: var(--ds-space-4);
-    padding-bottom: calc(var(--bottom-nav-height, 60px) + env(safe-area-inset-bottom, 0px) + var(--ds-space-7));
+    padding-bottom: calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px) + var(--ds-space-6));
 }
 
-/* ===========================================
-   ACHIEVEMENT GRID (Desktop)
-   =========================================== */
-
-.achievement-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
-    gap: var(--ds-space-4) !important;
+/* --- Header --- */
+.ach-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: var(--ds-space-4);
 }
 
-.achievement-card {
-    display: flex !important;
-    align-items: center !important;
-    gap: var(--ds-space-4);
-    padding: var(--ds-space-4);
-    background: var(--ds-bg-elevated);
-    border-radius: var(--ds-radius-lg);
-    border: 2px solid var(--ds-bg-muted);
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.achievement-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    border-color: var(--ds-text-muted);
-}
-
-.achievement-card.earned {
-    border-color: var(--ds-semantic-success);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-semantic-success) 15%, transparent) 0%, var(--ds-bg-elevated) 100%);
-}
-
-.achievement-card.legendary {
-    border-color: var(--ds-semantic-highlight);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-semantic-highlight) 15%, transparent) 0%, var(--ds-bg-elevated) 100%);
-}
-
-.achievement-card.legendary.earned {
-    border-color: var(--ds-semantic-highlight);
-    box-shadow: 0 0 15px color-mix(in srgb, var(--ds-semantic-highlight) 30%, transparent);
-}
-
-.achievement-card.locked {
-    opacity: 0.7;
-}
-
-/* ===========================================
-   ACHIEVEMENT ICON
-   =========================================== */
-
-.achievement-icon-wrapper {
-    position: relative;
-    flex-shrink: 0;
-}
-
-.achievement-icon {
-    font-size: 2.5rem;
-    line-height: 1;
-}
-
-.achievement-icon.locked-icon {
-    filter: grayscale(100%);
-    opacity: 0.5;
-}
-
-.legendary-badge {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    font-size: 1rem;
-}
-
-.bonus-indicator {
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    font-size: 0.8rem;
-}
-
-/* ===========================================
-   ACHIEVEMENT INFO
-   =========================================== */
-
-.achievement-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.achievement-name {
+.ach-title {
+    font-size: 20px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: -.3px;
+    color: var(--db-text);
     margin: 0;
-    font-size: var(--ds-text-base);
+}
+
+.ach-sub {
+    font-size: 11.5px;
+    color: var(--db-text3);
+    margin: 2px 0 0;
+}
+
+.ach-bonuses-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    color: var(--db-text2);
+    font-size: 11.5px;
     font-weight: var(--ds-font-semibold);
-    color: var(--ds-text-primary);
+    cursor: pointer;
+    transition: border-color var(--ds-transition), color var(--ds-transition);
+    flex: none;
+}
+
+.ach-bonuses-btn:hover {
+    border-color: color-mix(in srgb, var(--db-money) 50%, transparent);
+    color: var(--db-text);
+}
+
+.ach-bonuses-count {
+    font-size: 10px;
+    font-weight: var(--ds-font-bold);
+    padding: 1px 7px;
+    border-radius: var(--ds-radius-pill);
+    background: color-mix(in srgb, var(--db-money) 16%, transparent);
+    color: var(--ds-money-light);
+}
+
+/* --- Bonus panel --- */
+.ach-bonus-panel {
+    background: var(--db-bg2);
+    border: 1px solid color-mix(in srgb, var(--db-money) 30%, transparent);
+    border-radius: var(--ds-radius-card);
+    padding: 12px 14px;
+    margin-bottom: var(--ds-space-4);
+}
+
+.ach-bonus-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ds-money-light);
+    margin-bottom: 8px;
+}
+
+.ach-bonus-close {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--db-text3);
+    display: flex;
+    cursor: pointer;
+}
+
+.ach-bonus-close:hover {
+    color: var(--db-text);
+}
+
+.bonus-item {
+    font-size: 12px;
+    color: var(--db-text2);
+    padding: 3px 0;
+}
+
+.bonus-item strong {
+    color: var(--db-text);
+}
+
+/* --- Recent-unlock banner (celebration surface) --- */
+.ach-unlock {
+    background: linear-gradient(140deg,
+        color-mix(in srgb, var(--db-accent) 22%, transparent),
+        color-mix(in srgb, var(--db-risk) 16%, transparent));
+    border: 1px solid color-mix(in srgb, var(--db-accent) 40%, transparent);
+    border-radius: var(--ds-radius-card);
+    padding: 12px 14px;
+    margin-bottom: var(--ds-space-4);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ach-unlock-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.ach-unlock-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--db-accent), var(--db-risk));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex: none;
+    box-shadow: 0 0 22px -4px color-mix(in srgb, var(--db-accent) 60%, transparent);
+}
+
+.ach-unlock-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ach-unlock-name {
+    font-size: 12.5px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-text);
+}
+
+.ach-unlock-desc {
+    font-size: 10.5px;
+    color: var(--db-text2);
+}
+
+.ach-unlock-dismiss {
+    align-self: flex-end;
+    padding: 6px 16px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--db-accent);
+    border: none;
+    color: var(--db-on-accent);
+    font-size: 12px;
+    font-weight: var(--ds-font-bold);
+    cursor: pointer;
+    box-shadow: var(--ds-glow-accent);
+}
+
+/* --- Chips --- */
+.ach-chip {
+    font-size: 10.5px;
+    font-weight: var(--ds-font-bold);
+    padding: 3px 8px;
+    border-radius: var(--ds-radius-pill);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex: none;
 }
 
-.achievement-card.locked .achievement-name {
-    color: var(--ds-text-muted);
+.ach-chip.pts {
+    background: color-mix(in srgb, var(--db-money) 16%, transparent);
+    color: var(--ds-money-light);
 }
 
-.achievement-points {
-    flex-shrink: 0;
+.ach-chip.bonus {
+    background: color-mix(in srgb, var(--db-money) 16%, transparent);
+    color: var(--ds-money-light);
+    border: 1px solid color-mix(in srgb, var(--db-money) 35%, transparent);
 }
 
-.progress.progress-sm {
-    height: 6px;
-    margin: 4px 0;
-    background: var(--ds-bg-hover);
-    border-radius: 9999px;
-    overflow: hidden;
+.ach-chip.rarity {
+    background: color-mix(in srgb, var(--db-accent) 14%, transparent);
+    color: var(--ds-accent-text);
 }
 
-.progress.progress-sm .progress-bar {
-    background: linear-gradient(90deg, var(--ds-accent-primary) 0%, var(--ds-semantic-success) 100%);
+/* --- Category filter pills --- */
+.ach-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: var(--ds-space-3);
+    scrollbar-width: none;
 }
 
-/* ===========================================
-   RARITY COLORS
-   =========================================== */
-
-.rarity-uncommon { 
-    border-left: 4px solid var(--ds-semantic-success) !important; 
+.ach-tabs::-webkit-scrollbar {
+    display: none;
 }
 
-.rarity-rare { 
-    border-left: 4px solid var(--ds-accent-primary) !important; 
+.ach-tab {
+    flex: none;
+    padding: 5px 12px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    color: var(--db-text2);
+    font-size: 11px;
+    font-weight: var(--ds-font-semibold);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color var(--ds-transition), color var(--ds-transition), border-color var(--ds-transition);
 }
 
-.rarity-epic { 
-    border-left: 4px solid var(--ds-accent-purple) !important; 
+.ach-tab:hover {
+    color: var(--db-text);
 }
 
-.rarity-legendary { 
-    border-left: 4px solid var(--ds-semantic-highlight) !important; 
+.ach-tab.active {
+    background: color-mix(in srgb, var(--db-accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--db-accent) 40%, transparent);
+    color: var(--ds-accent-text);
 }
 
-/* Badge colors */
-.bg-purple {
-    background-color: var(--ds-accent-purple) !important;
-    color: var(--ds-text-primary) !important;
+/* --- Grid (#3d): 3-col on phones, wider on desktop --- */
+.ach-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
 }
 
-/* ===========================================
-   NEW ACHIEVEMENTS BANNER (Desktop)
-   =========================================== */
-
-.new-achievements-banner {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-semantic-highlight) 20%, transparent) 0%, color-mix(in srgb, var(--ds-semantic-highlight) 10%, transparent) 100%);
-    border: 2px solid var(--ds-semantic-highlight);
-    border-radius: var(--ds-radius-xl);
-    padding: var(--ds-space-7);
+@media (min-width: 560px) {
+    .ach-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
 }
 
-.new-achievements-banner h3 {
-    color: var(--ds-text-primary);
-}
-
-.new-achievement-card {
-    background: var(--ds-bg-elevated);
-    border-radius: var(--ds-radius-lg);
-    padding: var(--ds-space-4);
-    min-width: 180px;
-    max-width: 220px;
+.ach-cell {
+    position: relative;
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: 14px;
+    padding: 12px 8px;
     text-align: center;
-    border: 2px solid var(--ds-bg-muted);
+    cursor: pointer;
+    transition: border-color var(--ds-transition);
+    font-family: inherit;
+    min-width: 0;
 }
 
-.new-achievement-card .achievement-icon {
-    font-size: 3rem;
+.ach-cell:hover {
+    border-color: color-mix(in srgb, var(--db-accent) 40%, transparent);
 }
 
-.new-achievement-card h5 {
-    color: var(--ds-text-primary);
-    margin: var(--ds-space-2) 0;
-}
-
-.new-achievement-card p {
-    color: var(--ds-text-muted);
-}
-
-.bonus-tag {
-    font-size: var(--ds-text-xs);
-    color: var(--ds-accent-purple);
-    font-weight: var(--ds-font-semibold);
-}
-
-/* ===========================================
-   NEW ACHIEVEMENTS BANNER (Mobile)
-   =========================================== */
-
-.new-achievements-mobile {
-    display: none;
-}
-
-.new-banner-header {
+.ach-medal {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--db-accent), var(--db-risk));
+    margin: 0 auto;
     display: flex;
     align-items: center;
-    gap: var(--ds-space-3);
-    padding: var(--ds-space-3) var(--ds-space-4);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-semantic-highlight) 25%, transparent) 0%, color-mix(in srgb, var(--ds-semantic-highlight) 10%, transparent) 100%);
-    border: 2px solid var(--ds-semantic-highlight);
-    border-radius: var(--ds-radius-lg);
-    cursor: pointer;
-    position: relative;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.ach-medal.big {
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+    box-shadow: 0 0 22px -4px color-mix(in srgb, var(--db-accent) 60%, transparent);
+}
+
+.ach-ring {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ach-ring.big {
+    width: 56px;
+    height: 56px;
+}
+
+.ach-ring-inner {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--db-bg2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    filter: grayscale(1);
+    opacity: .55;
+    color: var(--db-text2);
+    font-weight: var(--ds-font-bold);
+}
+
+.ach-ring.big .ach-ring-inner {
+    width: 46px;
+    height: 46px;
+    font-size: 20px;
+}
+
+.ach-cell-name {
+    display: block;
+    font-size: 10.5px;
+    font-weight: var(--ds-font-semibold);
+    color: var(--db-text);
+    margin-top: 7px;
     overflow: hidden;
-    transition: all 0.2s ease;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.new-banner-header.expanded {
-    border-radius: var(--ds-radius-lg) var(--ds-radius-lg) 0 0;
-    border-bottom: 1px solid var(--ds-semantic-highlight);
+.ach-cell.locked .ach-cell-name {
+    color: var(--db-text2);
 }
 
-.new-banner-glow {
+.ach-cell-sub {
+    display: block;
+    font-size: 9px;
+    color: var(--db-text3);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ach-cell-bonus {
     position: absolute;
-    top: 0;
-    left: -100%;
+    top: 8px;
+    right: 8px;
+    font-size: 9px;
+    font-weight: var(--ds-font-bold);
+    padding: 2px 6px;
+    border-radius: var(--ds-radius-pill);
+    background: color-mix(in srgb, var(--db-money) 16%, transparent);
+    color: var(--ds-money-light);
+}
+
+.ach-hidden-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--db-text3);
+    margin-top: var(--ds-space-5);
+}
+
+/* --- Detail modal --- */
+.ach-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    padding: 20px;
+}
+
+.ach-modal {
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: var(--ds-radius-hero);
+    max-width: 380px;
     width: 100%;
+    padding: 14px 16px 20px;
+    box-shadow: 0 18px 50px -12px rgba(0, 0, 0, .5);
+}
+
+.ach-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.ach-modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.ach-modal-name {
+    font-size: 16px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-text);
+    margin: 4px 0 0;
+}
+
+.ach-modal-desc {
+    font-size: 12px;
+    color: var(--db-text2);
+    margin: 0;
+}
+
+.ach-modal-earned {
+    font-size: 11.5px;
+    font-weight: var(--ds-font-semibold);
+    color: var(--ds-money-light);
+    background: color-mix(in srgb, var(--db-money) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-money) 30%, transparent);
+    border-radius: var(--ds-radius-md);
+    padding: 6px 12px;
+}
+
+.ach-modal-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 260px;
+}
+
+.ach-modal-bar {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--ds-bg-selected);
+    overflow: hidden;
+    display: block;
+}
+
+.ach-modal-fill {
+    display: block;
     height: 100%;
-    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ds-semantic-highlight) 30%, transparent), transparent);
-    animation: banner-glow 3s infinite;
+    background: var(--db-accent);
 }
 
-@keyframes banner-glow {
-    0% { left: -100%; }
-    50% { left: 100%; }
-    100% { left: 100%; }
-}
-
-.new-banner-content {
-    flex: 1;
-    position: relative;
-}
-
-.new-banner-text {
-    font-weight: var(--ds-font-semibold);
-    color: var(--ds-text-primary);
-    font-size: var(--ds-text-sm);
-}
-
-.new-banner-icons {
-    display: flex;
-    gap: var(--ds-space-1);
-}
-
-.new-icon-preview {
-    font-size: 1.25rem;
-    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--ds-semantic-highlight) 60%, transparent));
-    transition: transform 0.15s ease;
-}
-
-.new-icon-preview:active {
-    transform: scale(1.2);
-}
-
-.new-icon-more {
-    font-size: 0.75rem;
-    font-weight: var(--ds-font-semibold);
-    color: var(--ds-text-muted);
-    display: flex;
-    align-items: center;
-}
-
-.expand-icon {
-    color: var(--ds-text-muted);
-    font-size: 0.875rem;
-}
-
-.new-banner-expanded {
-    background: var(--ds-bg-elevated);
-    border: 2px solid var(--ds-semantic-highlight);
-    border-top: none;
-    border-radius: 0 0 var(--ds-radius-lg) var(--ds-radius-lg);
-    padding: var(--ds-space-3);
-    display: flex;
-    flex-direction: column;
-    gap: var(--ds-space-2);
-}
-
-.new-achievement-row {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-3);
-    padding: var(--ds-space-2) var(--ds-space-3);
-    background: var(--ds-bg-hover);
-    border-radius: var(--ds-radius-md);
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.new-achievement-row:active {
-    background: var(--ds-bg-muted);
-}
-
-.new-row-icon {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-
-.new-row-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.new-row-name {
-    font-weight: var(--ds-font-semibold);
-    color: var(--ds-text-primary);
-    font-size: var(--ds-text-sm);
+.ach-modal-count {
+    font-size: 10.5px;
+    color: var(--db-text3);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.new-row-desc {
-    font-size: var(--ds-text-xs);
-    color: var(--ds-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* ===========================================
-   MOBILE COMPACT LIST
-   =========================================== */
-
-.achievement-list-mobile {
-    display: none;
-}
-
-.achievement-row-wrapper {
-    margin-bottom: var(--ds-space-2);
-}
-
-.achievement-row {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-3);
-    padding: var(--ds-space-3) var(--ds-space-4);
-    background: var(--ds-bg-elevated);
-    border-radius: var(--ds-radius-md);
-    border: 1px solid var(--ds-bg-muted);
-    cursor: pointer;
-    min-height: 52px;
-    transition: all 0.15s ease;
-}
-
-.achievement-row:active {
-    background: var(--ds-bg-hover);
-}
-
-.achievement-row.expanded {
-    border-radius: var(--ds-radius-md) var(--ds-radius-md) 0 0;
-    border-bottom-color: transparent;
-}
-
-.achievement-row.earned {
-    border-color: color-mix(in srgb, var(--ds-semantic-success) 40%, transparent);
-    background: linear-gradient(90deg, color-mix(in srgb, var(--ds-semantic-success) 8%, transparent) 0%, var(--ds-bg-elevated) 100%);
-}
-
-.achievement-row.legendary.earned {
-    border-color: color-mix(in srgb, var(--ds-semantic-highlight) 40%, transparent);
-    background: linear-gradient(90deg, color-mix(in srgb, var(--ds-semantic-highlight) 8%, transparent) 0%, var(--ds-bg-elevated) 100%);
-}
-
-.achievement-row.locked {
-    opacity: 0.7;
-}
-
-.row-icon {
-    font-size: 2rem;
-    flex-shrink: 0;
-    line-height: 1;
-}
-
-.row-icon.locked-icon {
-    filter: grayscale(100%);
-    opacity: 0.5;
-}
-
-.row-content {
-    flex: 1;
-    min-width: 0;
+.ach-modal-bonus {
     display: flex;
     flex-direction: column;
     gap: 2px;
-}
-
-.row-name {
-    font-weight: var(--ds-font-semibold);
-    color: var(--ds-text-primary);
-    font-size: var(--ds-text-sm);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.achievement-row.locked .row-name {
-    color: var(--ds-text-muted);
-}
-
-.row-status {
-    font-size: var(--ds-text-xs);
-}
-
-.row-status.earned {
-    color: var(--ds-semantic-success);
-    font-weight: var(--ds-font-medium);
-}
-
-.row-status.progress-text {
-    color: var(--ds-accent-primary);
-}
-
-.row-status.secret {
-    color: var(--ds-text-muted);
-}
-
-.row-status.locked-status {
-    color: var(--ds-text-muted);
-}
-
-.row-points {
-    flex-shrink: 0;
-    font-size: var(--ds-text-xs);
-    padding: var(--ds-space-1) var(--ds-space-2);
-}
-
-.row-expand-icon {
-    flex-shrink: 0;
-    color: var(--ds-text-muted);
-    font-size: 0.75rem;
-}
-
-/* ===========================================
-   ROW DETAIL (Inline Expansion)
-   =========================================== */
-
-.achievement-row-detail {
-    background: var(--ds-bg-hover);
-    border: 1px solid var(--ds-bg-muted);
-    border-top: none;
-    border-radius: 0 0 var(--ds-radius-md) var(--ds-radius-md);
-    padding: var(--ds-space-4);
-    display: flex;
-    flex-direction: column;
-    gap: var(--ds-space-3);
-}
-
-.achievement-row-detail.rarity-uncommon {
-    border-left: 4px solid var(--ds-semantic-success);
-}
-
-.achievement-row-detail.rarity-rare {
-    border-left: 4px solid var(--ds-accent-primary);
-}
-
-.achievement-row-detail.rarity-epic {
-    border-left: 4px solid var(--ds-accent-purple);
-}
-
-.achievement-row-detail.rarity-legendary {
-    border-left: 4px solid var(--ds-semantic-highlight);
-}
-
-.detail-description {
-    color: var(--ds-text-secondary);
-    font-size: var(--ds-text-sm);
-    margin: 0;
-    line-height: 1.5;
-}
-
-.detail-progress {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ds-space-1);
-}
-
-.detail-progress .progress {
-    height: 8px;
-    background: var(--ds-bg-muted);
-    border-radius: 9999px;
-    overflow: hidden;
-}
-
-.detail-progress .progress-bar {
-    background: linear-gradient(90deg, var(--ds-accent-primary) 0%, var(--ds-semantic-success) 100%);
-}
-
-.progress-label {
-    font-size: var(--ds-text-xs);
-    color: var(--ds-text-muted);
-}
-
-.detail-earned {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-    font-size: var(--ds-text-sm);
-    color: var(--ds-semantic-success);
-}
-
-.detail-earned .bi {
-    font-size: 1rem;
-}
-
-.detail-bonus {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-2) var(--ds-space-3);
-    background: rgba(180, 142, 173, 0.1);
-    border-radius: var(--ds-radius-sm);
-    font-size: var(--ds-text-sm);
-    color: var(--ds-accent-purple);
-}
-
-.detail-rarity {
-    display: flex;
-    justify-content: flex-end;
-}
-
-/* ===========================================
-   DETAIL MODAL (Desktop Only)
-   =========================================== */
-
-.modal-content {
-    background: var(--ds-bg-elevated) !important;
-    color: var(--ds-text-primary);
-    border: 1px solid var(--ds-bg-muted);
-}
-
-.modal-content h4 {
-    color: var(--ds-text-primary);
-}
-
-.modal-content p {
-    color: var(--ds-text-muted);
-}
-
-.achievement-detail-icon {
-    font-size: 5rem;
-}
-
-.achievement-detail-icon.locked {
-    filter: grayscale(100%);
-    opacity: 0.5;
-}
-
-/* Modal progress bar with centered text */
-.modal-progress-container {
-    position: relative;
-    margin-bottom: 0.5rem;
-}
-
-.modal-progress-container .progress {
-    background: var(--ds-bg-hover);
-    border-radius: 9999px;
-    overflow: hidden;
-}
-
-.modal-progress-container .progress-bar {
-    background: linear-gradient(90deg, var(--ds-accent-primary) 0%, var(--ds-semantic-success) 100%);
-}
-
-.modal-progress-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-weight: var(--ds-font-bold);
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-primary);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    z-index: 1;
-}
-
-.bonus-section {
-    background: rgba(180, 142, 173, 0.15);
+    font-size: 11.5px;
+    color: var(--db-text2);
+    background: color-mix(in srgb, var(--db-money) 8%, transparent);
     border-radius: var(--ds-radius-md);
-    padding: var(--ds-space-4);
-    border: 1px solid rgba(180, 142, 173, 0.3);
+    padding: 8px 12px;
 }
 
-.bonus-section h6 {
-    color: var(--ds-accent-purple);
-}
-
-.bonus-section p {
-    color: var(--ds-text-primary);
-}
-
-/* ===========================================
-   BONUS PANEL
-   =========================================== */
-
-.bonus-item {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-2) 0;
-    border-bottom: 1px solid var(--ds-bg-muted);
-    color: var(--ds-text-primary);
-}
-
-.bonus-item:last-child {
-    border-bottom: none;
-}
-
-.bonus-icon {
-    font-size: 1.5rem;
-}
-
-/* ===========================================
-   CATEGORY TABS
-   =========================================== */
-
-.category-tabs-wrapper {
-    background: var(--ds-bg-primary);
-}
-
-.category-tabs-desktop {
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
-    gap: var(--ds-space-1);
-}
-
-.category-tabs-desktop::-webkit-scrollbar {
-    height: 4px;
-}
-
-.category-tabs-desktop::-webkit-scrollbar-thumb {
-    background: var(--ds-bg-muted);
-    border-radius: 2px;
-}
-
-.nav-pills .nav-link {
-    color: var(--ds-text-muted);
-    background: var(--ds-bg-hover);
-    border-radius: var(--ds-radius-md);
-    padding: var(--ds-space-2) var(--ds-space-4);
-    white-space: nowrap;
-    font-size: var(--ds-text-sm);
-    transition: all 0.15s ease;
-}
-
-.nav-pills .nav-link:hover {
-    color: var(--ds-text-primary);
-    background: var(--ds-bg-muted);
-}
-
-.nav-pills .nav-link.active {
-    color: var(--ds-text-primary) !important;
-    background: var(--ds-accent-primary) !important;
-}
-
-/* ===========================================
-   CATEGORY DROPDOWN (Mobile)
-   =========================================== */
-
-.category-dropdown-mobile {
-    display: none;
-}
-
-.category-select {
-    width: 100%;
-    padding: var(--ds-space-3) var(--ds-space-4);
-    padding-right: var(--ds-space-8);
-    font-size: var(--ds-text-sm);
-    font-weight: var(--ds-font-medium);
-    color: var(--ds-text-primary);
-    background-color: var(--ds-bg-elevated);
-    border: 1px solid var(--ds-bg-muted);
-    border-radius: var(--ds-radius-md);
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23d8dee9' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right var(--ds-space-3) center;
-    background-size: 16px 12px;
-    transition: all 0.15s ease;
-}
-
-.category-select:hover {
-    border-color: var(--ds-text-muted);
-}
-
-.category-select:focus {
-    outline: none;
-    border-color: var(--ds-accent-primary);
-    box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.15);
-}
-
-.category-select option {
-    background: var(--ds-bg-elevated);
-    color: var(--ds-text-primary);
-    padding: var(--ds-space-2);
-}
-
-/* ===========================================
-   MOBILE RESPONSIVE (< 768px)
-   =========================================== */
-
-@media (max-width: 767.98px) {
-    .achievements-container {
-        padding: var(--ds-space-3);
-    }
-    
-    /* Hide desktop elements on mobile */
-    .new-achievements-desktop,
-    .achievement-grid-desktop,
-    .achievement-modal-desktop,
-    .category-tabs-desktop {
-        display: none !important;
-    }
-    
-    /* Show mobile elements */
-    .new-achievements-mobile,
-    .achievement-list-mobile,
-    .category-dropdown-mobile {
-        display: block;
-    }
-    
-    /* Sticky category dropdown */
-    .category-tabs-wrapper {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        margin: 0 calc(-1 * var(--ds-space-3));
-        padding: var(--ds-space-2) var(--ds-space-3);
-        border-bottom: 1px solid var(--ds-bg-muted);
-    }
-    
-    .nav-pills {
-        margin-bottom: 0 !important;
-        padding-bottom: var(--ds-space-1);
-    }
-    
-    .nav-pills .nav-link {
-        padding: var(--ds-space-2) var(--ds-space-3);
-        font-size: var(--ds-text-xs);
-    }
-    
-    /* Tighter spacing for list */
-    .achievement-row-wrapper {
-        margin-bottom: var(--ds-space-1);
-    }
-    
-    .achievement-row {
-        min-height: 48px;
-        padding: var(--ds-space-2) var(--ds-space-3);
-    }
-    
-    .row-icon {
-        font-size: 1.75rem;
-    }
-}
-
-/* ===========================================
-   SMALL MOBILE (< 576px)
-   =========================================== */
-
-@media (max-width: 575.98px) {
-    .achievements-container {
-        padding: var(--ds-space-2);
-    }
-    
-    .achievements-container h1 {
-        font-size: 1.5rem;
-    }
-    
-    /* Even tighter list rows */
-    .achievement-row {
-        gap: var(--ds-space-2);
-        min-height: 44px;
-    }
-    
-    .row-icon {
-        font-size: 1.5rem;
-    }
-    
-    .row-name {
-        font-size: 0.8125rem;
-    }
-    
-    .row-points {
-        font-size: 0.65rem;
-        padding: 2px 6px;
-    }
-    
-    /* New banner adjustments */
-    .new-banner-header {
-        padding: var(--ds-space-2) var(--ds-space-3);
-    }
-    
-    .new-banner-text {
-        font-size: var(--ds-text-xs);
-    }
-    
-    .new-icon-preview {
-        font-size: 1.1rem;
-    }
-    
-    /* Detail section adjustments */
-    .achievement-row-detail {
-        padding: var(--ds-space-3);
-    }
-    
-    .detail-description {
-        font-size: var(--ds-text-xs);
-    }
-    
-    /* Sticky dropdown adjustments */
-    .category-tabs-wrapper {
-        margin: 0 calc(-1 * var(--ds-space-2));
-        padding: var(--ds-space-2);
-    }
-    
-    /* Smaller dropdown on small screens */
-    .category-select {
-        padding: var(--ds-space-2) var(--ds-space-3);
-        padding-right: var(--ds-space-7);
-        font-size: var(--ds-text-xs);
-    }
-}
-
-/* ===========================================
-   TABLET RESPONSIVE (keep cards but adjust)
-   =========================================== */
-
-@media (min-width: 768px) and (max-width: 991.98px) {
-    .achievement-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
-    }
-    
-    .new-achievement-card {
-        min-width: 160px;
-        max-width: 200px;
-    }
+.ach-modal-bonus strong {
+    color: var(--ds-money-light);
+    font-size: 11px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
 }

@@ -70,3 +70,236 @@
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* ===========================================
+   LEDGER — design #3c (mint = money, payouts
+   in risk hue). Savings-goal card removed.
+   =========================================== */
+
+.ledger-container {
+    max-width: 720px;
+    padding-bottom: calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px) + var(--ds-space-6));
+}
+
+.lg-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: var(--ds-space-4);
+}
+
+.lg-head .lg-title {
+    font-size: 20px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: -.3px;
+    color: var(--db-text);
+    margin: 0;
+}
+
+/* Record payout = risk-tint pill (money is never docked; payouts are the one pink number) */
+.lg-payout-pill {
+    padding: 7px 14px;
+    border-radius: var(--ds-radius-pill);
+    background: color-mix(in srgb, var(--db-risk) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-risk) 40%, transparent);
+    color: var(--ds-risk-light);
+    font-size: 12px;
+    font-weight: var(--ds-font-bold);
+    cursor: pointer;
+    transition: background-color var(--ds-transition);
+}
+
+.lg-payout-pill:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--db-risk) 24%, transparent);
+}
+
+.lg-payout-pill:disabled {
+    opacity: .45;
+    cursor: default;
+}
+
+/* --- Balance hero: mint tint border + glow --- */
+.lg-hero {
+    background: var(--db-bg2);
+    border: 1px solid color-mix(in srgb, var(--db-money) 30%, transparent);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 0 28px -10px color-mix(in srgb, var(--db-money) 35%, transparent);
+    margin-bottom: var(--ds-space-4);
+}
+
+.lg-hero-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.lg-hero-label {
+    font-size: 10px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 1.4px;
+    color: var(--db-text3);
+}
+
+.lg-ready-chip {
+    font-size: 9px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: .5px;
+    padding: 3px 8px;
+    border-radius: var(--ds-radius-pill);
+    background: color-mix(in srgb, var(--db-money) 16%, transparent);
+    color: var(--ds-money-light);
+}
+
+.lg-hero-amt {
+    font-family: var(--ds-font-mono);
+    font-size: 32px;
+    font-weight: var(--ds-font-bold);
+    color: var(--db-money);
+    letter-spacing: -.5px;
+    margin-top: 4px;
+}
+
+.lg-hero-amt.neg {
+    color: var(--db-text);
+}
+
+.lg-hero-sub {
+    font-size: 11.5px;
+    color: var(--db-text2);
+    margin-top: 2px;
+}
+
+/* --- Parent adjustment actions --- */
+.lg-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: var(--ds-space-4);
+    flex-wrap: wrap;
+}
+
+.lg-action-btn {
+    padding: 6px 12px;
+    border-radius: var(--ds-radius-pill);
+    background: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    color: var(--db-text2);
+    font-size: 11.5px;
+    font-weight: var(--ds-font-semibold);
+    cursor: pointer;
+    transition: border-color var(--ds-transition), color var(--ds-transition);
+}
+
+.lg-action-btn:hover {
+    border-color: var(--db-text3);
+    color: var(--db-text);
+}
+
+.lg-action-btn.money:hover {
+    border-color: color-mix(in srgb, var(--db-money) 50%, transparent);
+    color: var(--ds-money-light);
+}
+
+.lg-action-btn.risk:hover {
+    border-color: color-mix(in srgb, var(--db-risk) 50%, transparent);
+    color: var(--ds-risk-light);
+}
+
+/* --- Transaction list --- */
+.lg-group-label {
+    font-size: 10px;
+    font-weight: var(--ds-font-bold);
+    letter-spacing: 1.4px;
+    color: var(--db-text3);
+    margin: var(--ds-space-4) 0 8px;
+}
+
+.lg-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.lg-list-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: var(--ds-space-4);
+}
+
+.lg-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 4px;
+    border-bottom: 1px solid var(--ds-divider);
+}
+
+.lg-row:last-child {
+    border-bottom: none;
+}
+
+.lg-row-tile {
+    display: flex;
+    flex: none;
+}
+
+.lg-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--ds-bg-selected);
+    color: var(--db-text2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    font-size: 12px;
+    font-weight: var(--ds-font-bold);
+}
+
+.lg-badge.money {
+    background: color-mix(in srgb, var(--db-money) 16%, transparent);
+    color: var(--ds-money-light);
+}
+
+.lg-badge.risk,
+.lg-badge.payout {
+    background: color-mix(in srgb, var(--db-risk) 18%, transparent);
+    color: var(--db-risk);
+}
+
+.lg-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.lg-row-name {
+    font-size: 12px;
+    font-weight: var(--ds-font-semibold);
+    color: var(--db-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lg-row-sub {
+    font-size: 10px;
+    color: var(--db-text3);
+}
+
+.lg-row-amt {
+    font-family: var(--ds-font-mono);
+    font-size: 12.5px;
+    font-weight: var(--ds-font-bold);
+    white-space: nowrap;
+}
+
+.lg-row-amt.pos {
+    color: var(--db-money);
+}
+
+.lg-row-amt.neg {
+    color: var(--db-risk);
+}
