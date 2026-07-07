@@ -112,6 +112,15 @@
             }
         </div>
 
+        <!-- GROUP 4: Importance (screen-time weight) -->
+        <div class="form-section importance-section">
+            <label class="field-row">
+                <span class="field-label">Importance</span>
+                <InputNumber @bind-Value="FormModel.Importance" class="ds-input ds-input--importance" min="0" max="10" step="1" />
+            </label>
+            <span class="importance-hint">0 = no screen-time impact</span>
+        </div>
+
         <!-- Options (collapsed) - reduced visual weight -->
         <details class="options-section">
             <summary class="options-summary">
@@ -197,6 +206,7 @@
                 IsActive = Chore.IsActive,
                 AutoApprove = Chore.AutoApprove,
                 SortOrder = Chore.SortOrder,
+                Importance = Chore.Importance,
                 ChoreType = Chore.Kind == ChoreKind.Task ? ChoreTypeOption.Earning : ChoreTypeOption.Expectation
             };
         }
@@ -275,7 +285,8 @@
                 EndDate = FormModel.EndDate,
                 IsActive = FormModel.IsActive,
                 AutoApprove = FormModel.ChoreType == ChoreTypeOption.Expectation ? true : FormModel.AutoApprove,
-                SortOrder = FormModel.SortOrder
+                SortOrder = FormModel.SortOrder,
+                Importance = FormModel.Importance
             };
             await OnSubmit.InvokeAsync(dto);
         }
@@ -307,5 +318,7 @@
         public bool IsActive { get; set; } = true;
         public bool AutoApprove { get; set; } = true;
         public int SortOrder { get; set; }
+        [Range(0, 10)]
+        public int Importance { get; set; } = 0;
     }
 }

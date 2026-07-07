@@ -39,11 +39,11 @@ nothing displays the result (no meter). Slice 1 turns it on.
 ## Checklist
 
 ### Slice 1 — make the engine real & tunable
-- [ ] **Piece 1 — Importance input on `ChoreForm`** *(small; data path already exists)*
-  - [ ] Add `Importance` (int, default 0) to `ChoreFormModel`
-  - [ ] Load mapping (Chore DTO → FormModel) + save mapping (FormModel → DTO)
-  - [ ] 0–10 control in `ChoreForm.razor`, current `ds-input` look, `0 = no screen-time impact`
-  - [ ] Round-trip test (create + edit preserves Importance)
+- [x] **Piece 1 — Importance input on `ChoreForm`** *(DONE 2026-07-07)*
+  - [x] Add `Importance` (int, default 0) to `ChoreFormModel`
+  - [x] Load mapping (Chore DTO → FormModel) + save mapping (FormModel → DTO)
+  - [x] 0–10 control in `ChoreForm.razor`, current `ds-input` look, `0 = no screen-time impact`
+  - [x] Round-trip test (`ChoreImportanceRoundTripTests`, via `ChoreManagementService` DTO surface)
 - [ ] **Piece 2 — Single-child screen-time settings** *(small–medium)*
   - [ ] "Screen Time & Pay" section on `Settings.razor` for the one child
   - [ ] Inputs: weekday/weekend pool hours, weekday/weekend at-risk %, `WeeklyRoutinePayout`
@@ -72,3 +72,5 @@ Smoke: set Importance on a chore → set a pool in settings → kid meter shows 
 
 ## Status log
 - 2026-07-07 — Branch `feat/screentime-ui` created off `beta`. Plan + scope locked. Starting Piece 1.
+- 2026-07-07 — **Piece 1 done & verified** (build 0 err, tests 107/107). Importance input live on
+  ChoreForm in current look. Commit next. Starting Piece 2 (single-child settings).
