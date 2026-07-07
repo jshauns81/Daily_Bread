@@ -9,6 +9,7 @@
 
 @inject IAppStateService AppState
 @inject IDashboardService DashboardService
+@inject IChoreManagementService ChoreManagementService
 @inject IAchievementService AchievementService
 @inject ITrackerService TrackerService
 @inject IDateProvider DateProvider
@@ -69,20 +70,20 @@ else if (_isAdminOnly)
 }
 else if ((_isParent || _isAdmin) && _parentData != null)
 {
-    <!-- Parent Dashboard -->
+    <!-- Parent Dashboard (design #17a desktop / #17b mobile) -->
     <div class="dashboard-container db-dash">
-        <!-- Hero header -->
+        <!-- Hero: greeting + live chips + weekly earned-vs-potential bar -->
         <div class="card db-hero">
-            <div class="db-hero-main">
+            <div class="db-hero-head">
                 <h1 class="db-greeting">@Greeting()@(string.IsNullOrEmpty(_firstName) ? "" : ", ")<span class="db-greeting-name">@_firstName</span></h1>
-                <div class="db-sumline">
-                    <span class="db-sumtag warn">✦ @_parentData.PendingApprovals.Count <span class="db-sumtag-full">awaiting approval</span><span class="db-sumtag-short">approvals</span></span>
-                    <span class="db-sumtag">✓ @_parentData.TodayCompletedCount <span class="db-sumtag-full">done today</span><span class="db-sumtag-short">done</span></span>
-                    <span class="db-sumtag help">! @_parentData.TodayHelpCount <span class="db-sumtag-full">needs help</span><span class="db-sumtag-short">help</span></span>
-                </div>
+                <div class="db-hero-date">@DateProvider.Now.ToString("dddd, MMMM d")</div>
             </div>
-            <div class="db-hero-date">@DateTime.Now.ToString("dddd, MMMM d")</div>
-            <div class="db-hero-potential">
+            <div class="db-chips">
+                <span class="db-chip acc"><span class="db-chip-dot"></span>@_parentData.PendingApprovals.Count awaiting approval</span>
+                <span class="db-chip money"><span class="db-chip-dot"></span>@_parentData.TodayCompletedCount done today</span>
+                <span class="db-chip risk"><span class="db-chip-dot"></span>@_parentData.TodayHelpCount needs help</span>
+            </div>
+            <div class="db-hero-bar">
                 @if (_parentData.WeeklyPotential > 0)
                 {
                     <div class="db-pbar">
@@ -100,40 +101,15 @@ else if ((_isParent || _isAdmin) && _parentData != null)
                         </div>
                         <div class="db-pbar-labels">
                             <span class="db-pbar-label-left">$0</span>
-                            <span class="db-pbar-label-right">$@_parentData.WeeklyPotential.ToString("F2")</span>
+                            <span class="db-pbar-label-right">this week · $@_parentData.WeeklyPotential.ToString("F2") possible</span>
                         </div>
                     </div>
                 }
                 else
                 {
-                    <span class="db-hero-potential-amt">💰 @WeeklyPotentialDisplay()</span>
+                    <span class="db-hero-potential-amt">@WeeklyPotentialDisplay()</span>
                     <span class="db-hero-potential-label">earned this week</span>
                 }
-            </div>
-        </div>
-
-        <!-- Stat pills -->
-        <div class="db-stats">
-            <div class="db-stat gold">
-                <div class="db-stat-chip">✦</div>
-                <div class="db-stat-body">
-                    <div class="db-stat-v">@_parentData.PendingApprovals.Count</div>
-                    <div class="db-stat-l">Awaiting approval</div>
-                </div>
-            </div>
-            <div class="db-stat acc">
-                <div class="db-stat-chip">✓</div>
-                <div class="db-stat-body">
-                    <div class="db-stat-v">@_parentData.TodayCompletedCount</div>
-                    <div class="db-stat-l">Done today</div>
-                </div>
-            </div>
-            <div class="db-stat gold">
-                <div class="db-stat-chip">💰</div>
-                <div class="db-stat-body">
-                    <div class="db-stat-v">$@_parentData.ThisWeekEarnings.ToString("F2")</div>
-                    <div class="db-stat-l">Earned this week</div>
-                </div>
             </div>
         </div>
 
@@ -161,11 +137,17 @@ else if ((_isParent || _isAdmin) && _parentData != null)
                             @foreach (var item in _parentData.PendingApprovals.Take(6))
                             {
                                 <div class="db-appr">
-                                    <div class="db-appr-ava">@(string.IsNullOrWhiteSpace(item.ChildName) ? "?" : item.ChildName.Trim().Substring(0, 1).ToUpper())</div>
+                                    <span class="db-appr-tile">
+                                        <IconTile IconName="@ChoreTileIcon(item.ChoreDefinitionId)" Slot="@ChoreTileSlot(item.ChoreDefinitionId)" Size="30" />
+                                    </span>
                                     <div class="db-appr-info">
                                         <div class="db-appr-t">@item.ChoreName</div>
                                         <div class="db-appr-m">
-                                            <span class="user-name">@item.ChildName</span>@(item.CompletedAt.HasValue ? " • " + GetTimeAgo(item.CompletedAt.Value) : "")
+                                            @if (!IsSingleChild)
+                                            {
+                                                <span class="user-name">@item.ChildName</span>@(item.CompletedAt.HasValue ? " · " : "")
+                                            }
+                                            @(item.CompletedAt.HasValue ? GetTimeAgo(item.CompletedAt.Value) : "")<span class="db-appr-amt-inline">@((!IsSingleChild || item.CompletedAt.HasValue) ? " · " : "")$@item.Value.ToString("F2")</span>
                                         </div>
                                     </div>
                                     <span class="db-appr-amt">$@item.Value.ToString("F2")</span>
@@ -193,7 +175,7 @@ else if ((_isParent || _isAdmin) && _parentData != null)
                 </div>
 
                 <div class="card db-quickview">
-                    <div class="db-card-head"><h2 class="db-card-title">Quick view — this week</h2></div>
+                    <div class="db-card-head"><h2 class="db-card-title">This week</h2></div>
                     <div class="db-week">
                         @foreach (var day in _parentData.WeekEarnings)
                         {
@@ -207,38 +189,67 @@ else if ((_isParent || _isAdmin) && _parentData != null)
             </div>
 
             <div class="db-col">
-                <div class="card db-children">
-                    <div class="db-card-head"><h2 class="db-card-title">Children</h2></div>
-                    @if (_parentData.ChildrenBalances.Count == 0)
-                    {
-                        <EmptyState Type="EmptyStateType.NoChildren" CssClass="empty-state-compact">
-                            <ActionButton>
-                                <a href="/admin/users" class="btn btn-primary btn-sm">Add Children</a>
-                            </ActionButton>
-                        </EmptyState>
-                    }
-                    else
-                    {
-                        <div class="db-bal-list">
-                            @foreach (var child in _parentData.ChildrenBalances)
+                @if (IsSingleChild)
+                {
+                    var child = _parentData.ChildrenBalances[0];
+                    <!-- Single-child card variant (#17a right rail) — no other-child cues -->
+                    <div class="card db-kid @(child.CanCashOut ? "ready" : "")">
+                        <div class="db-kid-head">
+                            <span class="db-kid-av">@(string.IsNullOrWhiteSpace(child.DisplayName) ? "?" : child.DisplayName.Trim().Substring(0, 1).ToUpper())</span>
+                            <div class="db-kid-who">
+                                <div class="db-kid-nm">@child.DisplayName</div>
+                                <div class="db-kid-week">+$@_parentData.ThisWeekEarnings.ToString("F2") this week</div>
+                            </div>
+                            @if (child.CanCashOut)
                             {
-                                <a href="/ledger/@child.ProfileId" class="db-bal">
-                                    <span class="db-bal-who">
-                                        <span class="db-bal-av">@(string.IsNullOrWhiteSpace(child.DisplayName) ? "?" : child.DisplayName.Trim().Substring(0, 1).ToUpper())</span>
-                                        <span class="db-bal-nm">@child.DisplayName</span>
-                                        @if (child.CanCashOut)
-                                        {
-                                            <span class="db-bal-ready">Cash out ready</span>
-                                        }
-                                    </span>
-                                    <span class="db-bal-amt @(child.Balance < 0 ? "neg" : "")">$@child.Balance.ToString("F2")</span>
-                                </a>
+                                <span class="db-kid-ready">CASH OUT READY</span>
                             }
                         </div>
-                    }
-                </div>
+                        <div class="db-kid-bal @(child.Balance < 0 ? "neg" : "")">$@child.Balance.ToString("F2")</div>
+                        <div class="db-kid-bal-l">CURRENT BALANCE</div>
+                        <div class="db-kid-actions">
+                            <a href="/ledger/@child.ProfileId" class="db-kid-btn payout">Record payout</a>
+                            <a href="/ledger/@child.ProfileId" class="db-kid-btn ledger">Open ledger →</a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="card db-children">
+                        <div class="db-card-head"><h2 class="db-card-title">Children</h2></div>
+                        @if (_parentData.ChildrenBalances.Count == 0)
+                        {
+                            <EmptyState Type="EmptyStateType.NoChildren" CssClass="empty-state-compact">
+                                <ActionButton>
+                                    <a href="/admin/users" class="btn btn-primary btn-sm">Add Children</a>
+                                </ActionButton>
+                            </EmptyState>
+                        }
+                        else
+                        {
+                            <div class="db-bal-list">
+                                @foreach (var child in _parentData.ChildrenBalances)
+                                {
+                                    <a href="/ledger/@child.ProfileId" class="db-bal">
+                                        <span class="db-bal-who">
+                                            <span class="db-bal-av">@(string.IsNullOrWhiteSpace(child.DisplayName) ? "?" : child.DisplayName.Trim().Substring(0, 1).ToUpper())</span>
+                                            <span class="db-bal-nm">@child.DisplayName</span>
+                                            @if (child.CanCashOut)
+                                            {
+                                                <span class="db-bal-ready">Cash out ready</span>
+                                            }
+                                        </span>
+                                        <span class="db-bal-amt @(child.Balance < 0 ? "neg" : "")">$@child.Balance.ToString("F2")</span>
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
 
-                <YearActivityCard Compact="true" Heading="@HeatmapHeading()" />
+                <div class="db-heat">
+                    <YearActivityCard Compact="true" Heading="@HeatmapHeading()" />
+                </div>
             </div>
         </div>
     </div>
@@ -649,8 +660,35 @@ else
 
     private bool _isApproving;
     private int? _approvingId;
-    
+
     private CancellationTokenSource? _achievementCts;
+
+    /// <summary>Chore id → (lucide icon, tile slot) so approval rows can show the chore's
+    /// IconTile instead of a kid-initial avatar (design #17a). Presentation-only lookup.</summary>
+    private Dictionary<int, (string? Icon, int Slot)> _choreTiles = new();
+
+    /// <summary>Single-child households get the card variant with zero other-child cues (#17a).</summary>
+    private bool IsSingleChild => _parentData?.ChildrenBalances.Count == 1;
+
+    private string? ChoreTileIcon(int choreDefinitionId) =>
+        _choreTiles.TryGetValue(choreDefinitionId, out var tile) ? tile.Icon : null;
+
+    private int ChoreTileSlot(int choreDefinitionId) =>
+        _choreTiles.TryGetValue(choreDefinitionId, out var tile) ? tile.Slot : 1;
+
+    private async Task LoadChoreTilesAsync()
+    {
+        try
+        {
+            var chores = await ChoreManagementService.GetAllChoresAsync(includeInactive: true);
+            _choreTiles = chores.ToDictionary(c => c.Id, c => (c.LucideIconName, c.TileSlot));
+        }
+        catch (Exception ex)
+        {
+            // Icon tiles are decorative; rows fall back to the default tile on failure.
+            Logger.LogWarning(ex, "Failed to load chore tile metadata for approvals list");
+        }
+    }
 
     // Gamified theme helper methods
     private int GetProgressPercent()
@@ -848,6 +886,7 @@ else
             if (_isParent || _isAdmin)
             {
                 AppState.OnParentDashboardChanged += OnParentDashboardStateChanged;
+                await LoadChoreTilesAsync();
             }
             else
             {
@@ -975,6 +1014,13 @@ else
             if (_isParent || _isAdmin)
             {
                 _parentData = await AppState.GetParentDashboardAsync(forceRefresh);
+
+                // A chore created after page load may appear in approvals before its
+                // tile metadata is cached — refresh the lookup so the row gets its icon.
+                if (_parentData?.PendingApprovals.Any(a => !_choreTiles.ContainsKey(a.ChoreDefinitionId)) == true)
+                {
+                    await LoadChoreTilesAsync();
+                }
             }
             else if (!string.IsNullOrEmpty(_userId))
             {

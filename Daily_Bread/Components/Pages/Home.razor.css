@@ -1553,122 +1553,251 @@
 }
 
 /* ===========================================
-   PARENT DASHBOARD - REDESIGN (db-*)
+   PARENT DASHBOARD — design #17a (desktop) / #17b (mobile)
+   Token-only styling (Phase 1 suite).
    =========================================== */
-.db-dash { display: flex; flex-direction: column; gap: 1.25rem; }
+.db-dash { display: flex; flex-direction: column; gap: 14px; }
 
-/* Hero header */
+/* --- Hero: greeting + date | chips | weekly bar (one merged card) --- */
 .db-hero {
-    display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 1.25rem;
-    position: relative; overflow: hidden; padding: var(--ds-space-6);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ds-accent-primary) 16%, var(--ds-bg-elevated)), var(--ds-bg-elevated) 62%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-areas: "head bar" "chips bar";
+    column-gap: 18px;
+    row-gap: 12px;
+    align-items: center;
+    background: var(--db-bg2);
+    background-color: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: var(--ds-radius-hero);
+    padding: 18px 20px;
 }
-.db-hero::after {
-    content: ""; position: absolute; right: -50px; top: -70px; width: 230px; height: 230px; border-radius: 999px;
-    background: radial-gradient(closest-side, color-mix(in srgb, var(--ds-accent-primary) 50%, transparent), transparent);
-    opacity: .5; filter: blur(6px); pointer-events: none;
+.db-hero-head { grid-area: head; min-width: 0; }
+.db-greeting { font-size: 20px; font-weight: 700; letter-spacing: -.3px; color: var(--db-text); margin: 0; }
+.db-greeting-name { color: var(--ds-accent-text); }
+.db-hero-date { font-size: 11px; color: var(--db-text3); margin-top: 2px; }
+
+/* Live chips: accent approvals · money done · risk needs-help */
+.db-chips { grid-area: chips; display: flex; gap: 7px; flex-wrap: wrap; align-self: start; }
+.db-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px; border-radius: var(--ds-radius-pill);
+    font-size: 11px; font-weight: 600; white-space: nowrap;
 }
-.db-hero-main { position: relative; z-index: 1; }
-.db-hero .db-greeting { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2rem); font-weight: var(--ds-font-bold); letter-spacing: -.02em; color: var(--ds-text-primary); margin: 0; }
-.db-hero .db-greeting-name { color: var(--ds-accent-primary); }
-.db-sumline { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; }
-.db-sumtag { font-size: .85rem; font-weight: 600; padding: .35rem .7rem; border-radius: 999px; background: var(--ds-bg-hover); color: var(--ds-text-secondary); white-space: nowrap; }
-.db-sumtag.warn { background: color-mix(in srgb, var(--ds-semantic-highlight) 18%, var(--ds-bg-elevated)); color: var(--ds-semantic-highlight); }
-.db-sumtag.help { background: color-mix(in srgb, var(--ds-semantic-error) 20%, var(--ds-bg-elevated)); color: var(--ds-semantic-error); }
-.db-hero-date { position: relative; z-index: 1; color: var(--ds-text-muted); font-size: .85rem; white-space: nowrap; align-self: flex-start; }
-.db-hero-potential { display: none; align-items: baseline; gap: .45rem; position: relative; z-index: 1; }
-.db-hero-potential-amt { font-size: 1.6rem; font-weight: var(--ds-font-bold); color: var(--ds-semantic-highlight); text-shadow: 0 0 16px color-mix(in srgb, var(--ds-semantic-highlight) 35%, transparent); }
-.db-hero-potential-label { font-size: .78rem; color: var(--ds-text-muted); }
-.db-sumtag-short { display: none; }
+.db-chip-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.db-chip.acc {
+    background: color-mix(in srgb, var(--db-accent) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-accent) 35%, transparent);
+    color: var(--ds-accent-light);
+}
+.db-chip.acc .db-chip-dot { background: var(--ds-accent-text); }
+.db-chip.money {
+    background: color-mix(in srgb, var(--db-money) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-money) 30%, transparent);
+    color: var(--ds-money-light);
+}
+.db-chip.money .db-chip-dot { background: var(--db-money); }
+.db-chip.risk {
+    background: color-mix(in srgb, var(--db-risk) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-risk) 35%, transparent);
+    color: var(--ds-risk-light);
+}
+.db-chip.risk .db-chip-dot { background: var(--db-risk); }
 
-/* Stat pills */
-.db-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.db-stat { display: flex; align-items: center; gap: .9rem; background: var(--ds-bg-elevated); border: 1px solid var(--ds-bg-muted); border-radius: 18px; padding: 1rem 1.1rem; box-shadow: var(--ds-card-shadow); }
-.db-stat-chip { width: 46px; height: 46px; flex: 0 0 auto; border-radius: 13px; display: grid; place-items: center; font-size: 1.3rem; }
-.db-stat.gold .db-stat-chip { background: color-mix(in srgb, var(--ds-semantic-highlight) 20%, transparent); }
-.db-stat.acc .db-stat-chip { background: color-mix(in srgb, var(--ds-accent-primary) 18%, transparent); }
-.db-stat-v { font-size: 1.6rem; font-weight: var(--ds-font-bold); line-height: 1; }
-.db-stat.gold .db-stat-v { color: var(--ds-semantic-highlight); text-shadow: 0 0 16px color-mix(in srgb, var(--ds-semantic-highlight) 35%, transparent); }
-.db-stat.acc .db-stat-v { color: var(--ds-accent-primary); text-shadow: 0 0 16px color-mix(in srgb, var(--ds-accent-primary) 35%, transparent); }
-.db-stat-l { font-size: .8rem; color: var(--ds-text-muted); margin-top: .25rem; }
+/* Weekly earned-vs-potential bar (gradient fill + marker bubble) */
+.db-hero-bar { grid-area: bar; min-width: 0; }
+.db-pbar { display: flex; flex-direction: column; width: 100%; }
+.db-pbar-track-wrap { position: relative; }
+.db-pbar-track-wrap.has-marker { padding-top: 24px; }
+.db-pbar-track { height: 8px; border-radius: var(--ds-radius-full); background: var(--db-bg3); overflow: hidden; }
+.db-pbar-fill {
+    height: 100%; border-radius: var(--ds-radius-full);
+    background: linear-gradient(90deg, var(--db-accent), var(--db-risk));
+    transition: width .4s ease;
+}
+.db-pbar-marker { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.db-pbar-bubble {
+    padding: 2px 8px; border-radius: var(--ds-radius-sm); background: var(--db-bg3);
+    font-size: 10.5px; font-weight: 700; color: var(--ds-money-light); white-space: nowrap;
+}
+.db-pbar-caret { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid var(--db-bg3); }
+.db-pbar-labels { display: flex; justify-content: space-between; margin-top: 5px; }
+.db-pbar-label-left { font-size: 10px; color: var(--db-text3); }
+.db-pbar-label-right { font-size: 10px; font-weight: 600; color: var(--db-text2); }
 
-/* Asymmetric grid */
-.db-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.25rem; align-items: start; }
-.db-col { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+/* Fallback when there's no weekly potential to chart */
+.db-hero-potential-amt { font-size: 20px; font-weight: 700; color: var(--db-money); letter-spacing: -.3px; }
+.db-hero-potential-label { font-size: 11px; color: var(--db-text3); margin-left: 6px; }
+
+/* --- Asymmetric grid: action column + rail --- */
+.db-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; align-items: start; }
+.db-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.db-heat { min-width: 0; }
 
 /* Card head */
-.db-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-.db-card-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ds-text-muted); font-weight: var(--ds-font-bold); margin: 0; }
-.db-count { background: var(--ds-semantic-highlight); color: var(--ds-bg-base); font-size: .72rem; font-weight: var(--ds-font-bold); border-radius: 999px; padding: .15rem .55rem; }
+.db-card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.db-card-title { font-size: 14px; font-weight: 700; color: var(--db-text); margin: 0; }
+.db-count {
+    min-width: 19px; height: 19px; padding: 0 6px; border-radius: var(--ds-radius-pill);
+    background: var(--db-accent); color: var(--db-on-accent);
+    font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+}
 
-/* Grid cards are bare Bootstrap .card (no .card-body), so give them inner padding
-   to match the preview (.card { padding: 20px }) and clear the rounded corners. */
-.db-approvals, .db-children, .db-quickview { padding: var(--ds-space-5); }
+/* Grid cards are bare Bootstrap .card (no .card-body), so give them inner padding. */
+.db-approvals, .db-children, .db-quickview, .db-kid { padding: 16px; border-radius: var(--ds-radius-card); }
 
-/* Quick view: weekday earnings strip */
-.db-week { display: flex; gap: .4rem; }
-.db-day { flex: 1; min-width: 0; text-align: center; background: var(--ds-bg-hover); border-radius: 11px; padding: .7rem .25rem; }
-.db-day-d { font-size: .62rem; color: var(--ds-text-muted); font-weight: 700; }
-.db-day-v { font-size: .78rem; font-weight: 800; margin-top: .25rem; color: var(--ds-text-secondary); }
-.db-day.on { background: color-mix(in srgb, var(--ds-semantic-highlight) 16%, var(--ds-bg-hover)); }
-.db-day.on .db-day-v { color: var(--ds-semantic-highlight); }
-.db-day.today { outline: 1px solid color-mix(in srgb, var(--ds-accent-primary) 50%, transparent); outline-offset: -1px; }
-
-/* Glowing approvals */
-.db-approvals.is-glowing { border-color: color-mix(in srgb, var(--ds-semantic-highlight) 32%, var(--ds-bg-muted)); box-shadow: var(--ds-card-shadow), 0 0 30px -8px color-mix(in srgb, var(--ds-semantic-highlight) 42%, transparent); }
+/* --- Pending approvals: accent-glow border while non-empty --- */
+.db-approvals.is-glowing {
+    border-color: color-mix(in srgb, var(--db-accent) 40%, transparent);
+    box-shadow: var(--ds-card-shadow), 0 0 22px -8px color-mix(in srgb, var(--db-accent) 50%, transparent);
+}
 .db-appr-list { display: flex; flex-direction: column; }
-.db-appr { display: flex; align-items: center; gap: .8rem; padding: .8rem .2rem; border-bottom: 1px solid var(--ds-bg-muted); }
+.db-appr { display: flex; align-items: center; gap: 11px; padding: 10px 4px; border-bottom: 1px solid var(--ds-divider); }
 .db-appr:last-child { border-bottom: 0; }
-.db-appr-ava { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 11px; display: grid; place-items: center; font-weight: 700; font-size: .8rem; background: color-mix(in srgb, var(--ds-accent-primary) 22%, transparent); color: var(--ds-accent-primary); }
+.db-appr-tile { flex: none; display: flex; align-items: center; }
 .db-appr-info { flex: 1; min-width: 0; }
-.db-appr-t { font-weight: 700; font-size: .95rem; color: var(--ds-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.db-appr-m { font-size: .78rem; color: var(--ds-text-muted); margin-top: .1rem; }
-.db-appr-amt { font-weight: var(--ds-font-bold); color: var(--ds-semantic-highlight); font-size: .95rem; flex: 0 0 auto; }
-.db-btn-approve { border: 0; cursor: pointer; font: inherit; font-weight: 700; font-size: .82rem; padding: .55rem .9rem; border-radius: 11px; flex: 0 0 auto; white-space: nowrap; transition: transform .15s ease; background: linear-gradient(135deg, var(--ds-semantic-highlight), var(--ds-blessing, var(--ds-semantic-highlight))); color: var(--ds-on-accent, #15181C); box-shadow: 0 6px 16px -5px color-mix(in srgb, var(--ds-semantic-highlight) 65%, transparent); }
-.db-btn-approve:hover:not(:disabled) { transform: translateY(-2px); }
+.db-appr-t { font-size: 13px; font-weight: 600; color: var(--db-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-appr-m { font-size: 10.5px; color: var(--db-text3); margin-top: 1px; }
+.db-appr-amt { font-size: 13px; font-weight: 700; color: var(--db-money); flex: none; }
+.db-appr-amt-inline { display: none; }
+.db-btn-approve {
+    border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700;
+    padding: 7px 14px; border-radius: var(--ds-radius-btn); flex: none; white-space: nowrap;
+    background: var(--db-accent); color: var(--db-on-accent);
+    box-shadow: 0 6px 16px -5px color-mix(in srgb, var(--db-accent) 65%, transparent);
+    transition: box-shadow var(--ds-transition), background-color var(--ds-transition);
+}
+.db-btn-approve:hover:not(:disabled) { box-shadow: var(--ds-glow-accent); }
 .db-btn-approve:disabled { opacity: .6; cursor: not-allowed; }
-.db-appr-view { width: 36px; height: 36px; flex: 0 0 auto; border-radius: 11px; display: grid; place-items: center; color: var(--ds-text-muted); border: 1px solid var(--ds-bg-muted); text-decoration: none; }
-.db-appr-view:hover { color: var(--ds-text-primary); border-color: var(--ds-accent-primary); }
-.db-viewall { display: block; text-align: center; margin-top: 1rem; color: var(--ds-accent-primary); font-size: .85rem; font-weight: 700; text-decoration: none; }
+.db-appr-view {
+    width: 32px; height: 32px; flex: none; border-radius: var(--ds-radius-btn);
+    display: grid; place-items: center; background: var(--db-bg3); color: var(--db-text2);
+    text-decoration: none; transition: color var(--ds-transition), background-color var(--ds-transition);
+}
+.db-appr-view:hover { color: var(--db-text); background: var(--ds-bg-selected); }
+.db-viewall { display: block; text-align: center; margin-top: 12px; color: var(--ds-accent-text); font-size: 12px; font-weight: 700; text-decoration: none; }
 .db-viewall:hover { text-decoration: underline; }
 
-/* Balances list with selection-style hover */
-.db-bal-list { display: flex; flex-direction: column; gap: .4rem; }
-.db-bal { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .7rem; border-radius: 14px; border: 1px solid transparent; text-decoration: none; transition: all .15s ease; }
-.db-bal:hover { background: var(--ds-bg-hover); border-color: color-mix(in srgb, var(--ds-accent-primary) 30%, transparent); box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--ds-accent-primary) 50%, transparent); }
-.db-bal-who { display: flex; align-items: center; gap: .7rem; min-width: 0; }
-.db-bal-av { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 999px; display: grid; place-items: center; font-weight: 700; font-size: .78rem; color: var(--ds-on-accent, #fff); background: linear-gradient(135deg, var(--ds-accent-primary), color-mix(in srgb, var(--ds-accent-primary) 50%, var(--ds-semantic-highlight))); }
-.db-bal-nm { font-weight: 700; font-size: .92rem; color: var(--ds-text-primary); }
-.db-bal-ready { font-size: .65rem; font-weight: 700; color: var(--ds-bg-base); background: var(--ds-semantic-success); border-radius: 999px; padding: .1rem .5rem; margin-left: .4rem; white-space: nowrap; }
-.db-bal-amt { font-weight: var(--ds-font-bold); color: var(--ds-semantic-highlight); font-size: 1.05rem; flex: 0 0 auto; }
-.db-bal-amt.neg { color: var(--ds-semantic-error); }
+/* --- Week quick-view: 7 cells, today accent glow, money-light amounts, faint zeros --- */
+.db-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
+.db-day { min-width: 0; text-align: center; padding: 9px 0; border-radius: 11px; background: var(--ds-bg-recessed); border: 1px solid transparent; }
+.db-day-d { font-size: 9.5px; font-weight: 700; color: var(--db-text3); }
+.db-day-v { font-size: 11.5px; font-weight: 600; margin-top: 3px; color: var(--ds-text-faint); }
+.db-day.on .db-day-v { font-weight: 700; color: var(--ds-money-light); }
+.db-day.today {
+    background: color-mix(in srgb, var(--db-accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--db-accent) 50%, transparent);
+    box-shadow: 0 0 16px -4px color-mix(in srgb, var(--db-accent) 60%, transparent);
+}
+.db-day.today .db-day-d { color: var(--ds-accent-text); }
 
-/* Responsive */
+/* --- Single-child card variant (#17a right rail) --- */
+.db-kid.ready {
+    border-color: color-mix(in srgb, var(--db-money) 30%, transparent);
+    box-shadow: var(--ds-card-shadow), var(--ds-glow-money);
+}
+.db-kid-head { display: flex; align-items: center; gap: 10px; }
+.db-kid-av {
+    width: 34px; height: 34px; flex: none; border-radius: 50%;
+    display: grid; place-items: center; font-size: 14px; font-weight: 700; color: var(--db-on-accent);
+    background: linear-gradient(140deg, var(--db-accent), var(--db-risk));
+}
+.db-kid-who { flex: 1; min-width: 0; }
+.db-kid-nm { font-size: 13.5px; font-weight: 600; color: var(--db-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-kid-week { font-size: 10.5px; color: var(--db-text3); }
+.db-kid-ready {
+    flex: none; padding: 4px 10px; border-radius: var(--ds-radius-pill);
+    background: color-mix(in srgb, var(--db-money) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-money) 35%, transparent);
+    font-size: 10px; font-weight: 700; color: var(--ds-money-light); white-space: nowrap;
+}
+.db-kid-bal { font-size: 28px; font-weight: 700; color: var(--db-money); letter-spacing: -.5px; margin: 12px 0 2px; }
+.db-kid-bal.neg { color: var(--db-risk); }
+.db-kid-bal-l { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: var(--db-text3); }
+.db-kid-actions { display: flex; gap: 8px; margin-top: 13px; }
+.db-kid-btn {
+    flex: 1; text-align: center; padding: 8px 0; border-radius: var(--ds-radius-btn);
+    font-size: 11.5px; text-decoration: none; border: 1px solid transparent;
+    transition: background-color var(--ds-transition), box-shadow var(--ds-transition);
+}
+.db-kid-btn.payout {
+    font-weight: 700; color: var(--ds-risk-light);
+    background: color-mix(in srgb, var(--db-risk) 14%, transparent);
+    border-color: color-mix(in srgb, var(--db-risk) 35%, transparent);
+}
+.db-kid-btn.payout:hover { background: color-mix(in srgb, var(--db-risk) 22%, transparent); }
+.db-kid-btn.ledger { font-weight: 600; color: var(--db-text2); background: var(--db-bg3); }
+.db-kid-btn.ledger:hover { background: var(--ds-bg-selected); color: var(--db-text); }
+
+/* --- Children list variant (2+ kids) --- */
+.db-bal-list { display: flex; flex-direction: column; gap: 4px; }
+.db-bal {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 9px 8px; border-radius: 12px; border: 1px solid transparent; text-decoration: none;
+    transition: background-color var(--ds-transition), border-color var(--ds-transition), box-shadow var(--ds-transition);
+}
+.db-bal:hover {
+    background: var(--ds-bg-selected);
+    border-color: color-mix(in srgb, var(--db-accent) 30%, transparent);
+    box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--db-accent) 50%, transparent);
+}
+.db-bal-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.db-bal-av {
+    width: 32px; height: 32px; flex: none; border-radius: 50%;
+    display: grid; place-items: center; font-size: 12.5px; font-weight: 700; color: var(--db-on-accent);
+    background: linear-gradient(140deg, var(--db-accent), var(--db-risk));
+}
+.db-bal-nm { font-size: 13px; font-weight: 600; color: var(--db-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-bal-ready {
+    flex: none; font-size: 9.5px; font-weight: 700; color: var(--ds-money-light);
+    background: color-mix(in srgb, var(--db-money) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-money) 35%, transparent);
+    border-radius: var(--ds-radius-pill); padding: 2px 8px; margin-left: 4px; white-space: nowrap;
+}
+.db-bal-amt { font-size: 15px; font-weight: 700; color: var(--db-money); flex: none; }
+.db-bal-amt.neg { color: var(--db-risk); }
+
+/* --- Responsive --- */
 @media (max-width: 1050px) {
     .db-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 900px) {
+    /* Hero stacks: head, chips, bar */
+    .db-hero { grid-template-columns: 1fr; grid-template-areas: "head" "chips" "bar"; }
+}
+
+/* Phone/PWA (#17b): priority order approvals → chips → week bar/strip → balance.
+   The hero card and both grid columns dissolve (display: contents) so every block
+   becomes a direct flex item of .db-dash and can be reordered. No heatmap here —
+   it lives on Calendar on mobile. */
 @media (max-width: 640px) {
-    .db-stats { display: none; }
-    .db-hero { flex-direction: column; align-items: flex-start; gap: .5rem; }
+    .db-hero, .db-grid, .db-col { display: contents; }
 
-    /* Date becomes a muted eyebrow above the greeting */
-    .db-hero-date { align-self: flex-start; order: -1; font-size: .75rem; margin-bottom: .15rem; }
+    .db-hero-head { order: 0; }
+    .db-approvals { order: 1; }
+    .db-chips { order: 2; }
+    .db-hero-bar { order: 3; }
+    .db-quickview { order: 4; }
+    .db-children, .db-kid { order: 5; }
+    .db-heat { display: none; }
 
-    /* Chips: fit one row with shortened labels */
-    .db-sumline { flex-wrap: nowrap; gap: .35rem; width: 100%; }
-    .db-sumtag { flex: 1 1 0; min-width: 0; font-size: .7rem; padding: .3rem .45rem; overflow: hidden; text-overflow: ellipsis; text-align: center; }
-    .db-sumtag-full { display: none; }
-    .db-sumtag-short { display: inline; }
+    .db-greeting { font-size: 19px; }
 
-    /* Pill progress bar replaces the $ text row */
-    .db-hero-potential { display: flex; align-self: stretch; width: 100%; margin-top: .5rem; }
-    .db-pbar { display: flex; flex-direction: column; width: 100%; }
-    .db-pbar-track-wrap { position: relative; }
-    .db-pbar-track-wrap.has-marker { padding-top: 1.5rem; }
-    .db-pbar-track { height: 11px; border-radius: var(--ds-radius-full); background: var(--ds-bg-muted); border: 1px solid color-mix(in srgb, var(--ds-text-muted) 22%, transparent); box-shadow: inset 0 1px 2px color-mix(in srgb, var(--ds-bg-base) 50%, transparent); overflow: hidden; }
-    .db-pbar-fill { height: 100%; border-radius: var(--ds-radius-full); background: var(--ds-semantic-highlight); box-shadow: 0 0 12px color-mix(in srgb, var(--ds-semantic-highlight) 45%, transparent); transition: width .4s ease; }
-    .db-pbar-marker { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
-    .db-pbar-bubble { font-size: .68rem; font-weight: var(--ds-font-bold); color: var(--ds-on-accent); background: var(--ds-semantic-highlight); border-radius: var(--ds-radius-sm); padding: .15rem .4rem; white-space: nowrap; margin-bottom: 2px; box-shadow: var(--ds-card-shadow); }
-    .db-pbar-caret { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--ds-semantic-highlight); }
-    .db-pbar-labels { display: flex; justify-content: space-between; margin-top: .35rem; font-size: .68rem; font-weight: 600; color: var(--ds-text-muted); }
+    /* The approvals card carries the live count; drop the redundant chip */
+    .db-chip.acc { display: none; }
+
+    /* The bar becomes its own card */
+    .db-hero-bar {
+        background: var(--db-bg2);
+        background-color: var(--db-bg2);
+        border: 1px solid var(--db-border);
+        border-radius: var(--ds-radius-card);
+        padding: 13px;
+    }
+
+    /* Tighter approval rows: amount folds into the meta line (#17b);
+       the review-in-Activity eye stays for parity */
+    .db-appr { gap: 9px; padding: 8px 0; }
+    .db-appr-amt { display: none; }
+    .db-appr-amt-inline { display: inline; color: var(--ds-money-light); font-weight: 700; }
 }

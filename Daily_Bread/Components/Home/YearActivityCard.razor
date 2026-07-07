@@ -26,11 +26,11 @@
             </div>
             <div class="activity-legend">
                 <span>Less</span>
-                <div class="legend-cell" style="background: rgba(76, 86, 106, 0.3);"></div>
-                <div class="legend-cell" style="@GetLegendStyle(0.3)"></div>
-                <div class="legend-cell" style="@GetLegendStyle(0.5)"></div>
-                <div class="legend-cell" style="@GetLegendStyle(0.75)"></div>
-                <div class="legend-cell" style="@GetLegendStyle(1)"></div>
+                <div class="legend-cell l0"></div>
+                <div class="legend-cell l1"></div>
+                <div class="legend-cell l2"></div>
+                <div class="legend-cell l3"></div>
+                <div class="legend-cell l4"></div>
                 <span>More</span>
             </div>
         </div>
@@ -79,7 +79,6 @@
                             else
                             {
                                 <div class="day-cell @GetCellClass(day) clickable"
-                                     style="@GetCellStyle(day)"
                                      title="@GetCellTooltip(day)"
                                      @onclick="() => NavigateToDay(day)">
                                 </div>
@@ -95,10 +94,11 @@
             <div class="compact-foot">
                 <div class="compact-legend">
                     <span>less</span>
-                    <div class="legend-cell" style="background: rgba(76, 86, 106, 0.3);"></div>
-                    <div class="legend-cell" style="@GetLegendStyle(0.4)"></div>
-                    <div class="legend-cell" style="@GetLegendStyle(0.7)"></div>
-                    <div class="legend-cell" style="@GetLegendStyle(1)"></div>
+                    <div class="legend-cell l0"></div>
+                    <div class="legend-cell l1"></div>
+                    <div class="legend-cell l2"></div>
+                    <div class="legend-cell l3"></div>
+                    <div class="legend-cell l4"></div>
                     <span>more</span>
                 </div>
                 <p class="compact-note"><b>@PerfectDaysCount()</b> perfect days this year ✨</p>
@@ -355,64 +355,28 @@
         _ => ""
     };
 
-    private static string GetMonthColor(int month) => month switch
-    {
-        1 => "#BF616A",   // Jan - Red
-        2 => "#D08770",   // Feb - Orange
-        3 => "#EBCB8B",   // Mar - Yellow
-        4 => "#A3BE8C",   // Apr - Chartreuse
-        5 => "#8FBC8F",   // May - Green
-        6 => "#88C0A8",   // Jun - Spring Green
-        7 => "#8FBCBB",   // Jul - Cyan
-        8 => "#81A1C1",   // Aug - Azure
-        9 => "#5E81AC",   // Sep - Blue
-        10 => "#9A7AA0",  // Oct - Violet
-        11 => "#B48EAD",  // Nov - Magenta
-        12 => "#BF7A8E",  // Dec - Rose
-        _ => "#81A1C1"
-    };
-
+    /// <summary>
+    /// Accent intensity scale per design #17a: 5 steps from divider (no activity)
+    /// up to accent-text (fullest). Theme tokens keep it working across all 4 themes.
+    /// Perfect (100%) days additionally glow.
+    /// </summary>
     private static string GetCellClass(DayCellData day)
     {
         if (day.IsFuture)
         {
             return "future";
         }
-        
-        if (day.CompletionPercent > 0)
-        {
-            return "has-progress";
-        }
-        
-        return "no-progress";
-    }
 
-    private static string GetCellStyle(DayCellData day)
-    {
-        if (day.IsFuture || day.CompletionPercent == 0) return "";
-        
-        var color = GetMonthColor(day.Month);
-        var opacity = day.CompletionPercent switch
+        var level = day.CompletionPercent switch
         {
-            <= 25 => "0.3",
-            <= 50 => "0.5",
-            <= 75 => "0.75",
-            _ => "1"
+            <= 0 => "l0",
+            <= 25 => "l1",
+            <= 50 => "l2",
+            <= 75 => "l3",
+            _ => "l4"
         };
-        
-        // Add glow for 100% complete days
-        if (day.CompletionPercent >= 100)
-        {
-            return $"--month-color: {color}; opacity: 1; box-shadow: 0 0 6px {color};";
-        }
-        
-        return $"--month-color: {color}; opacity: {opacity};";
-    }
 
-    private string GetLegendStyle(double opacity)
-    {
-        var color = GetMonthColor(_today.Month);
-        return $"background: {color}; opacity: {opacity};";
+        return day.CompletionPercent >= 100 ? $"{level} perfect" : level;
     }
 
     private static string GetCellTooltip(DayCellData day)

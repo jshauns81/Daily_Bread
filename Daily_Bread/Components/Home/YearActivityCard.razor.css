@@ -1,30 +1,21 @@
 /* ==========================================================================
-   Year Activity Card - Hero Heatmap
-   Rainbow month colors with gradient intensity based on completion
+   Year Activity Card — accent intensity heatmap (design #17a)
+   5-step scale: divider (none) → accent tints → accent-text (fullest).
+   Token-only so all 4 themes work.
    ========================================================================== */
 
 .year-activity-hero {
-    background: linear-gradient(160deg, color-mix(in srgb, var(--ds-accent-primary) 10%, var(--ds-bg-elevated)) 0%, var(--ds-bg-elevated) 55%);
-    border: 1px solid color-mix(in srgb, var(--ds-accent-primary) 28%, var(--ds-bg-muted));
-    border-radius: var(--ds-radius-xl);
+    background: var(--db-bg2);
+    background-color: var(--db-bg2);
+    border: 1px solid var(--db-border);
+    border-radius: var(--ds-radius-card);
     padding: var(--ds-space-6);
     display: flex;
     flex-direction: column;
     gap: var(--ds-space-4);
-    box-shadow: 0 14px 40px -16px rgba(0, 0, 0, 0.55), 0 0 30px -10px color-mix(in srgb, var(--ds-accent-primary) 40%, transparent);
+    box-shadow: var(--ds-card-shadow);
     position: relative;
     overflow: hidden;
-}
-
-.year-activity-hero::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--ds-accent-primary) 10%, transparent) 0%, transparent 50%);
-    pointer-events: none;
 }
 
 /* ==========================================================================
@@ -38,14 +29,13 @@
     gap: var(--ds-space-3);
 }
 
+/* Card heading per #17a: "Kid's year" — 14px/700 in primary text */
 .year-activity-hero.compact .compact-head {
     position: relative;
     z-index: 1;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-    color: var(--ds-text-muted);
-    font-weight: var(--ds-font-bold);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--db-text);
 }
 
 /* Keep the heatmap within the card width; scroll horizontally if needed */
@@ -95,7 +85,7 @@
 }
 
 .year-activity-hero.compact .compact-note b {
-    color: var(--ds-semantic-highlight);
+    color: var(--ds-accent-text);
     font-weight: var(--ds-font-bold);
 }
 
@@ -273,23 +263,45 @@
 /* Future days - hollow outline */
 .day-cell.future {
     background: transparent;
-    border: 1px solid color-mix(in srgb, var(--ds-accent-primary) 25%, transparent);
+    border: 1px solid color-mix(in srgb, var(--db-accent) 25%, transparent);
 }
 
 .day-cell.future.clickable:hover {
-    border-color: color-mix(in srgb, var(--ds-accent-primary) 42%, transparent);
+    border-color: color-mix(in srgb, var(--db-accent) 42%, transparent);
     transform: scale(1.4);
     z-index: 10;
 }
 
-/* No progress - grey */
-.day-cell.no-progress {
-    background: var(--ds-bg-hover);
+/* Accent intensity scale (#17a): divider → accent tints → accent-text.
+   The same classes color the legend swatches. */
+.day-cell.l0,
+.legend-cell.l0 {
+    background: var(--ds-divider);
 }
 
-/* Has progress - colored by month, opacity set via inline style */
-.day-cell.has-progress {
-    background: var(--month-color);
+.day-cell.l1,
+.legend-cell.l1 {
+    background: color-mix(in srgb, var(--db-accent) 22%, transparent);
+}
+
+.day-cell.l2,
+.legend-cell.l2 {
+    background: color-mix(in srgb, var(--db-accent) 42%, transparent);
+}
+
+.day-cell.l3,
+.legend-cell.l3 {
+    background: color-mix(in srgb, var(--db-accent) 68%, transparent);
+}
+
+.day-cell.l4,
+.legend-cell.l4 {
+    background: var(--ds-accent-text);
+}
+
+/* Perfect (100%) days glow */
+.day-cell.perfect {
+    box-shadow: var(--ds-glow-accent);
 }
 
 /* ==========================================================================
