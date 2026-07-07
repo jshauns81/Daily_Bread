@@ -42,7 +42,7 @@ public class NavigationService : INavigationService
     /// MobileOrder controls order in mobile bottom nav (1-5 appear, 6+ are overflow/hidden).
     /// 
     /// NOTE: Mobile nav shows up to 5 items. Items are filtered by role first, then ordered.
-    /// - Child sees: Home(1), Balance(2), Achievements(3), Goals(4) = 4 items
+    /// - Child sees: Home(1), Balance(2), Achievements(3) = 3 items
     /// - Parent sees: Home(1), Planner(2), Treasury(3), Tracker(4) = 4 items
     /// </summary>
     private static readonly List<NavItem> AllItems =
@@ -70,9 +70,6 @@ public class NavigationService : INavigationService
 
         // Achievements - child-only, position 3 in mobile
         new("/achievements", "🏆", "Achievements", NavVisibility.Child, MobileOrder: 3),
-
-        // Goals - child-only, position 4 in mobile
-        new("/goals", "🎯", "Goals", NavVisibility.Child, MobileOrder: 4),
 
         // ============================================
         // PARENT MANAGEMENT (Section: "Management")

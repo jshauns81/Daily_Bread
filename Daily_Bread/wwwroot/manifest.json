@@ -4,8 +4,9 @@
   "description": "A family chore tracker that helps kids earn their daily bread",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#2E3440",
-  "theme_color": "#2E3440",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#0D0A14",
+  "theme_color": "#0D0A14",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en-US",
@@ -20,13 +21,13 @@
       "src": "/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/apple-touch-icon.png",
@@ -46,7 +47,7 @@
       "name": "My Balance",
       "short_name": "Balance",
       "description": "Check your current balance",
-      "url": "/my-balance"
+      "url": "/"
     }
   ],
   "related_applications": [],

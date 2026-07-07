@@ -14,7 +14,6 @@ public static class NavIcons
         ["/calendar"] = "calendar",
         ["/my-balance"] = "circle-dollar-sign",
         ["/achievements"] = "trophy",
-        ["/goals"] = "target",
         ["/chore-planner"] = "layout-grid",
         ["/ledger"] = "credit-card",
         ["/manage-achievements"] = "trophy",
