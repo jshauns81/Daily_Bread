@@ -39,7 +39,7 @@ gold = money, red = Help).
    Simulator and Mac need nothing.
 
 5. **First launch** — the app asks for your server:
-   - Simulator or Mac, with the dev server running locally: `http://localhost:5000`
+   - Simulator or Mac, with the dev server running locally: `http://localhost:5100`
    - A real phone on your network: `http://<your-Macs-LAN-IP>:5000` or your public HTTPS URL
 
    Then sign in with any account from the web app (dev seed: the admin
