@@ -158,16 +158,6 @@ struct ApprovalsView: View {
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
-        .confirmationDialog(
-            "Approve all \(store.queue?.pendingApprovals.count ?? 0) chores for \(store.pendingTotal.display)?",
-            isPresented: $confirmApproveAll,
-            titleVisibility: .visible
-        ) {
-            Button("Approve all — \(store.pendingTotal.display)") {
-                Task { await store.approveAll(session) }
-            }
-            Button("Cancel", role: .cancel) {}
-        }
         .sheet(item: Binding(
             get: { store.helpTarget },
             set: { store.helpTarget = $0 })
@@ -212,30 +202,53 @@ struct ApprovalsView: View {
         .animation(.easeOut(duration: 0.4), value: isGlowing)
     }
 
-    /// "Approve all (5) — $12.50" with progress while the batch runs.
+    /// "Approve all (5) — $12.50" → tap → the row itself becomes the
+    /// confirmation (no system dialog): gold confirm, quiet cancel.
+    @ViewBuilder
     private func approveAllRow(_ queue: ApprovalsQueue) -> some View {
-        Button {
-            confirmApproveAll = true
-        } label: {
-            HStack {
-                if let progress = store.batchProgress {
-                    ProgressView(value: Double(progress.done), total: Double(progress.total))
-                        .frame(maxWidth: 120)
-                    Text("\(progress.done)/\(progress.total)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                } else {
+        if let progress = store.batchProgress {
+            HStack(spacing: 10) {
+                ProgressView(value: Double(progress.done), total: Double(progress.total))
+                    .tint(DB.gold(scheme))
+                Text("\(progress.done)/\(progress.total)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        } else if confirmApproveAll {
+            HStack(spacing: 10) {
+                Text("Approve \(queue.pendingApprovals.count) chores?")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Button("Cancel") {
+                    withAnimation(.snappy) { confirmApproveAll = false }
+                }
+                .buttonStyle(.bordered)
+                .font(.caption.weight(.semibold))
+                Button("Approve — \(store.pendingTotal.display)") {
+                    withAnimation(.snappy) { confirmApproveAll = false }
+                    Task { await store.approveAll(session) }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(DB.gold(scheme))
+                .foregroundStyle(Color.black.opacity(0.8))
+                .font(.caption.weight(.bold))
+            }
+        } else {
+            Button {
+                withAnimation(.snappy) { confirmApproveAll = true }
+            } label: {
+                HStack {
                     Label("Approve all (\(queue.pendingApprovals.count)) — \(store.pendingTotal.display)",
                           systemImage: "checkmark.seal.fill")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(DB.gold(scheme))
+                    Spacer()
                 }
-                Spacer()
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
-        .disabled(store.batchProgress != nil)
     }
 
     /// "12 more help requests ⌄" — tap to expand inline, tap again to fold.
