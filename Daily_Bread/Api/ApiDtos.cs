@@ -196,7 +196,8 @@ public sealed record ChildProgressDto(
 
 public sealed record ChildBalanceDto(
     string DisplayName,
-    [property: JsonConverter(typeof(MoneyStringConverter))] decimal Balance);
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal Balance,
+    bool CanCashOut);
 
 public sealed record DailyEarningDto(
     DateOnly Date,

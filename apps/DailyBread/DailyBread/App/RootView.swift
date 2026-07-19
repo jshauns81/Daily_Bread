@@ -33,6 +33,10 @@ struct ServerSetupView: View {
                 Text("🍞").font(.system(size: 56))
                 Text("Daily Bread")
                     .font(.largeTitle.weight(.bold))
+                Text("give us this day")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .italic()
                 Text("Connect to your family's server")
                     .foregroundStyle(.secondary)
             }
@@ -105,6 +109,10 @@ struct LoginView: View {
                 Text("🍞").font(.system(size: 56))
                 Text("Daily Bread")
                     .font(.largeTitle.weight(.bold))
+                Text("give us this day")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .italic()
             }
 
             VStack(spacing: 12) {

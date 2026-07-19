@@ -210,21 +210,22 @@ struct HelpRespondSheet: View {
 
                 Spacer()
 
+                // Same vocabulary as the web app — the family's language.
                 VStack(spacing: 10) {
                     choiceButton(
                         .completedByParent,
-                        title: "I helped",
-                        subtitle: "\(request.childName) gets credit",
+                        title: "✓ Fulfill for them",
+                        subtitle: "You did it — \(request.childName) receives full credit",
                         prominent: true)
                     choiceButton(
                         .excused,
-                        title: "Forgive",
-                        subtitle: "No penalty, no earning",
+                        title: "Grant dispensation",
+                        subtitle: "Excused for today. No penalty, no earning",
                         prominent: false)
                     choiceButton(
                         .denied,
-                        title: "Not this time",
-                        subtitle: "\(request.childName) still needs to do it",
+                        title: "↺ They must try again",
+                        subtitle: "Back to pending — \(request.childName) does it themselves",
                         prominent: false)
                 }
             }

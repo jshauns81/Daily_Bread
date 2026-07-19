@@ -102,6 +102,14 @@ struct TodayView: View {
                 ProgressView().frame(maxWidth: .infinity)
             }
 
+            if store.today != nil {
+                Section {
+                    YearHeatmapCard(title: "Your year", userId: nil)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                }
+            }
+
             if let error = store.errorMessage {
                 Section {
                     Label(error, systemImage: "wifi.exclamationmark")
@@ -129,6 +137,11 @@ struct TodayView: View {
                 .frame(width: 64, height: 64)
 
             VStack(alignment: .leading, spacing: 2) {
+                (Text("\(Greeting.current), ")
+                    + Text((today.userName ?? "there").capitalized)
+                        .foregroundStyle(Color.accentColor)
+                    + Text("."))
+                    .font(.headline)
                 Text(today.date.longDisplay)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

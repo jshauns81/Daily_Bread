@@ -38,7 +38,7 @@ public class DashboardController : ControllerBase
             data.ChildrenProgress.Select(p => new ChildProgressDto(
                 p.UserId, p.DisplayName, p.TotalChores, p.CompletedChores,
                 p.ApprovedChores, p.PendingChores, p.HelpRequests)).ToList(),
-            data.ChildrenBalances.Select(b => new ChildBalanceDto(b.DisplayName, b.Balance)).ToList(),
+            data.ChildrenBalances.Select(b => new ChildBalanceDto(b.DisplayName, b.Balance, b.CanCashOut)).ToList(),
             data.PendingApprovals.Select(a => new ApprovalItemDto(
                 a.ChoreLogId, a.ChoreDefinitionId, a.ChoreName, a.ChildName, a.ChildUserId, a.EarnValue)).ToList(),
             data.HelpRequests.Select(h => new HelpRequestDto(
