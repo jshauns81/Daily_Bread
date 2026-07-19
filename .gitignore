@@ -456,3 +456,10 @@ backups/
 
 # Session/manual-testing screenshots - not app artifacts
 screenshots/
+
+# Local working notes - never commit
+CLAUDE.md
+.claude/
+
+# Source files that legitimately contain "token" in the name (auth code, not secrets)
+!*Token*.cs

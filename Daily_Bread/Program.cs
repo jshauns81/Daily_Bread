@@ -128,6 +128,32 @@ builder.Services.AddAuthentication(options =>
 })
 .AddIdentityCookies();
 
+// =============================================================================
+// JWT bearer for native clients (/api/v1). This is an ADDITIONAL scheme beside
+// the Identity cookies — web auth is untouched. API endpoints opt in with
+// [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)].
+// Signing key: Api:Jwt:SigningKey config or JWT_SIGNING_KEY env; an ephemeral
+// key (with warning) is used if unset, so existing deployments keep working.
+// =============================================================================
+var jwtSigningKey = Daily_Bread.Api.ApiJwt.ResolveSigningKey(builder.Configuration);
+builder.Services.AddSingleton(jwtSigningKey);
+builder.Services.AddAuthentication().AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration.GetValue("Api:Jwt:Issuer", "DailyBread"),
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration.GetValue("Api:Jwt:Audience", "DailyBread"),
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = jwtSigningKey,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromMinutes(1),
+        NameClaimType = System.Security.Claims.ClaimTypes.Name,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role
+    };
+});
+
 // Authentik OIDC for parents. Wired as an external login provider
 // that feeds ASP.NET Identity, so SSO logins and local password logins both end
 // up holding the same .DailyBread.Auth cookie. The kid keeps local password login
@@ -275,7 +301,28 @@ builder.Services.AddScoped<IDateProvider, SystemDateProvider>();
 builder.Services.AddScoped<IToastService, ToastService>();
 builder.Services.AddScoped<ModalService>(); // Modal service for root-level modal rendering
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
+
+// ICurrentUserContext: Blazor circuits read auth state from the circuit's
+// AuthenticationStateProvider; API requests read HttpContext.User (set by the
+// bearer middleware). Selected per-request by path so the Services/ layer
+// works identically for both clients.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentUserContext>();
+builder.Services.AddScoped<Daily_Bread.Api.ApiCurrentUserContext>();
+builder.Services.AddScoped<ICurrentUserContext>(sp =>
+{
+    var httpContext = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
+    if (httpContext != null && httpContext.Request.Path.StartsWithSegments("/api/v1"))
+    {
+        return sp.GetRequiredService<Daily_Bread.Api.ApiCurrentUserContext>();
+    }
+    return sp.GetRequiredService<CurrentUserContext>();
+});
+
+// API layer (native clients)
+builder.Services.AddScoped<Daily_Bread.Api.IApiTokenService, Daily_Bread.Api.ApiTokenService>();
+builder.Services.AddScoped<Daily_Bread.Api.IHouseholdGuard, Daily_Bread.Api.HouseholdGuard>();
+builder.Services.AddControllers();
 builder.Services.AddSingleton<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IChoreScheduleService, ChoreScheduleService>();
 builder.Services.AddScoped<IChoreLogService, ChoreLogService>();
@@ -315,6 +362,13 @@ builder.Services.AddScoped<IDrivingLogService, DrivingLogService>();
 // Add health checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>();
+
+// OpenAPI document for /api/v1 (Development only) — the contract the Swift
+// client models are written against. Served at /openapi/v1.json.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddOpenApi();
+}
 
 var app = builder.Build();
 
@@ -431,6 +485,18 @@ app.UseAntiforgery();
 
 // SignalR hub endpoint - must be after UseAuthentication/UseAuthorization
 app.MapHub<ChoreHub>("/chorehub");
+
+// API for native clients (see docs/IOS_APP_PLAN.md). Controllers carry their
+// own [Authorize(AuthenticationSchemes = "Bearer")] / [AllowAnonymous].
+app.MapControllers();
+
+// Health alias under /api/v1 for the native app's server-URL reachability check.
+app.MapHealthChecks("/api/v1/health").AllowAnonymous();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi().AllowAnonymous();
+}
 
 // Redirect unauthenticated document requests to login
 // Static files are already served above, so this only affects page requests
