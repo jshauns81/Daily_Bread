@@ -97,51 +97,62 @@
 }
 
 /* ===========================================
-   1b. THEME SYSTEM  (Our Lady of Guadalupe palette + picker)
+   1b. THEME SYSTEM — "Graphite & Glass"
    data-theme x data-mode are set on <html>; falls back to Guadalupe dark.
+
+   Principle: the surfaces are neutral graphite and NEVER change per theme —
+   themes are accent tints only (matching the native iOS/macOS app).
    Constants across every theme: gold = bread/money, gold-glow = Blessing,
-   red = Help alert. Themes only re-tint the surfaces + the primary accent.
+   red = Help alert.
    =========================================== */
 
-/* Per-mode constants (semantics that should stay steady across themes) */
+/* Safety defaults = Guadalupe dark graphite (used before/without the data-* attrs).
+   MUST come before the [data-mode] blocks: :root ties them on specificity,
+   so the per-mode surfaces need to win on source order. */
+:root{
+    --db-gold:#D7A23F; --db-glow:#EAC468; --db-error:#C25563; --db-warning:#D8956A;
+    --db-success:#84B98F; --db-special:#B48EAD; --db-on-accent:#0C0F11;
+    --db-bg:#0E0E10; --db-bg2:#1A1A1E; --db-bg3:#26262B;
+    --db-text:#F5F5F7; --db-text2:#A3A3AA; --db-text3:#7A7A82; --db-accent:#4DA8C6;
+    --ds-card-shadow: 0 14px 40px -16px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.05) inset;
+    --ds-card-shadow-hover: 0 22px 55px -16px rgba(0,0,0,.62), 0 1px 0 rgba(255,255,255,.06) inset;
+}
+
+/* Per-mode constants: neutral graphite surfaces + semantic colors.
+   Identical across all themes — only --db-accent varies by theme. */
 [data-mode="dark"]{
     --db-gold:#D7A23F; --db-glow:#EAC468;
     --db-error:#C25563; --db-warning:#D8956A; --db-success:#84B98F; --db-special:#B48EAD;
-    --db-on-accent:#15181C;
-    /* card depth (tuned for dark) */
-    --ds-card-shadow: 0 14px 40px -16px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04) inset;
-    --ds-card-shadow-hover: 0 22px 55px -16px rgba(0,0,0,.62), 0 1px 0 rgba(255,255,255,.05) inset;
+    --db-on-accent:#0C0F11;
+    --db-bg:#0E0E10; --db-bg2:#1A1A1E; --db-bg3:#26262B;
+    --db-text:#F5F5F7; --db-text2:#A3A3AA; --db-text3:#7A7A82;
+    /* card depth (tuned for dark graphite) */
+    --ds-card-shadow: 0 14px 40px -16px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.05) inset;
+    --ds-card-shadow-hover: 0 22px 55px -16px rgba(0,0,0,.62), 0 1px 0 rgba(255,255,255,.06) inset;
 }
 [data-mode="light"]{
     --db-gold:#D99514; --db-glow:#F2B705;
     --db-error:#D33B4E; --db-warning:#D27D3C; --db-success:#3E9E63; --db-special:#9B6FB0;
     --db-on-accent:#FFFFFF;
+    --db-bg:#F2F2F6; --db-bg2:#FFFFFF; --db-bg3:#E8E8ED;
+    --db-text:#1D1D1F; --db-text2:#6E6E73; --db-text3:#98989F;
     /* card depth (softer for light) */
-    --ds-card-shadow: 0 10px 30px -14px rgba(20,30,45,.16);
-    --ds-card-shadow-hover: 0 18px 44px -14px rgba(20,30,45,.22);
+    --ds-card-shadow: 0 10px 30px -14px rgba(20,25,35,.14);
+    --ds-card-shadow-hover: 0 18px 44px -14px rgba(20,25,35,.20);
 }
 
-/* Themes: surfaces + primary accent (rosa also deepens its alert red) */
-[data-theme="guadalupe"][data-mode="dark"]{  --db-bg:#0F1922; --db-bg2:#1D2A35; --db-bg3:#293945; --db-text:#F0E8D6; --db-text2:#B7BEC4; --db-text3:#7E8790; --db-accent:#4DA8C6; }
-[data-theme="guadalupe"][data-mode="light"]{ --db-bg:#FAFBFC; --db-bg2:#FFFFFF; --db-bg3:#EEF1F4; --db-text:#1E2530; --db-text2:#566069; --db-text3:#8A929A; --db-accent:#0E8FC4; }
-[data-theme="marian"][data-mode="dark"]{     --db-bg:#101226; --db-bg2:#1F2440; --db-bg3:#2C3358; --db-text:#ECE9DA; --db-text2:#B6BAD0; --db-text3:#7C7F9A; --db-accent:#6A82E6; }
-[data-theme="marian"][data-mode="light"]{    --db-bg:#FAFBFE; --db-bg2:#FFFFFF; --db-bg3:#EEF0FA; --db-text:#1F2438; --db-text2:#565C75; --db-text3:#888EA8; --db-accent:#3A5BD0; }
-[data-theme="sion"][data-mode="dark"]{       --db-bg:#0F1A14; --db-bg2:#1E2D24; --db-bg3:#2A3D31; --db-text:#EEEAD7; --db-text2:#B6C0B0; --db-text3:#7E8878; --db-accent:#5AAE7B; }
-[data-theme="sion"][data-mode="light"]{      --db-bg:#FAFCFA; --db-bg2:#FFFFFF; --db-bg3:#EDF3EE; --db-text:#1F2A22; --db-text2:#54635A; --db-text3:#869287; --db-accent:#2E9E63; }
-[data-theme="advent"][data-mode="dark"]{     --db-bg:#150F20; --db-bg2:#272036; --db-bg3:#352B49; --db-text:#EFE9DA; --db-text2:#BDB6C8; --db-text3:#867E94; --db-accent:#9B7BE0; }
-[data-theme="advent"][data-mode="light"]{    --db-bg:#FCFAFE; --db-bg2:#FFFFFF; --db-bg3:#F2EEF8; --db-text:#271F33; --db-text2:#5E5570; --db-text3:#8E869C; --db-accent:#7A4FD0; }
-[data-theme="rosa"][data-mode="dark"]{       --db-bg:#1B1019; --db-bg2:#30212C; --db-bg3:#412C3A; --db-text:#F1E7DC; --db-text2:#C6B3BE; --db-text3:#8E7E88; --db-accent:#E08AA6; --db-error:#9E3350; }
-[data-theme="rosa"][data-mode="light"]{      --db-bg:#FEFAFC; --db-bg2:#FFFFFF; --db-bg3:#F8EEF3; --db-text:#2E1F28; --db-text2:#6E5660; --db-text3:#9C8690; --db-accent:#D14E7E; --db-error:#A8123F; }
-
-/* Safety defaults = Guadalupe dark (used before/without the data-* attrs) */
-:root{
-    --db-gold:#D7A23F; --db-glow:#EAC468; --db-error:#C25563; --db-warning:#D8956A;
-    --db-success:#84B98F; --db-special:#B48EAD; --db-on-accent:#15181C;
-    --db-bg:#0F1922; --db-bg2:#1D2A35; --db-bg3:#293945;
-    --db-text:#F0E8D6; --db-text2:#B7BEC4; --db-text3:#7E8790; --db-accent:#4DA8C6;
-    --ds-card-shadow: 0 14px 40px -16px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04) inset;
-    --ds-card-shadow-hover: 0 22px 55px -16px rgba(0,0,0,.62), 0 1px 0 rgba(255,255,255,.05) inset;
-}
+/* Themes = accent tint only. Light mode uses deeper steps for contrast on white.
+   (rosa also deepens its alert red so Help stays distinct from the accent) */
+[data-theme="guadalupe"][data-mode="dark"]{  --db-accent:#4DA8C6; }
+[data-theme="guadalupe"][data-mode="light"]{ --db-accent:#0E8FC4; }
+[data-theme="marian"][data-mode="dark"]{     --db-accent:#6A82E6; }
+[data-theme="marian"][data-mode="light"]{    --db-accent:#3A5BD0; }
+[data-theme="sion"][data-mode="dark"]{       --db-accent:#5AAE7B; }
+[data-theme="sion"][data-mode="light"]{      --db-accent:#2E9E63; }
+[data-theme="advent"][data-mode="dark"]{     --db-accent:#9B7BE0; }
+[data-theme="advent"][data-mode="light"]{    --db-accent:#7A4FD0; }
+[data-theme="rosa"][data-mode="dark"]{       --db-accent:#E08AA6; --db-error:#9E3350; }
+[data-theme="rosa"][data-mode="light"]{      --db-accent:#D14E7E; --db-error:#A8123F; }
 
 /* Map the theme palette onto the app's existing --ds-* tokens (everything inherits) */
 :root{
@@ -226,7 +237,7 @@
 .nord-input:focus {
     border-color: var(--ds-accent-cyan);
     background: var(--ds-bg-base);
-    box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--db-accent) 22%, transparent);
     outline: none;
 }
 
@@ -469,10 +480,10 @@
     border-top: 1px solid var(--ds-bg-muted);
     /* Safe area padding for iPhone home indicator */
     padding-bottom: max(var(--ds-space-2), env(safe-area-inset-bottom, 0px));
-    /* Frosted glass effect */
+    /* Frosted glass effect (graphite, theme-neutral) */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background-color: rgba(59, 66, 82, 0.85);
+    background-color: color-mix(in srgb, var(--db-bg2) 85%, transparent);
 }
 
 /* Content padding when bottom bar is present */
@@ -485,14 +496,14 @@
    =========================================== */
 
 .ds-glass {
-    background: rgba(59, 66, 82, 0.6);
+    background: color-mix(in srgb, var(--db-bg2) 60%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(216, 222, 233, 0.1);
+    border: 1px solid color-mix(in srgb, var(--db-text) 10%, transparent);
 }
 
 .ds-glass--strong {
-    background: rgba(59, 66, 82, 0.85);
+    background: color-mix(in srgb, var(--db-bg2) 85%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }

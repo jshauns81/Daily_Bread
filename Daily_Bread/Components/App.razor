@@ -7,38 +7,34 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#3B4252" />
+    <meta name="theme-color" content="#0E0E10" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Daily Bread" />
     <meta name="application-name" content="Daily Bread" />
     <meta name="description" content="A family chore tracker that helps kids earn their daily bread" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="msapplication-TileColor" content="#2E3440" />
+    <meta name="msapplication-TileColor" content="#0E0E10" />
     <meta name="msapplication-tap-highlight" content="no" />
     <base href="/" />
 
     <!-- THEME no-flash: set data-theme/data-mode on <html> before first paint -->
     <script>
         (function () {
-            var BG = {
-                guadalupe: { dark: '#0F1922', light: '#FAFBFC' },
-                marian:    { dark: '#101226', light: '#FAFBFE' },
-                sion:      { dark: '#0F1A14', light: '#FAFCFA' },
-                advent:    { dark: '#150F20', light: '#FCFAFE' },
-                rosa:      { dark: '#1B1019', light: '#FEFAFC' }
-            };
+            /* Graphite & Glass: surfaces are mode-only; themes are accent tints */
+            var THEMES = ['guadalupe', 'marian', 'sion', 'advent', 'rosa'];
+            var BG = { dark: '#0E0E10', light: '#F2F2F6' };
             try {
                 var t = localStorage.getItem('db-theme');
                 var m = localStorage.getItem('db-mode');
-                if (!BG[t]) t = 'guadalupe';
+                if (THEMES.indexOf(t) === -1) t = 'guadalupe';
                 if (m !== 'light' && m !== 'dark') m = 'dark';
                 var de = document.documentElement;
                 de.setAttribute('data-theme', t);
                 de.setAttribute('data-mode', m);
-                de.style.backgroundColor = BG[t][m];
+                de.style.backgroundColor = BG[m];
                 var mc = document.querySelector('meta[name=theme-color]');
-                if (mc) mc.setAttribute('content', BG[t][m]);
+                if (mc) mc.setAttribute('content', BG[m]);
             } catch (e) {
                 document.documentElement.setAttribute('data-theme', 'guadalupe');
                 document.documentElement.setAttribute('data-mode', 'dark');
@@ -85,8 +81,8 @@
         }
         
         html, body {
-            background-color: var(--ds-bg-base, #0F1922);
-            color: var(--ds-text-primary, #F0E8D6);
+            background-color: var(--ds-bg-base, #0E0E10);
+            color: var(--ds-text-primary, #F5F5F7);
             margin: 0;
             padding: 0;
             /* Standard viewport height with modern fallback */
@@ -104,7 +100,7 @@
             /* Standard viewport height with modern fallback */
             height: 100vh;
             height: 100dvh;
-            background-color: var(--ds-bg-base, #0F1922);
+            background-color: var(--ds-bg-base, #0E0E10);
             /* Safe area insets applied via padding on left/right only */
             /* Top is handled by mobile-header, bottom by content area */
             padding-left: env(safe-area-inset-left, 0px);
@@ -129,11 +125,11 @@
         }
         
         .sidebar {
-            background-color: var(--ds-bg-elevated, #1D2A35);
+            background-color: var(--ds-bg-elevated, #1A1A1E);
         }
 
         main {
-            background-color: var(--ds-bg-base, #0F1922);
+            background-color: var(--ds-bg-base, #0E0E10);
             flex: 1;
             /* CRITICAL: min-height: 0 allows flex item to shrink and enables scrolling */
             min-height: 0;
@@ -164,7 +160,7 @@
             left: 0;
             right: 0;
             height: var(--header-height, 52px);
-            background-color: var(--ds-bg-elevated, #1D2A35);
+            background-color: var(--ds-bg-elevated, #1A1A1E);
             z-index: 100;
             display: flex;
             align-items: center;
