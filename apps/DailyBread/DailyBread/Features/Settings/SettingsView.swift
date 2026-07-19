@@ -71,5 +71,6 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .graphiteBackground()
     }
 }

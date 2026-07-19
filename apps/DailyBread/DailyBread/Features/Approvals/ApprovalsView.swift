@@ -95,22 +95,15 @@ struct ApprovalsView: View {
             }
         }
         .navigationTitle("Approvals")
+        .graphiteBackground()
         .refreshable { await store.load(session) }
         .task { await store.load(session) }
-        .confirmationDialog(
-            store.helpTarget.map { "\($0.childName) needs help with \($0.choreName)" } ?? "",
-            isPresented: Binding(
-                get: { store.helpTarget != nil },
-                set: { if !$0 { store.helpTarget = nil } }),
-            titleVisibility: .visible
-        ) {
-            if let request = store.helpTarget {
-                ForEach(HelpResponseKind.allCases, id: \.rawValue) { kind in
-                    Button(kind.label) {
-                        Task { await store.respond(request, kind, session) }
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
+        .sheet(item: Binding(
+            get: { store.helpTarget },
+            set: { store.helpTarget = $0 })
+        ) { request in
+            HelpRespondSheet(request: request) { kind in
+                Task { await store.respond(request, kind, session) }
             }
         }
     }
@@ -149,6 +142,8 @@ struct ApprovalsView: View {
         .animation(.easeOut(duration: 0.4), value: isGlowing)
     }
 
+    // moved below: HelpRespondSheet
+
     private func helpRow(_ request: HelpRequest) -> some View {
         Button {
             store.helpTarget = request
@@ -173,5 +168,105 @@ struct ApprovalsView: View {
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// The Help response moment, designed instead of a stock dialog: the kid's
+/// words up top, three clear outcomes below. "I helped" wears the gold.
+struct HelpRespondSheet: View {
+    let request: HelpRequest
+    var onChoose: (HelpResponseKind) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(DB.help(scheme))
+                            .frame(width: 9, height: 9)
+                        Text("HELP RAISED")
+                            .font(.caption.weight(.heavy))
+                            .foregroundStyle(DB.help(scheme))
+                            .kerning(1)
+                    }
+                    Text(request.choreName)
+                        .font(.title2.weight(.bold))
+                    Text("\(request.childName) · \(request.date.longDisplay)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let reason = request.reason, !reason.isEmpty {
+                    Text("“\(reason)”")
+                        .font(.body.italic())
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .glassCard()
+                }
+
+                Spacer()
+
+                VStack(spacing: 10) {
+                    choiceButton(
+                        .completedByParent,
+                        title: "I helped",
+                        subtitle: "\(request.childName) gets credit",
+                        prominent: true)
+                    choiceButton(
+                        .excused,
+                        title: "Forgive",
+                        subtitle: "No penalty, no earning",
+                        prominent: false)
+                    choiceButton(
+                        .denied,
+                        title: "Not this time",
+                        subtitle: "\(request.childName) still needs to do it",
+                        prominent: false)
+                }
+            }
+            .padding()
+            .navigationTitle("Help")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+        .graphiteBackground()
+        #if os(iOS)
+        .presentationDetents([.medium, .large])
+        #endif
+    }
+
+    private func choiceButton(
+        _ kind: HelpResponseKind,
+        title: String,
+        subtitle: String,
+        prominent: Bool
+    ) -> some View {
+        Button {
+            onChoose(kind)
+            dismiss()
+        } label: {
+            VStack(spacing: 2) {
+                Text(title)
+                    .font(.body.weight(.bold))
+                Text(subtitle)
+                    .font(.caption)
+                    .opacity(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(prominent ? DB.gold(scheme) : Color.secondary.opacity(0.35))
+        .foregroundStyle(prominent ? Color.black.opacity(0.8) : Color.primary)
     }
 }

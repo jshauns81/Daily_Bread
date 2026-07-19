@@ -81,6 +81,7 @@ struct ParentHomeView: View {
             .padding()
         }
         .navigationTitle("Home")
+        .graphiteBackground()
         .refreshable { await store.load(session) }
         .task { await store.load(session) }
     }

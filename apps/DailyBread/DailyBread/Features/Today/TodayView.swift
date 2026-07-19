@@ -111,6 +111,7 @@ struct TodayView: View {
             }
         }
         .navigationTitle("Today")
+        .graphiteBackground()
         .refreshable { await store.load(session) }
         .task { await store.load(session) }
         .sheet(item: $store.helpTarget) { item in

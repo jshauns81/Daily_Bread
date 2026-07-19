@@ -314,6 +314,17 @@ public class DashboardService : IDashboardService
         
         _logger.LogDebug("Parent dashboard: Loaded {Count} relevant ChoreLogs in single query", allRelevantLogs.Count);
 
+        // Display names for approval/help items: prefer the child's profile
+        // DisplayName ("Noah") over the login username ("noah_test").
+        var displayNamesByUserId = await context.ChildProfiles
+            .AsNoTracking()
+            .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+
+        string ChildDisplayName(string? userId, string? fallback) =>
+            userId != null && displayNamesByUserId.TryGetValue(userId, out var name) && !string.IsNullOrWhiteSpace(name)
+                ? name
+                : (fallback ?? "Unassigned");
+
         // =============================================================================
         // Now filter in memory - no additional DB queries for ChoreLogs
         // =============================================================================
@@ -329,7 +340,7 @@ public class DashboardService : IDashboardService
                 ChoreLogId = cl.Id,
                 ChoreDefinitionId = cl.ChoreDefinitionId,
                 ChoreName = cl.ChoreDefinition.Name,
-                ChildName = cl.ChoreDefinition.AssignedUser?.UserName ?? "Unassigned",
+                ChildName = ChildDisplayName(cl.ChoreDefinition.AssignedUserId, cl.ChoreDefinition.AssignedUser?.UserName),
                 ChildUserId = cl.ChoreDefinition.AssignedUserId,
                 EarnValue = cl.ChoreDefinition.EarnValue,
                 Date = cl.Date,
@@ -346,7 +357,7 @@ public class DashboardService : IDashboardService
                 ChoreLogId = cl.Id,
                 ChoreDefinitionId = cl.ChoreDefinitionId,
                 ChoreName = cl.ChoreDefinition.Name,
-                ChildName = cl.ChoreDefinition.AssignedUser?.UserName ?? "Unassigned",
+                ChildName = ChildDisplayName(cl.ChoreDefinition.AssignedUserId, cl.ChoreDefinition.AssignedUser?.UserName),
                 ChildUserId = cl.ChoreDefinition.AssignedUserId,
                 Reason = cl.HelpReason,
                 Date = cl.Date,
