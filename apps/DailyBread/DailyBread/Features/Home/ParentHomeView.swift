@@ -44,9 +44,22 @@ struct ParentHomeView: View {
 
                     if !dash.childrenProgress.isEmpty {
                         sectionHeader("Today")
-                        VStack(spacing: 10) {
-                            ForEach(dash.childrenProgress) { child in
-                                childRow(child)
+                        // 1-2 kids: roomy rows. 3+: two-column grid.
+                        if dash.childrenProgress.count <= 2 {
+                            VStack(spacing: 10) {
+                                ForEach(dash.childrenProgress) { child in
+                                    childRow(child)
+                                }
+                            }
+                        } else {
+                            LazyVGrid(
+                                columns: [GridItem(.flexible(), spacing: 10),
+                                          GridItem(.flexible(), spacing: 10)],
+                                spacing: 10
+                            ) {
+                                ForEach(dash.childrenProgress) { child in
+                                    childTile(child)
+                                }
                             }
                         }
                     }
@@ -227,6 +240,39 @@ struct ParentHomeView: View {
             Spacer()
         }
         .glassCard()
+    }
+
+    /// Compact grid tile for 3+ kids: ring on top, name + one status line.
+    private func childTile(_ child: ChildProgress) -> some View {
+        VStack(spacing: 8) {
+            ProgressRing(
+                progress: child.totalChores == 0
+                    ? 0
+                    : Double(child.completedChores + child.approvedChores) / Double(child.totalChores),
+                label: "\(child.completedChores + child.approvedChores)/\(child.totalChores)")
+                .frame(width: 48, height: 48)
+
+            Text(child.displayName)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+
+            Group {
+                if child.helpRequests > 0 {
+                    Text("\(child.helpRequests) need\(child.helpRequests == 1 ? "s" : "") help")
+                        .foregroundStyle(DB.help(scheme))
+                } else if child.pendingChores > 0 {
+                    Text("\(child.pendingChores) left")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("All done ✨")
+                        .foregroundStyle(DB.gold(scheme))
+                }
+            }
+            .font(.caption)
+            .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .glassCard(padding: 12)
     }
 
     private func balancesCard(_ dash: ParentDashboard) -> some View {
