@@ -114,6 +114,8 @@ Sharp edge to settle here, permanently: **"today" is defined by the server** (fa
 
 ### Phase 2 — SwiftUI MVP, child-first (first TestFlight)
 
+> **Status: starter implemented 2026-07-19** (`apps/DailyBread/`, commit `4798285`). DailyBreadKit (wire types, APIClient with silent refresh, Keychain SessionStore, Graphite & Glass design system) + app shell (server onboarding, login, role-based tabs/sidebar, optimistic Today with Help flow, Earnings, parent Home + Approvals with the gold moment, Settings with accent themes). Builds clean for macOS and iOS Simulator; kit tests 11/11. **Remaining for the Phase 2 gate:** run it in Xcode with signing (Personal Team), point at the dev server, then the real-device pass on the kid's iPhone.
+
 New repo (or `apps/` folder): **multiplatform SwiftUI app** (one target: iOS + iPadOS + macOS — native, not Catalyst) + a **`DailyBreadKit` Swift package** holding everything shareable:
 
 ```
