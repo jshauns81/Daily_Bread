@@ -11,6 +11,7 @@ struct MainView: View {
     private enum Section: String, CaseIterable, Identifiable {
         case today = "Today"
         case earnings = "Earnings"
+        case awards = "Awards"
         case home = "Home"
         case approvals = "Approvals"
         case settings = "Settings"
@@ -21,6 +22,7 @@ struct MainView: View {
             switch self {
             case .today: return "sun.max"
             case .earnings: return "dollarsign.circle"
+            case .awards: return "trophy"
             case .home: return "house"
             case .approvals: return "checkmark.circle"
             case .settings: return "gearshape"
@@ -31,7 +33,7 @@ struct MainView: View {
     private var sections: [Section] {
         user.isParent
             ? [.home, .approvals, .settings]
-            : [.today, .earnings, .settings]
+            : [.today, .earnings, .awards, .settings]
     }
 
     @State private var selection: Section?
@@ -83,6 +85,7 @@ struct MainView: View {
         switch section {
         case .today: TodayView()
         case .earnings: EarningsView()
+        case .awards: AchievementsView()
         case .home: ParentHomeView()
         case .approvals: ApprovalsView()
         case .settings: SettingsView()

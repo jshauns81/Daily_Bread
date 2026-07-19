@@ -55,6 +55,18 @@ struct SettingsView: View {
                 }
             }
 
+            if session.currentUser?.isParent == true {
+                Section {
+                    featureToggle("Savings goals", "Show goals to the kids", \.enableGoals)
+                    featureToggle("Confetti", "Celebrate completed days", \.enableConfetti)
+                    featureToggle("Streaks", "Show streak counters", \.enableStreaks)
+                } header: {
+                    Text("Family features")
+                } footer: {
+                    Text("These apply to the whole family, on every device.")
+                }
+            }
+
             Section("Server") {
                 if let url = session.serverURL {
                     LabeledContent("Connected to", value: url.host() ?? url.absoluteString)
@@ -72,5 +84,38 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .graphiteBackground()
+        .task { await session.refreshFeatures() }
+    }
+
+    /// A family-feature switch: flips locally, saves to the server, reverts
+    /// on failure.
+    private func featureToggle(
+        _ title: String,
+        _ subtitle: String,
+        _ keyPath: WritableKeyPath<FamilyFeatures, Bool>
+    ) -> some View {
+        Toggle(isOn: Binding(
+            get: { session.features[keyPath: keyPath] },
+            set: { newValue in
+                var updated = session.features
+                updated[keyPath: keyPath] = newValue
+                let previous = session.features
+                session.features = updated
+                Task {
+                    do {
+                        session.features = try await session.client.updateFamilyFeatures(updated)
+                    } catch {
+                        session.features = previous
+                    }
+                }
+            })
+        ) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 }

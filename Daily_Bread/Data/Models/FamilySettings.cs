@@ -46,6 +46,12 @@ public class FamilySettings
     /// Default: true
     /// </summary>
     public bool EnableStreaks { get; set; } = true;
+
+    /// <summary>
+    /// Whether savings goals are shown to children. Off by default —
+    /// families opt in if goals actually motivate their kids.
+    /// </summary>
+    public bool EnableGoals { get; set; } = false;
     
     // ============================================
     // Push Notification Settings (VAPID)

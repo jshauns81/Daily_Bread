@@ -44,6 +44,7 @@ struct YearHeatmapCard: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
     @State private var store = YearHeatmapStore()
+    @State private var selectedDay: DaySummary?
 
     private let cellSize: CGFloat = 10
     private let cellGap: CGFloat = 2.5
@@ -68,6 +69,12 @@ struct YearHeatmapCard: View {
                                     RoundedRectangle(cornerRadius: 2.5, style: .continuous)
                                         .fill(color(for: day))
                                         .frame(width: cellSize, height: cellSize)
+                                        .onTapGesture {
+                                            if let day, day.totalChores > 0 {
+                                                Haptics.tick()
+                                                selectedDay = day
+                                            }
+                                        }
                                 }
                             }
                         }
@@ -88,6 +95,9 @@ struct YearHeatmapCard: View {
         }
         .glassCard()
         .task(id: userId) { await store.load(session, userId: userId) }
+        .sheet(item: $selectedDay) { day in
+            DayDetailSheet(day: day)
+        }
     }
 
     private var legend: some View {
@@ -114,6 +124,79 @@ struct YearHeatmapCard: View {
         case "NoneComplete": return DB.help(scheme).opacity(0.45)
         default: return Color.primary.opacity(scheme == .dark ? 0.07 : 0.08)
         }
+    }
+}
+
+/// One day's story, from a heatmap cell tap.
+struct DayDetailSheet: View {
+    let day: DaySummary
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(day.date.longDisplay)
+                        .font(.title3.weight(.bold))
+                    Text(statusLine)
+                        .font(.subheadline)
+                        .foregroundStyle(statusColor)
+                }
+
+                HStack(spacing: 12) {
+                    tile("\(day.approvedChores + day.completedChores)/\(day.totalChores)", "done")
+                    tile(day.earnedAmount.display, "earned", color: DB.gold(scheme))
+                    if day.missedChores > 0 {
+                        tile("\(day.missedChores)", "missed", color: DB.help(scheme))
+                    }
+                }
+
+                Spacer()
+            }
+            .padding()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+        .graphiteBackground()
+        #if os(iOS)
+        .presentationDetents([.height(260)])
+        #endif
+    }
+
+    private var statusLine: String {
+        switch day.status {
+        case "AllComplete": return "Perfect day ✨"
+        case "PartialComplete": return "Partly done"
+        case "NoneComplete": return "A rough one"
+        default: return "No chores scheduled"
+        }
+    }
+
+    private var statusColor: Color {
+        switch day.status {
+        case "AllComplete": return DB.success(scheme)
+        case "PartialComplete": return DB.gold(scheme)
+        case "NoneComplete": return DB.help(scheme)
+        default: return .secondary
+        }
+    }
+
+    private func tile(_ value: String, _ label: String, color: Color = .primary) -> some View {
+        VStack(spacing: 3) {
+            Text(value)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(color)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .glassCard(padding: 12)
     }
 }
 

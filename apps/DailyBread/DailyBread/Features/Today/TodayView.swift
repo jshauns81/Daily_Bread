@@ -231,7 +231,7 @@ struct TodayView: View {
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
         .overlay {
-            if let start = store.celebrationStart {
+            if let start = store.celebrationStart, session.features.enableConfetti {
                 ConfettiView(start: start)
             }
         }
@@ -289,7 +289,7 @@ struct TodayView: View {
                 }
                 .font(.subheadline)
 
-                if store.streak > 1 {
+                if store.streak > 1 && session.features.enableStreaks {
                     Text("🔥 \(store.streak)-day streak")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(DB.gold(scheme))
@@ -330,6 +330,10 @@ struct ChoreRow: View {
                     Text("Approved by \(by)")
                         .font(.caption)
                         .foregroundStyle(DB.gold(scheme))
+                } else if item.scheduleType == "WeeklyFrequency", item.weeklyTargetCount > 0 {
+                    Text("\(item.weeklyCompletedCount) of \(item.weeklyTargetCount) this week")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 

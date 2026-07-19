@@ -200,6 +200,36 @@ public sealed record ChildBalanceDto(
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal Balance,
     bool CanCashOut);
 
+// ---------- Family features / achievements ----------
+
+public sealed record FamilyFeaturesDto(
+    bool EnableGoals,
+    bool EnableConfetti,
+    bool EnableStreaks);
+
+public sealed record AchievementDto(
+    int Id,
+    string Name,
+    string Description,
+    string Icon,
+    string Category,
+    string Rarity,
+    int Points,
+    bool IsEarned,
+    DateTime? EarnedAtUtc,
+    bool IsNew,
+    bool ShowProgress,
+    int CurrentProgress,
+    int TargetProgress,
+    int ProgressPercent);
+
+public sealed record AchievementsResponse(
+    string UserId,
+    int TotalPoints,
+    int EarnedCount,
+    int TotalCount,
+    IReadOnlyList<AchievementDto> Achievements);
+
 public sealed record DailyEarningDto(
     DateOnly Date,
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal Amount);
