@@ -57,6 +57,12 @@ struct ApprovalsView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var store = ApprovalsStore()
 
+    /// Both queues share the screen: each shows a handful, with a
+    /// "N more" row that expands inline. No thumb marathons.
+    @State private var showAllHelp = false
+    @State private var showAllApprovals = false
+    private let previewCap = 3
+
     var body: some View {
         List {
             if let queue = store.queue {
@@ -69,16 +75,36 @@ struct ApprovalsView: View {
 
                 if !queue.helpRequests.isEmpty {
                     Section("Help raised") {
-                        ForEach(queue.helpRequests) { request in
+                        let shown = showAllHelp
+                            ? queue.helpRequests
+                            : Array(queue.helpRequests.prefix(previewCap))
+                        ForEach(shown) { request in
                             helpRow(request)
+                        }
+                        if queue.helpRequests.count > previewCap {
+                            expandRow(
+                                expanded: $showAllHelp,
+                                moreCount: queue.helpRequests.count - previewCap,
+                                label: "more help requests",
+                                color: DB.help(scheme))
                         }
                     }
                 }
 
                 if !queue.pendingApprovals.isEmpty {
                     Section("Waiting for approval") {
-                        ForEach(queue.pendingApprovals) { item in
+                        let shown = showAllApprovals
+                            ? queue.pendingApprovals
+                            : Array(queue.pendingApprovals.prefix(previewCap))
+                        ForEach(shown) { item in
                             approvalRow(item)
+                        }
+                        if queue.pendingApprovals.count > previewCap {
+                            expandRow(
+                                expanded: $showAllApprovals,
+                                moreCount: queue.pendingApprovals.count - previewCap,
+                                label: "more waiting",
+                                color: DB.gold(scheme))
                         }
                     }
                 }
@@ -142,7 +168,29 @@ struct ApprovalsView: View {
         .animation(.easeOut(duration: 0.4), value: isGlowing)
     }
 
-    // moved below: HelpRespondSheet
+    /// "12 more help requests ⌄" — tap to expand inline, tap again to fold.
+    private func expandRow(
+        expanded: Binding<Bool>,
+        moreCount: Int,
+        label: String,
+        color: Color
+    ) -> some View {
+        Button {
+            withAnimation(.snappy) { expanded.wrappedValue.toggle() }
+        } label: {
+            HStack {
+                Text(expanded.wrappedValue ? "Show fewer" : "\(moreCount) \(label)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(color)
+                Spacer()
+                Image(systemName: expanded.wrappedValue ? "chevron.up" : "chevron.down")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(color)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
 
     private func helpRow(_ request: HelpRequest) -> some View {
         Button {
