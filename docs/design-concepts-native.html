@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Bread — System-Clean Design Concept</title>
+<style>
+  :root{
+    --board-bg:#0C0C0E; --board-card:#151518; --board-ink:#F2F2F4; --board-sub:#98989F;
+    --hair:rgba(255,255,255,.075);
+    /* phone system tokens */
+    --p-bg:#0E0E10; --p-card:rgba(255,255,255,.055); --p-card2:rgba(255,255,255,.085);
+    --p-hair:rgba(255,255,255,.08); --p-hi:inset 0 1px 0 rgba(255,255,255,.07);
+    --p-ink:#F5F5F7; --p-sec:#A3A3AA; --p-mut:#68686F;
+    --accent:#4DA8C6;
+    --gold:#F2C14E; --red:#FF6055; --green:#3FD08B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--board-bg);color:var(--board-ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:48px 24px 80px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header.board .kicker{color:var(--accent);font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:600;margin-bottom:12px}
+  header.board h1{font-size:40px;font-weight:700;letter-spacing:-.02em}
+  header.board p.lede{color:var(--board-sub);font-size:16px;line-height:1.65;max-width:780px;margin-top:14px}
+  header.board p.lede b{color:var(--board-ink);font-weight:600}
+  section{margin-top:70px}
+  .sec-label{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--board-sub);font-weight:700;margin-bottom:8px}
+  .sec-title{font-size:26px;font-weight:650;letter-spacing:-.01em;margin-bottom:6px}
+  .sec-sub{color:var(--board-sub);font-size:14.5px;line-height:1.6;max-width:760px}
+  .sec-sub b{color:var(--board-ink)}
+
+  /* principle: accent swap row */
+  .swaprow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:26px}
+  .swapcard{background:var(--board-card);border:1px solid var(--hair);border-radius:18px;padding:16px;box-shadow:var(--p-hi)}
+  .swapcard .mini{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  .swapcard .mrow{display:flex;align-items:center;gap:8px}
+  .swapcard .mdot{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;background:rgba(255,255,255,.07)}
+  .swapcard .mname{font-size:11px;font-weight:600;color:var(--p-ink)}
+  .swapcard .msub{font-size:9.5px;color:var(--p-mut)}
+  .swapcard .mamt{margin-left:auto;font-size:11px;font-weight:700;color:var(--gold)}
+  .swapcard .mbtn{margin-top:10px;text-align:center;font-size:10.5px;font-weight:700;padding:7px 0;border-radius:99px;color:#0B0B0D}
+  .swapcard .tname{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;margin-top:12px;color:var(--board-sub)}
+  .swapcard .tname i{width:10px;height:10px;border-radius:99px;display:inline-block}
+
+  /* ============ PHONE FRAME ============ */
+  .phones{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin-top:34px}
+  .phone-unit{display:flex;flex-direction:column;align-items:center}
+  .phone{width:302px;height:640px;border-radius:48px;border:7px solid #232327;
+    box-shadow:0 24px 60px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.05);
+    overflow:hidden;position:relative;flex:none}
+  .island{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:88px;height:24px;background:#000;border-radius:99px;z-index:50}
+  .screen{width:100%;height:100%;display:flex;flex-direction:column;position:relative;
+    background:radial-gradient(120% 70% at 50% -8%,#1A1A1E 0%,var(--p-bg) 55%)}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 4px;
+    font-size:12.5px;font-weight:600;color:var(--p-ink);z-index:10}
+  .content{flex:1;padding:6px 16px 92px;overflow:hidden}
+  .phone-caption{text-align:center;font-size:12.5px;color:var(--board-sub);margin-top:12px;line-height:1.5;max-width:302px}
+  .phone-caption b{color:var(--board-ink)}
+
+  .h1{font-size:27px;color:var(--p-ink);font-weight:700;letter-spacing:-.02em;margin-top:10px}
+  .sub{font-size:12.5px;color:var(--p-sec);margin-top:3px}
+  .card{background:var(--p-card);border:1px solid var(--p-hair);border-radius:22px;
+    box-shadow:var(--p-hi), 0 8px 22px rgba(0,0,0,.25);backdrop-filter:blur(12px)}
+
+  .tabbar{position:absolute;left:16px;right:16px;bottom:14px;height:58px;border-radius:99px;
+    display:flex;align-items:center;justify-content:space-around;
+    background:rgba(28,28,32,.72);border:1px solid rgba(255,255,255,.09);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 12px 30px rgba(0,0,0,.55);
+    backdrop-filter:blur(16px);z-index:20}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:600;color:var(--p-mut)}
+  .tab.on{color:var(--accent)}
+  .tab svg{width:20px;height:20px}
+
+  /* TODAY */
+  .ringcard{display:flex;align-items:center;gap:14px;padding:15px;margin-top:14px}
+  .ringnums .big{font-size:15px;font-weight:700;color:var(--p-ink)}
+  .ringnums .small{font-size:11.5px;color:var(--p-sec);margin-top:2px}
+  .ringnums .money{color:var(--gold);font-weight:700}
+  .chore{display:flex;align-items:center;gap:11px;padding:12px;margin-top:10px}
+  .emoji-sq{width:37px;height:37px;border-radius:11px;background:rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
+    display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+  .cname{font-size:13.5px;font-weight:600;color:var(--p-ink)}
+  .cmeta{font-size:11px;color:var(--p-sec);margin-top:1px}
+  .amt{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--gold);flex:none}
+  .check{width:27px;height:27px;border-radius:99px;flex:none;margin-left:8px;
+    display:flex;align-items:center;justify-content:center;font-size:13px}
+  .check.done{background:var(--accent);color:#08181E;box-shadow:0 0 12px rgba(77,168,198,.35)}
+  .check.open{border:2px solid rgba(255,255,255,.18)}
+  .chore.done .cname{color:var(--p-mut);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.25);text-decoration-thickness:1.5px}
+  .chore.done .amt{color:rgba(242,193,78,.5)}
+  .chore.help{border-color:rgba(255,96,85,.4);background:rgba(255,96,85,.07)}
+  .chore.help .cmeta{color:var(--red);font-weight:600}
+  .help-pill{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--red);
+    padding:4px 9px;border-radius:99px;text-transform:uppercase;box-shadow:0 0 14px rgba(255,96,85,.4)}
+
+  /* EARNINGS */
+  .balcard{padding:18px;margin-top:14px}
+  .balcard .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--p-sec);font-weight:700}
+  .balcard .amount{font-size:42px;font-weight:800;letter-spacing:-.03em;color:var(--gold);margin-top:4px;
+    font-family:ui-rounded,-apple-system,sans-serif;text-shadow:0 0 30px rgba(242,193,78,.25)}
+  .balcard .delta{font-size:12px;color:var(--p-sec);margin-top:4px}
+  .balcard .delta b{color:var(--green);font-weight:700}
+  .goalcard{padding:14px;margin-top:12px}
+  .gt{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--p-ink)}
+  .gt span:last-child{color:var(--p-sec);font-weight:500;font-size:12px}
+  .bar{height:8px;border-radius:99px;background:rgba(255,255,255,.08);margin-top:10px;overflow:hidden}
+  .bar i{display:block;height:100%;width:37%;border-radius:99px;background:var(--accent);
+    box-shadow:0 0 12px rgba(77,168,198,.5)}
+  .gm{font-size:11px;color:var(--p-sec);margin-top:7px}
+  .txn{display:flex;align-items:center;gap:10px;padding:11px 12px;margin-top:9px}
+  .t-emoji{font-size:15px;width:31px;height:31px;border-radius:9px;background:rgba(255,255,255,.07);
+    display:flex;align-items:center;justify-content:center;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  .tn{font-size:12.5px;font-weight:600;color:var(--p-ink)}
+  .td{font-size:10.5px;color:var(--p-sec)}
+  .ta{margin-left:auto;font-size:12.5px;font-weight:700}
+  .ta.in{color:var(--gold)} .ta.out{color:var(--p-sec)}
+  .ta.pend{color:var(--p-sec);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    border:1px solid rgba(242,193,78,.4);color:var(--gold);padding:3px 8px;border-radius:99px}
+
+  /* APPROVALS */
+  .seg{display:flex;background:rgba(255,255,255,.06);border-radius:99px;padding:3px;margin-top:14px;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
+  .seg div{flex:1;text-align:center;font-size:11.5px;font-weight:600;color:var(--p-sec);padding:7px 0;border-radius:99px}
+  .seg div.on{background:rgba(255,255,255,.14);color:var(--p-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 2px 6px rgba(0,0,0,.3)}
+  .apr{padding:13px 14px;margin-top:11px}
+  .who{display:flex;align-items:center;gap:9px}
+  .an{font-size:13px;font-weight:600;color:var(--p-ink)}
+  .am{font-size:11px;color:var(--p-sec);margin-top:1px}
+  .aamt{margin-left:auto;font-size:13px;font-weight:700;color:var(--gold)}
+  .btns{display:flex;gap:8px;margin-top:12px}
+  .btn{flex:1;text-align:center;font-size:12px;font-weight:700;padding:10px 0;border-radius:99px}
+  .btn.gold{background:var(--gold);color:#2E2104;box-shadow:0 0 18px rgba(242,193,78,.35), inset 0 1px 0 rgba(255,255,255,.35)}
+  .btn.quiet{background:rgba(255,255,255,.09);color:var(--p-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  .btn.redline{border:1.5px solid rgba(255,96,85,.55);color:var(--red);background:transparent}
+  .apr.glowing{border-color:rgba(242,193,78,.45);
+    box-shadow:var(--p-hi), 0 0 0 1px rgba(242,193,78,.3), 0 0 30px rgba(242,193,78,.22)}
+  .approved-note{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px;font-weight:700;color:var(--gold)}
+  .approved-note .ck{width:21px;height:21px;border-radius:99px;background:var(--gold);color:#2E2104;
+    display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:0 0 12px rgba(242,193,78,.5)}
+  .apr.helpcard{border-color:rgba(255,96,85,.4);background:rgba(255,96,85,.06)}
+  .helpline{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--red);
+    margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .helpdot{width:7px;height:7px;border-radius:99px;background:var(--red);box-shadow:0 0 10px rgba(255,96,85,.9)}
+
+  /* YEAR */
+  .stat3{display:flex;gap:9px;margin-top:14px}
+  .stat3 .card{flex:1;padding:12px 6px;text-align:center}
+  .sv{font-size:16px;font-weight:800;color:var(--p-ink);font-family:ui-rounded,-apple-system,sans-serif}
+  .sv.gold{color:var(--gold)}
+  .sk{font-size:9.5px;color:var(--p-sec);margin-top:3px}
+  .heatwrap{padding:14px;margin-top:12px;overflow:hidden}
+  .heattitle{display:flex;justify-content:space-between;align-items:baseline}
+  .ht{font-size:13px;font-weight:600;color:var(--p-ink)}
+  .hs{font-size:10.5px;color:var(--p-sec)}
+  .heat{display:grid;grid-template-rows:repeat(7,9px);grid-auto-flow:column;grid-auto-columns:9px;gap:2.5px;margin-top:12px;justify-content:center}
+  .heat i{border-radius:2.5px;background:rgba(255,255,255,.05)}
+  .heat .q1{background:#1E3A41}.heat .q2{background:#2A5966}.heat .q3{background:#357F92}.heat .q4{background:#4DA8C6}
+  .legend{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:10px;font-size:9.5px;color:var(--p-sec)}
+  .legend i{width:9px;height:9px;border-radius:2.5px;display:inline-block;background:rgba(255,255,255,.05)}
+  .bestweek{padding:12px 14px;margin-top:12px;display:flex;gap:10px;align-items:center}
+  .bwt{font-size:12px;font-weight:600;color:var(--p-ink)}
+  .bwm{font-size:10.5px;color:var(--p-sec);margin-top:1px}
+  .streakflame{width:36px;height:36px;border-radius:11px;background:rgba(242,193,78,.13);
+    display:flex;align-items:center;justify-content:center;font-size:16px;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  /* ============ LIGHT MODE OVERRIDES (phones + mac) ============ */
+  .light .screen{background:radial-gradient(120% 70% at 50% -8%,#FFFFFF 0%,#F2F2F6 55%)}
+  .light .statusbar,.light .h1,.light .cname,.light .an,.light .tn,.light .ringnums .big,
+  .light .gt span:first-child,.light .ht,.light .sv,.light .bwt,.light .mactitle{color:#1D1D1F}
+  .light .sub,.light .cmeta,.light .am,.light .td,.light .ringnums .small,.light .gm,
+  .light .gt span:last-child,.light .hs,.light .sk,.light .bwm,.light .balcard .lbl,
+  .light .balcard .delta,.light .ta.out{color:#6E6E73}
+  .light .card{background:rgba(255,255,255,.8);border-color:rgba(0,0,0,.06);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 8px 22px rgba(25,30,40,.08)}
+  .light .emoji-sq,.light .t-emoji{background:rgba(0,0,0,.05);box-shadow:none}
+  .light .check.open{border-color:rgba(0,0,0,.16)}
+  .light .check.done{color:#fff;box-shadow:0 0 10px rgba(77,168,198,.35)}
+  .light .chore.done .cname{color:#A6A6AC;text-decoration-color:rgba(0,0,0,.25)}
+  .light .amt,.light .ta.in,.light .aamt,.light .sv.gold{color:#C08A10}
+  .light .chore.done .amt{color:rgba(192,138,16,.45)}
+  .light .balcard .amount{color:#C08A10;text-shadow:0 0 26px rgba(242,183,5,.22)}
+  .light .balcard .delta b{color:#2E9E63}
+  .light .ta.pend{border-color:rgba(217,149,20,.55);color:#C08A10}
+  .light .bar{background:rgba(0,0,0,.08)}
+  .light .tabbar{background:rgba(255,255,255,.72);border-color:rgba(0,0,0,.05);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 12px 28px rgba(25,30,40,.14)}
+  .light .tab{color:#98989F}.light .tab.on{color:#2E8FAF}
+  .light .chore.help{background:rgba(211,59,78,.06);border-color:rgba(211,59,78,.3)}
+  .light .chore.help .cmeta,.light .helpline{color:#D33B4E}
+  .light .help-pill{background:#D33B4E;box-shadow:0 0 12px rgba(211,59,78,.3)}
+  .light .helpdot{background:#D33B4E;box-shadow:0 0 8px rgba(211,59,78,.7)}
+  .light .apr.helpcard{background:rgba(211,59,78,.05);border-color:rgba(211,59,78,.3)}
+  .light .btn.quiet{background:rgba(0,0,0,.06);color:#1D1D1F;box-shadow:none}
+  .light .btn.redline{border-color:rgba(211,59,78,.55);color:#D33B4E}
+  .light .btn.gold{background:#E9B93B;color:#3A2A05;box-shadow:0 0 16px rgba(233,185,59,.4), inset 0 1px 0 rgba(255,255,255,.5)}
+  .light .apr.glowing{border-color:rgba(217,149,20,.45);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 0 0 1px rgba(217,149,20,.28), 0 0 26px rgba(242,183,5,.25)}
+  .light .approved-note{color:#B37E0A}
+  .light .approved-note .ck{background:#E9B93B;color:#3A2A05;box-shadow:0 0 10px rgba(233,185,59,.5)}
+  .light .seg{background:rgba(0,0,0,.05);box-shadow:none}
+  .light .seg div{color:#6E6E73}
+  .light .seg div.on{background:#fff;color:#1D1D1F;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+  .light .heat i{background:rgba(0,0,0,.055)}
+  .light .heat .q1{background:#BFE0E9}.light .heat .q2{background:#8FC8D8}.light .heat .q3{background:#5CA9C2}.light .heat .q4{background:#2E7F9B}
+  .light .legend{color:#6E6E73}.light .legend i{background:rgba(0,0,0,.055)}
+  .light .streakflame{background:rgba(233,185,59,.18);box-shadow:none}
+
+  /* ============ MAC WINDOW ============ */
+  .macwin{display:flex;border-radius:16px;overflow:hidden;height:560px;margin-top:26px;
+    border:1px solid rgba(255,255,255,.08);box-shadow:0 34px 90px rgba(0,0,0,.6)}
+  .macwin .screen-bg{display:flex;width:100%}
+  .macwin.dark{background:#121215}
+  .macwin.light{background:#F0F0F4;border-color:rgba(0,0,0,.08)}
+  .sidebar{width:210px;flex:none;padding:14px 12px;display:flex;flex-direction:column}
+  .macwin.dark .sidebar{background:rgba(255,255,255,.035);border-right:1px solid rgba(255,255,255,.06)}
+  .macwin.light .sidebar{background:rgba(255,255,255,.55);border-right:1px solid rgba(0,0,0,.06);backdrop-filter:blur(10px)}
+  .lights{display:flex;gap:7px;margin:2px 0 18px 4px}
+  .lights i{width:11px;height:11px;border-radius:99px;display:inline-block}
+  .l-r{background:#FF5F57}.l-y{background:#FEBC2E}.l-g{background:#28C840}
+  .sb-app{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;margin:0 4px 12px;color:var(--p-ink)}
+  .macwin.light .sb-app{color:#1D1D1F}
+  .sb-logo{width:20px;height:20px;border-radius:6px;background:#1C1C21;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.12);flex:none}
+  .sb-logo::after{content:"";position:absolute;left:4px;right:4px;bottom:4px;height:7px;border-radius:7px 7px 2px 2px;background:var(--gold)}
+  .sb-item{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:500;padding:7px 10px;border-radius:8px;color:var(--p-sec);margin-top:1px}
+  .macwin.light .sb-item{color:#55555C}
+  .sb-item svg{width:15px;height:15px;flex:none}
+  .sb-item.on{background:rgba(77,168,198,.16);color:var(--p-ink);font-weight:600}
+  .macwin.light .sb-item.on{background:rgba(77,168,198,.16);color:#125A70}
+  .sb-item .badge{margin-left:auto;font-size:10px;font-weight:700;background:var(--red);color:#fff;border-radius:99px;padding:1px 7px}
+  .sb-sec{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--p-mut);margin:14px 10px 4px}
+  .macwin.light .sb-sec{color:#98989F}
+  .sb-user{margin-top:auto;display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.05)}
+  .macwin.light .sb-user{background:rgba(0,0,0,.045)}
+  .sb-ava{width:26px;height:26px;border-radius:99px;background:linear-gradient(160deg,#4DA8C6,#2E7F9B);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+  .sb-un{font-size:11.5px;font-weight:600;color:var(--p-ink)} .macwin.light .sb-un{color:#1D1D1F}
+  .sb-ur{font-size:9.5px;color:var(--p-mut)}
+  .macmain{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .mactoolbar{display:flex;align-items:center;padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .macwin.light .mactoolbar{border-color:rgba(0,0,0,.06)}
+  .mactitle{font-size:15px;font-weight:700;color:var(--p-ink)}
+  .macsub{font-size:11px;color:var(--p-mut);margin-left:10px}
+  .tool-btns{margin-left:auto;display:flex;gap:8px}
+  .tool-btn{width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.07);
+    display:flex;align-items:center;justify-content:center;color:var(--p-sec);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+  .macwin.light .tool-btn{background:rgba(0,0,0,.05);color:#55555C;box-shadow:none}
+  .tool-btn svg{width:14px;height:14px}
+  .maccontent{flex:1;padding:16px 18px;overflow:hidden}
+  .macstats{display:flex;gap:12px}
+  .macstats .card{flex:1;padding:13px 15px}
+  .ms-k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--p-sec)}
+  .macwin.light .ms-k{color:#6E6E73}
+  .ms-v{font-size:22px;font-weight:800;margin-top:4px;color:var(--p-ink);font-family:ui-rounded,-apple-system,sans-serif}
+  .macwin.light .ms-v{color:#1D1D1F}
+  .ms-v.gold{color:var(--gold)} .macwin.light .ms-v.gold{color:#C08A10}
+  .ms-v.acc{color:var(--accent)} .macwin.light .ms-v.acc{color:#2E8FAF}
+  .ms-s{font-size:10.5px;color:var(--p-mut);margin-top:2px}
+  .macgrid{display:grid;grid-template-columns:1.08fr .92fr;gap:12px;margin-top:12px}
+  .colhead{font-size:12px;font-weight:700;color:var(--p-ink);margin:4px 2px 0}
+  .macwin.light .colhead{color:#1D1D1F}
+  .kbd{font-size:9.5px;color:var(--p-mut);border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:1px 5px;font-family:var(--ds-font-mono,monospace)}
+  .macwin.light .kbd{border-color:rgba(0,0,0,.16);color:#8A8A90}
+  .mac-caption{font-size:12.5px;color:var(--board-sub);margin-top:12px;line-height:1.5;text-align:center}
+  .mac-caption b{color:var(--board-ink)}
+
+  /* moments */
+  .moments{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
+  .moment{background:var(--board-card);border:1px solid var(--hair);border-radius:18px;padding:20px}
+  .moment h4{font-size:14.5px;font-weight:650;margin-top:16px}
+  .moment p{font-size:12.5px;color:var(--board-sub);line-height:1.55;margin-top:5px}
+  .moment .stage{border-radius:14px;padding:18px;display:flex;align-items:center;justify-content:center;min-height:140px;
+    background:radial-gradient(100% 100% at 50% 0%,#1B1B1F,#101013)}
+  .notif{width:100%;background:rgba(255,255,255,.09);backdrop-filter:blur(8px);border-radius:18px;padding:12px;
+    border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  .notif .nh{display:flex;align-items:center;gap:8px}
+  .notif .appicon{width:22px;height:22px;border-radius:6px;flex:none;background:#1C1C21;position:relative;overflow:hidden;
+    border:1px solid rgba(255,255,255,.1)}
+  .notif .appicon::after{content:"";position:absolute;left:5px;right:5px;bottom:5px;height:8px;
+    border-radius:8px 8px 3px 3px;background:var(--gold)}
+  .notif .napp{font-size:10px;font-weight:600;color:rgba(255,255,255,.7)}
+  .notif .ntime{margin-left:auto;font-size:9.5px;color:rgba(255,255,255,.45)}
+  .notif .nt{font-size:12.5px;font-weight:700;color:#fff;margin-top:7px}
+  .notif .reddot{display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--red);
+    box-shadow:0 0 8px rgba(255,96,85,.9);margin-right:5px}
+  .notif .nb{font-size:11.5px;color:rgba(255,255,255,.75);margin-top:2px;line-height:1.4}
+  .notif .nacts{display:flex;gap:7px;margin-top:10px}
+  .notif .nacts div{flex:1;text-align:center;font-size:10.5px;font-weight:700;padding:7px 0;border-radius:99px;
+    background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+  .widget{width:150px;height:150px;border-radius:30px;padding:14px;background:#151519;
+    border:1px solid rgba(255,255,255,.09);box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 14px 30px rgba(0,0,0,.5);
+    display:flex;flex-direction:column}
+  .widget .wt{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--p-mut);text-transform:uppercase}
+  .widget .wring{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .widget .wnum{font-size:13px;font-weight:800;color:var(--p-ink)}
+  .widget .wsub{font-size:8.5px;color:var(--p-sec)}
+  .widget .wchore{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--p-ink);margin-top:6px;font-weight:600}
+  .widget .wchore span.o{width:11px;height:11px;border-radius:99px;border:1.5px solid rgba(255,255,255,.22);flex:none}
+  .widget .wbal{margin-top:auto;font-size:11px;font-weight:800;color:var(--gold)}
+  .bigapprove{width:92px;height:92px;border-radius:99px;background:var(--gold);
+    box-shadow:0 0 0 6px rgba(242,193,78,.18), 0 0 34px rgba(242,193,78,.4), 0 0 90px rgba(242,193,78,.2), inset 0 2px 0 rgba(255,255,255,.4);
+    display:flex;align-items:center;justify-content:center}
+  .bigapprove svg{width:38px;height:38px}
+
+  .verdict{background:var(--board-card);border:1px solid rgba(77,168,198,.25);border-radius:20px;padding:28px;margin-top:34px}
+  .verdict h3{font-size:19px;font-weight:650}
+  .verdict p{font-size:14.5px;line-height:1.65;color:var(--board-sub);margin-top:10px;max-width:920px}
+  .verdict p b{color:var(--board-ink)}
+  footer{margin-top:60px;color:#55555C;font-size:12px;text-align:center}
+  @media(max-width:900px){.swaprow{grid-template-columns:repeat(2,1fr)}.moments{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="board">
+  <div class="kicker">Daily Bread · Native App · Concept v2</div>
+  <h1>Graphite &amp; Glass</h1>
+  <p class="lede">Built from your reaction to Apple's Liquid Glass sheet: <b>the surfaces belong to Apple, the color belongs to Daily Bread.</b> Neutral graphite glass everywhere — no tinted world, no parchment, no mood palette. Color appears only where it means something: the accent on interactive elements, gold on money, red on Help. Clean, professional, and the cheapest direction to build, because every material here is the system's own.</p>
+</header>
+
+<section>
+  <div class="sec-label">The theme system, reframed</div>
+  <div class="sec-title">Themes become accents, not worlds</div>
+  <p class="sec-sub">Exactly what you suggested: your five shipped themes stop repainting every surface and become <b>tint choices inside identical graphite</b> — the same way iOS handles system tints. Same card, five themes. Gold and red never move.</p>
+  <div class="swaprow">
+    <div class="swapcard"><div class="mini">
+      <div class="mrow"><div class="mdot">🍽️</div><div><div class="mname">Dishwasher</div><div class="msub">After dinner</div></div><div class="mamt">$2.50</div></div>
+      <div class="mbtn" style="background:#4DA8C6">Complete</div>
+    </div><div class="tname"><i style="background:#4DA8C6"></i>Guadalupe</div></div>
+    <div class="swapcard"><div class="mini">
+      <div class="mrow"><div class="mdot">🍽️</div><div><div class="mname">Dishwasher</div><div class="msub">After dinner</div></div><div class="mamt">$2.50</div></div>
+      <div class="mbtn" style="background:#6A82E6;color:#fff">Complete</div>
+    </div><div class="tname"><i style="background:#6A82E6"></i>Sea</div></div>
+    <div class="swapcard"><div class="mini">
+      <div class="mrow"><div class="mdot">🍽️</div><div><div class="mname">Dishwasher</div><div class="msub">After dinner</div></div><div class="mamt">$2.50</div></div>
+      <div class="mbtn" style="background:#5AAE7B">Complete</div>
+    </div><div class="tname"><i style="background:#5AAE7B"></i>Garden</div></div>
+    <div class="swapcard"><div class="mini">
+      <div class="mrow"><div class="mdot">🍽️</div><div><div class="mname">Dishwasher</div><div class="msub">After dinner</div></div><div class="mamt">$2.50</div></div>
+      <div class="mbtn" style="background:#9B7BE0;color:#fff">Complete</div>
+    </div><div class="tname"><i style="background:#9B7BE0"></i>Violet</div></div>
+    <div class="swapcard"><div class="mini">
+      <div class="mrow"><div class="mdot">🍽️</div><div><div class="mname">Dishwasher</div><div class="msub">After dinner</div></div><div class="mamt">$2.50</div></div>
+      <div class="mbtn" style="background:#E08AA6;color:#3A1420">Complete</div>
+    </div><div class="tname"><i style="background:#E08AA6"></i>Rosa</div></div>
+  </div>
+</section>
+<section>
+  <div class="sec-label">The four screens</div>
+  <div class="sec-title">Same graphite, color only where it earns it</div>
+  <p class="sec-sub">Every surface below is neutral glass. Count the colors on each screen — there are never more than three, and each one is doing a job: <b>accent = interactive, gold = money, red = Help.</b></p>
+
+  <div class="phones">
+    <!-- TODAY -->
+    <div class="phone-unit">
+      <div class="phone"><div class="island"></div>
+        <div class="screen">
+          <div class="statusbar"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1" opacity=".35"/></svg><svg width="22" height="11" viewBox="0 0 22 11"><rect x="0" y="0" width="19" height="11" rx="3" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="12" height="7" rx="1.5" fill="currentColor"/><rect x="20" y="3.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg></span></div>
+          <div class="content">
+            <div class="h1">Today</div>
+            <div class="sub">Saturday, July 19 · Sam</div>
+            <div class="card ringcard">
+              <svg width="58" height="58" viewBox="0 0 58 58">
+                <circle cx="29" cy="29" r="24" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="6"/>
+                <circle cx="29" cy="29" r="24" fill="none" stroke="#4DA8C6" stroke-width="6"
+                  stroke-linecap="round" stroke-dasharray="90.5 150.8" transform="rotate(-90 29 29)"/>
+                <text x="29" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#F5F5F7">3/5</text>
+              </svg>
+              <div class="ringnums">
+                <div class="big">Nice start.</div>
+                <div class="small"><span class="money">$4.50</span> earned today</div>
+                <div class="small">2 to go before 8 PM</div>
+              </div>
+            </div>
+            <div class="card chore done"><div class="emoji-sq">🛏️</div>
+              <div><div class="cname">Make your bed</div><div class="cmeta">Morning</div></div>
+              <div class="amt">$1.00</div><div class="check done">✓</div></div>
+            <div class="card chore done"><div class="emoji-sq">🐕</div>
+              <div><div class="cname">Walk Baxter</div><div class="cmeta">Morning</div></div>
+              <div class="amt">$2.00</div><div class="check done">✓</div></div>
+            <div class="card chore"><div class="emoji-sq">🍽️</div>
+              <div><div class="cname">Unload dishwasher</div><div class="cmeta">After dinner</div></div>
+              <div class="amt">$2.50</div><div class="check open"></div></div>
+            <div class="card chore help"><div class="emoji-sq">🧺</div>
+              <div><div class="cname">Fold laundry</div><div class="cmeta">Dad's on his way</div></div>
+              <div class="help-pill">Help</div></div>
+          </div>
+          <div class="tabbar">
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>Today</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="7" rx="1.5"/><rect x="14" y="15" width="7" height="7" rx="1.5"/></svg>Activity</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.5 1.3 2 3 2.5 3 1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>Earnings</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Goals</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption"><b>Sam's Today.</b> Graphite glass, one accent. Done rows dim to keep the eye on what's left; Help is the only red on screen.</div>
+    </div>
+
+    <!-- EARNINGS -->
+    <div class="phone-unit">
+      <div class="phone"><div class="island"></div>
+        <div class="screen">
+          <div class="statusbar"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1" opacity=".35"/></svg><svg width="22" height="11" viewBox="0 0 22 11"><rect x="0" y="0" width="19" height="11" rx="3" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="12" height="7" rx="1.5" fill="currentColor"/><rect x="20" y="3.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg></span></div>
+          <div class="content">
+            <div class="h1">Earnings</div>
+            <div class="sub">Payout Sunday evening</div>
+            <div class="card balcard">
+              <div class="lbl">Balance</div>
+              <div class="amount">$47.25</div>
+              <div class="delta"><b>+$12.50</b> this week</div>
+            </div>
+            <div class="card goalcard">
+              <div class="gt"><span>🎧 AirPods Pro</span><span>$47 of $129</span></div>
+              <div class="bar"><i></i></div>
+              <div class="gm">On pace — about 7 weeks to go</div>
+            </div>
+            <div class="card txn"><div class="t-emoji">🍽️</div>
+              <div><div class="tn">Unload dishwasher</div><div class="td">Today, 6:12 PM</div></div>
+              <div class="ta pend">awaiting</div></div>
+            <div class="card txn"><div class="t-emoji">🐕</div>
+              <div><div class="tn">Walk Baxter</div><div class="td">Today, 7:40 AM</div></div>
+              <div class="ta in">+$2.00</div></div>
+            <div class="card txn"><div class="t-emoji">💰</div>
+              <div><div class="tn">Week payout</div><div class="td">Sunday</div></div>
+              <div class="ta in">+$8.50</div></div>
+          </div>
+          <div class="tabbar">
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>Today</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="7" rx="1.5"/><rect x="14" y="15" width="7" height="7" rx="1.5"/></svg>Activity</div>
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.5 1.3 2 3 2.5 3 1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>Earnings</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Goals</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption"><b>Earnings.</b> The balance in SF Rounded with a whisper of gold glow — the one big number owns the screen. Pending rows wear a quiet gold outline.</div>
+    </div>
+
+    <!-- APPROVALS -->
+    <div class="phone-unit">
+      <div class="phone"><div class="island"></div>
+        <div class="screen">
+          <div class="statusbar"><span>8:04</span><span style="display:flex;gap:5px;align-items:center"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1" opacity=".35"/></svg><svg width="22" height="11" viewBox="0 0 22 11"><rect x="0" y="0" width="19" height="11" rx="3" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="12" height="7" rx="1.5" fill="currentColor"/><rect x="20" y="3.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg></span></div>
+          <div class="content">
+            <div class="h1">Approvals</div>
+            <div class="sub">3 waiting · Sam</div>
+            <div class="seg"><div class="on">Chores</div><div>Rewards</div><div>Driving</div></div>
+            <div class="card apr glowing">
+              <div class="who"><div class="emoji-sq">🍽️</div>
+                <div><div class="an">Unload dishwasher</div><div class="am">Sam · 6:12 PM</div></div>
+                <div class="aamt">$2.50</div></div>
+              <div class="approved-note"><div class="ck">✓</div>Approved — $2.50 to Sam</div>
+            </div>
+            <div class="card apr helpcard">
+              <div class="helpline"><span class="helpdot"></span>Help raised · 24 min ago</div>
+              <div class="who"><div class="emoji-sq">🧺</div>
+                <div><div class="an">Fold laundry</div><div class="am">Protected from tonight's penalty</div></div>
+                <div class="aamt">$2.00</div></div>
+              <div class="btns"><div class="btn quiet">I helped</div><div class="btn redline">Forgive</div></div>
+            </div>
+            <div class="card apr">
+              <div class="who"><div class="emoji-sq">🚗</div>
+                <div><div class="an">Night drive — 0.8 hr</div><div class="am">Route 9, with Mom</div></div></div>
+              <div class="btns"><div class="btn gold">Approve</div><div class="btn quiet">Not yet</div></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</div>
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Approvals</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c3 .2 5.5 2.3 5.5 5.3"/></svg>Family</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>More</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption"><b>The parent's evening.</b> Gold pill buttons like the system's own capsules — the glow only appears at the moment of approval, with the haptic.</div>
+    </div>
+
+    <!-- YEAR -->
+    <div class="phone-unit">
+      <div class="phone"><div class="island"></div>
+        <div class="screen">
+          <div class="statusbar"><span>8:04</span><span style="display:flex;gap:5px;align-items:center"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1" opacity=".35"/></svg><svg width="22" height="11" viewBox="0 0 22 11"><rect x="0" y="0" width="19" height="11" rx="3" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="12" height="7" rx="1.5" fill="currentColor"/><rect x="20" y="3.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg></span></div>
+          <div class="content">
+            <div class="h1">Sam's year</div>
+            <div class="sub">Every day counts once</div>
+            <div class="stat3">
+              <div class="card"><div class="sv">🔥 12</div><div class="sk">day streak</div></div>
+              <div class="card"><div class="sv">214</div><div class="sk">chores done</div></div>
+              <div class="card"><div class="sv gold">$312</div><div class="sk">earned in 2026</div></div>
+            </div>
+            <div class="card heatwrap">
+              <div class="heattitle"><div class="ht">2026, so far</div><div class="hs">◂ Apr – Jul · scrub</div></div>
+              <div class="heat" id="heat" data-weeks="19"></div>
+              <div class="legend">less <i></i><i style="background:#1E3A41"></i><i style="background:#2A5966"></i><i style="background:#357F92"></i><i style="background:#4DA8C6"></i> more</div>
+            </div>
+            <div class="card bestweek">
+              <div class="streakflame">✦</div>
+              <div><div class="bwt">Best week yet — June 8–14</div>
+              <div class="bwm">19 chores, $21.50. Scrub the grid to relive any day.</div></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>Today</div>
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="7" rx="1.5"/><rect x="14" y="15" width="7" height="7" rx="1.5"/></svg>Activity</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.5 1.3 2 3 2.5 3 1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>Earnings</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Goals</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption"><b>The year grid.</b> The heatmap ramps through the accent — switch themes and the whole year re-tints with it. Native Canvas, scrub + haptics.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-label">Two appearances, one design</div>
+  <div class="sec-title">Light mode is the same logic on white</div>
+  <p class="sec-sub">Nothing is redesigned — the graphite simply inverts. Cards become white glass on soft gray, ink flips, and the three meaningful colors adapt: the accent deepens for contrast, gold shifts to your shipped light-mode value, Help red sharpens. The system appearance setting does the switching; Sam's 7 AM and your 8 PM can each get the mode that fits.</p>
+
+  <div class="phones">
+    <!-- TODAY LIGHT -->
+    <div class="phone-unit">
+      <div class="phone light"><div class="island"></div>
+        <div class="screen">
+          <div class="statusbar"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1" opacity=".35"/></svg><svg width="22" height="11" viewBox="0 0 22 11"><rect x="0" y="0" width="19" height="11" rx="3" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="12" height="7" rx="1.5" fill="currentColor"/><rect x="20" y="3.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg></span></div>
+          <div class="content">
+            <div class="h1">Today</div>
+            <div class="sub">Saturday, July 19 · Sam</div>
+            <div class="card ringcard">
+              <svg width="58" height="58" viewBox="0 0 58 58">
+                <circle cx="29" cy="29" r="24" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="6"/>
+                <circle cx="29" cy="29" r="24" fill="none" stroke="#2E8FAF" stroke-width="6"
+                  stroke-linecap="round" stroke-dasharray="90.5 150.8" transform="rotate(-90 29 29)"/>
+                <text x="29" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="#1D1D1F">3/5</text>
+              </svg>
+              <div class="ringnums">
+                <div class="big">Nice start.</div>
+                <div class="small"><span class="money" style="color:#C08A10">$4.50</span> earned today</div>
+                <div class="small">2 to go before 8 PM</div>
+              </div>
+            </div>
+            <div class="card chore done"><div class="emoji-sq">🛏️</div>
+              <div><div class="cname">Make your bed</div><div class="cmeta">Morning</div></div>
+              <div class="amt">$1.00</div><div class="check done">✓</div></div>
+            <div class="card chore done"><div class="emoji-sq">🐕</div>
+              <div><div class="cname">Walk Baxter</div><div class="cmeta">Morning</div></div>
+              <div class="amt">$2.00</div><div class="check done">✓</div></div>
+            <div class="card chore"><div class="emoji-sq">🍽️</div>
+              <div><div class="cname">Unload dishwasher</div><div class="cmeta">After dinner</div></div>
+              <div class="amt">$2.50</div><div class="check open"></div></div>
+            <div class="card chore help"><div class="emoji-sq">🧺</div>
+              <div><div class="cname">Fold laundry</div><div class="cmeta">Dad's on his way</div></div>
+              <div class="help-pill">Help</div></div>
+          </div>
+          <div class="tabbar">
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>Today</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="7" rx="1.5"/><rect x="14" y="15" width="7" height="7" rx="1.5"/></svg>Activity</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.5 1.3 2 3 2.5 3 1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>Earnings</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Goals</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption"><b>Today, light.</b> Same screen, inverted graphite. Gold snaps to your shipped light value; Help red sharpens for white surfaces.</div>
+    </div>
+
+    <!-- APPROVALS LIGHT -->
+    <div class="phone-unit">
+      <div class="phone light"><div class="island"></div>
+        <div class="screen">
+          <div class="statusbar"><span>8:04</span><span style="display:flex;gap:5px;align-items:center"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1" opacity=".35"/></svg><svg width="22" height="11" viewBox="0 0 22 11"><rect x="0" y="0" width="19" height="11" rx="3" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="12" height="7" rx="1.5" fill="currentColor"/><rect x="20" y="3.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg></span></div>
+          <div class="content">
+            <div class="h1">Approvals</div>
+            <div class="sub">3 waiting · Sam</div>
+            <div class="seg"><div class="on">Chores</div><div>Rewards</div><div>Driving</div></div>
+            <div class="card apr glowing">
+              <div class="who"><div class="emoji-sq">🍽️</div>
+                <div><div class="an">Unload dishwasher</div><div class="am">Sam · 6:12 PM</div></div>
+                <div class="aamt">$2.50</div></div>
+              <div class="approved-note"><div class="ck">✓</div>Approved — $2.50 to Sam</div>
+            </div>
+            <div class="card apr helpcard">
+              <div class="helpline"><span class="helpdot"></span>Help raised · 24 min ago</div>
+              <div class="who"><div class="emoji-sq">🧺</div>
+                <div><div class="an">Fold laundry</div><div class="am">Protected from tonight's penalty</div></div>
+                <div class="aamt">$2.00</div></div>
+              <div class="btns"><div class="btn quiet">I helped</div><div class="btn redline">Forgive</div></div>
+            </div>
+            <div class="card apr">
+              <div class="who"><div class="emoji-sq">🚗</div>
+                <div><div class="an">Night drive — 0.8 hr</div><div class="am">Route 9, with Mom</div></div></div>
+              <div class="btns"><div class="btn gold">Approve</div><div class="btn quiet">Not yet</div></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</div>
+            <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Approvals</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c3 .2 5.5 2.3 5.5 5.3"/></svg>Family</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>More</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption"><b>Approvals, light.</b> The gold capsule and glow work just as hard on white — the ceremony survives the appearance switch intact.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-label">On the Mac</div>
+  <div class="sec-title">The same app, grown into a window</div>
+  <p class="sec-sub">One SwiftUI codebase: the iPhone's tabs become a <b>sidebar split view</b>, approvals gain keyboard shortcuts, and the dense parent view finally gets the room it deserves. This is your evening command center — and it's the same components as the phone, rearranged.</p>
+
+  <!-- MAC DARK -->
+  <div class="macwin dark">
+    <div class="sidebar">
+      <div class="lights"><i class="l-r"></i><i class="l-y"></i><i class="l-g"></i></div>
+      <div class="sb-app"><div class="sb-logo"></div>Daily Bread</div>
+      <div class="sb-item on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Dashboard</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Approvals<span class="badge">3</span></div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c3 .2 5.5 2.3 5.5 5.3"/></svg>Family</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.5 1.3 2 3 2.5 3 1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>Earnings</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="7" rx="1.5"/><rect x="14" y="15" width="7" height="7" rx="1.5"/></svg>The Year</div>
+      <div class="sb-sec">Admin</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Manage chores</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg>Settings</div>
+      <div class="sb-user"><div class="sb-ava">S</div><div><div class="sb-un">Alex</div><div class="sb-ur">Parent · Admin</div></div></div>
+    </div>
+    <div class="macmain">
+      <div class="mactoolbar">
+        <div class="mactitle">Good evening, Alex</div><div class="macsub">Sunday, July 19</div>
+        <div class="tool-btns">
+          <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></div>
+          <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 9a6 6 0 10-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10 20a2.2 2.2 0 004 0"/></svg></div>
+        </div>
+      </div>
+      <div class="maccontent">
+        <div class="macstats">
+          <div class="card"><div class="ms-k">Waiting on you</div><div class="ms-v acc">3</div><div class="ms-s">2 chores · 1 drive</div></div>
+          <div class="card"><div class="ms-k">This week</div><div class="ms-v gold">+$12.50</div><div class="ms-s">payout tonight</div></div>
+          <div class="card"><div class="ms-k">Sam today</div><div class="ms-v">3 / 5</div><div class="ms-s">2 left before 8 PM</div></div>
+          <div class="card"><div class="ms-k">Streak</div><div class="ms-v">🔥 12</div><div class="ms-s">personal best: 16</div></div>
+        </div>
+        <div class="macgrid">
+          <div>
+            <div class="colhead">Needs your approval &nbsp;<span class="kbd">⌘⏎</span> approve · <span class="kbd">⌘F</span> forgive</div>
+            <div class="card apr glowing">
+              <div class="who"><div class="emoji-sq">🍽️</div>
+                <div><div class="an">Unload dishwasher</div><div class="am">Sam · 6:12 PM</div></div>
+                <div class="aamt">$2.50</div></div>
+              <div class="approved-note"><div class="ck">✓</div>Approved — $2.50 to Sam</div>
+            </div>
+            <div class="card apr helpcard">
+              <div class="helpline"><span class="helpdot"></span>Help raised · 24 min ago</div>
+              <div class="who"><div class="emoji-sq">🧺</div>
+                <div><div class="an">Fold laundry</div><div class="am">Protected from tonight's penalty</div></div>
+                <div class="aamt">$2.00</div></div>
+              <div class="btns"><div class="btn quiet">I helped</div><div class="btn redline">Forgive</div></div>
+            </div>
+            <div class="card apr">
+              <div class="who"><div class="emoji-sq">🚗</div>
+                <div><div class="an">Night drive — 0.8 hr</div><div class="am">Route 9, with Jamie</div></div></div>
+              <div class="btns"><div class="btn gold">Approve</div><div class="btn quiet">Not yet</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="colhead">Sam's year</div>
+            <div class="card heatwrap">
+              <div class="heattitle"><div class="ht">2026, so far</div><div class="hs">Jan – Jul</div></div>
+              <div class="heat" data-weeks="28"></div>
+              <div class="legend">less <i></i><i style="background:#1E3A41"></i><i style="background:#2A5966"></i><i style="background:#357F92"></i><i style="background:#4DA8C6"></i> more</div>
+            </div>
+            <div class="card apr" style="margin-top:12px">
+              <div class="who"><div class="emoji-sq">💰</div>
+                <div><div class="an">Balance</div><div class="am">Payout runs tonight at 9 PM</div></div>
+                <div class="aamt" style="font-size:17px">$47.25</div></div>
+            </div>
+            <div class="card apr" style="margin-top:12px">
+              <div class="who"><div class="emoji-sq">🎧</div>
+                <div><div class="an">AirPods Pro</div><div class="am">$47 of $129 · on pace, ~7 weeks</div></div></div>
+              <div class="bar" style="margin-top:10px"><i></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mac-caption"><b>macOS, dark.</b> NavigationSplitView from the same codebase — tabs became the sidebar, approvals gained <span class="kbd">⌘</span> shortcuts, and admin links live at the bottom where they belong.</div>
+
+  <!-- MAC LIGHT -->
+  <div class="macwin light">
+    <div class="sidebar">
+      <div class="lights"><i class="l-r"></i><i class="l-y"></i><i class="l-g"></i></div>
+      <div class="sb-app"><div class="sb-logo"></div>Daily Bread</div>
+      <div class="sb-item on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Dashboard</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Approvals<span class="badge">3</span></div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c3 .2 5.5 2.3 5.5 5.3"/></svg>Family</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.5 1.3 2 3 2.5 3 1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>Earnings</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="7" rx="1.5"/><rect x="14" y="15" width="7" height="7" rx="1.5"/></svg>The Year</div>
+      <div class="sb-sec">Admin</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Manage chores</div>
+      <div class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg>Settings</div>
+      <div class="sb-user"><div class="sb-ava">C</div><div><div class="sb-un">Jamie</div><div class="sb-ur">Parent</div></div></div>
+    </div>
+    <div class="macmain">
+      <div class="mactoolbar">
+        <div class="mactitle">Good morning, Jamie</div><div class="macsub">Monday, July 20</div>
+        <div class="tool-btns">
+          <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></div>
+          <div class="tool-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 9a6 6 0 10-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10 20a2.2 2.2 0 004 0"/></svg></div>
+        </div>
+      </div>
+      <div class="maccontent">
+        <div class="macstats">
+          <div class="card"><div class="ms-k">Waiting on you</div><div class="ms-v acc">0</div><div class="ms-s">all caught up</div></div>
+          <div class="card"><div class="ms-k">Paid out last night</div><div class="ms-v gold">$12.50</div><div class="ms-s">new balance $59.75</div></div>
+          <div class="card"><div class="ms-k">Sam today</div><div class="ms-v">0 / 4</div><div class="ms-s">day just started</div></div>
+          <div class="card"><div class="ms-k">Streak</div><div class="ms-v">🔥 13</div><div class="ms-s">new personal best soon</div></div>
+        </div>
+        <div class="macgrid">
+          <div>
+            <div class="colhead">This morning</div>
+            <div class="card apr">
+              <div class="who"><div class="emoji-sq">🛏️</div>
+                <div><div class="an">Make your bed</div><div class="am">Sam · not started</div></div>
+                <div class="aamt">$1.00</div></div>
+            </div>
+            <div class="card apr">
+              <div class="who"><div class="emoji-sq">🐕</div>
+                <div><div class="an">Walk Baxter</div><div class="am">Sam · not started</div></div>
+                <div class="aamt">$2.00</div></div>
+            </div>
+            <div class="card apr">
+              <div class="who"><div class="emoji-sq">🌿</div>
+                <div><div class="an">Water the garden</div><div class="am">Mondays only</div></div>
+                <div class="aamt">$1.50</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="colhead">Sam's year</div>
+            <div class="card heatwrap">
+              <div class="heattitle"><div class="ht">2026, so far</div><div class="hs">Jan – Jul</div></div>
+              <div class="heat" data-weeks="28"></div>
+              <div class="legend">less <i></i><i style="background:#BFE0E9"></i><i style="background:#8FC8D8"></i><i style="background:#5CA9C2"></i><i style="background:#2E7F9B"></i> more</div>
+            </div>
+            <div class="card apr" style="margin-top:12px">
+              <div class="who"><div class="emoji-sq">💰</div>
+                <div><div class="an">Balance</div><div class="am">After last night's payout · AirPods Pro 46%</div></div>
+                <div class="aamt" style="font-size:17px">$59.75</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mac-caption"><b>macOS, light.</b> The same window on a bright Monday morning — white glass, deeper accent, shipped light-gold. One design, two times of day, zero extra architecture.</div>
+</section>
+
+<section>
+  <div class="sec-label">Beyond the app window</div>
+  <div class="sec-title">The moments, in graphite</div>
+  <div class="moments">
+    <div class="moment">
+      <div class="stage">
+        <div class="notif">
+          <div class="nh"><div class="appicon"></div><div class="napp">DAILY BREAD</div><div class="ntime">now</div></div>
+          <div class="nt"><span class="reddot"></span>Help raised — Fold laundry</div>
+          <div class="nb">Sam needs a hand. Tonight's penalty is on hold until you respond.</div>
+          <div class="nacts"><div>I helped</div><div>Forgive</div></div>
+        </div>
+      </div>
+      <h4>Help, on the lock screen</h4>
+      <p>Indistinguishable from a first-party notification — because it uses the same materials. The red dot is the only color.</p>
+    </div>
+    <div class="moment">
+      <div class="stage">
+        <div class="widget">
+          <div class="wt">Today</div>
+          <div class="wring">
+            <svg width="30" height="30" viewBox="0 0 30 30">
+              <circle cx="15" cy="15" r="12" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
+              <circle cx="15" cy="15" r="12" fill="none" stroke="#4DA8C6" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="45.2 75.4" transform="rotate(-90 15 15)"/>
+            </svg>
+            <div><div class="wnum">3 of 5</div><div class="wsub">before 8 PM</div></div>
+          </div>
+          <div class="wchore"><span class="o"></span>🍽️ Dishwasher</div>
+          <div class="wchore"><span class="o"></span>🧺 Laundry</div>
+          <div class="wbal">$47.25</div>
+        </div>
+      </div>
+      <h4>The home-screen widget</h4>
+      <p>Reads like a system widget. Ring in the accent, balance in gold, nothing else colored.</p>
+    </div>
+    <div class="moment">
+      <div class="stage">
+        <div class="bigapprove">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2E2104" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </div>
+      </div>
+      <h4>The Approve moment</h4>
+      <p>Against pure graphite, the gold bloom needs no help — glow + success haptic, then it recedes and the screen is calm again.</p>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <h3>Why this direction wins on every axis</h3>
+    <p><b>Taste:</b> it's the look you pointed at — Apple's own, which never goes out of style. <b>Identity:</b> Daily Bread is still unmistakably itself: teal accent, gold money, gold-glow Approve, red Help, emoji chores — the invariants read even louder against neutral graphite. <b>Themes:</b> your five palettes survive as accent tints (Guadalupe default), one line of SwiftUI (<code style="color:#64C4BA;font-size:13px">.tint(theme.accent)</code>) instead of a resurfacing system. <b>Engineering:</b> system materials, system dark/light, system typography — the least custom design code of any direction, which means more of the budget goes to the heatmap, the widget, and the moments that matter. Light mode is the same graphite logic on white, free.</p>
+  </div>
+</section>
+
+<footer>Daily Bread native design concept v2 · "Graphite &amp; Glass" · surfaces by Apple, color by Daily Bread</footer>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll('.heat').forEach(function(heat){
+    var seed = 20260719;
+    function rnd(){ seed = (seed * 48271) % 2147483647; return seed / 2147483647; }
+    var weeks = parseInt(heat.getAttribute('data-weeks') || '25', 10), days = 7;
+    for(var w=0; w<weeks; w++){
+      for(var d=0; d<days; d++){
+        var cell = document.createElement('i');
+        var r = rnd();
+        var boost = (w>=21 && w<=23) ? .3 : 0;
+        var v = r + boost - (d>=5 ? .15 : 0);
+        if(v > .82) cell.className = 'q4';
+        else if(v > .62) cell.className = 'q3';
+        else if(v > .42) cell.className = 'q2';
+        else if(v > .24) cell.className = 'q1';
+        heat.appendChild(cell);
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
