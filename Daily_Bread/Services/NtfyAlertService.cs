@@ -49,7 +49,13 @@ public class NtfyAlertService : INtfyAlertService
             req.Headers.TryAddWithoutValidation("Title", $"{childName} needs help!");
             req.Headers.TryAddWithoutValidation("Priority", "urgent");
             req.Headers.TryAddWithoutValidation("Tags", "sos");
-            req.Headers.TryAddWithoutValidation("Click", $"https://dailybread.example.com/?helpRequestId={choreLogId}");
+            // Click-through target comes from env so the codebase stays
+            // deployment-agnostic; header is omitted when unset.
+            var publicBaseUrl = Environment.GetEnvironmentVariable("PUBLIC_BASE_URL")?.TrimEnd('/');
+            if (!string.IsNullOrEmpty(publicBaseUrl))
+            {
+                req.Headers.TryAddWithoutValidation("Click", $"{publicBaseUrl}/?helpRequestId={choreLogId}");
+            }
 
             var resp = await _http.SendAsync(req);
             if (resp.IsSuccessStatusCode)
