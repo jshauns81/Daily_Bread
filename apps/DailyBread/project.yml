@@ -1,0 +1,40 @@
+# XcodeGen project definition. Run `xcodegen` in this folder to (re)generate
+# DailyBread.xcodeproj — the .xcodeproj itself never gets committed.
+name: DailyBread
+
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+  createIntermediateGroups: true
+
+packages:
+  DailyBreadKit:
+    path: Packages/DailyBreadKit
+
+targets:
+  DailyBread:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - DailyBread
+    dependencies:
+      - package: DailyBreadKit
+    info:
+      path: DailyBread/Info.plist
+      properties:
+        CFBundleDisplayName: Daily Bread
+        UILaunchScreen: {}
+        ITSAppUsesNonExemptEncryption: false
+        # Dev convenience: allow http://localhost / LAN addresses while the
+        # server runs without TLS in development. Public servers use HTTPS.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.dailybread
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        ENABLE_PREVIEWS: YES
