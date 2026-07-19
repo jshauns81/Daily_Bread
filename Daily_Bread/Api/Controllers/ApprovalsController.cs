@@ -43,7 +43,7 @@ public class ApprovalsController : ControllerBase
 
         var helps = dashboard.HelpRequests.Select(h => new HelpRequestDto(
             h.ChoreLogId, h.ChoreDefinitionId, h.ChoreName, h.ChildName, h.ChildUserId,
-            h.Reason, h.Date, h.RequestedAt)).ToList();
+            h.EarnValue, h.Reason, h.Date, h.RequestedAt)).ToList();
 
         return Ok(new ApprovalsResponse(approvals, helps));
     }

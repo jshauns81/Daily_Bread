@@ -27,6 +27,7 @@ public class HelpRequestItem
     public required string ChoreName { get; init; }
     public required string ChildName { get; init; }
     public string? ChildUserId { get; init; }
+    public decimal EarnValue { get; init; }
     public string? Reason { get; init; }
     public DateOnly Date { get; init; }
     public DateTime? RequestedAt { get; init; }
@@ -359,6 +360,7 @@ public class DashboardService : IDashboardService
                 ChoreName = cl.ChoreDefinition.Name,
                 ChildName = ChildDisplayName(cl.ChoreDefinition.AssignedUserId, cl.ChoreDefinition.AssignedUser?.UserName),
                 ChildUserId = cl.ChoreDefinition.AssignedUserId,
+                EarnValue = cl.ChoreDefinition.EarnValue,
                 Reason = cl.HelpReason,
                 Date = cl.Date,
                 RequestedAt = cl.HelpRequestedAt

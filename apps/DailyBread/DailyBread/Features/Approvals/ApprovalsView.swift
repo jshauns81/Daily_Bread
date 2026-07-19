@@ -23,6 +23,35 @@ final class ApprovalsStore {
         }
     }
 
+    /// One tap clears the whole queue — the anti-friction feature.
+    var batchProgress: (done: Int, total: Int)?
+
+    func approveAll(_ session: SessionStore) async {
+        guard let items = queue?.pendingApprovals, !items.isEmpty else { return }
+        batchProgress = (0, items.count)
+        var failures = 0
+        for (index, item) in items.enumerated() {
+            do {
+                try await session.client.approve(choreLogId: item.choreLogId)
+            } catch {
+                failures += 1
+            }
+            batchProgress = (index + 1, items.count)
+        }
+        batchProgress = nil
+        if failures > 0 {
+            errorMessage = "\(failures) approval\(failures == 1 ? "" : "s") didn't go through."
+            Haptics.warning()
+        } else {
+            Haptics.success()
+        }
+        await load(session)
+    }
+
+    var pendingTotal: Money {
+        Money((queue?.pendingApprovals ?? []).reduce(Decimal.zero) { $0 + $1.earnValue.amount })
+    }
+
     func approve(_ item: ApprovalItem, _ session: SessionStore) async {
         do {
             try await session.client.approve(choreLogId: item.choreLogId)
@@ -61,6 +90,7 @@ struct ApprovalsView: View {
     /// "N more" row that expands inline. No thumb marathons.
     @State private var showAllHelp = false
     @State private var showAllApprovals = false
+    @State private var confirmApproveAll = false
     private let previewCap = 3
 
     var body: some View {
@@ -93,6 +123,9 @@ struct ApprovalsView: View {
 
                 if !queue.pendingApprovals.isEmpty {
                     Section("Waiting for approval") {
+                        if queue.pendingApprovals.count > 1 {
+                            approveAllRow(queue)
+                        }
                         let shown = showAllApprovals
                             ? queue.pendingApprovals
                             : Array(queue.pendingApprovals.prefix(previewCap))
@@ -123,7 +156,18 @@ struct ApprovalsView: View {
         .navigationTitle("Approvals")
         .graphiteBackground()
         .refreshable { await store.load(session) }
+        .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
+        .confirmationDialog(
+            "Approve all \(store.queue?.pendingApprovals.count ?? 0) chores for \(store.pendingTotal.display)?",
+            isPresented: $confirmApproveAll,
+            titleVisibility: .visible
+        ) {
+            Button("Approve all — \(store.pendingTotal.display)") {
+                Task { await store.approveAll(session) }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
         .sheet(item: Binding(
             get: { store.helpTarget },
             set: { store.helpTarget = $0 })
@@ -166,6 +210,32 @@ struct ApprovalsView: View {
                 ? DB.glow(scheme).opacity(0.18)
                 : nil)
         .animation(.easeOut(duration: 0.4), value: isGlowing)
+    }
+
+    /// "Approve all (5) — $12.50" with progress while the batch runs.
+    private func approveAllRow(_ queue: ApprovalsQueue) -> some View {
+        Button {
+            confirmApproveAll = true
+        } label: {
+            HStack {
+                if let progress = store.batchProgress {
+                    ProgressView(value: Double(progress.done), total: Double(progress.total))
+                        .frame(maxWidth: 120)
+                    Text("\(progress.done)/\(progress.total)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Label("Approve all (\(queue.pendingApprovals.count)) — \(store.pendingTotal.display)",
+                          systemImage: "checkmark.seal.fill")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(DB.gold(scheme))
+                }
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(store.batchProgress != nil)
     }
 
     /// "12 more help requests ⌄" — tap to expand inline, tap again to fold.
@@ -241,9 +311,17 @@ struct HelpRespondSheet: View {
                             .foregroundStyle(DB.help(scheme))
                             .kerning(1)
                     }
-                    Text(request.choreName)
-                        .font(.title2.weight(.bold))
-                    Text("\(request.childName) · \(request.date.longDisplay)")
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(request.choreName)
+                            .font(.title2.weight(.bold))
+                        Spacer()
+                        if let earn = request.earnValue, !earn.isZero {
+                            Text(earn.display)
+                                .font(.headline)
+                                .foregroundStyle(DB.gold(scheme))
+                        }
+                    }
+                    Text("\(request.childName) · \(request.date.longDisplay)\(raisedAgo(request))")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -292,6 +370,13 @@ struct HelpRespondSheet: View {
         #if os(iOS)
         .presentationDetents([.medium, .large])
         #endif
+    }
+
+    private func raisedAgo(_ request: HelpRequest) -> String {
+        guard let raised = request.requestedAtUtc?.date else { return "" }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return " · raised \(formatter.localizedString(for: raised, relativeTo: Date()))"
     }
 
     private func choiceButton(

@@ -1,55 +1,141 @@
 import SwiftUI
 import DailyBreadKit
 
-/// The kid's daily driver: today's chores, tap to complete (optimistic),
-/// raise Help when stuck. The server owns "today".
+/// The daily driver: today's chores, tap to complete (optimistic), raise
+/// Help when stuck. Completing pays off visibly: the earn value pops, the
+/// ring climbs, and finishing the whole day rains confetti.
+/// Parents reuse this same screen for a kid via `userId` (help is hidden —
+/// raising Help is the kid's own act).
 @MainActor
 @Observable
 final class TodayStore {
+    let targetUserId: String?
+
     var today: TodayChores?
+    var balance: Money?
+    var streak = 0
     var loading = false
     var errorMessage: String?
     var helpTarget: ChoreItem?
+
+    /// Set when a completion earns money — drives the "+$2.50" pop.
+    var earnPop: (amount: Money, at: Date)?
+    /// Set when the day's last chore completes — drives the confetti.
+    var celebrationStart: Date?
+
+    init(targetUserId: String? = nil) {
+        self.targetUserId = targetUserId
+    }
 
     func load(_ session: SessionStore) async {
         loading = today == nil
         defer { loading = false }
         do {
-            today = try await session.client.todayChores()
+            async let todayTask = session.client.todayChores(userId: targetUserId)
+            async let balanceTask = session.client.balance(userId: targetUserId)
+            var fetched = try await todayTask
+            fetched.items = Self.sorted(fetched.items)
+            today = fetched
+            balance = try await balanceTask.balance
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+        await loadStreak(session)
     }
 
-    /// Optimistic toggle: flip locally, reconcile with the server's answer,
-    /// roll back on failure. Never queue offline writes (plan §Phase 2).
+    /// Streak = consecutive all-complete days ending today (or yesterday if
+    /// today isn't finished yet). Computed from the calendar range; days
+    /// with no chores scheduled don't break it.
+    private func loadStreak(_ session: SessionStore) async {
+        let today = DayDate.todayLocal()
+        let windowStart = DayDate(year: today.month > 2 ? today.year : today.year - 1,
+                                  month: max(1, today.month - 2), day: 1)
+        guard let range = try? await session.client.calendarRange(
+            from: windowStart, to: today, userId: targetUserId) else { return }
+
+        var count = 0
+        for day in range.days.reversed() {
+            switch day.status {
+            case "AllComplete":
+                count += 1
+            case "NoChores", "Future":
+                continue
+            default:
+                // Today being unfinished doesn't break the streak.
+                if day.date == today { continue }
+                streak = count
+                return
+            }
+        }
+        streak = count
+    }
+
+    /// Pending and Help first; finished work sinks.
+    private static func sorted(_ items: [ChoreItem]) -> [ChoreItem] {
+        items.sorted { a, b in
+            rank(a) == rank(b) ? a.name < b.name : rank(a) < rank(b)
+        }
+    }
+
+    private static func rank(_ item: ChoreItem) -> Int {
+        if item.isHelp { return 1 }
+        if item.isDone { return 2 }
+        return 0
+    }
+
     func toggle(_ item: ChoreItem, _ session: SessionStore) async {
         guard var snapshot = today,
               let index = snapshot.items.firstIndex(where: { $0.id == item.id }) else { return }
 
         let original = snapshot.items[index].status
-        snapshot.items[index].status = item.isDone ? "Pending" : "Completed"
-        today = snapshot
+        let completing = !item.isDone
+        snapshot.items[index].status = completing ? "Completed" : "Pending"
+        snapshot.items = Self.sorted(snapshot.items)
+        withAnimation(.snappy) { today = snapshot }
         Haptics.tick()
 
         do {
             let result = try await session.client.toggleChore(
                 choreDefinitionId: item.choreDefinitionId,
-                date: snapshot.date)
+                date: snapshot.date,
+                userId: targetUserId)
             if var current = today,
                let i = current.items.firstIndex(where: { $0.id == item.id }) {
                 current.items[i].status = result.status
-                today = current
+                current.items = Self.sorted(current.items)
+                withAnimation(.snappy) { today = current }
+            }
+            if completing {
+                celebrate(item)
             }
         } catch {
             if var current = today,
                let i = current.items.firstIndex(where: { $0.id == item.id }) {
                 current.items[i].status = original
-                today = current
+                current.items = Self.sorted(current.items)
+                withAnimation(.snappy) { today = current }
             }
             errorMessage = error.localizedDescription
             Haptics.warning()
+        }
+    }
+
+    private func celebrate(_ item: ChoreItem) {
+        if !item.earnValue.isZero {
+            withAnimation(.snappy) { earnPop = (item.earnValue, Date()) }
+            Task {
+                try? await Task.sleep(for: .seconds(1.4))
+                withAnimation(.easeOut) { earnPop = nil }
+            }
+        }
+        if doneCount == totalCount, totalCount > 0 {
+            celebrationStart = Date()
+            Haptics.success()
+            Task {
+                try? await Task.sleep(for: .seconds(2.8))
+                celebrationStart = nil
+            }
         }
     }
 
@@ -67,6 +153,7 @@ final class TodayStore {
 
     var doneCount: Int { today?.items.filter(\.isDone).count ?? 0 }
     var totalCount: Int { today?.items.count ?? 0 }
+    var allDone: Bool { totalCount > 0 && doneCount == totalCount }
 
     var earnedToday: Money {
         let sum = (today?.items ?? [])
@@ -79,7 +166,16 @@ final class TodayStore {
 struct TodayView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
-    @State private var store = TodayStore()
+    @State private var store: TodayStore
+
+    private let title: String
+    /// Viewing someone else (parent drill-in) hides Help — it's the kid's act.
+    private var isSelf: Bool { store.targetUserId == nil }
+
+    init(userId: String? = nil, title: String = "Today") {
+        _store = State(initialValue: TodayStore(targetUserId: userId))
+        self.title = title
+    }
 
     var body: some View {
         List {
@@ -87,27 +183,38 @@ struct TodayView: View {
                 Section {
                     header(today)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
                 }
 
                 Section {
                     ForEach(today.items) { item in
-                        ChoreRow(item: item) {
+                        ChoreRow(item: item, allowHelp: isSelf) {
                             Task { await store.toggle(item, session) }
                         } onHelp: {
                             store.helpTarget = item
                         }
                     }
                 }
-            } else if store.loading {
-                ProgressView().frame(maxWidth: .infinity)
-            }
 
-            if store.today != nil {
+                if store.allDone {
+                    Section {
+                        Label("Day complete — every chore done ✨",
+                              systemImage: "party.popper")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(DB.gold(scheme))
+                            .frame(maxWidth: .infinity)
+                            .listRowBackground(DB.gold(scheme).opacity(0.1))
+                    }
+                }
+
                 Section {
-                    YearHeatmapCard(title: "Your year", userId: nil)
+                    YearHeatmapCard(title: isSelf ? "Your year" : "The year",
+                                    userId: store.targetUserId)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
+            } else if store.loading {
+                ProgressView().frame(maxWidth: .infinity)
             }
 
             if let error = store.errorMessage {
@@ -118,10 +225,16 @@ struct TodayView: View {
                 }
             }
         }
-        .navigationTitle("Today")
+        .navigationTitle(title)
         .graphiteBackground()
         .refreshable { await store.load(session) }
+        .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
+        .overlay {
+            if let start = store.celebrationStart {
+                ConfettiView(start: start)
+            }
+        }
         .sheet(item: $store.helpTarget) { item in
             HelpSheet(item: item) { reason in
                 Task { await store.raiseHelp(item, reason: reason, session) }
@@ -131,32 +244,56 @@ struct TodayView: View {
 
     private func header(_ today: TodayChores) -> some View {
         HStack(spacing: 16) {
-            ProgressRing(
-                progress: store.totalCount == 0 ? 0 : Double(store.doneCount) / Double(store.totalCount),
-                label: "\(store.doneCount)/\(store.totalCount)")
-                .frame(width: 64, height: 64)
+            ZStack(alignment: .top) {
+                ProgressRing(
+                    progress: store.totalCount == 0 ? 0 : Double(store.doneCount) / Double(store.totalCount),
+                    label: "\(store.doneCount)/\(store.totalCount)")
+                    .frame(width: 64, height: 64)
+
+                if let pop = store.earnPop {
+                    Text("+\(pop.amount.display)")
+                        .font(.headline.weight(.heavy))
+                        .foregroundStyle(DB.gold(scheme))
+                        .offset(y: -26)
+                        .transition(.asymmetric(
+                            insertion: .offset(y: 14).combined(with: .opacity),
+                            removal: .offset(y: -10).combined(with: .opacity)))
+                }
+            }
 
             VStack(alignment: .leading, spacing: 2) {
-                (Text("\(Greeting.current), ")
-                    + Text((today.userName ?? "there").capitalized)
-                        .foregroundStyle(Color.accentColor)
-                    + Text("."))
-                    .font(.headline)
+                if isSelf {
+                    (Text("\(Greeting.current), ")
+                        + Text((today.userName ?? "there").capitalized)
+                            .foregroundStyle(Color.accentColor)
+                        + Text("."))
+                        .font(.headline)
+                }
                 Text(today.date.longDisplay)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     Text(store.earnedToday.display)
-                        .font(.headline)
                         .foregroundStyle(DB.gold(scheme))
-                    Text("earned today")
-                        .font(.subheadline)
+                        .fontWeight(.bold)
+                    Text("today")
                         .foregroundStyle(.secondary)
+                    if let balance = store.balance {
+                        Text("·").foregroundStyle(.tertiary)
+                        Text(balance.display)
+                            .foregroundStyle(DB.gold(scheme))
+                            .fontWeight(.semibold)
+                        Text("saved")
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                if store.doneCount < store.totalCount {
-                    Text("\(store.totalCount - store.doneCount) to go")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                .font(.subheadline)
+
+                if store.streak > 1 {
+                    Text("🔥 \(store.streak)-day streak")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(DB.gold(scheme))
+                        .padding(.top, 1)
                 }
             }
             Spacer()
@@ -167,6 +304,7 @@ struct TodayView: View {
 
 struct ChoreRow: View {
     let item: ChoreItem
+    var allowHelp: Bool = true
     var onToggle: () -> Void
     var onHelp: () -> Void
 
@@ -215,13 +353,14 @@ struct ChoreRow: View {
                     Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
                         .foregroundStyle(item.isDone ? Color.accentColor : Color.secondary)
+                        .contentTransition(.symbolEffect(.replace))
                 }
                 .buttonStyle(.plain)
             }
         }
         .contentShape(Rectangle())
         .swipeActions(edge: .trailing) {
-            if !item.isDone && !item.isHelp {
+            if allowHelp && !item.isDone && !item.isHelp {
                 Button("Help") { onHelp() }
                     .tint(DB.help(scheme))
             }

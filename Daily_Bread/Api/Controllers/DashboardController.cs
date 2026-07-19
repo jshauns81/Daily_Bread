@@ -43,6 +43,6 @@ public class DashboardController : ControllerBase
                 a.ChoreLogId, a.ChoreDefinitionId, a.ChoreName, a.ChildName, a.ChildUserId, a.EarnValue)).ToList(),
             data.HelpRequests.Select(h => new HelpRequestDto(
                 h.ChoreLogId, h.ChoreDefinitionId, h.ChoreName, h.ChildName, h.ChildUserId,
-                h.Reason, h.Date, h.RequestedAt)).ToList()));
+                h.EarnValue, h.Reason, h.Date, h.RequestedAt)).ToList()));
     }
 }

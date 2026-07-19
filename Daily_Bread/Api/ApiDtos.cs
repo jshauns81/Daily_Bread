@@ -177,6 +177,7 @@ public sealed record HelpRequestDto(
     string ChoreName,
     string ChildName,
     string? ChildUserId,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal EarnValue,
     string? Reason,
     DateOnly Date,
     DateTime? RequestedAtUtc);

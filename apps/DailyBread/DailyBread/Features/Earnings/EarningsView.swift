@@ -69,6 +69,7 @@ struct EarningsView: View {
         .navigationTitle("Earnings")
         .graphiteBackground()
         .refreshable { await store.load(session) }
+        .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
     }
 

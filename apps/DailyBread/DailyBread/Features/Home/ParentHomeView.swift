@@ -45,10 +45,11 @@ struct ParentHomeView: View {
                     if !dash.childrenProgress.isEmpty {
                         sectionHeader("Today")
                         // 1-2 kids: roomy rows. 3+: two-column grid.
+                        // Tap any kid → their full day (parent can toggle for them).
                         if dash.childrenProgress.count <= 2 {
                             VStack(spacing: 10) {
                                 ForEach(dash.childrenProgress) { child in
-                                    childRow(child)
+                                    drillIn(child) { childRow(child) }
                                 }
                             }
                         } else {
@@ -58,7 +59,7 @@ struct ParentHomeView: View {
                                 spacing: 10
                             ) {
                                 ForEach(dash.childrenProgress) { child in
-                                    childTile(child)
+                                    drillIn(child) { childTile(child) }
                                 }
                             }
                         }
@@ -91,7 +92,23 @@ struct ParentHomeView: View {
         .navigationTitle("Home")
         .graphiteBackground()
         .refreshable { await store.load(session) }
+        .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
+    }
+
+    /// Wraps a kid card in a NavigationLink to their day.
+    @ViewBuilder
+    private func drillIn(_ child: ChildProgress, @ViewBuilder content: () -> some View) -> some View {
+        if let userId = child.userId {
+            NavigationLink {
+                TodayView(userId: userId, title: "\(child.displayName)'s day")
+            } label: {
+                content()
+            }
+            .buttonStyle(.plain)
+        } else {
+            content()
+        }
     }
 
     // MARK: - Greeting
