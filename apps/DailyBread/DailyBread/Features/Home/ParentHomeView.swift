@@ -21,56 +21,86 @@ final class ParentHomeStore {
     }
 }
 
+/// ScrollView-based (not List): macOS List rows can miss redraws when data
+/// arrives just after launch; plain SwiftUI layout renders reliably.
 struct ParentHomeView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
     @State private var store = ParentHomeStore()
 
     var body: some View {
-        List {
-            if let dash = store.dashboard {
-                Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if let dash = store.dashboard {
                     statsRow(dash)
-                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                        .listRowBackground(Color.clear)
-                }
 
-                if !dash.childrenProgress.isEmpty {
-                    Section("Today") {
-                        ForEach(dash.childrenProgress) { child in
-                            childRow(child)
-                        }
+                    if dash.childrenProgress.isEmpty && dash.todayTotalChores == 0 {
+                        emptyState
                     }
-                }
 
-                if !dash.childrenBalances.isEmpty {
-                    Section("Balances") {
-                        ForEach(dash.childrenBalances) { child in
-                            HStack {
-                                Text(child.displayName)
-                                Spacer()
-                                Text(child.balance.display)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(DB.gold(scheme))
+                    if !dash.childrenProgress.isEmpty {
+                        sectionHeader("Today")
+                        VStack(spacing: 10) {
+                            ForEach(dash.childrenProgress) { child in
+                                childRow(child)
                             }
                         }
                     }
-                }
-            } else if store.loading {
-                ProgressView().frame(maxWidth: .infinity)
-            }
 
-            if let error = store.errorMessage {
-                Section {
+                    if !dash.childrenBalances.isEmpty {
+                        sectionHeader("Balances")
+                        VStack(spacing: 0) {
+                            ForEach(dash.childrenBalances) { child in
+                                HStack {
+                                    Text(child.displayName)
+                                    Spacer()
+                                    Text(child.balance.display)
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(DB.gold(scheme))
+                                }
+                                .padding(.vertical, 10)
+                                if child.id != dash.childrenBalances.last?.id {
+                                    Divider()
+                                }
+                            }
+                        }
+                        .glassCard()
+                    }
+                } else if store.loading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+                }
+
+                if let error = store.errorMessage {
                     Label(error, systemImage: "wifi.exclamationmark")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
+            .padding()
         }
         .navigationTitle("Home")
         .refreshable { await store.load(session) }
         .task { await store.load(session) }
+    }
+
+    private var emptyState: some View {
+        ContentUnavailableView {
+            Label("Quiet around here", systemImage: "house")
+        } description: {
+            Text("No family activity yet. If you're signed in as an admin account, sign in as a family member instead — or set up chores and family members in the web admin.")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 40)
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.caption.weight(.bold))
+            .foregroundStyle(.secondary)
+            .kerning(0.8)
+            .padding(.top, 4)
     }
 
     private func statsRow(_ dash: ParentDashboard) -> some View {
@@ -129,5 +159,6 @@ struct ParentHomeView: View {
             }
             Spacer()
         }
+        .glassCard()
     }
 }

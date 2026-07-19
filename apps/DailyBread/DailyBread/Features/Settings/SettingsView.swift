@@ -47,7 +47,11 @@ struct SettingsView: View {
                                     .foregroundStyle(Color.accentColor)
                             }
                         }
+                        .contentShape(Rectangle())
                     }
+                    // .plain stops macOS from tinting the whole row label
+                    // with the accent color (the "weird lines" look).
+                    .buttonStyle(.plain)
                 }
             }
 
