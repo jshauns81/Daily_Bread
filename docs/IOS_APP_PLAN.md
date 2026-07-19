@@ -217,6 +217,7 @@ Navigation: iPhone = `TabView` (role-dependent tabs: the kid → Today · Earnin
 - **iOS**: App Store only (no US sideloading path — settled).
 - **macOS**: dual-channel — Mac App Store *and* a **Developer ID–signed, notarized DMG** on GitHub Releases. Notarization uses the same $99 account as TestFlight; unsigned direct downloads are a non-starter (Gatekeeper).
 - **Public-artifact rule**: no AI/assistant references anywhere public — repo files, docs, app strings, release notes. `CLAUDE.md` stays untracked and is gitignored. Maintainer authors/squashes public commit messages.
+- **Privacy rule**: no real family names, no real deployment domains/hostnames, no bundle ids derived from real domains in anything committed. Mock UIs use fictional names; docs use roles ("the kid", "the co-parent", "the maintainer"); domains use example.com placeholders; deployment specifics live in env vars (`PUBLIC_BASE_URL`, etc.), never in code.
 
 ## 5d. Onboarding & auth for self-hosted families (decided 2026-07-19)
 
