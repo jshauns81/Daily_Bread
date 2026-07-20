@@ -11,6 +11,7 @@
 @inject IDateProvider DateProvider
 @inject IToastService ToastService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IChildProfileService ChildProfileService
 
 <PageTitle>Settings - Daily Bread</PageTitle>
 
@@ -97,14 +98,120 @@
                     </div>
                     <div class="settings-control">
                         <div class="form-check form-switch mb-0">
-                            <input class="form-check-input" 
-                                   type="checkbox" 
-                                   id="allowChildSelfReport" 
-                                   @bind="_allowChildSelfReport" 
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="allowChildSelfReport"
+                                   @bind="_allowChildSelfReport"
                                    style="width: 3rem; height: 1.5rem;" />
                         </div>
                     </div>
                 </div>
+
+                @if (_hasChild)
+                {
+                    <!-- Screen Time & Pay -->
+                    <div class="settings-row">
+                        <div class="settings-row-header">
+                            <span class="settings-icon">📱</span>
+                            <div class="settings-info">
+                                <span class="settings-label">Weekday Screen-Time Pool</span>
+                                <small class="settings-hint">Total hours available Mon–Fri</small>
+                            </div>
+                        </div>
+                        <div class="settings-control">
+                            <div class="input-group input-group-sm" style="max-width: 120px;">
+                                <input type="number"
+                                       class="form-control"
+                                       @bind="_weekdayHours"
+                                       min="0"
+                                       step="0.5" />
+                                <span class="input-group-text">hrs</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-header">
+                            <span class="settings-icon">🎮</span>
+                            <div class="settings-info">
+                                <span class="settings-label">Weekend Screen-Time Pool</span>
+                                <small class="settings-hint">Total hours available Sat–Sun</small>
+                            </div>
+                        </div>
+                        <div class="settings-control">
+                            <div class="input-group input-group-sm" style="max-width: 120px;">
+                                <input type="number"
+                                       class="form-control"
+                                       @bind="_weekendHours"
+                                       min="0"
+                                       step="0.5" />
+                                <span class="input-group-text">hrs</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-header">
+                            <span class="settings-icon">⚠️</span>
+                            <div class="settings-info">
+                                <span class="settings-label">Weekday At-Risk Limit</span>
+                                <small class="settings-hint">Max % of weekday pool losable per week</small>
+                            </div>
+                        </div>
+                        <div class="settings-control">
+                            <div class="input-group input-group-sm" style="max-width: 120px;">
+                                <input type="number"
+                                       class="form-control"
+                                       @bind="_weekdayAtRiskPercent"
+                                       min="0"
+                                       max="100"
+                                       step="1" />
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-header">
+                            <span class="settings-icon">⚠️</span>
+                            <div class="settings-info">
+                                <span class="settings-label">Weekend At-Risk Limit</span>
+                                <small class="settings-hint">Max % of weekend pool losable per week</small>
+                            </div>
+                        </div>
+                        <div class="settings-control">
+                            <div class="input-group input-group-sm" style="max-width: 120px;">
+                                <input type="number"
+                                       class="form-control"
+                                       @bind="_weekendAtRiskPercent"
+                                       min="0"
+                                       max="100"
+                                       step="1" />
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-header">
+                            <span class="settings-icon">💵</span>
+                            <div class="settings-info">
+                                <span class="settings-label">Weekly Routine Payout</span>
+                                <small class="settings-hint">Flat $ pool split across routines each week</small>
+                            </div>
+                        </div>
+                        <div class="settings-control">
+                            <div class="input-group input-group-sm" style="max-width: 120px;">
+                                <span class="input-group-text">$</span>
+                                <input type="number"
+                                       class="form-control"
+                                       @bind="_weeklyRoutinePayout"
+                                       min="0"
+                                       step="0.50" />
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
             
             <!-- Save Button -->
@@ -154,6 +261,15 @@
     private bool _allowChildSelfReport = true;
     private DateTime _currentTime;
 
+    // Single-child screen-time & pay settings
+    private bool _hasChild;
+    private int _childProfileId;
+    private decimal _weekdayHours;
+    private decimal _weekendHours;
+    private int _weekdayAtRiskPercent;
+    private int _weekendAtRiskPercent;
+    private decimal _weeklyRoutinePayout;
+
     private System.Timers.Timer? _clockTimer;
 
     protected override async Task OnInitializedAsync()
@@ -198,6 +314,24 @@
 
             var selfReportSetting = await context.AppSettings.FirstOrDefaultAsync(s => s.Key == AppSettingKeys.AllowChildSelfReport);
             _allowChildSelfReport = selfReportSetting?.Value?.ToLower() != "false";
+
+            // Single-child scope: load the one child's screen-time settings, if a child exists.
+            var children = await ChildProfileService.GetAllChildProfilesAsync();
+            var child = children.FirstOrDefault();
+            if (child != null)
+            {
+                var profile = await ChildProfileService.GetProfileByIdAsync(child.ProfileId);
+                if (profile != null)
+                {
+                    _hasChild = true;
+                    _childProfileId = profile.Id;
+                    _weekdayHours = profile.WeekdayScreenTimeHours;
+                    _weekendHours = profile.WeekendScreenTimeHours;
+                    _weekdayAtRiskPercent = profile.WeekdayAtRiskPercent;
+                    _weekendAtRiskPercent = profile.WeekendAtRiskPercent;
+                    _weeklyRoutinePayout = profile.WeeklyRoutinePayout;
+                }
+            }
 
             UpdateCurrentTime();
         }
@@ -248,6 +382,24 @@
                 "Allow children to mark chores complete", SettingDataType.Boolean);
 
             await context.SaveChangesAsync();
+
+            // Persist single-child screen-time & pay settings (service validates the values).
+            if (_hasChild)
+            {
+                var childResult = await ChildProfileService.UpdateScreenTimeSettingsAsync(
+                    _childProfileId,
+                    _weekdayHours,
+                    _weekendHours,
+                    _weeklyRoutinePayout,
+                    _weekdayAtRiskPercent,
+                    _weekendAtRiskPercent);
+
+                if (!childResult.Success)
+                {
+                    ToastService.ShowWarning("Invalid", childResult.ErrorMessage ?? "Could not save screen-time settings.");
+                    return;
+                }
+            }
 
             await DateProvider.RefreshTimeZoneAsync();
             UpdateCurrentTime();

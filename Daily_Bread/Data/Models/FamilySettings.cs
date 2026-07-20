@@ -9,21 +9,6 @@ public class FamilySettings
     public int Id { get; set; }
 
     /// <summary>
-    /// Flat penalty amount for each missed daily expectation chore.
-    /// Applied uniformly to all missed expectations regardless of individual chore settings.
-    /// Default: $0.10
-    /// </summary>
-    public decimal DailyExpectationPenalty { get; set; } = 0.10m;
-
-    /// <summary>
-    /// Penalty percentage for weekly chores not completed by end of week.
-    /// Applied as a percentage of the chore's EarnValue.
-    /// Default: 10% (0.10)
-    /// Example: $6 chore not done = $0.60 penalty
-    /// </summary>
-    public decimal WeeklyIncompletePenaltyPercent { get; set; } = 0.10m;
-
-    /// <summary>
     /// The day that starts a new week for chore tracking.
     /// Default: Monday
     /// </summary>

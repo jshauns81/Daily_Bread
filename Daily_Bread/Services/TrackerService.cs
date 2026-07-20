@@ -15,9 +15,13 @@ public class TrackerChoreItem
     public required string ChoreName { get; init; }
     public string? Description { get; init; }
     public string? Icon { get; init; }
+    public ChoreKind Kind { get; init; }
     public decimal EarnValue { get; init; }
-    public decimal PenaltyValue { get; init; }
-    public decimal Value => EarnValue > 0 ? EarnValue : PenaltyValue; // Backward compatibility
+    /// <summary>Importance weight 0–10 (how important, not minutes) used to price a missed instance. See MECHANICS_AMENDMENT.md §A.</summary>
+    public int Importance { get; init; }
+    /// <summary>For WeeklyFrequency earning chores: threshold (all-or-nothing) pay. See MECHANICS_AMENDMENT.md §D.</summary>
+    public bool AllOrNothing { get; init; }
+    public decimal Value => EarnValue; // Backward compatibility
     public ChoreStatus Status { get; init; }
     public string? AssignedUserId { get; init; }
     public string? AssignedUserName { get; init; }
@@ -49,8 +53,8 @@ public class TrackerChoreItem
     public bool IsHelp => Status == ChoreStatus.Help;
     
     // Chore type helpers
-    public bool IsExpectation => EarnValue == 0; // Any chore with no earning value is a daily task/expectation
-    public bool IsEarning => EarnValue > 0;
+    public bool IsExpectation => Kind == ChoreKind.Routine;
+    public bool IsEarning => Kind == ChoreKind.Task;
     public bool IsWeeklyFlexible => ScheduleType == ChoreScheduleType.WeeklyFrequency;
     public bool IsDailyFixed => ScheduleType == ChoreScheduleType.SpecificDays;
     
@@ -149,6 +153,13 @@ public interface ITrackerService
     /// <param name="response">The response type (CompletedByParent, Excused, Denied)</param>
     /// <param name="note">Optional note from parent to child</param>
     Task<ServiceResult> RespondToHelpRequestAsync(int choreLogId, string parentUserId, HelpResponse response, string? note = null);
+
+    /// <summary>
+    /// Sets the redemption choice (Money / ScreenTime / None) for a redemptive rep and re-runs the
+    /// week-level threshold reconcile so a Money choice folds into the payout immediately. Only
+    /// affects money for WeeklyFrequency + AllOrNothing chores. See MECHANICS_AMENDMENT.md §D.
+    /// </summary>
+    Task<ServiceResult> SetRedemptionChoiceAsync(int choreLogId, RedemptionChoice choice, string userId);
 }
 
 /// <summary>
@@ -172,7 +183,7 @@ public enum HelpResponse
 {
     /// <summary>Parent completed the chore for the child - child gets credit.</summary>
     CompletedByParent,
-    /// <summary>Chore is excused - no penalty, no earning.</summary>
+    /// <summary>Chore is excused - counts as done: pays its routine slice and takes no screen-time hit.</summary>
     Excused,
     /// <summary>Request denied - child must do it.</summary>
     Denied
@@ -440,11 +451,30 @@ public class TrackerService : ITrackerService
                 
                 // Reconcile ledger using same context (atomic)
                 var reconcileResult = await _ledgerService.ReconcileChoreLogTransactionAsync(context, choreLog);
-                
+
                 if (!reconcileResult.Success)
                 {
                     await transaction.RollbackAsync();
                     return ServiceResult<ChoreStatus>.Fail(reconcileResult.ErrorMessage!);
+                }
+
+                // WeeklyFrequency + AllOrNothing chores pay via a single week-level threshold
+                // transaction that is re-derived from the whole week on every rep change (so an
+                // out-of-order un-approve correctly drops the payout to $0). Runs on both approve
+                // and un-approve. See MECHANICS_AMENDMENT.md §D.
+                if (choreDefinition.ScheduleType == ChoreScheduleType.WeeklyFrequency
+                    && choreDefinition.AllOrNothing
+                    && !string.IsNullOrEmpty(choreDefinition.AssignedUserId))
+                {
+                    var thresholdWeekEnd = await _familySettingsService.GetWeekEndForDateAsync(choreLog.Date);
+                    var thresholdResult = await _ledgerService.ReconcileWeeklyThresholdAsync(
+                        context, choreDefinition, thresholdWeekEnd, choreDefinition.AssignedUserId);
+
+                    if (!thresholdResult.Success)
+                    {
+                        await transaction.RollbackAsync();
+                        return ServiceResult<ChoreStatus>.Fail(thresholdResult.ErrorMessage!);
+                    }
                 }
 
                 // Save all changes atomically
@@ -921,6 +951,73 @@ public class TrackerService : ITrackerService
         return ServiceResult.Ok();
     }
 
+    public async Task<ServiceResult> SetRedemptionChoiceAsync(int choreLogId, RedemptionChoice choice, string userId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var strategy = context.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var choreLog = await context.ChoreLogs
+                    .Include(c => c.ChoreDefinition)
+                    .FirstOrDefaultAsync(c => c.Id == choreLogId);
+
+                if (choreLog == null)
+                {
+                    return ServiceResult.Fail("Chore log not found.");
+                }
+
+                choreLog.RedemptionChoice = choice;
+                choreLog.ModifiedAt = DateTime.UtcNow;
+                choreLog.Version++; // Manual concurrency increment
+
+                // A Money choice on a redemptive rep folds into the week-level payout immediately;
+                // re-derive it from the whole week. See MECHANICS_AMENDMENT.md §D.
+                var choreDefinition = choreLog.ChoreDefinition;
+                if (choreDefinition.ScheduleType == ChoreScheduleType.WeeklyFrequency
+                    && choreDefinition.AllOrNothing
+                    && !string.IsNullOrEmpty(choreDefinition.AssignedUserId))
+                {
+                    var weekEnd = await _familySettingsService.GetWeekEndForDateAsync(choreLog.Date);
+                    var thresholdResult = await _ledgerService.ReconcileWeeklyThresholdAsync(
+                        context, choreDefinition, weekEnd, choreDefinition.AssignedUserId);
+
+                    if (!thresholdResult.Success)
+                    {
+                        await transaction.RollbackAsync();
+                        return ServiceResult.Fail(thresholdResult.ErrorMessage!);
+                    }
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation(
+                    "Redemption choice set: ChoreLogId={ChoreLogId}, Choice={Choice}, ActingUser={ActingUserId}",
+                    choreLogId, choice, userId);
+
+                return ServiceResult.Ok();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogWarning(ex, "Concurrency conflict setting redemption choice on ChoreLog {ChoreLogId}", choreLogId);
+                return ServiceResult.Fail("This chore was modified by someone else. Please refresh and try again.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to set redemption choice on ChoreLog {ChoreLogId}", choreLogId);
+                return ServiceResult.Fail($"Failed to set redemption choice: {ex.Message}");
+            }
+        });
+    }
+
     /// <summary>
     /// Weekly chores can have multiple ChoreLog rows for the same date - one per completion.
     /// Picks one representative row per chore for the card's single status badge/swipe-state:
@@ -953,8 +1050,10 @@ public class TrackerService : ITrackerService
             ChoreName = chore.Name,
             Description = chore.Description,
             Icon = chore.Icon,
+            Kind = chore.Kind,
             EarnValue = chore.EarnValue,
-            PenaltyValue = chore.PenaltyValue,
+            Importance = chore.Importance,
+            AllOrNothing = chore.AllOrNothing,
             Status = log?.Status ?? ChoreStatus.Pending,
             AssignedUserId = chore.AssignedUserId,
             AssignedUserName = chore.AssignedUser?.UserName,

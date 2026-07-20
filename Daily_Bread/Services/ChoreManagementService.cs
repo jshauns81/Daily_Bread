@@ -15,9 +15,17 @@ public class ChoreDefinitionDto
     public string? Description { get; set; }
     public string? Icon { get; set; }
     public string? AssignedUserId { get; set; }
+    public ChoreKind Kind { get; set; } = ChoreKind.Task;
     public decimal EarnValue { get; set; }
-    public decimal PenaltyValue { get; set; }
-    [Obsolete("Use EarnValue and PenaltyValue instead")]
+    /// <summary>Importance weight 0–10 (how important, not minutes). See MECHANICS_AMENDMENT.md §A.</summary>
+    public int Importance { get; set; }
+    /// <summary>For WeeklyFrequency earning chores: threshold (all-or-nothing) pay. See MECHANICS_AMENDMENT.md §D.</summary>
+    public bool AllOrNothing { get; set; } = true;
+    /// <summary>Vacuum-fill (inverse) routine whose target grows as screen time is lost.</summary>
+    public bool IsInverseFill { get; set; }
+    /// <summary>Baseline target minutes for a vacuum-fill routine (before inflation).</summary>
+    public int InverseFillBaselineMinutes { get; set; } = 20;
+    [Obsolete("Use EarnValue instead")]
     public decimal Value { get => EarnValue; set => EarnValue = value; }
     public ChoreScheduleType ScheduleType { get; set; } = ChoreScheduleType.SpecificDays;
     public DaysOfWeek ActiveDays { get; set; } = DaysOfWeek.All;
@@ -119,9 +127,9 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult<ChoreDefinition>.Fail("Earn value cannot be negative.");
         }
 
-        if (dto.PenaltyValue < 0)
+        if (dto.Importance is < 0 or > 10)
         {
-            return ServiceResult<ChoreDefinition>.Fail("Penalty value cannot be negative.");
+            return ServiceResult<ChoreDefinition>.Fail("Importance must be between 0 and 10.");
         }
 
         // Validate weekly target count for frequency-based chores
@@ -152,8 +160,12 @@ public class ChoreManagementService : IChoreManagementService
             Description = dto.Description?.Trim(),
             Icon = dto.Icon?.Trim(),
             AssignedUserId = dto.AssignedUserId,
-            EarnValue = dto.EarnValue,
-            PenaltyValue = dto.PenaltyValue,
+            Kind = dto.Kind,
+            EarnValue = dto.Kind == ChoreKind.Task ? dto.EarnValue : 0m,
+            Importance = dto.Importance,
+            AllOrNothing = dto.AllOrNothing,
+            IsInverseFill = dto.IsInverseFill,
+            InverseFillBaselineMinutes = dto.InverseFillBaselineMinutes,
             ScheduleType = dto.ScheduleType,
             ActiveDays = dto.ActiveDays,
             WeeklyTargetCount = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.WeeklyTargetCount : 1,
@@ -195,9 +207,9 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult.Fail("Earn value cannot be negative.");
         }
 
-        if (dto.PenaltyValue < 0)
+        if (dto.Importance is < 0 or > 10)
         {
-            return ServiceResult.Fail("Penalty value cannot be negative.");
+            return ServiceResult.Fail("Importance must be between 0 and 10.");
         }
 
         // Validate weekly target count for frequency-based chores
@@ -232,8 +244,12 @@ public class ChoreManagementService : IChoreManagementService
         chore.Description = dto.Description?.Trim();
         chore.Icon = dto.Icon?.Trim();
         chore.AssignedUserId = dto.AssignedUserId;
-        chore.EarnValue = dto.EarnValue;
-        chore.PenaltyValue = dto.PenaltyValue;
+        chore.Kind = dto.Kind;
+        chore.EarnValue = dto.Kind == ChoreKind.Task ? dto.EarnValue : 0m;
+        chore.Importance = dto.Importance;
+        chore.AllOrNothing = dto.AllOrNothing;
+        chore.IsInverseFill = dto.IsInverseFill;
+        chore.InverseFillBaselineMinutes = dto.InverseFillBaselineMinutes;
         chore.ScheduleType = dto.ScheduleType;
         chore.ActiveDays = dto.ActiveDays;
         chore.WeeklyTargetCount = dto.ScheduleType == ChoreScheduleType.WeeklyFrequency ? dto.WeeklyTargetCount : 1;

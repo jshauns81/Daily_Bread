@@ -29,26 +29,65 @@ public class ChoreDefinition
     public ApplicationUser? AssignedUser { get; set; }
 
     /// <summary>
-    /// Amount earned when this chore is completed.
-    /// Set to 0 for "expectation" chores that don't earn money.
+    /// Whether this chore is a paid Task (individual <see cref="EarnValue"/>) or an unpaid
+    /// Routine (earns a slice of the child's flat weekly routine pool). This is the field the
+    /// payout and screen-time logic keys off — type is no longer inferred from dollar values.
     /// </summary>
-    public decimal EarnValue { get; set; } = 0;
-    
-    /// <summary>
-    /// Amount deducted when this chore is missed (not done and not asked for help).
-    /// Set to 0 for no penalty.
-    /// </summary>
-    public decimal PenaltyValue { get; set; } = 0;
+    public ChoreKind Kind { get; set; } = ChoreKind.Task;
 
     /// <summary>
-    /// Legacy property for backward compatibility.
-    /// Returns EarnValue if set, otherwise PenaltyValue.
-    /// New code should use EarnValue and PenaltyValue directly.
+    /// Amount earned when this chore is completed.
+    /// Only meaningful for <see cref="ChoreKind.Task"/> chores; Routines earn via the flat pool.
     /// </summary>
-    [Obsolete("Use EarnValue and PenaltyValue instead")]
+    public decimal EarnValue { get; set; } = 0;
+
+    /// <summary>
+    /// Importance weight (0–10). 0/blank = no screen-time impact. Set by parents ("how important
+    /// is this?"), NOT a time value — a missed instance costs a share of that pool's penalty
+    /// budget proportional to this weight. See CHORE_SCREENTIME_REDESIGN.md §A / MECHANICS_AMENDMENT.md §A.
+    /// </summary>
+    public int Importance { get; set; } = 0;
+
+    /// <summary>
+    /// For WeeklyFrequency earning chores: threshold (all-or-nothing) pay. When true, the chore
+    /// pays EarnValue × WeeklyTargetCount only if the full target is hit that week, and $0 on any
+    /// shortfall. See MECHANICS_AMENDMENT.md §D. Default true.
+    /// </summary>
+    public bool AllOrNothing { get; set; } = true;
+
+    /// <summary>
+    /// Design-system icon name (Lucide). Presentation only — no backend logic keys off it.
+    /// See MECHANICS_AMENDMENT.md §G.
+    /// </summary>
+    public string? LucideIconName { get; set; }
+
+    /// <summary>
+    /// Design-system hue token (e.g. violet|pink|mint|blue|amber). Presentation only.
+    /// See MECHANICS_AMENDMENT.md §G.
+    /// </summary>
+    public string? Hue { get; set; }
+
+    /// <summary>
+    /// When true, this routine is a "vacuum-fill" (inverse) routine whose target duration grows
+    /// as screen time is lost (read / active / brain). v1 is display-only (soft target).
+    /// </summary>
+    public bool IsInverseFill { get; set; } = false;
+
+    /// <summary>
+    /// Baseline target duration in minutes for a vacuum-fill routine, before any inflation from
+    /// lost screen time. Only meaningful when <see cref="IsInverseFill"/> is true.
+    /// TODO: tune per-routine defaults for Read / Active / Brain (scaffolded at 20).
+    /// </summary>
+    public int InverseFillBaselineMinutes { get; set; } = 20;
+
+    /// <summary>
+    /// Legacy property for backward compatibility. Returns EarnValue.
+    /// New code should use EarnValue directly.
+    /// </summary>
+    [Obsolete("Use EarnValue instead")]
     public decimal Value
     {
-        get => EarnValue > 0 ? EarnValue : PenaltyValue;
+        get => EarnValue;
         set => EarnValue = value; // For backward compatibility during migration
     }
 
@@ -120,14 +159,15 @@ public class ChoreDefinition
     // Helper properties
     
     /// <summary>
-    /// True if this is an "expectation" chore (no earn, only penalty).
+    /// True if this is a Routine (expectation) chore — earns via the flat routine pool, not an
+    /// individual EarnValue.
     /// </summary>
-    public bool IsExpectation => EarnValue == 0 && PenaltyValue > 0;
-    
+    public bool IsExpectation => Kind == ChoreKind.Routine;
+
     /// <summary>
-    /// True if this is an "earning" chore (can earn money).
+    /// True if this is a paid Task chore (individual EarnValue).
     /// </summary>
-    public bool IsEarning => EarnValue > 0;
+    public bool IsEarning => Kind == ChoreKind.Task;
     
     /// <summary>
     /// True if this is a weekly flexible chore (can be done any day to meet quota).
@@ -138,6 +178,19 @@ public class ChoreDefinition
     /// True if this is a daily fixed chore (must be done on specific days).
     /// </summary>
     public bool IsDailyFixed => ScheduleType == ChoreScheduleType.SpecificDays;
+}
+
+/// <summary>
+/// Whether a chore is a paid Task or an unpaid Routine.
+/// Replaces the old practice of inferring type from EarnValue/PenaltyValue.
+/// </summary>
+public enum ChoreKind
+{
+    /// <summary>Paid task — completing it earns its individual <see cref="ChoreDefinition.EarnValue"/>.</summary>
+    Task = 0,
+
+    /// <summary>Unpaid routine — earns an equal slice of the child's flat weekly routine pool.</summary>
+    Routine = 1
 }
 
 /// <summary>

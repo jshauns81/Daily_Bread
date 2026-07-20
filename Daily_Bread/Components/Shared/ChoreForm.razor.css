@@ -697,6 +697,33 @@
     outline: none;
 }
 
+/* Importance number input */
+::deep input.ds-input--importance,
+.chore-form .ds-input--importance {
+    width: 72px;
+    height: 40px;
+    padding: var(--ds-space-2) var(--ds-space-3);
+    font-size: var(--ds-text-sm);
+    background: var(--ds-bg-base);
+    background-color: var(--ds-bg-base);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md);
+    color: var(--ds-text-primary);
+}
+
+::deep input.ds-input--importance:focus {
+    border-color: var(--ds-accent-cyan);
+    box-shadow: var(--ds-glow-primary);
+    outline: none;
+}
+
+.chore-form .importance-hint {
+    display: block;
+    margin-top: var(--ds-space-2);
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+}
+
 /* Textarea */
 ::deep textarea.ds-input--textarea,
 .chore-form .ds-input--textarea {

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Daily_Bread.Components;
@@ -344,6 +345,7 @@ builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddHttpClient<INtfyAlertService, NtfyAlertService>();
 builder.Services.AddScoped<IWeeklyProgressService, WeeklyProgressService>();
 builder.Services.AddScoped<IWeeklyReconciliationService, WeeklyReconciliationService>();
+builder.Services.AddScoped<IScreenTimePricingService, ScreenTimePricingService>();
 builder.Services.AddScoped<IBiometricAuthService, BiometricAuthService>();
 builder.Services.AddScoped<IAppStateService, AppStateService>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
@@ -358,6 +360,11 @@ builder.Services.AddScoped<IAchievementRewardClaimService, AchievementRewardClai
 builder.Services.AddScoped<IAchievementBonusService, AchievementBonusService>();
 
 builder.Services.AddScoped<IDrivingLogService, DrivingLogService>();
+
+builder.Services.AddScoped<IQolShareService, QolShareService>();
+
+// Hosted background reconciler: fires weekly reconciliation on an hourly timer (see plan §8).
+builder.Services.AddHostedService<WeeklyReconciliationHostedService>();
 
 // Add health checks
 builder.Services.AddHealthChecks()

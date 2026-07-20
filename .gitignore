@@ -463,3 +463,10 @@ CLAUDE.md
 
 # Source files that legitimately contain "token" in the name (auth code, not secrets)
 !*Token*.cs
+
+# dotnet run-file discovery cache - build artifact, not source
+dotnet/
+
+# One-off design scratch / duplicate downloads - not tracked
+Theme Explorations.dc.html
+README (1).md

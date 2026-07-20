@@ -1,0 +1,164 @@
+.st-meter {
+    background: rgba(46, 52, 64, 0.6);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-lg);
+    padding: var(--ds-space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-3);
+}
+
+.st-meter-header {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+}
+
+.st-meter-icon {
+    font-size: 1.1rem;
+}
+
+.st-meter-title {
+    font-size: var(--ds-text-base);
+    font-weight: var(--ds-font-bold);
+    color: var(--ds-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.st-meter-empty {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
+    padding: var(--ds-space-2) 0;
+}
+
+/* Pools */
+.st-pool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ds-space-3);
+}
+
+@media (max-width: 480px) {
+    .st-pool-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.st-pool {
+    background: var(--ds-bg-hover);
+    border: 1px solid var(--ds-bg-muted);
+    border-radius: var(--ds-radius-md);
+    padding: var(--ds-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-1);
+}
+
+.st-pool-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ds-space-2);
+}
+
+.st-pool-name {
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-semibold);
+    color: var(--ds-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.st-pool-tag {
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+}
+
+.st-pool-value {
+    font-size: var(--ds-text-2xl);
+    font-weight: var(--ds-font-bold);
+    color: var(--ds-text-primary);
+    line-height: var(--ds-leading-tight);
+}
+
+.st-pool-sub {
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+}
+
+.st-floor {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-1);
+    margin-top: var(--ds-space-1);
+    font-size: var(--ds-text-xs);
+    color: var(--ds-semantic-success, var(--ds-text-secondary));
+}
+
+.st-floor strong {
+    color: var(--ds-text-primary);
+    font-weight: var(--ds-font-semibold);
+}
+
+.st-floor-lock {
+    font-size: 0.85rem;
+}
+
+.st-risk {
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-muted);
+}
+
+.st-risk strong {
+    color: var(--ds-semantic-warning, var(--ds-text-secondary));
+    font-weight: var(--ds-font-semibold);
+}
+
+/* Chore price list */
+.st-prices {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-1);
+}
+
+.st-prices-head {
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-font-semibold);
+    color: var(--ds-text-secondary);
+    padding-bottom: var(--ds-space-1);
+}
+
+.st-price-group-label {
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-font-semibold);
+    color: var(--ds-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: var(--ds-space-2);
+}
+
+.st-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-1) 0;
+    border-bottom: 1px solid var(--ds-bg-muted);
+}
+
+.st-price-row:last-child {
+    border-bottom: none;
+}
+
+.st-price-name {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-primary);
+}
+
+.st-price-cost {
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-font-semibold);
+    color: var(--ds-semantic-warning, var(--ds-text-secondary));
+    white-space: nowrap;
+}

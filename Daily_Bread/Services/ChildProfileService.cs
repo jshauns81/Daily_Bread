@@ -72,6 +72,19 @@ public interface IChildProfileService
     /// to clear it (hides the progress bar for that dimension in the UI).
     /// </summary>
     Task<ServiceResult> UpdateDrivingGoalAsync(int profileId, decimal? totalHours, decimal? nightHours);
+
+    /// <summary>
+    /// Updates a child's screen-time settings: the weekday/weekend pool totals (hours), the flat
+    /// weekly routine payout, and the per-pool at-risk percents (the maximum share of each pool that
+    /// can be lost in a week). See MECHANICS_AMENDMENT.md §A / §G.
+    /// </summary>
+    Task<ServiceResult> UpdateScreenTimeSettingsAsync(
+        int profileId,
+        decimal weekdayHours,
+        decimal weekendHours,
+        decimal weeklyRoutinePayout,
+        int weekdayAtRiskPercent,
+        int weekendAtRiskPercent);
 }
 
 public class ChildProfileService : IChildProfileService
@@ -290,6 +303,42 @@ public class ChildProfileService : IChildProfileService
 
         profile.DrivingGoalTotalHours = totalHours;
         profile.DrivingGoalNightHours = nightHours;
+        profile.ModifiedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        return ServiceResult.Ok();
+    }
+
+    public async Task<ServiceResult> UpdateScreenTimeSettingsAsync(
+        int profileId,
+        decimal weekdayHours,
+        decimal weekendHours,
+        decimal weeklyRoutinePayout,
+        int weekdayAtRiskPercent,
+        int weekendAtRiskPercent)
+    {
+        if (weekdayHours < 0 || weekendHours < 0)
+            return ServiceResult.Fail("Screen-time pool hours cannot be negative.");
+
+        if (weeklyRoutinePayout < 0)
+            return ServiceResult.Fail("Weekly routine payout cannot be negative.");
+
+        if (weekdayAtRiskPercent < 0 || weekdayAtRiskPercent > 100 ||
+            weekendAtRiskPercent < 0 || weekendAtRiskPercent > 100)
+            return ServiceResult.Fail("At-risk percents must be between 0 and 100.");
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var profile = await context.ChildProfiles.FirstOrDefaultAsync(p => p.Id == profileId);
+        if (profile == null)
+            return ServiceResult.Fail("Child profile not found.");
+
+        profile.WeekdayScreenTimeHours = weekdayHours;
+        profile.WeekendScreenTimeHours = weekendHours;
+        profile.WeeklyRoutinePayout = weeklyRoutinePayout;
+        profile.WeekdayAtRiskPercent = weekdayAtRiskPercent;
+        profile.WeekendAtRiskPercent = weekendAtRiskPercent;
         profile.ModifiedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();

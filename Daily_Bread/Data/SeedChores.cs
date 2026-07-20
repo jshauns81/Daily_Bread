@@ -52,7 +52,13 @@ public static class SeedChores
     public static async Task CreateDefaultChoresForChildAsync(ApplicationDbContext context, string childUserId)
     {
         var chores = GetDefaultChores(childUserId);
-        
+
+        // Paid chores are Tasks; unpaid daily expectations are Routines (earn via the flat pool).
+        foreach (var c in chores)
+        {
+            c.Kind = c.EarnValue > 0 ? ChoreKind.Task : ChoreKind.Routine;
+        }
+
         context.ChoreDefinitions.AddRange(chores);
         await context.SaveChangesAsync();
         
@@ -89,7 +95,6 @@ public static class SeedChores
                 Icon = "🛏️",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation - no pay
-                PenaltyValue = 0m, // Uses family penalty rate
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -102,7 +107,6 @@ public static class SeedChores
                 Icon = "🧹",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation
-                PenaltyValue = 0m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = false,
@@ -115,7 +119,6 @@ public static class SeedChores
                 Icon = "🗑️",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation
-                PenaltyValue = 0m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -128,7 +131,6 @@ public static class SeedChores
                 Icon = "🐕",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation
-                PenaltyValue = 0m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -141,7 +143,6 @@ public static class SeedChores
                 Icon = "🐕",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation
-                PenaltyValue = 0m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,
@@ -154,7 +155,6 @@ public static class SeedChores
                 Icon = "🍽️",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation
-                PenaltyValue = 0m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = false,
@@ -167,7 +167,6 @@ public static class SeedChores
                 Icon = "🍴",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation
-                PenaltyValue = 0m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = false,
@@ -180,7 +179,6 @@ public static class SeedChores
                 Icon = "🎒",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation
-                PenaltyValue = 0m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.Weekdays, // School days only
                 AutoApprove = true,
@@ -193,7 +191,6 @@ public static class SeedChores
                 Icon = "📚",
                 AssignedUserId = childUserId,
                 EarnValue = 0m, // Daily expectation
-                PenaltyValue = 0m,
                 ScheduleType = ChoreScheduleType.SpecificDays,
                 ActiveDays = DaysOfWeek.All,
                 AutoApprove = true,

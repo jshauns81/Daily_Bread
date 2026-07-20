@@ -97,8 +97,6 @@ public class FamilySettingsService : IFamilySettingsService
         }
         else
         {
-            existing.DailyExpectationPenalty = settings.DailyExpectationPenalty;
-            existing.WeeklyIncompletePenaltyPercent = settings.WeeklyIncompletePenaltyPercent;
             existing.WeekStartDay = settings.WeekStartDay;
             existing.CashOutThreshold = settings.CashOutThreshold;
             existing.EnableConfetti = settings.EnableConfetti;
