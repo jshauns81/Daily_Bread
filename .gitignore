@@ -269,6 +269,13 @@ PublishScripts/
 *.nuget.props
 *.nuget.targets
 
+# The NuGet rule above must NOT swallow the Swift package that is the iOS/macOS
+# app's core library - re-include it explicitly (build output stays ignored).
+!apps/DailyBread/Packages/
+!apps/DailyBread/Packages/**
+apps/DailyBread/Packages/**/.build/
+apps/DailyBread/Packages/**/.DS_Store
+
 # Microsoft Azure Build Output
 csx/
 *.build.csdef
