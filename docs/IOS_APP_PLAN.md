@@ -16,6 +16,38 @@
 ---
 
 
+## Victor's experience — the KID side is a first-class parity target (Shaun, 2026-07-20)
+
+"I don't want to forget a key piece which is my son's experience." This ties directly to the
+earliest feedback ("the old app felt ALIVE, the new one doesn't"). The Blazor KID surface (Home,
+Activity, Calendar, Balance, Achievements, Goals, Appearance) is gamified, and that gamification is
+what makes it feel alive to Victor. Native kid tabs today = Today / Earnings / Awards / Settings —
+functional but under-gamified.
+
+KEY FINDING: the whole leveling system is CLIENT-SIDE presentation (Home.razor), derived from data
+the native app ALREADY fetches — no backend work needed:
+- Today level = % of today's chores done: 100→5 LEGENDARY 👑, ≥75→4 EPIC 💎, ≥50→3 RARE 🔥,
+  ≥25→2 UNCOMMON ⚡, >0→1 COMMON ⭐, 0→STARTER 🌱 (rarity colours match the achievement rarities).
+- XP = completed / total today. "N quests remaining" = pending chores. Badges = achievements
+  unlocked (34/49). "Rest Day — No Quests" when nothing is scheduled.
+
+Kid parity gaps (native status):
+- **Gamified Home hero** — MISSING and highest-value. A native Today/Home hero that reframes today's
+  progress as the LVL badge + XP bar + quests-remaining + badge count + latest achievement + streak.
+  Pure native UI over existing data — THE "feels alive" win. Do this first on the kid side.
+- **Calendar (kid's own)** — same monthly grid as the parent Calendar, scoped to self.
+- **Balance** — native Earnings is close; align to the Blazor Balance: big balance, progress-to-cash-out
+  bar, Total Earned / Deducted / Cashed Out tiles, recent transactions (all from existing ledger APIs).
+- **Achievements celebration** — the "🎉 New Achievements Unlocked!" moment + category tabs + Bonuses.
+  Native Awards shows them but not the unlock celebration; wire the new-achievement moment.
+- **Goals** — native goal exists but gated (enableGoals); Blazor kid has a full Goals tab. Elevate.
+- **Appearance** — DONE (native theme picker already matches, including the gold/red invariant copy).
+
+Kid build order: gamified Home hero → Balance alignment → kid Calendar → achievement celebration →
+Goals tab. All are native-UI tasks over existing endpoints; none need new backend. This runs in
+parallel with the parent parity list — the two together are what "100% Mac" means.
+
+
 ## Blazor → native parity checklist (the "100% Mac" list, from Shaun's 2026-07-20 walkthrough)
 
 The native app must reach full parity with the Blazor **parent** surface before Blazor is retired.
