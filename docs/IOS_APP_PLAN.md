@@ -15,6 +15,53 @@
 
 ---
 
+
+## Blazor → native parity checklist (the "100% Mac" list, from Shaun's 2026-07-20 walkthrough)
+
+The native app must reach full parity with the Blazor **parent** surface before Blazor is retired.
+Shaun walked every parent screen. Status as of 2026-07-20:
+
+Parent surface (Blazor sidebar) → native status:
+- **Home** — DONE (ParentHomeView).
+- **Activity** — NOT NATIVE. Blazor: per-day chore table for a child (Done/Pending/Excused rows,
+  Undo/Excuse/Restore actions), date navigator, All-Children filter, day stat tiles
+  (Total/Completed/Pending/Earnings today). Native has parent drill-in Today + Approvals but not
+  the explicit Excuse/Restore day-table. Needs: excuse/restore endpoints + a native Activity screen.
+- **Calendar** — NOT NATIVE (read API EXISTS: /api/v1/calendar/range powers the heatmap). Blazor:
+  monthly grid, per-day completed/earned, colour states (All/Partial/None/NoChores/Future), month
+  nav, stat tiles (Perfect Days / Completed / Missed / Earned / Current & Best streak), All-Children.
+  Lowest-effort parity win — mostly a native monthly-grid view over the existing endpoint.
+- **Planner** — PARTIAL. Native has the list + reorder + full chore editor (now Blazor-matched).
+  MISSING: the Blazor **Tasks weekly grid** (7-day cells, click a cell to toggle schedule =
+  per-date overrides: Scheduled/Available/Override/Removed), the Weekly-Potential card, and the
+  Tasks/Routines split view. Needs: per-date override endpoints (ToggleOverrideAsync/ToggleDayScheduleAsync
+  already exist server-side) + a native weekly-grid UI.
+- **History** — NOT NATIVE (read API EXISTS: /api/v1/ledger/balance + /history). Blazor: balance
+  summary (Current/Total Earned/Deducted/Paid Out + "need $X to cash out"), stat tiles
+  (Earnings/Deductions/Bonuses/Penance/Paid Out/Transactions), transaction table (Payout/Task/…
+  typed rows), and **+ Add Adjustment / + Bonus / − Penalty**. Read side is ready; needs an
+  adjustment endpoint + a native History screen.
+- **Achievements (management)** — NOT NATIVE. Blazor: CRUD grid — add/edit/deactivate, rarity
+  (Common…Legendary), points, category, unlock conditions (StreakDays/PerfectDays/TotalEarned/…),
+  tangible rewards. Kids already SEE achievements natively (AchievementsView); parents can't MANAGE
+  them. Biggest piece — needs a full achievement-management API + native editor.
+- **Reward Claims** — NOT NATIVE. Approve/deny kids' reward redemptions (cash/tangible). Overlaps
+  the existing AchievementRewardClaim backend; needs claim list + approve/deny endpoints + UI.
+- **Users** — NOT NATIVE. Add/manage children + parents, passwords, roles. Ties into the onboarding
+  auth plan (§5d). Sensitive; do last with care.
+
+Suggested build order (cheapest-parity-first, each its own sprint):
+1. **Calendar** (read API exists) → 2. **History** read + adjustments → 3. **Activity** (excuse/restore)
+→ 4. **Planner weekly grid** (per-date overrides) → 5. **Achievements management** →
+6. **Reward Claims** → 7. **Users/admin**. Then the Time Machine (§F) is the one thing that was
+never on the web. Only after all of this is Blazor retired for Apple families.
+
+Design bar (from real-device review): sheets/editors are laid out with the shared **SheetKit**
+(Components/SheetKit.swift) — explicit label-above-control cards, NOT macOS `Form` (which renders
+cramped). The chore editor matches the Blazor edit dialog (icon+name, Earns/Expected, schedule
+rule, day circles, grouped Options with date range + notes). Every native screen must look at least
+as finished as its Blazor counterpart — "complete, not a hodge-podge."
+
 ## 0. Summary
 
 Think of the backend as your switch fabric: Postgres + EF Core + `Services/` is the core, and the Blazor web UI is currently the only access port patched into it. This plan **adds a second access port — a versioned HTTP API — in front of the same services**, then builds one SwiftUI codebase that runs natively on iPhone, iPad, and Mac against that port. Nothing gets re-cabled. The web app keeps working the whole time and only shrinks to admin duty at the end, after the family has actually switched.

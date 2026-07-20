@@ -2,10 +2,11 @@ import SwiftUI
 import DailyBreadKit
 
 /// Parent sheet: tune ONE child's screen-time settings — weekly allowances,
-/// how much of each pool can be lost, and the weekly routine payout.
-/// Prefills from the child's current summary; saving PUTs the settings and
-/// hands the fresh summary back through `onSaved`. Errors show inline
-/// (DB.help) — never a system alert.
+/// how much of each pool can be lost, and the weekly routine payout. Built from
+/// explicit cards (not a macOS `Form`, which renders cramped) so it reads clean
+/// on iOS and macOS. Prefills from the child's current summary; saving PUTs the
+/// settings and hands the fresh summary back through `onSaved`. Errors show
+/// inline — never a system alert.
 struct ScreenTimeSettingsSheet: View {
     let childUserId: String
     let childName: String
@@ -46,110 +47,79 @@ struct ScreenTimeSettingsSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    hoursSlider("Weekday allowance", tag: "Mon–Fri",
-                                value: $weekdayHours, range: 0...60)
-                    percentSlider(value: $weekdayPercent)
-                } header: {
-                    Text("Weekdays")
-                }
+        VStack(spacing: 0) {
+            SheetHeader(title: "\(childName)'s Screen Time")
 
-                Section {
-                    hoursSlider("Weekend allowance", tag: "Sat–Sun",
-                                value: $weekendHours, range: 0...40)
-                    percentSlider(value: $weekendPercent)
-                } header: {
-                    Text("Weekend")
-                }
+            ScrollView {
+                VStack(spacing: 14) {
+                    poolCard(title: "Weekdays · Mon–Fri",
+                             hours: $weekdayHours, hoursRange: 0...60,
+                             percent: $weekdayPercent)
+                    poolCard(title: "Weekend · Sat–Sun",
+                             hours: $weekendHours, hoursRange: 0...40,
+                             percent: $weekendPercent)
 
-                Section {
-                    HStack {
-                        Text("$")
-                            .foregroundStyle(DB.gold(scheme))
-                        TextField("10.00", text: $payoutText)
-                            #if os(iOS)
-                            .keyboardType(.decimalPad)
-                            #endif
-                    }
-                } header: {
-                    Text("Weekly routine payout")
-                } footer: {
-                    Text("What \(childName) earns for keeping the weekly routine.")
-                }
-
-                Section {
-                    Button {
-                        Task { await save() }
-                    } label: {
-                        if saving {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Text("Save")
+                    SheetCard(title: "Weekly routine payout") {
+                        HStack(spacing: 6) {
+                            Text("$")
+                                .foregroundStyle(DB.gold(scheme))
                                 .font(.body.weight(.semibold))
-                                .frame(maxWidth: .infinity)
+                            TextField("10.00", text: $payoutText)
+                                .textFieldStyle(.plain)
+                                #if os(iOS)
+                                .keyboardType(.decimalPad)
+                                #endif
                         }
+                        .sheetFieldBackground()
+                        Text("What \(childName) earns for keeping the weekly routine.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.accentColor)
-                    .disabled(saving || payoutDecimal == nil)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
 
                     if let errorMessage {
                         Label(errorMessage, systemImage: "exclamationmark.circle")
                             .font(.footnote)
                             .foregroundStyle(DB.help(scheme))
-                            .listRowBackground(Color.clear)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
+                .padding(.horizontal)
+                .padding(.top, 4)
+                .padding(.bottom, 12)
             }
-            .navigationTitle("\(childName)'s Screen Time")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .disabled(saving)
-                }
-            }
+
+            SheetActionBar(
+                saveTitle: "Save",
+                saving: saving,
+                canSave: payoutDecimal != nil,
+                onCancel: { dismiss() },
+                onSave: { Task { await save() } })
+                .padding()
         }
         .graphiteBackground()
+        #if os(macOS)
+        .frame(minWidth: 460, idealWidth: 500, minHeight: 540, idealHeight: 580)
+        #endif
+        #if os(iOS)
+        .presentationDetents([.large])
+        #endif
     }
 
-    private func hoursSlider(_ title: String, tag: String,
-                             value: Binding<Double>,
-                             range: ClosedRange<Double>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                Spacer()
-                Text(tag)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                Text(ScreenTimeFormat.minutes(Int(value.wrappedValue * 60)))
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Color.accentColor)
-                    .monospacedDigit()
+    private func poolCard(title: String,
+                          hours: Binding<Double>,
+                          hoursRange: ClosedRange<Double>,
+                          percent: Binding<Double>) -> some View {
+        SheetCard(title: title) {
+            SheetField(
+                label: "Allowance",
+                value: ScreenTimeFormat.minutes(Int(hours.wrappedValue * 60)),
+                valueColor: Color.accentColor) {
+                Slider(value: hours, in: hoursRange, step: 0.5)
             }
-            Slider(value: value, in: range, step: 0.5)
+            SheetField(label: "Up to \(Int(percent.wrappedValue))% can be lost") {
+                Slider(value: percent, in: 0...100, step: 5)
+            }
         }
-        .padding(.vertical, 2)
-    }
-
-    private func percentSlider(value: Binding<Double>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Up to \(Int(value.wrappedValue))% can be lost")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-            Slider(value: value, in: 0...100, step: 5)
-        }
-        .padding(.vertical, 2)
     }
 
     /// The payout field parsed to a non-negative Decimal, or nil if invalid.
