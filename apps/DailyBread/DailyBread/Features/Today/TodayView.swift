@@ -192,6 +192,12 @@ struct TodayView: View {
                 }
 
                 Section {
+                    ScreenTimeCard(userId: store.targetUserId)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                }
+
+                Section {
                     YearHeatmapCard(title: isSelf ? "Your year" : "The year",
                                     userId: store.targetUserId)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))

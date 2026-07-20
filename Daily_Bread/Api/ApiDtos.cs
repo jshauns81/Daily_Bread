@@ -230,6 +230,53 @@ public sealed record AchievementsResponse(
     int TotalCount,
     IReadOnlyList<AchievementDto> Achievements);
 
+// ---------- Screen time ----------
+
+/// <summary>
+/// One screen-time pool (weekday or weekend) as the kid sees it: the base allowance,
+/// what's left after any applied losses, the guaranteed floor, and the maximum that
+/// can be lost this week. All values are minutes — the client formats hours.
+/// </summary>
+public sealed record ScreenTimePoolDto(
+    string Pool,
+    int BaseMinutes,
+    int EffectiveMinutes,
+    int FloorMinutes,
+    int AtRiskMinutes);
+
+/// <summary>
+/// The live minute price of one chore this week ("miss once: −N min"). Importance is
+/// deliberately never exposed — the UI contract is minutes only (MECHANICS_AMENDMENT.md §A).
+/// </summary>
+public sealed record ScreenTimeChorePriceDto(
+    int ChoreDefinitionId,
+    string Name,
+    string Pool,
+    int ScheduledInstances,
+    int PerInstanceMinutes);
+
+/// <summary>A labeled line from the screen-time ledger (deduction, earn-back, adjustment, Time Machine).</summary>
+public sealed record ScreenTimeEntryDto(
+    int Id,
+    DateOnly WeekStart,
+    string Pool,
+    string Kind,
+    string? ChoreName,
+    int Minutes,
+    string? Note,
+    DateTime CreatedAtUtc);
+
+public sealed record ScreenTimeResponse(
+    string UserId,
+    DateOnly WeekStart,
+    DateOnly WeekEnd,
+    // "Pool" suffix keeps the wire name distinct from weekEnd — ASP.NET's
+    // case-insensitive JSON binding treats weekEnd/weekend as a collision.
+    ScreenTimePoolDto WeekdayPool,
+    ScreenTimePoolDto WeekendPool,
+    IReadOnlyList<ScreenTimeChorePriceDto> ChorePrices,
+    IReadOnlyList<ScreenTimeEntryDto> RecentEntries);
+
 public sealed record DailyEarningDto(
     DateOnly Date,
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal Amount);
