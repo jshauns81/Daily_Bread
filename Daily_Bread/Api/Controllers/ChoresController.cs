@@ -92,7 +92,7 @@ public class ChoresController : ControllerBase
             i.Description,
             i.Icon,
             i.EarnValue,
-            i.PenaltyValue,
+            0m, // penalty money retired by screen-time mechanics; field kept for wire compatibility
             i.Status.ToString(),
             i.ScheduleType.ToString(),
             i.WeeklyTargetCount,

@@ -93,8 +93,14 @@ public sealed class DrivingLogConcurrencyTests : IAsyncLifetime
             $"Expected exactly one of the two concurrent approvals to succeed, got {successCount}. " +
             $"call1: success={success1} error={error1}; call2: success={success2} error={error2}");
 
+        // The loser fails one of two valid ways depending on timing: it hits the
+        // concurrency token mid-flight ("decided by someone else") or re-reads after
+        // the winner committed ("already approved"). Both prove the double-approve
+        // was rejected.
         var loserError = success1 ? error2 : error1;
-        Assert.Contains("decided by someone else", loserError);
+        Assert.True(
+            loserError!.Contains("decided by someone else") || loserError.Contains("already approved"),
+            $"Unexpected loser error: {loserError}");
 
         await using var verifyContext = await _contextFactory.CreateDbContextAsync();
         var entry = await verifyContext.DrivingLogEntries.SingleAsync(e => e.Id == _entryId);
