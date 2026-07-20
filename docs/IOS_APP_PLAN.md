@@ -1,5 +1,15 @@
 # Daily Bread — Native App Plan (SwiftUI · iOS / iPadOS / macOS)
 
+> **DIRECTION UPDATE (2026-07-20, from Shaun — supersedes anything softer below):**
+> The native app is the COMPLETE replacement, not a companion. The Mac app experience
+> must be 100% — "not a hodge-podge." The Blazor web app is being **phased out** for
+> Shaun's family and for any family on iOS/macOS; it survives only until native parity
+> is reached, then goes to bed. **The planner is the cornerstone of the parent piece**
+> and ships in the native app (iOS + macOS) as a first-class feature. Anything below
+> that says "web remains the admin surface" is obsolete — admin/planner/management all
+> go native.
+
+
 > Status: **Proposed v1** · Created 2026-07-19
 > Executes the decided direction: native SwiftUI app, backend stays, Blazor web shrinks to an admin surface. PWA/Capacitor and "should we migrate" are closed questions and not revisited here.
 

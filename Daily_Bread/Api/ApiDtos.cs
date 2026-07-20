@@ -335,3 +335,83 @@ public sealed record ParentDashboardResponse(
     IReadOnlyList<ChildBalanceDto> ChildrenBalances,
     IReadOnlyList<ApprovalItemDto> PendingApprovals,
     IReadOnlyList<HelpRequestDto> HelpRequests);
+
+// ---------- Planner ----------
+
+/// <summary>
+/// A chore definition as the parent's planner sees it (WIRE_CONTRACT_PLANNER.md).
+/// Enums travel as their names ("Task"/"Routine", "SpecificDays"/"WeeklyFrequency");
+/// the DaysOfWeek flags travel as full day names in week order (Sunday…Saturday);
+/// earnValue is a money string like every other money field ("0.00" for Routines —
+/// the service zeroes it on write).
+/// </summary>
+public sealed record PlannerChoreDto(
+    int Id,
+    string Name,
+    string? Description,
+    string? Icon,
+    string? AssignedUserId,
+    string? AssignedUserName,
+    string Kind,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal EarnValue,
+    int Importance,
+    bool AllOrNothing,
+    bool IsInverseFill,
+    int InverseFillBaselineMinutes,
+    string ScheduleType,
+    IReadOnlyList<string> ActiveDays,
+    int WeeklyTargetCount,
+    bool IsRepeatable,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    bool IsActive,
+    bool AutoApprove,
+    int SortOrder);
+
+public sealed record PlannerChoreListResponse(IReadOnlyList<PlannerChoreDto> Chores);
+
+/// <summary>
+/// POST/PUT body for the planner: PlannerChoreDto minus id/assignedUserName.
+/// SortOrder is required — the client always sends it (contract's "keep it
+/// simple" choice), so create and update share one shape with no merge rules.
+/// </summary>
+public sealed record ChoreWriteRequest(
+    string Name,
+    string? Description,
+    string? Icon,
+    string? AssignedUserId,
+    string Kind,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal EarnValue,
+    int Importance,
+    bool AllOrNothing,
+    bool IsInverseFill,
+    int InverseFillBaselineMinutes,
+    string ScheduleType,
+    IReadOnlyList<string> ActiveDays,
+    int WeeklyTargetCount,
+    bool IsRepeatable,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    bool IsActive,
+    bool AutoApprove,
+    int SortOrder);
+
+public sealed record ChoreOrderItemDto(
+    int ChoreDefinitionId,
+    int SortOrder);
+
+/// <summary>Batch reorder body (PUT api/v1/planner/chores/order) — the whole drag-and-drop result in one call.</summary>
+public sealed record ChoreOrderRequest(IReadOnlyList<ChoreOrderItemDto> Items);
+
+/// <summary>
+/// DELETE response. Always { "deleted": true } on success — whether the
+/// service hard-deleted or soft-deactivated (logs existed) is deliberately
+/// not surfaced; ServiceResult doesn't say and the client doesn't care.
+/// </summary>
+public sealed record DeleteResponse(bool Deleted);
+
+public sealed record AssignableChildDto(
+    string UserId,
+    string UserName);
+
+public sealed record AssignableChildrenResponse(IReadOnlyList<AssignableChildDto> Children);

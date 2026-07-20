@@ -1,8 +1,9 @@
 import SwiftUI
 import DailyBreadKit
 
-/// Role-based shell: kids get Today/Earnings, parents get Home/Approvals.
-/// iPhone = tabs (with a waiting-count badge); macOS = sidebar split view.
+/// Role-based shell: kids get Today/Earnings, parents get Home/Planner/
+/// Approvals. iPhone = tabs (with a waiting-count badge); macOS =
+/// sidebar split view.
 struct MainView: View {
     let user: ApiUser
 
@@ -13,6 +14,7 @@ struct MainView: View {
         case earnings = "Earnings"
         case awards = "Awards"
         case home = "Home"
+        case planner = "Planner"
         case approvals = "Approvals"
         case settings = "Settings"
 
@@ -24,6 +26,7 @@ struct MainView: View {
             case .earnings: return "dollarsign.circle"
             case .awards: return "trophy"
             case .home: return "house"
+            case .planner: return "checklist"
             case .approvals: return "checkmark.circle"
             case .settings: return "gearshape"
             }
@@ -32,7 +35,7 @@ struct MainView: View {
 
     private var sections: [Section] {
         user.isParent
-            ? [.home, .approvals, .settings]
+            ? [.home, .planner, .approvals, .settings]
             : [.today, .earnings, .awards, .settings]
     }
 
@@ -87,6 +90,7 @@ struct MainView: View {
         case .earnings: EarningsView()
         case .awards: AchievementsView()
         case .home: ParentHomeView()
+        case .planner: PlannerView()
         case .approvals: ApprovalsView()
         case .settings: SettingsView()
         }

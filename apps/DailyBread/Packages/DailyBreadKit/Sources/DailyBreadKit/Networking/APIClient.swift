@@ -218,6 +218,52 @@ public actor APIClient {
             ("asOf", asOf?.wireString), ("userId", userId)]))
     }
 
+    // MARK: - Planner (parents)
+
+    /// The full chore list in SortOrder (the kid's list order — never
+    /// re-sort). `includeInactive` is only sent when true; the server
+    /// default is active-only.
+    public func plannerChores(includeInactive: Bool = false, userId: String? = nil) async throws -> PlannerChoreList {
+        try await send(PlannerChoreList.self, path: path("api/v1/planner/chores", [
+            ("includeInactive", includeInactive ? "true" : nil),
+            ("userId", userId)]))
+    }
+
+    public func createChore(_ chore: ChoreWrite) async throws -> PlannerChore {
+        let body = try encodeBody(chore)
+        return try await send(PlannerChore.self, path: "api/v1/planner/chores",
+                              method: "POST", body: body)
+    }
+
+    public func updateChore(id: Int, _ chore: ChoreWrite) async throws -> PlannerChore {
+        let body = try encodeBody(chore)
+        return try await send(PlannerChore.self, path: "api/v1/planner/chores/\(id)",
+                              method: "PUT", body: body)
+    }
+
+    /// Deletes a chore. The server soft-deletes to inactive when history
+    /// exists — either way the chore leaves the active list.
+    public func deleteChore(id: Int) async throws {
+        try await sendVoid(path: "api/v1/planner/chores/\(id)", method: "DELETE")
+    }
+
+    public func toggleChoreActive(id: Int) async throws -> PlannerChore {
+        try await send(PlannerChore.self, path: "api/v1/planner/chores/\(id)/toggle-active",
+                       method: "POST")
+    }
+
+    /// PUT the full new order — contiguous sortOrders for every chore in
+    /// the list. Body: { "items": [ { choreDefinitionId, sortOrder }, … ] }.
+    public func reorderChores(_ items: [ChoreOrderItem]) async throws {
+        struct OrderBody: Codable { let items: [ChoreOrderItem] }
+        let body = try encodeBody(OrderBody(items: items))
+        try await sendVoid(path: "api/v1/planner/chores/order", method: "PUT", body: body)
+    }
+
+    public func assignableChildren() async throws -> AssignableChildren {
+        try await send(AssignableChildren.self, path: "api/v1/planner/assignable")
+    }
+
     // MARK: - Ledger / goals / calendar
 
     public func balance(userId: String? = nil) async throws -> Balance {

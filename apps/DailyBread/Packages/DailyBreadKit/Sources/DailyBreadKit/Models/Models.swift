@@ -84,6 +84,148 @@ public struct WeekProgress: Codable, Sendable {
     public var chores: [WeekChoreProgress]
 }
 
+// MARK: - Planner (parents)
+
+/// One chore definition as the PLANNER sees it — the full recipe, not a
+/// day's instance. Returned in SortOrder (the kid's list order — never
+/// re-sort).
+public struct PlannerChore: Codable, Hashable, Identifiable, Sendable {
+    public var id: Int
+    public var name: String
+    public var description: String?
+    public var icon: String?
+    public var assignedUserId: String?
+    public var assignedUserName: String?
+    public var kind: String                 // "Task" | "Routine"
+    public var earnValue: Money
+    public var importance: Int
+    public var allOrNothing: Bool
+    public var isInverseFill: Bool
+    public var inverseFillBaselineMinutes: Int
+    public var scheduleType: String         // "SpecificDays" | "WeeklyFrequency"
+    public var activeDays: [String]
+    public var weeklyTargetCount: Int
+    public var isRepeatable: Bool
+    public var startDate: DayDate?
+    public var endDate: DayDate?
+    public var isActive: Bool
+    public var autoApprove: Bool
+    public var sortOrder: Int
+}
+
+public extension PlannerChore {
+    /// Tasks earn money; Routines are just expected.
+    var isTask: Bool { kind == "Task" }
+
+    /// "Mon · Wed · Fri" / "Every day" for fixed days, "3× a week" for a
+    /// weekly goal. Day chips are displayed Sunday-first, matching the
+    /// editor's S M T W T F S row (activeDays is a set — this is display
+    /// formatting, not re-sorting a server list).
+    var scheduleSummary: String {
+        if scheduleType == "WeeklyFrequency" {
+            return "\(weeklyTargetCount)× a week"
+        }
+        let week: [(full: String, short: String)] = [
+            ("Sunday", "Sun"), ("Monday", "Mon"), ("Tuesday", "Tue"),
+            ("Wednesday", "Wed"), ("Thursday", "Thu"), ("Friday", "Fri"),
+            ("Saturday", "Sat")]
+        let picked = week.filter { activeDays.contains($0.full) }
+        if picked.count == 7 { return "Every day" }
+        if picked.isEmpty { return "No days set" }
+        return picked.map(\.short).joined(separator: " · ")
+    }
+}
+
+public struct PlannerChoreList: Codable, Sendable {
+    public var chores: [PlannerChore]
+}
+
+/// POST/PUT body for creating or editing a chore. The client always sends
+/// sortOrder (existing value on edit; max + 1 on create).
+public struct ChoreWrite: Codable, Sendable {
+    public var name: String
+    public var description: String?
+    public var icon: String?
+    public var assignedUserId: String?
+    public var kind: String
+    public var earnValue: Money
+    public var importance: Int
+    public var allOrNothing: Bool
+    public var isInverseFill: Bool
+    public var inverseFillBaselineMinutes: Int
+    public var scheduleType: String
+    public var activeDays: [String]
+    public var weeklyTargetCount: Int
+    public var isRepeatable: Bool
+    public var startDate: DayDate?
+    public var endDate: DayDate?
+    public var isActive: Bool
+    public var autoApprove: Bool
+    public var sortOrder: Int
+
+    public init(name: String,
+                description: String? = nil,
+                icon: String? = nil,
+                assignedUserId: String? = nil,
+                kind: String,
+                earnValue: Money,
+                importance: Int,
+                allOrNothing: Bool,
+                isInverseFill: Bool,
+                inverseFillBaselineMinutes: Int,
+                scheduleType: String,
+                activeDays: [String],
+                weeklyTargetCount: Int,
+                isRepeatable: Bool,
+                startDate: DayDate? = nil,
+                endDate: DayDate? = nil,
+                isActive: Bool,
+                autoApprove: Bool,
+                sortOrder: Int) {
+        self.name = name
+        self.description = description
+        self.icon = icon
+        self.assignedUserId = assignedUserId
+        self.kind = kind
+        self.earnValue = earnValue
+        self.importance = importance
+        self.allOrNothing = allOrNothing
+        self.isInverseFill = isInverseFill
+        self.inverseFillBaselineMinutes = inverseFillBaselineMinutes
+        self.scheduleType = scheduleType
+        self.activeDays = activeDays
+        self.weeklyTargetCount = weeklyTargetCount
+        self.isRepeatable = isRepeatable
+        self.startDate = startDate
+        self.endDate = endDate
+        self.isActive = isActive
+        self.autoApprove = autoApprove
+        self.sortOrder = sortOrder
+    }
+}
+
+/// One entry of the reorder PUT: { "choreDefinitionId": 12, "sortOrder": 0 }.
+public struct ChoreOrderItem: Codable, Sendable {
+    public var choreDefinitionId: Int
+    public var sortOrder: Int
+
+    public init(choreDefinitionId: Int, sortOrder: Int) {
+        self.choreDefinitionId = choreDefinitionId
+        self.sortOrder = sortOrder
+    }
+}
+
+public struct AssignableChildren: Codable, Sendable {
+    public var children: [AssignableChild]
+}
+
+public struct AssignableChild: Codable, Hashable, Identifiable, Sendable {
+    public var userId: String
+    public var userName: String
+
+    public var id: String { userId }
+}
+
 // MARK: - Ledger
 
 public struct Balance: Codable, Sendable {
