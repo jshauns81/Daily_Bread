@@ -1,27 +1,32 @@
 import SwiftUI
 import DailyBreadKit
 
-/// Role-based shell: kids get Today/Earnings, parents get Home/Planner/
-/// Approvals. iPhone = tabs (with a waiting-count badge); macOS =
-/// sidebar split view.
+/// Role-based shell: kids get Home/Today/Earnings/Awards, parents get
+/// Home/Planner/Approvals. iPhone = tabs (with a waiting-count badge);
+/// macOS = sidebar split view.
 struct MainView: View {
     let user: ApiUser
 
     @Environment(SessionStore.self) private var session
 
     private enum Section: String, CaseIterable, Identifiable {
+        case kidHome = "Home"
         case today = "Today"
         case earnings = "Earnings"
         case awards = "Awards"
-        case home = "Home"
+        case home = "Home "
         case planner = "Planner"
         case approvals = "Approvals"
         case settings = "Settings"
 
         var id: String { rawValue }
 
+        /// Tab/sidebar label — kidHome and the parent home both read "Home".
+        var label: String { self == .home ? "Home" : rawValue }
+
         var icon: String {
             switch self {
+            case .kidHome: return "house"
             case .today: return "sun.max"
             case .earnings: return "dollarsign.circle"
             case .awards: return "trophy"
@@ -36,7 +41,7 @@ struct MainView: View {
     private var sections: [Section] {
         user.isParent
             ? [.home, .planner, .approvals, .settings]
-            : [.today, .earnings, .awards, .settings]
+            : [.kidHome, .today, .earnings, .awards, .settings]
     }
 
     @State private var selection: Section?
@@ -46,7 +51,7 @@ struct MainView: View {
         #if os(macOS)
         NavigationSplitView {
             List(sections, selection: $selection) { section in
-                Label(section.rawValue, systemImage: section.icon)
+                Label(section.label, systemImage: section.icon)
                     .badge(section == .approvals ? waitingCount : 0)
                     .tag(section)
             }
@@ -66,7 +71,7 @@ struct MainView: View {
                     screen(for: section)
                 }
                 .tabItem {
-                    Label(section.rawValue, systemImage: section.icon)
+                    Label(section.label, systemImage: section.icon)
                 }
                 .badge(section == .approvals ? waitingCount : 0)
             }
@@ -86,6 +91,7 @@ struct MainView: View {
     @ViewBuilder
     private func screen(for section: Section) -> some View {
         switch section {
+        case .kidHome: KidHomeView()
         case .today: TodayView()
         case .earnings: EarningsView()
         case .awards: AchievementsView()
