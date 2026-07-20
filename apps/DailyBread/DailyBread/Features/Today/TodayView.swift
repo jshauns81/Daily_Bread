@@ -33,9 +33,9 @@ final class TodayStore {
         do {
             async let todayTask = session.client.todayChores(userId: targetUserId)
             async let balanceTask = session.client.balance(userId: targetUserId)
-            var fetched = try await todayTask
-            fetched.items = Self.sorted(fetched.items)
-            today = fetched
+            // Server order = the planner's order. Stable every day, and rows
+            // never jump around as they're checked off.
+            today = try await todayTask
             balance = try await balanceTask.balance
             errorMessage = nil
         } catch {
@@ -71,19 +71,6 @@ final class TodayStore {
         streak = count
     }
 
-    /// Pending and Help first; finished work sinks.
-    private static func sorted(_ items: [ChoreItem]) -> [ChoreItem] {
-        items.sorted { a, b in
-            rank(a) == rank(b) ? a.name < b.name : rank(a) < rank(b)
-        }
-    }
-
-    private static func rank(_ item: ChoreItem) -> Int {
-        if item.isHelp { return 1 }
-        if item.isDone { return 2 }
-        return 0
-    }
-
     func toggle(_ item: ChoreItem, _ session: SessionStore) async {
         guard var snapshot = today,
               let index = snapshot.items.firstIndex(where: { $0.id == item.id }) else { return }
@@ -91,7 +78,6 @@ final class TodayStore {
         let original = snapshot.items[index].status
         let completing = !item.isDone
         snapshot.items[index].status = completing ? "Completed" : "Pending"
-        snapshot.items = Self.sorted(snapshot.items)
         withAnimation(.snappy) { today = snapshot }
         Haptics.tick()
 
@@ -103,7 +89,6 @@ final class TodayStore {
             if var current = today,
                let i = current.items.firstIndex(where: { $0.id == item.id }) {
                 current.items[i].status = result.status
-                current.items = Self.sorted(current.items)
                 withAnimation(.snappy) { today = current }
             }
             if completing {
@@ -113,7 +98,6 @@ final class TodayStore {
             if var current = today,
                let i = current.items.firstIndex(where: { $0.id == item.id }) {
                 current.items[i].status = original
-                current.items = Self.sorted(current.items)
                 withAnimation(.snappy) { today = current }
             }
             errorMessage = error.localizedDescription
@@ -363,6 +347,12 @@ struct ChoreRow: View {
             }
         }
         .contentShape(Rectangle())
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            if !item.isHelp {
+                Button(item.isDone ? "Undo" : "Done") { onToggle() }
+                    .tint(item.isDone ? Color.secondary : Color.accentColor)
+            }
+        }
         .swipeActions(edge: .trailing) {
             if allowHelp && !item.isDone && !item.isHelp {
                 Button("Help") { onHelp() }
