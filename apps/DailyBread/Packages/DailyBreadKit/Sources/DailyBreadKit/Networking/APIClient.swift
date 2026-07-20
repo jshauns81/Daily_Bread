@@ -268,6 +268,21 @@ public actor APIClient {
         try await send(ScreenTimeSummary.self, path: path("api/v1/screentime", [("userId", userId)]))
     }
 
+    /// The kid's "At Risk Today" list (MECHANICS §E). Children query self;
+    /// parents may pass a child userId. 404 ChildProfileNotFound when the
+    /// target has no child profile (e.g. a parent's own view).
+    public func atRiskToday(userId: String? = nil) async throws -> AtRiskToday {
+        try await send(AtRiskToday.self, path: path("api/v1/screentime/atrisk", [("userId", userId)]))
+    }
+
+    /// Parent-only: tune one child's screen-time settings. Returns the fresh
+    /// summary so the client can refresh in one round trip.
+    public func updateScreenTimeSettings(_ update: ScreenTimeSettingsUpdate) async throws -> ScreenTimeSummary {
+        let body = try encodeBody(update)
+        return try await send(ScreenTimeSummary.self, path: "api/v1/screentime/settings",
+                              method: "PUT", body: body)
+    }
+
     // MARK: - Approvals / dashboard (parents)
 
     public func approvalsQueue() async throws -> ApprovalsQueue {

@@ -346,6 +346,7 @@ builder.Services.AddHttpClient<INtfyAlertService, NtfyAlertService>();
 builder.Services.AddScoped<IWeeklyProgressService, WeeklyProgressService>();
 builder.Services.AddScoped<IWeeklyReconciliationService, WeeklyReconciliationService>();
 builder.Services.AddScoped<IScreenTimePricingService, ScreenTimePricingService>();
+builder.Services.AddScoped<IAtRiskService, AtRiskService>();
 builder.Services.AddScoped<IBiometricAuthService, BiometricAuthService>();
 builder.Services.AddScoped<IAppStateService, AppStateService>();
 builder.Services.AddScoped<INavigationService, NavigationService>();
@@ -480,7 +481,11 @@ else
     app.UseDeveloperExceptionPage();
 }
 
-app.UseStatusCodePagesWithReExecute("/not-found");
+// Browser-facing only: API responses (401/403/404) must pass through as-is —
+// re-executing them turns a proper 403 into a 405/redirect against /not-found.
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/api"),
+    branch => branch.UseStatusCodePagesWithReExecute("/not-found"));
 
 // Serve static files from wwwroot
 // Configure with explicit file provider to ensure correct root

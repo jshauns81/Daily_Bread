@@ -340,6 +340,56 @@ public enum ScreenTimeFormat {
     }
 }
 
+/// One chore with stakes on it today (MECHANICS §E). The server owns all the
+/// urgency logic; the client only renders. Ordering is server-authored
+/// (DueTonight → MustDoDaily → GettingTight) — never re-sort.
+public struct AtRiskItem: Codable, Hashable, Identifiable, Sendable {
+    public var choreDefinitionId: Int
+    public var name: String
+    public var urgency: String        // "DueTonight" | "MustDoDaily" | "GettingTight"
+    public var detail: String
+    public var moneyAtRisk: Money
+    public var minutesAtRisk: Int
+
+    public var id: Int { choreDefinitionId }
+}
+
+/// The kid's "At Risk Today" answer: what's on the line right now, with a
+/// single optional preview line when nothing is (calm by design — never nag).
+public struct AtRiskToday: Codable, Sendable {
+    public var userId: String
+    public var date: DayDate
+    public var items: [AtRiskItem]
+    public var totalMoneyAtRisk: Money
+    public var totalMinutesAtRisk: Int
+    public var previewLine: String?
+}
+
+/// Parent-only PUT body for tuning one child's screen-time settings.
+/// `userId` is always explicit — parents tune a specific kid.
+public struct ScreenTimeSettingsUpdate: Codable, Sendable {
+    public var userId: String
+    public var weekdayHours: Double
+    public var weekendHours: Double
+    public var weeklyRoutinePayout: Money
+    public var weekdayAtRiskPercent: Int
+    public var weekendAtRiskPercent: Int
+
+    public init(userId: String,
+                weekdayHours: Double,
+                weekendHours: Double,
+                weeklyRoutinePayout: Money,
+                weekdayAtRiskPercent: Int,
+                weekendAtRiskPercent: Int) {
+        self.userId = userId
+        self.weekdayHours = weekdayHours
+        self.weekendHours = weekendHours
+        self.weeklyRoutinePayout = weeklyRoutinePayout
+        self.weekdayAtRiskPercent = weekdayAtRiskPercent
+        self.weekendAtRiskPercent = weekendAtRiskPercent
+    }
+}
+
 /// Help response options — mirrors the API's accepted values.
 public enum HelpResponseKind: String, CaseIterable, Sendable {
     case completedByParent = "CompletedByParent"

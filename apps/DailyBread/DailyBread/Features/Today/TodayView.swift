@@ -170,6 +170,13 @@ struct TodayView: View {
                         .listRowBackground(Color.clear)
                 }
 
+                // Stakes visible first: what's on the line before the list.
+                Section {
+                    AtRiskCard(userId: store.targetUserId)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                }
+
                 Section {
                     ForEach(today.items) { item in
                         ChoreRow(item: item, allowHelp: isSelf) {

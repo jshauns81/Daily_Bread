@@ -277,6 +277,47 @@ public sealed record ScreenTimeResponse(
     IReadOnlyList<ScreenTimeChorePriceDto> ChorePrices,
     IReadOnlyList<ScreenTimeEntryDto> RecentEntries);
 
+/// <summary>
+/// One chore on the kid's "At Risk Today" card (MECHANICS_AMENDMENT.md §E).
+/// Urgency: "DueTonight" | "MustDoDaily" | "GettingTight". Detail is the
+/// server-authored kid-facing one-liner ("due tonight", "gets tight Thursday").
+/// MoneyAtRisk is "0.00" when none; MinutesAtRisk is 0 when the chore has no
+/// screen-time price.
+/// </summary>
+public sealed record AtRiskItemDto(
+    int ChoreDefinitionId,
+    string Name,
+    string Urgency,
+    string Detail,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal MoneyAtRisk,
+    int MinutesAtRisk);
+
+/// <summary>
+/// The "At Risk Today" card: items ordered for display with the day's totals.
+/// PreviewLine is set only when items is empty — the single nearest future
+/// pinch this week, or null. Never more than one line; never nag.
+/// </summary>
+public sealed record AtRiskResponse(
+    string UserId,
+    DateOnly Date,
+    IReadOnlyList<AtRiskItemDto> Items,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal TotalMoneyAtRisk,
+    int TotalMinutesAtRisk,
+    string? PreviewLine);
+
+/// <summary>
+/// Parent-only settings update (PUT /api/v1/screentime/settings). UserId is
+/// required — parents always tune a specific kid. Hours are plain JSON
+/// numbers; the payout is a money string like every other money field.
+/// </summary>
+public sealed record ScreenTimeSettingsRequest(
+    string UserId,
+    decimal WeekdayHours,
+    decimal WeekendHours,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal WeeklyRoutinePayout,
+    int WeekdayAtRiskPercent,
+    int WeekendAtRiskPercent);
+
 public sealed record DailyEarningDto(
     DateOnly Date,
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal Amount);

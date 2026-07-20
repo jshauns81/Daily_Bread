@@ -1,4 +1,5 @@
 using Daily_Bread.Data;
+using Daily_Bread.Data.Models;
 using Daily_Bread.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,9 @@ namespace Daily_Bread.Api.Controllers;
 /// <summary>
 /// The kid's screen-time meter: this week's pools (base / effective / floor /
 /// at-risk), the live minute price of every chore, and recent ledger lines.
-/// Children see their own; parents may query household members.
+/// Children see their own; parents may query household members. Also serves
+/// the "At Risk Today" card (MECHANICS_AMENDMENT.md §E) and the parent-only
+/// settings update.
 /// </summary>
 [ApiController]
 [Route("api/v1/screentime")]
@@ -23,6 +26,8 @@ public class ScreenTimeController : ControllerBase
     private readonly IFamilySettingsService _familySettings;
     private readonly IDateProvider _dateProvider;
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly IAtRiskService _atRisk;
+    private readonly ICurrentUserContext _currentUser;
 
     public ScreenTimeController(
         IHouseholdGuard guard,
@@ -30,7 +35,9 @@ public class ScreenTimeController : ControllerBase
         IScreenTimePricingService pricing,
         IFamilySettingsService familySettings,
         IDateProvider dateProvider,
-        IDbContextFactory<ApplicationDbContext> contextFactory)
+        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IAtRiskService atRisk,
+        ICurrentUserContext currentUser)
     {
         _guard = guard;
         _childProfiles = childProfiles;
@@ -38,6 +45,8 @@ public class ScreenTimeController : ControllerBase
         _familySettings = familySettings;
         _dateProvider = dateProvider;
         _contextFactory = contextFactory;
+        _atRisk = atRisk;
+        _currentUser = currentUser;
     }
 
     [HttpGet]
@@ -64,6 +73,139 @@ public class ScreenTimeController : ControllerBase
                 "ChildProfileNotFound", "This user has no child profile."));
         }
 
+        var response = await BuildScreenTimeResponseAsync(target.User!.Id, profile, entryLimit, ct);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// The kid's "At Risk Today" card (MECHANICS_AMENDMENT.md §E): what is on
+    /// the line today with exact stakes, or the calm state with at most one
+    /// preview line for the next pinch.
+    /// </summary>
+    [HttpGet("atrisk")]
+    public async Task<ActionResult<AtRiskResponse>> AtRisk(
+        [FromQuery] string? userId,
+        CancellationToken ct = default)
+    {
+        var target = await _guard.ResolveTargetUserAsync(userId, ct);
+        if (target.Outcome == GuardOutcome.Forbidden)
+        {
+            return Forbid(JwtBearerDefaults.AuthenticationScheme);
+        }
+        if (target.Outcome == GuardOutcome.NotFound)
+        {
+            return NotFound(new ApiError("UserNotFound", "User not found."));
+        }
+
+        var profile = await _childProfiles.GetProfileByUserIdAsync(target.User!.Id);
+        if (profile == null)
+        {
+            return NotFound(new ApiError(
+                "ChildProfileNotFound", "This user has no child profile."));
+        }
+
+        var computation = await _atRisk.ComputeAsync(
+            target.User!.Id, profile.Id, _dateProvider.Today);
+
+        var items = computation.Items
+            .Select(i => new AtRiskItemDto(
+                i.ChoreDefinitionId,
+                i.Name,
+                i.Urgency.ToString(),
+                i.Detail,
+                i.MoneyAtRisk,
+                i.MinutesAtRisk))
+            .ToList();
+
+        return Ok(new AtRiskResponse(
+            computation.UserId,
+            computation.Date,
+            items,
+            computation.TotalMoneyAtRisk,
+            computation.TotalMinutesAtRisk,
+            computation.PreviewLine));
+    }
+
+    /// <summary>
+    /// Parent-only: updates a child's screen-time settings (pool hours, routine
+    /// payout, at-risk percents) and returns the fresh meter — same shape as
+    /// GET — so the client refreshes in one round trip. Validation lives in
+    /// ChildProfileService; failures map to 400 InvalidSettings.
+    /// </summary>
+    [HttpPut("settings")]
+    public async Task<ActionResult<ScreenTimeResponse>> UpdateSettings(
+        [FromBody] ScreenTimeSettingsRequest request,
+        CancellationToken ct = default)
+    {
+        // The guard only forbids cross-user access; tuning settings is a
+        // parental act even on paper-self, so the role is required explicitly.
+        await _currentUser.InitializeAsync();
+        if (!_currentUser.IsInRole("Parent") && !_currentUser.IsInRole("Admin"))
+        {
+            return Forbid(JwtBearerDefaults.AuthenticationScheme);
+        }
+
+        // The contract makes userId required — parents always tune a specific kid.
+        if (string.IsNullOrWhiteSpace(request.UserId))
+        {
+            return BadRequest(new ApiError("InvalidSettings", "userId is required."));
+        }
+
+        var target = await _guard.ResolveTargetUserAsync(request.UserId, ct);
+        if (target.Outcome == GuardOutcome.Forbidden)
+        {
+            return Forbid(JwtBearerDefaults.AuthenticationScheme);
+        }
+        if (target.Outcome == GuardOutcome.NotFound)
+        {
+            return NotFound(new ApiError("UserNotFound", "User not found."));
+        }
+
+        var profile = await _childProfiles.GetProfileByUserIdAsync(target.User!.Id);
+        if (profile == null)
+        {
+            return NotFound(new ApiError(
+                "ChildProfileNotFound", "This user has no child profile."));
+        }
+
+        var result = await _childProfiles.UpdateScreenTimeSettingsAsync(
+            profile.Id,
+            request.WeekdayHours,
+            request.WeekendHours,
+            request.WeeklyRoutinePayout,
+            request.WeekdayAtRiskPercent,
+            request.WeekendAtRiskPercent);
+
+        if (!result.Success)
+        {
+            return BadRequest(new ApiError(
+                "InvalidSettings", result.ErrorMessage ?? "Invalid settings."));
+        }
+
+        // Re-read so the response reflects exactly what was just written.
+        var updatedProfile = await _childProfiles.GetProfileByUserIdAsync(target.User!.Id);
+        if (updatedProfile == null)
+        {
+            return NotFound(new ApiError(
+                "ChildProfileNotFound", "This user has no child profile."));
+        }
+
+        var response = await BuildScreenTimeResponseAsync(
+            target.User!.Id, updatedProfile, entryLimit: 20, ct);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// The shared GET-shaped assembly: week window, live pricing, the frozen
+    /// snapshot if reconciliation wrote one, priced-chore names, and recent
+    /// ledger lines — handed to the pure ScreenTimeSummary builder.
+    /// </summary>
+    private async Task<ScreenTimeResponse> BuildScreenTimeResponseAsync(
+        string userId,
+        ChildProfile profile,
+        int entryLimit,
+        CancellationToken ct)
+    {
         var today = _dateProvider.Today;
         var weekStart = await _familySettings.GetWeekStartForDateAsync(today);
         var weekEnd = await _familySettings.GetWeekEndForDateAsync(today);
@@ -116,8 +258,8 @@ public class ScreenTimeController : ControllerBase
                 e.ChoreName, e.Minutes, e.Note, e.CreatedAt))
             .ToList();
 
-        var response = ScreenTimeSummary.Build(
-            target.User!.Id,
+        return ScreenTimeSummary.Build(
+            userId,
             weekStart,
             weekEnd,
             profile.WeekdayScreenTimeHours,
@@ -126,7 +268,5 @@ public class ScreenTimeController : ControllerBase
             snapshot,
             names,
             entries);
-
-        return Ok(response);
     }
 }
