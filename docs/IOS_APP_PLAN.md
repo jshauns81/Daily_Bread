@@ -73,6 +73,14 @@ Parent surface (Blazor sidebar) → native status:
   (Earnings/Deductions/Bonuses/Penance/Paid Out/Transactions), transaction table (Payout/Task/…
   typed rows), and **+ Add Adjustment / + Bonus / − Penalty**. Read side is ready; needs an
   adjustment endpoint + a native History screen.
+- **Driving Log** — NOT NATIVE, but the BACKEND IS COMPLETE (IDrivingLogService: Create / GetEntries /
+  GetPendingApprovals / GetProgress / Approve / Reject / Delete, night-driving detection, weather,
+  supervisor, DrivingLogCsvBuilder + a CSV export endpoint already in Program.cs). Blazor: a teen-driver
+  hours tracker — progress bars (X/50 hrs total, X/6 hrs at night) + Edit Goal, a "Log a Session" form
+  (date, start/end, Now, night Auto-detect, weather, "I supervised", route/notes), a History table
+  (duration/night/supervisor/weather/status + Delete), Pending Approvals, CSV export, date filter.
+  Needs ONLY an API controller over the existing service + native UI (kid logs, parent approves).
+  This is the highest backend-leverage parity item — slot it early (after History).
 - **Achievements (management)** — NOT NATIVE. Blazor: CRUD grid — add/edit/deactivate, rarity
   (Common…Legendary), points, category, unlock conditions (StreakDays/PerfectDays/TotalEarned/…),
   tangible rewards. Kids already SEE achievements natively (AchievementsView); parents can't MANAGE
@@ -83,7 +91,7 @@ Parent surface (Blazor sidebar) → native status:
   auth plan (§5d). Sensitive; do last with care.
 
 Suggested build order (cheapest-parity-first, each its own sprint):
-1. **Calendar** (read API exists) → 2. **History** read + adjustments → 3. **Activity** (excuse/restore)
+1. **Calendar** (read API exists) → 2. **History** read + adjustments → 3. **Driving Log** (backend done — controller + UI only) → 4. **Activity** (excuse/restore)
 → 4. **Planner weekly grid** (per-date overrides) → 5. **Achievements management** →
 6. **Reward Claims** → 7. **Users/admin**. Then the Time Machine (§F) is the one thing that was
 never on the web. Only after all of this is Blazor retired for Apple families.
