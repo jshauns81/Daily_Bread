@@ -1,13 +1,9 @@
 import SwiftUI
 
-// Graphite & Glass: surfaces belong to the system, color belongs to
-// Daily Bread. Themes are ACCENT TINTS only — surfaces never change per
-// theme. Invariants (never themed away): gold = money, gold-glow = the
-// Approve moment, red = Help.
-//
-// Neutrals here are starting values approximating system materials — do the
-// real-device pass (plan §4) before treating any neutral as final; they all
-// live in this one file on purpose.
+// Daily Bread's look. Color is warmth, and warmth is the point: every theme owns the WHOLE
+// surface — its background, its cards, its accent — not just a tint over grey. Themes are hers
+// to pick; the app follows instantly. Invariants that never change across themes: gold = money,
+// red = the Help alert. Those two carry meaning and must stay legible in every palette.
 
 public extension Color {
     init(hex: UInt32) {
@@ -18,69 +14,162 @@ public extension Color {
     }
 }
 
-/// The five themes — same names as the web app, accents only.
+/// The palettes she can choose from. Each is a full look — light or dark — with its own warm
+/// background, card surface, and accent. Sunroom is the default.
 public enum DBTheme: String, CaseIterable, Identifiable, Sendable {
-    case guadalupe, sea, garden, violet, rosa
+    case sunroom      // raspberry + teal, warm white  (default)
+    case sky          // soft blue, warm white
+    case rosewater    // rose/pink, warm white
+    case meadow       // garden green, warm white
+    case mulberry     // raspberry + teal, soft plum   (dark)
+    case harbor       // calm blue, deep evening        (dark)
 
     public var id: String { rawValue }
 
     public var displayName: String {
         switch self {
-        case .guadalupe: return "Guadalupe"
-        case .sea: return "Sea"
-        case .garden: return "Garden"
-        case .violet: return "Violet"
-        case .rosa: return "Rose"
+        case .sunroom: return "Sunroom"
+        case .sky: return "Sky"
+        case .rosewater: return "Rosewater"
+        case .meadow: return "Meadow"
+        case .mulberry: return "Mulberry"
+        case .harbor: return "Harbor"
         }
     }
 
-    /// Accent for the current appearance (light needs deeper steps on white).
-    public func accent(_ scheme: ColorScheme) -> Color {
-        switch (self, scheme) {
-        case (.guadalupe, .dark): return Color(hex: 0x4DA8C6)
-        case (.guadalupe, _): return Color(hex: 0x0E8FC4)
-        case (.sea, .dark): return Color(hex: 0x6A82E6)
-        case (.sea, _): return Color(hex: 0x3A5BD0)
-        case (.garden, .dark): return Color(hex: 0x5AAE7B)
-        case (.garden, _): return Color(hex: 0x2E9E63)
-        case (.violet, .dark): return Color(hex: 0x9B7BE0)
-        case (.violet, _): return Color(hex: 0x7A4FD0)
-        case (.rosa, .dark): return Color(hex: 0xE08AA6)
-        case (.rosa, _): return Color(hex: 0xD14E7E)
+    /// A one-word feel, shown under the name in the picker.
+    public var mood: String {
+        switch self {
+        case .sunroom: return "warm · light"
+        case .sky: return "calm · light"
+        case .rosewater: return "soft · light"
+        case .meadow: return "fresh · light"
+        case .mulberry: return "cozy · dark"
+        case .harbor: return "quiet · dark"
         }
+    }
+
+    public var isDark: Bool {
+        switch self {
+        case .mulberry, .harbor: return true
+        default: return false
+        }
+    }
+
+    /// The interactive accent (buttons, links, selection). Scheme is accepted for API
+    /// compatibility; each theme forces its own appearance, so the accent is fixed per theme.
+    public func accent(_ scheme: ColorScheme = .light) -> Color {
+        switch self {
+        case .sunroom: return Color(hex: 0xC7284F)
+        case .sky: return Color(hex: 0x3D7BE0)
+        case .rosewater: return Color(hex: 0xD24E86)
+        case .meadow: return Color(hex: 0x3E9E6B)
+        case .mulberry: return Color(hex: 0xEA6E92)
+        case .harbor: return Color(hex: 0x5B9BE0)
+        }
+    }
+
+    /// A gentle second colour used for soft "done/positive" touches (kept distinct from the
+    /// money-gold and the Help-red).
+    public func secondary(_ scheme: ColorScheme = .light) -> Color {
+        switch self {
+        case .sunroom, .mulberry: return Color(hex: 0x2E8C86) // teal
+        case .sky, .harbor: return Color(hex: 0x4BA39C)       // sea-teal
+        case .rosewater: return Color(hex: 0x6BA3C6)          // soft blue
+        case .meadow: return Color(hex: 0x8AA83E)             // leaf
+        }
+    }
+
+    /// The whole-screen background — a soft warm gradient, never flat.
+    public var backgroundGradient: LinearGradient {
+        let (top, bottom): (UInt32, UInt32) = {
+            switch self {
+            case .sunroom: return (0xFFFDF9, 0xFBF1E2)
+            case .sky: return (0xFBFCFF, 0xEAF1FE)
+            case .rosewater: return (0xFFF9FB, 0xFBEAF1)
+            case .meadow: return (0xF8FBF6, 0xE9F4E7)
+            case .mulberry: return (0x3E1B30, 0x2A1220)
+            case .harbor: return (0x223049, 0x161E2C)
+            }
+        }()
+        return LinearGradient(
+            colors: [Color(hex: top), Color(hex: bottom)],
+            startPoint: .top,
+            endPoint: isDark ? UnitPoint(x: 0.5, y: 0.6) : .bottom)
+    }
+
+    /// The card surface that floats on the background.
+    public var cardColor: Color {
+        switch self {
+        case .mulberry: return Color(hex: 0x4A2237)
+        case .harbor: return Color(hex: 0x2A3852)
+        default: return .white
+        }
+    }
+
+    public var cardStroke: Color {
+        isDark ? Color.white.opacity(0.07) : Color.black.opacity(0.05)
+    }
+
+    public var cardShadow: Color {
+        isDark ? Color.black.opacity(0.25) : Color.black.opacity(0.07)
+    }
+
+    /// Progress-glow gradient — kept within ONE warm family so it never muddies (the fix to the
+    /// two-hue bar): the accent deepening into gold-warm.
+    public var progressGradient: LinearGradient {
+        LinearGradient(
+            colors: [accent(), Color(hex: 0xE7A83C)],
+            startPoint: .leading,
+            endPoint: .trailing)
     }
 }
 
-/// Semantic colors — the invariants. Per-mode values match the web app's
-/// shipped constants so both clients agree on what gold and red mean.
+/// Semantic invariants — the same meaning in every palette. Gold = money, red = Help alert.
 public enum DB {
     public static func gold(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0xD7A23F) : Color(hex: 0xD99514)
+        scheme == .dark ? Color(hex: 0xE7B44A) : Color(hex: 0xC98A1E)
     }
 
-    /// The Blessing glow — the Approve moment only.
+    /// The Approve/Blessing glow.
     public static func glow(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0xEAC468) : Color(hex: 0xF2B705)
+        scheme == .dark ? Color(hex: 0xF0C868) : Color(hex: 0xE0A21E)
     }
 
-    /// Help / errors. Reserved: nothing else in the app is ever red.
+    /// Help / errors — reserved. Kept clearly distinct from any theme accent so the alert never
+    /// hides in a pink or berry palette.
     public static func help(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0xE0655C) : Color(hex: 0xD33B4E)
+        scheme == .dark ? Color(hex: 0xF06B6B) : Color(hex: 0xD1363B)
     }
 
     public static func success(_ scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(hex: 0x84B98F) : Color(hex: 0x3E9E63)
+        scheme == .dark ? Color(hex: 0x86C08F) : Color(hex: 0x2E9E63)
     }
 }
 
-/// Card treatment: rely on system materials so Liquid Glass does the work.
+/// Reads the currently chosen theme from storage (used by the theme-aware modifiers).
+enum ThemeStore {
+    static let key = "db.theme"
+    static var current: DBTheme {
+        DBTheme(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .sunroom
+    }
+}
+
+/// Card treatment — a soft, elevated surface in the theme's card colour.
 public struct GlassCard: ViewModifier {
+    @AppStorage(ThemeStore.key) private var themeRaw = DBTheme.sunroom.rawValue
     var padding: CGFloat
+
+    private var theme: DBTheme { DBTheme(rawValue: themeRaw) ?? .sunroom }
 
     public func body(content: Content) -> some View {
         content
             .padding(padding)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(theme.cardColor, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(theme.cardStroke, lineWidth: 0.5))
+            .shadow(color: theme.cardShadow, radius: 10, y: 3)
     }
 }
 
@@ -90,28 +179,16 @@ public extension View {
     }
 }
 
-/// Screen background: graphite, not OLED black. A soft glow at the top,
-/// settling into deep graphite — matches the approved concept. Hides the
-/// system list background so every screen sits on the same surface.
+/// Screen background — the chosen theme's warm gradient. (Name kept for call-site stability.)
 public struct GraphiteBackground: ViewModifier {
-    @Environment(\.colorScheme) private var scheme
+    @AppStorage(ThemeStore.key) private var themeRaw = DBTheme.sunroom.rawValue
+
+    private var theme: DBTheme { DBTheme(rawValue: themeRaw) ?? .sunroom }
 
     public func body(content: Content) -> some View {
         content
             .scrollContentBackground(.hidden)
-            .background(background.ignoresSafeArea())
-    }
-
-    @ViewBuilder
-    private var background: some View {
-        if scheme == .dark {
-            LinearGradient(
-                colors: [Color(hex: 0x1A1A1E), Color(hex: 0x0E0E10)],
-                startPoint: .top,
-                endPoint: UnitPoint(x: 0.5, y: 0.55))
-        } else {
-            Color(hex: 0xF2F2F6)
-        }
+            .background(theme.backgroundGradient.ignoresSafeArea())
     }
 }
 
@@ -121,8 +198,7 @@ public extension View {
     }
 }
 
-/// Re-runs an action whenever the app returns to the foreground —
-/// stale data reads as "broken", so every screen refreshes on wake.
+/// Re-runs an action whenever the app returns to the foreground.
 public struct RefreshOnForeground: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
     let action: @Sendable () async -> Void

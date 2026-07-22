@@ -4,15 +4,19 @@ import DailyBreadKit
 @main
 struct DailyBreadApp: App {
     @State private var session = SessionStore()
-    @AppStorage("db.theme") private var themeRaw = DBTheme.guadalupe.rawValue
+    @AppStorage("db.theme") private var themeRaw = DBTheme.sunroom.rawValue
 
-    private var theme: DBTheme { DBTheme(rawValue: themeRaw) ?? .guadalupe }
+    private var theme: DBTheme { DBTheme(rawValue: themeRaw) ?? .sunroom }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(session)
                 .themedTint(theme)
+                // The chosen theme owns the whole appearance: a dark theme forces
+                // dark, a light theme forces light — so her pick always looks the
+                // way it looked in the picker, regardless of the system setting.
+                .preferredColorScheme(theme.isDark ? .dark : .light)
                 .task { await session.bootstrap() }
         }
         #if os(macOS)
