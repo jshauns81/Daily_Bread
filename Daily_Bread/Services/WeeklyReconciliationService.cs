@@ -136,12 +136,29 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
         _logger = logger;
     }
 
-    /// <summary>Per-chore miss and late-repair tally for a reconciled week.</summary>
+    /// <summary>
+    /// Per-chore miss/repair tally, split by the pool each occurrence actually falls in (a chore
+    /// scheduled across weekdays and the weekend contributes to BOTH pools — Amendment II §5).
+    /// </summary>
     private sealed class MissTally
     {
-        public int Misses;
-        public int Repaired;
+        public int WeekdayMisses;
+        public int WeekendMisses;
+
+        // Late-repair credit is deferred to the parent-approved late-repair marker (Amendment II §8).
+        // These stay 0 for now, so a late completion currently counts as a full miss with no credit —
+        // safe (it can never leak routine/money) until the approved-repair flow exists.
+#pragma warning disable CS0649 // assigned by the parent-approved late-repair flow (Amendment II §8)
+        public int WeekdayRepaired;
+        public int WeekendRepaired;
+#pragma warning restore CS0649
+
+        public int TotalMisses => WeekdayMisses + WeekendMisses;
+        public int TotalRepaired => WeekdayRepaired + WeekendRepaired;
     }
+
+    private static bool IsWeekend(DateOnly date) =>
+        date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
 
     public async Task<List<WeeklyReconciliationResult>> RunWeeklyReconciliationAsync(DateOnly weekEndDate)
     {
@@ -355,6 +372,8 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
                     .Where(l => l.Status is ChoreStatus.Completed or ChoreStatus.Approved)
                     .ToList();
 
+                var isWeekendDay = IsWeekend(date);
+
                 if (completedLogs is { Count: > 0 })
                 {
                     // Done on time if any completion lands on or before its scheduled day (a null
@@ -364,26 +383,26 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
 
                     if (onTime) continue; // not a miss
 
-                    // Completed, but only late → a miss that has been repaired.
-                    tally.Misses++;
-                    tally.Repaired++;
+                    // Completed only late → still a miss on its day. Half-credit repair is deferred to
+                    // the parent-approved late-repair marker (Amendment II §8), so no repair is counted.
+                    if (isWeekendDay) tally.WeekendMisses++; else tally.WeekdayMisses++;
                     continue;
                 }
 
-                // No credit at all → a plain miss.
-                tally.Misses++;
+                // No credit at all → a plain miss, in the pool of its actual day.
+                if (isWeekendDay) tally.WeekendMisses++; else tally.WeekdayMisses++;
             }
         }
 
-        // WeeklyFrequency: shortfall against the weekly target; no per-occurrence late-repair path.
+        // WeeklyFrequency: shortfall against the weekly target, always the weekday pool; no repair path.
         foreach (var (choreId, chore) in pricedChores)
         {
             if (chore.ScheduleType != ChoreScheduleType.WeeklyFrequency) continue;
 
             var creditedReps = weekLogs.Count(l =>
                 l.ChoreDefinitionId == choreId && CreditedStatuses.Contains(l.Status));
-            tallies[choreId].Misses = Math.Max(0, chore.WeeklyTargetCount - creditedReps);
-            tallies[choreId].Repaired = 0;
+            tallies[choreId].WeekdayMisses = Math.Max(0, chore.WeeklyTargetCount - creditedReps);
+            tallies[choreId].WeekendMisses = 0;
         }
 
         return tallies;
@@ -455,7 +474,7 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
 
             var tally = missCounts.GetValueOrDefault(choreId) ?? new MissTally();
 
-            if (tally.Misses == 0)
+            if (tally.TotalMisses == 0)
             {
                 // A clean week resets this chore's bookkeeping (kept for display; no penalty effect).
                 state.ConsecutiveMissWeeks = 0;
@@ -465,36 +484,30 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
             {
                 state.ConsecutiveMissWeeks += 1;
 
-                var choreLoss = tally.Misses * price.PerInstanceMinutes;      // raw, no multiplier
-                var choreRepaired = tally.Repaired * price.PerInstanceMinutes;
+                // Per-occurrence price is pool-independent (Importance × rate). Misses are attributed
+                // to whichever pool each occurrence actually fell in (Amendment II §5).
+                var perOccurrence = price.PerInstanceMinutes;
+                var weekdayLoss = tally.WeekdayMisses * perOccurrence;
+                var weekendLoss = tally.WeekendMisses * perOccurrence;
 
-                poolRawLoss[price.Pool] += choreLoss;
-                poolRepairedValue[price.Pool] += choreRepaired;
-                state.CurrentWeeklyMinutesLost = choreLoss;
+                poolRawLoss[ScreenTimePool.Weekday] += weekdayLoss;
+                poolRawLoss[ScreenTimePool.Weekend] += weekendLoss;
+                poolRepairedValue[ScreenTimePool.Weekday] += tally.WeekdayRepaired * perOccurrence;
+                poolRepairedValue[ScreenTimePool.Weekend] += tally.WeekendRepaired * perOccurrence;
+                state.CurrentWeeklyMinutesLost = weekdayLoss + weekendLoss;
 
-                if (choreLoss > 0)
-                {
-                    entries.Add(new ScreenTimeEntry
-                    {
-                        ChildProfileId = childProfile.Id,
-                        WeekStartDate = nextWeekStart,
-                        Pool = price.Pool,
-                        Kind = ScreenTimeEntryKind.Deduction,
-                        ChoreDefinitionId = choreId,
-                        Minutes = -choreLoss,
-                        StreakMultiplier = null,
-                        Note = $"{chore.Name}: {tally.Misses} missed × {price.PerInstanceMinutes}m",
-                        CreatedAt = now
-                    });
-                }
+                AddDeductionEntry(entries, childProfile.Id, nextWeekStart, ScreenTimePool.Weekday,
+                    choreId, chore.Name, tally.WeekdayMisses, perOccurrence, now);
+                AddDeductionEntry(entries, childProfile.Id, nextWeekStart, ScreenTimePool.Weekend,
+                    choreId, chore.Name, tally.WeekendMisses, perOccurrence, now);
 
                 reductions.Add(new ChoreScreenTimeReduction
                 {
                     ChoreDefinitionId = choreId,
                     ChoreName = chore.Name,
-                    MissedOccurrences = tally.Misses,
-                    RepairedOccurrences = tally.Repaired,
-                    MinutesLost = choreLoss
+                    MissedOccurrences = tally.TotalMisses,
+                    RepairedOccurrences = tally.TotalRepaired,
+                    MinutesLost = weekdayLoss + weekendLoss
                 });
             }
 
@@ -543,6 +556,30 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
         });
 
         return (netWeekdayLost, netWeekendLost, addedPerInverse, reductions);
+    }
+
+    private static void AddDeductionEntry(
+        List<ScreenTimeEntry> entries, int childProfileId, DateOnly nextWeekStart,
+        ScreenTimePool pool, int choreId, string choreName, int misses, int perOccurrence, DateTime now)
+    {
+        var loss = misses * perOccurrence;
+        if (loss <= 0)
+        {
+            return;
+        }
+
+        entries.Add(new ScreenTimeEntry
+        {
+            ChildProfileId = childProfileId,
+            WeekStartDate = nextWeekStart,
+            Pool = pool,
+            Kind = ScreenTimeEntryKind.Deduction,
+            ChoreDefinitionId = choreId,
+            Minutes = -loss,
+            StreakMultiplier = null,
+            Note = $"{choreName}: {misses} missed × {perOccurrence}m",
+            CreatedAt = now
+        });
     }
 
     private static void AddRepairEntry(

@@ -170,29 +170,46 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
     // ============================================================
 
     [Fact]
-    public async Task Late_Completion_Restores_Half_The_Loss_Uncapped()
+    public async Task Late_Completion_Counts_As_A_Full_Miss_Repair_Credit_Deferred()
     {
-        // Importance 5 chore Mon/Tue → price 30 each. Mon missed; Tue completed late (Wed).
-        // misses 2 (raw 60), repaired 1 (30) → credit 60·0.5·(30/60) = 15 → final 45.
+        // Importance 5 chore Mon/Tue → price 30 each. Mon missed; Tue completed late (Wed). Both are
+        // misses; the half-credit repair is deferred to the parent-approved marker (Amendment II §8),
+        // so for now the full 60 is lost and no EarnBack is written. The pure repair formula is still
+        // guarded by ReconciliationMathTests for when §8 lands.
         var chore = MakeChore("Yard", ChoreScheduleType.SpecificDays, importance: 5,
             activeDays: DaysOfWeek.Monday | DaysOfWeek.Tuesday);
         await SeedChoresAsync(chore);
 
-        // Tuesday's chore done a day late.
         await AddLogAsync(chore.Id, WeekAStart.AddDays(1), ChoreStatus.Approved,
             completedAt: new DateTime(2026, 7, 8, 12, 0, 0, DateTimeKind.Utc));
 
         var result = await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
 
-        Assert.Equal(45, result.WeekdayMinutesLost);
+        Assert.Equal(60, result.WeekdayMinutesLost);
 
         var reduction = Assert.Single(result.ScreenTimeReductions);
         Assert.Equal(2, reduction.MissedOccurrences);
-        Assert.Equal(1, reduction.RepairedOccurrences);
+        Assert.Equal(0, reduction.RepairedOccurrences);
 
-        var earnBack = await GetSingleEntryAsync(WeekBStart, ScreenTimeEntryKind.EarnBack);
-        Assert.Equal(15, earnBack.Minutes);
-        Assert.Equal(ScreenTimePool.Weekday, earnBack.Pool);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        Assert.False(await context.ScreenTimeEntries
+            .AnyAsync(e => e.WeekStartDate == WeekBStart && e.Kind == ScreenTimeEntryKind.EarnBack));
+    }
+
+    [Fact]
+    public async Task Daily_Chore_Splits_Misses_Across_Weekday_And_Weekend_Pools()
+    {
+        // Importance 5 chore every day (price 30). Miss the whole week → 5 weekday misses (150) in the
+        // weekday pool and 2 weekend misses (60) in the weekend pool, priced by the actual day of each
+        // occurrence (Amendment II §5) — not lumped into one pool.
+        var chore = MakeChore("Feed Pet", ChoreScheduleType.SpecificDays, importance: 5,
+            activeDays: DaysOfWeek.All);
+        await SeedChoresAsync(chore);
+
+        var result = await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
+
+        Assert.Equal(150, result.WeekdayMinutesLost); // Mon–Fri × 30
+        Assert.Equal(60, result.WeekendMinutesLost);  // Sat–Sun × 30
     }
 
     [Fact]
