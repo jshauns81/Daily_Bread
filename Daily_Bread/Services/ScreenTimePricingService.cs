@@ -5,30 +5,27 @@ using Microsoft.EntityFrameworkCore;
 namespace Daily_Bread.Services;
 
 /// <summary>
-/// The single source of truth for importance-share screen-time pricing (MECHANICS_AMENDMENT.md §A).
-/// Given a child and any date in a week, it computes each pool's penalty budget (minutes) and the
-/// per-instance minute price of every scheduled chore, so reconciliation, the at-risk card, and the
-/// UI's "live price" all agree on one set of numbers.
+/// The single source of truth for screen-time pricing (MECHANICS_AMENDMENT_II.md). Every scheduled
+/// chore has a bounded, stable per-occurrence minute price of Importance × 6 (0–60). Prices no longer
+/// depend on how many other chores exist (schedule normalization is removed); the per-pool cap is the
+/// aggregate ceiling, applied at reconciliation. Reconciliation, the at-risk card, and the meter all
+/// read these same numbers.
 /// </summary>
 public interface IScreenTimePricingService
 {
     /// <summary>
-    /// Computes the week's pool budgets and per-chore instance prices for a child. Honors per-date
+    /// Computes the week's pool budgets and per-occurrence minute prices for a child. Honors per-date
     /// schedule overrides (Add/Remove/Move) for SpecificDays chores; WeeklyFrequency chores contribute
-    /// their <see cref="ChoreDefinition.WeeklyTargetCount"/> instances to the weekday pool (locked
-    /// decision — flexible reps have no day). Only chores with Importance &gt; 0 assigned to the child
-    /// participate.
+    /// their <see cref="ChoreDefinition.WeeklyTargetCount"/> instances to the weekday pool. Only chores
+    /// with Importance &gt; 0 assigned to the child participate.
     /// </summary>
     Task<WeekPricing> GetWeekPricingAsync(int childProfileId, DateOnly anyDateInWeek);
 }
 
 /// <summary>
-/// The computed pricing for one child-week: each pool's penalty budget in minutes plus the
-/// per-instance minute price of every priced chore.
+/// The computed pricing for one child-week: each pool's penalty budget in minutes (the aggregate cap)
+/// plus the per-occurrence minute price of every priced chore.
 /// </summary>
-/// <param name="WeekdayBudgetMinutes">Weekday pool penalty budget = round(hours × at-risk% × 60).</param>
-/// <param name="WeekendBudgetMinutes">Weekend pool penalty budget = round(hours × at-risk% × 60).</param>
-/// <param name="ChorePrices">Per-chore price keyed by ChoreDefinition Id.</param>
 public sealed record WeekPricing(
     int WeekdayBudgetMinutes,
     int WeekendBudgetMinutes,
@@ -36,39 +33,37 @@ public sealed record WeekPricing(
 
 /// <summary>
 /// The price of a single chore within a week: which pool it draws from, how many instances are
-/// scheduled, and the minutes lost per missed instance.
+/// scheduled, and the minutes lost per missed occurrence (Importance × 6, capped at 60).
 /// </summary>
-/// <param name="Pool">The pool this chore is priced against (all its instances counted here).</param>
-/// <param name="ScheduledInstances">Number of scheduled instances this week (days, or the weekly target).</param>
-/// <param name="PerInstanceMinutes">Minutes lost when one instance is missed.</param>
 public sealed record ChorePrice(
     ScreenTimePool Pool,
     int ScheduledInstances,
     int PerInstanceMinutes);
 
 /// <summary>
-/// Pure importance-share math (MECHANICS_AMENDMENT.md §A). Kept static and dependency-free so
-/// reconciliation, the at-risk card, and the UI can all reuse the exact same calculation.
+/// Pure per-occurrence pricing (MECHANICS_AMENDMENT_II.md rule 1). Kept static and dependency-free so
+/// reconciliation, the at-risk card, and the UI all reuse the exact same calculation.
 /// </summary>
 public static class ScreenTimePricing
 {
+    /// <summary>Minutes of screen time each point of Importance puts at risk for one missed occurrence.</summary>
+    public const int MinutesPerImportancePoint = 6;
+
+    /// <summary>The one-occurrence ceiling. Because Importance ≤ 10, this is a guardrail, not an active limit.</summary>
+    public const int MaxOccurrenceMinutes = 60;
+
     /// <summary>
-    /// The minutes lost for one missed instance of a chore:
-    /// <c>(importance ÷ poolImportanceSum) × poolBudgetMinutes</c>, rounded to the nearest minute.
-    /// Because <paramref name="poolImportanceSum"/> is summed over every instance in the pool, missing
-    /// every instance costs exactly the pool budget (never more), up to rounding. Guards a zero/empty
-    /// pool (no priced instances) by returning 0.
+    /// The minutes lost for one missed occurrence: <c>clamp(Importance × 6, 0, 60)</c>. Importance 0
+    /// (or blank) means no screen-time impact.
     /// </summary>
-    public static int PriceInstance(int importance, int poolImportanceSum, int poolBudgetMinutes)
+    public static int PriceOccurrence(int importance)
     {
-        if (poolImportanceSum <= 0 || importance <= 0 || poolBudgetMinutes <= 0)
+        if (importance <= 0)
         {
             return 0;
         }
 
-        return (int)Math.Round(
-            (double)importance / poolImportanceSum * poolBudgetMinutes,
-            MidpointRounding.AwayFromZero);
+        return Math.Min(MaxOccurrenceMinutes, importance * MinutesPerImportancePoint);
     }
 }
 
@@ -125,8 +120,7 @@ public sealed class ScreenTimePricingService : IScreenTimePricingService
         }
 
         // WeeklyFrequency chores: WeeklyTargetCount instances, all against the weekday pool
-        // (locked decision — flexible reps have no day). Loaded directly; day-based overrides
-        // do not apply to flexible chores.
+        // (locked decision — flexible reps have no day). Day-based overrides do not apply.
         var weeklyChores = await context.ChoreDefinitions
             .AsNoTracking()
             .Where(c => c.IsActive)
@@ -144,26 +138,11 @@ public sealed class ScreenTimePricingService : IScreenTimePricingService
             Tally(instances, chore, ScreenTimePool.Weekday, count);
         }
 
-        // Per-pool importance sums: each instance contributes its chore's Importance, so the
-        // denominator is Σ over all instances (Importance × instance count) in that pool.
-        var poolImportanceSums = new Dictionary<ScreenTimePool, int>
-        {
-            [ScreenTimePool.Weekday] = 0,
-            [ScreenTimePool.Weekend] = 0
-        };
-
-        foreach (var tally in instances.Values)
-        {
-            poolImportanceSums[tally.Pool] += tally.Importance * tally.InstanceCount;
-        }
-
+        // Per-occurrence price is Importance × 6 (capped), independent of any other chore.
         var chorePrices = new Dictionary<int, ChorePrice>();
         foreach (var (choreId, tally) in instances)
         {
-            var budget = tally.Pool == ScreenTimePool.Weekend ? weekendBudget : weekdayBudget;
-            var perInstance = ScreenTimePricing.PriceInstance(
-                tally.Importance, poolImportanceSums[tally.Pool], budget);
-
+            var perInstance = ScreenTimePricing.PriceOccurrence(tally.Importance);
             chorePrices[choreId] = new ChorePrice(tally.Pool, tally.InstanceCount, perInstance);
         }
 
@@ -181,8 +160,7 @@ public sealed class ScreenTimePricingService : IScreenTimePricingService
     /// <summary>
     /// Adds instances of a chore to the tally. A chore is priced against a single pool; if its
     /// instances span both weekday and weekend days, it is priced against whichever pool holds the
-    /// majority of them (weekday on a tie), with all its instances counted there so the miss-everything
-    /// = budget invariant still holds per pool.
+    /// majority (weekday on a tie), with all its instances counted there.
     /// </summary>
     private static void Tally(
         Dictionary<int, PoolInstanceTally> instances,

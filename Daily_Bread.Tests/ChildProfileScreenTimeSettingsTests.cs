@@ -77,7 +77,7 @@ public sealed class ChildProfileScreenTimeSettingsTests : IAsyncLifetime
         // Original defaults untouched.
         await using var context = await _contextFactory.CreateDbContextAsync();
         var profile = await context.ChildProfiles.FirstAsync(p => p.Id == _profileId);
-        Assert.Equal(50, profile.WeekendAtRiskPercent);
+        Assert.Equal(20, profile.WeekendAtRiskPercent);
     }
 
     [Fact]

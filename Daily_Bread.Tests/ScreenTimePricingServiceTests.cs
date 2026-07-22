@@ -10,9 +10,9 @@ using Xunit;
 namespace Daily_Bread.Tests;
 
 /// <summary>
-/// Guards the importance-share screen-time pricing math (MECHANICS_AMENDMENT.md §A): pool budgets are
-/// a fixed share of the pool hours, per-instance minutes split proportionally to importance, and
-/// missing every scheduled instance loses exactly the pool budget (never more, up to rounding).
+/// Guards bounded per-occurrence pricing (MECHANICS_AMENDMENT_II.md): each occurrence is worth
+/// Importance × 6 minutes (capped at 60), independent of any other chore, and the pool budgets are a
+/// fixed share of the pool hours (the aggregate cap applied at reconciliation).
 /// </summary>
 public sealed class ScreenTimePricingServiceTests : IAsyncLifetime
 {
@@ -47,7 +47,7 @@ public sealed class ScreenTimePricingServiceTests : IAsyncLifetime
             WeekdayScreenTimeHours = 40m,
             WeekendScreenTimeHours = 20m,
             WeekdayAtRiskPercent = 30,
-            WeekendAtRiskPercent = 50
+            WeekendAtRiskPercent = 50   // explicit for the 600-minute budget assertion below
         };
         context.ChildProfiles.Add(profile);
 
@@ -58,49 +58,33 @@ public sealed class ScreenTimePricingServiceTests : IAsyncLifetime
     public async Task DisposeAsync() => await _connection.DisposeAsync();
 
     // ============================================================
-    // Pure ScreenTimePricing.PriceInstance math
+    // Pure per-occurrence price
     // ============================================================
 
     [Fact]
-    public void PriceInstance_Splits_The_Pool_Budget_Proportionally_To_Importance()
+    public void PriceOccurrence_Is_Importance_Times_Six()
     {
-        // Weekday pool: budget 720, Σimportance-across-instances = 16.
-        Assert.Equal(90, ScreenTimePricing.PriceInstance(importance: 2, poolImportanceSum: 16, poolBudgetMinutes: 720));
-        Assert.Equal(135, ScreenTimePricing.PriceInstance(importance: 3, poolImportanceSum: 16, poolBudgetMinutes: 720));
-        Assert.Equal(45, ScreenTimePricing.PriceInstance(importance: 1, poolImportanceSum: 16, poolBudgetMinutes: 720));
+        Assert.Equal(0, ScreenTimePricing.PriceOccurrence(0));
+        Assert.Equal(6, ScreenTimePricing.PriceOccurrence(1));
+        Assert.Equal(12, ScreenTimePricing.PriceOccurrence(2));
+        Assert.Equal(18, ScreenTimePricing.PriceOccurrence(3));
+        Assert.Equal(30, ScreenTimePricing.PriceOccurrence(5));
+        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(10));
     }
 
     [Fact]
-    public void PriceInstance_Missing_Every_Instance_Loses_Exactly_The_Budget()
+    public void PriceOccurrence_Caps_At_Sixty_And_Floors_At_Zero()
     {
-        const int budget = 720;
-        // Instance importances: three 2s, two 3s, four 1s → Σ = 16.
-        int[] instanceImportances = [2, 2, 2, 3, 3, 1, 1, 1, 1];
-        var sum = instanceImportances.Sum();
-
-        var total = instanceImportances.Sum(imp => ScreenTimePricing.PriceInstance(imp, sum, budget));
-
-        Assert.Equal(budget, total);
+        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(11));   // guardrail
+        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(100));
+        Assert.Equal(0, ScreenTimePricing.PriceOccurrence(-3));
     }
 
     [Fact]
-    public void PriceInstance_Zero_Importance_Sum_Returns_Zero()
+    public void PriceOccurrence_Does_Not_Depend_On_Other_Chores()
     {
-        Assert.Equal(0, ScreenTimePricing.PriceInstance(importance: 5, poolImportanceSum: 0, poolBudgetMinutes: 720));
-    }
-
-    [Fact]
-    public void PriceInstance_Adding_A_Higher_Importance_Chore_Lowers_Everyone_Elses_Per_Instance_Minutes()
-    {
-        // Before: one chore importance 2 alone (Σ = 8) prices at 180 min.
-        var before = ScreenTimePricing.PriceInstance(importance: 2, poolImportanceSum: 8, poolBudgetMinutes: 720);
-
-        // After adding an importance-8 chore the pool sum rises to 16; the same chore now costs less.
-        var after = ScreenTimePricing.PriceInstance(importance: 2, poolImportanceSum: 16, poolBudgetMinutes: 720);
-
-        Assert.Equal(180, before);
-        Assert.True(after < before);
-        Assert.Equal(90, after);
+        // The whole point of the amendment: a chore's price is stable no matter how many others exist.
+        Assert.Equal(ScreenTimePricing.PriceOccurrence(2), ScreenTimePricing.PriceOccurrence(2));
     }
 
     // ============================================================
@@ -110,15 +94,12 @@ public sealed class ScreenTimePricingServiceTests : IAsyncLifetime
     [Fact]
     public async Task GetWeekPricing_Prices_Weekday_SpecificDays_And_WeeklyFrequency_Instances()
     {
-        // Chore A: Mon/Wed/Fri (3 weekday instances), importance 2.
         var choreA = MakeChore("Trash", ChoreScheduleType.SpecificDays, importance: 2,
-            activeDays: DaysOfWeek.Monday | DaysOfWeek.Wednesday | DaysOfWeek.Friday);
-        // Chore B: Tue/Thu (2 weekday instances), importance 3.
+            activeDays: DaysOfWeek.Monday | DaysOfWeek.Wednesday | DaysOfWeek.Friday); // 3 inst
         var choreB = MakeChore("Dishes", ChoreScheduleType.SpecificDays, importance: 3,
-            activeDays: DaysOfWeek.Tuesday | DaysOfWeek.Thursday);
-        // Chore C: WeeklyFrequency target 4 (4 weekday instances by the flex rule), importance 1.
+            activeDays: DaysOfWeek.Tuesday | DaysOfWeek.Thursday);                     // 2 inst
         var choreC = MakeChore("Walk Gemma", ChoreScheduleType.WeeklyFrequency, importance: 1,
-            activeDays: DaysOfWeek.All, weeklyTargetCount: 4);
+            activeDays: DaysOfWeek.All, weeklyTargetCount: 4);                          // 4 inst
 
         await using (var context = await _contextFactory.CreateDbContextAsync())
         {
@@ -133,27 +114,47 @@ public sealed class ScreenTimePricingServiceTests : IAsyncLifetime
         Assert.Equal(720, pricing.WeekdayBudgetMinutes);
         Assert.Equal(600, pricing.WeekendBudgetMinutes);
 
-        // Weekday Σimportance-across-instances = 2×3 + 3×2 + 1×4 = 16.
+        // Prices are Importance × 6, regardless of instance count.
         var priceA = pricing.ChorePrices[choreA.Id];
         Assert.Equal(ScreenTimePool.Weekday, priceA.Pool);
         Assert.Equal(3, priceA.ScheduledInstances);
-        Assert.Equal(90, priceA.PerInstanceMinutes); // 2/16 × 720
+        Assert.Equal(12, priceA.PerInstanceMinutes); // 2 × 6
 
         var priceB = pricing.ChorePrices[choreB.Id];
         Assert.Equal(2, priceB.ScheduledInstances);
-        Assert.Equal(135, priceB.PerInstanceMinutes); // 3/16 × 720
+        Assert.Equal(18, priceB.PerInstanceMinutes); // 3 × 6
 
         var priceC = pricing.ChorePrices[choreC.Id];
         Assert.Equal(ScreenTimePool.Weekday, priceC.Pool);
         Assert.Equal(4, priceC.ScheduledInstances);
-        Assert.Equal(45, priceC.PerInstanceMinutes); // 1/16 × 720
+        Assert.Equal(6, priceC.PerInstanceMinutes); // 1 × 6
 
-        // Miss everything on weekdays = exactly the pool budget.
+        // Missing everything on weekdays = the sum of fixed prices (well under the 720 cap here).
         var totalWeekdayLoss =
             priceA.ScheduledInstances * priceA.PerInstanceMinutes +
             priceB.ScheduledInstances * priceB.PerInstanceMinutes +
             priceC.ScheduledInstances * priceC.PerInstanceMinutes;
-        Assert.Equal(720, totalWeekdayLoss);
+        Assert.Equal(96, totalWeekdayLoss); // 36 + 36 + 24
+    }
+
+    [Fact]
+    public async Task A_Lone_Chore_No_Longer_Owns_The_Whole_Pool()
+    {
+        // The Vacuum-Room regression: a single weekend chore used to inherit 100% of the weekend
+        // budget. Now it is worth exactly Importance × 6.
+        var vacuum = MakeChore("Vacuum Room", ChoreScheduleType.SpecificDays, importance: 10,
+            activeDays: DaysOfWeek.Saturday);
+        await using (var context = await _contextFactory.CreateDbContextAsync())
+        {
+            context.ChoreDefinitions.Add(vacuum);
+            await context.SaveChangesAsync();
+        }
+
+        var pricing = await CreateService().GetWeekPricingAsync(_childProfileId, AnyDateInWeek);
+        var price = pricing.ChorePrices[vacuum.Id];
+
+        Assert.Equal(ScreenTimePool.Weekend, price.Pool);
+        Assert.Equal(60, price.PerInstanceMinutes); // not 600
     }
 
     private static ChoreDefinition MakeChore(

@@ -79,7 +79,7 @@ public class ChildProfile
     /// Maximum share (%) of the weekend pool that can be lost in a week — the penalty budget.
     /// The structural floor (100 − this) is the guaranteed zone. Default: 50. See MECHANICS_AMENDMENT.md §A.
     /// </summary>
-    public int WeekendAtRiskPercent { get; set; } = 50;
+    public int WeekendAtRiskPercent { get; set; } = 20;
 
     /// <summary>
     /// Number of Time Machine (retro-correction) requests the child may make per week.

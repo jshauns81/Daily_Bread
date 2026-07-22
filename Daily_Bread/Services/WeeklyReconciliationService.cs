@@ -5,10 +5,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Daily_Bread.Services;
 
 /// <summary>
-/// Result of weekly reconciliation for a single child under the screen-time model.
-/// Money is earn-only (no penalties); the two outputs are the flat routine-pool payout and the
-/// next week's screen-time reduction. See CHORE_SCREENTIME_REDESIGN.md §3–4 and
-/// MECHANICS_AMENDMENT.md §A/§B/§D.
+/// Result of weekly reconciliation for a single child under the screen-time model
+/// (MECHANICS_AMENDMENT_II.md). Money is earn-only; the two outputs are the flat routine-pool payout
+/// and next week's screen-time reduction (bounded prices, per-pool cap, proportional late-repair).
 /// </summary>
 public class WeeklyReconciliationResult
 {
@@ -26,16 +25,10 @@ public class WeeklyReconciliationResult
     /// <summary>Total routine instances scheduled this week (the payout denominator).</summary>
     public int RoutineInstancesTotal { get; init; }
 
-    /// <summary>
-    /// Weekday-pool screen-time minutes removed next week: the post-clamp applied loss net of
-    /// redemption earn-back (§A/§D). Never exceeds the weekday penalty budget.
-    /// </summary>
+    /// <summary>Weekday-pool minutes removed next week: capped applied loss net of late-repair credit.</summary>
     public int WeekdayMinutesLost { get; init; }
 
-    /// <summary>
-    /// Weekend-pool screen-time minutes removed next week: the post-clamp applied loss net of
-    /// redemption earn-back (§A/§D). Never exceeds the weekend penalty budget.
-    /// </summary>
+    /// <summary>Weekend-pool minutes removed next week: capped applied loss net of late-repair credit.</summary>
     public int WeekendMinutesLost { get; init; }
 
     /// <summary>Extra minutes added to each vacuum-fill routine target next week (display-only).</summary>
@@ -47,53 +40,68 @@ public class WeeklyReconciliationResult
     public bool HadScreenTimeLoss => WeekdayMinutesLost > 0 || WeekendMinutesLost > 0;
 }
 
-/// <summary>
-/// Record of a single chore's screen-time contribution for a reconciled week.
-/// </summary>
+/// <summary>Record of a single chore's screen-time contribution for a reconciled week.</summary>
 public class ChoreScreenTimeReduction
 {
     public int ChoreDefinitionId { get; init; }
     public required string ChoreName { get; init; }
     public int MissedOccurrences { get; init; }
-    public int ConsecutiveMissWeeks { get; init; }
+    public int RepairedOccurrences { get; init; }
 
-    /// <summary>Raw per-chore minutes lost (misses × per-instance price × streak), before pool clamp.</summary>
+    /// <summary>Raw per-chore minutes lost (misses × per-occurrence price), before the pool cap.</summary>
     public int MinutesLost { get; init; }
 }
 
 /// <summary>
-/// Service for running weekly reconciliation: pays the flat routine pool and computes the next
-/// week's screen-time budget (importance-share pricing, compounding streak, per-pool clamp,
-/// redemption earn-back). See MECHANICS_AMENDMENT.md §A/§B/§D.
+/// Pure per-pool loss math (MECHANICS_AMENDMENT_II.md — Calculation). Kept static and dependency-free
+/// so the formula can be exhaustively tested without a database, and so the service and any future
+/// caller agree exactly. Rounds once, at the end.
+/// </summary>
+public static class ReconciliationMath
+{
+    /// <summary>The capped loss for a pool before repair: min(rawLoss, poolCap), never negative.</summary>
+    public static int AppliedLoss(int rawLoss, int poolCap) =>
+        Math.Max(0, Math.Min(rawLoss, poolCap));
+
+    /// <summary>
+    /// Minutes removed from the pool this week:
+    /// <c>appliedLoss − appliedLoss × 0.5 × (repairedValue ÷ rawLoss)</c>, floored at 0, rounded once.
+    /// Uncapped: exact half-credit of what was repaired. Capped: each repair restores half of its
+    /// proportionate applied share; repairing everything halves the cap but never erases it.
+    /// </summary>
+    public static int FinalPoolLoss(int rawLoss, int poolCap, int repairedValue)
+    {
+        var applied = AppliedLoss(rawLoss, poolCap);
+        if (rawLoss <= 0)
+        {
+            return applied; // 0
+        }
+
+        var repaired = Math.Min(Math.Max(0, repairedValue), rawLoss);
+        var credit = applied * 0.5 * ((double)repaired / rawLoss);
+        var final = applied - credit;
+        return (int)Math.Round(Math.Max(0.0, final), MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary>
+    /// The repair credit as a whole number, defined so the ledger entry and the snapshot always
+    /// reconcile exactly: <c>appliedLoss − finalPoolLoss</c>.
+    /// </summary>
+    public static int RepairCredit(int rawLoss, int poolCap, int repairedValue) =>
+        AppliedLoss(rawLoss, poolCap) - FinalPoolLoss(rawLoss, poolCap, repairedValue);
+}
+
+/// <summary>
+/// Runs weekly reconciliation: pays the flat routine pool and computes next week's screen-time
+/// budget under MECHANICS_AMENDMENT_II.md — bounded per-occurrence prices (Importance × 6), no streak
+/// multiplier, per-pool cap, and proportional half-credit late repair.
 /// </summary>
 public interface IWeeklyReconciliationService
 {
-    /// <summary>
-    /// Runs weekly reconciliation for all children.
-    /// Should be called at the end of each week (e.g., Sunday night).
-    /// </summary>
     Task<List<WeeklyReconciliationResult>> RunWeeklyReconciliationAsync(DateOnly weekEndDate);
-
-    /// <summary>
-    /// Runs weekly reconciliation for a specific child.
-    /// </summary>
     Task<WeeklyReconciliationResult> ReconcileChildWeekAsync(string userId, DateOnly weekEndDate);
-
-    /// <summary>
-    /// Gets the last reconciliation date from audit records.
-    /// </summary>
     Task<DateOnly?> GetLastReconciliationDateAsync();
-
-    /// <summary>
-    /// Checks if reconciliation is needed (the most recently completed week has not yet been reconciled).
-    /// </summary>
     Task<bool> IsReconciliationNeededAsync();
-
-    /// <summary>
-    /// The week-end date of the most recently completed week (the one reconciliation should process) —
-    /// the day before the current week's start. This is the value to pass to
-    /// <see cref="RunWeeklyReconciliationAsync"/>.
-    /// </summary>
     Task<DateOnly> GetWeekEndToReconcileAsync();
 }
 
@@ -106,7 +114,6 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
     private readonly IDateProvider _dateProvider;
     private readonly ILogger<WeeklyReconciliationService> _logger;
 
-    // App setting key for tracking last reconciliation
     private const string LastReconciliationKey = "LastWeeklyReconciliation";
 
     // Statuses that count as "the child got credit" for a routine instance (pays its slice, no ST hit).
@@ -129,21 +136,12 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
         _logger = logger;
     }
 
-    /// <summary>
-    /// Cumulative compounding multiplier for N consecutive weeks of missing the same chore.
-    /// Simplified curve (MECHANICS_AMENDMENT.md §B, locked): ×1.0 → ×1.5 → ×2.0 → ×3.0, frozen at ×3.0.
-    /// The multiplier scales a chore's share; the per-pool budget (from pricing) is the aggregate clamp.
-    /// </summary>
-    internal static decimal CompoundingMultiplier(int consecutiveMissWeeks) => consecutiveMissWeeks switch
+    /// <summary>Per-chore miss and late-repair tally for a reconciled week.</summary>
+    private sealed class MissTally
     {
-        <= 1 => 1.0m,
-        2 => 1.5m,
-        3 => 2.0m,
-        _ => 3.0m // 4+ weeks: frozen
-    };
-
-    private static int ToIntMinutes(decimal minutes) =>
-        (int)Math.Round(minutes, MidpointRounding.AwayFromZero);
+        public int Misses;
+        public int Repaired;
+    }
 
     public async Task<List<WeeklyReconciliationResult>> RunWeeklyReconciliationAsync(DateOnly weekEndDate)
     {
@@ -210,19 +208,14 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
             };
         }
 
-        // All of this child's chore logs for the week, with their definitions.
         var weekLogs = await context.ChoreLogs
             .Include(l => l.ChoreDefinition)
             .Where(l => l.ChoreDefinition.AssignedUserId == userId)
             .Where(l => l.Date >= weekStart && l.Date <= weekEnd)
             .ToListAsync();
 
-        // Single source of truth for per-instance minute prices and pool budgets (§A). Fetched before
-        // opening the write transaction so its own reads don't nest inside it.
         var pricing = await _pricingService.GetWeekPricingAsync(childProfile.Id, weekStart);
 
-        // Miss counting is derived from the SCHEDULE (nothing sweeps Missed-status rows) — done here
-        // (before the transaction) because it issues override-aware schedule reads.
         var missCounts = await CountMissesAsync(context, childProfile, weekLogs, pricing, weekStart, weekEnd);
 
         await using var transaction = await context.Database.BeginTransactionAsync();
@@ -234,7 +227,7 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
 
             var (weekdayLost, weekendLost, addedPerInverse, reductions) =
                 await ApplyScreenTimeReductionAsync(
-                    context, childProfile, weekLogs, pricing, missCounts, weekStart, nextWeekStart);
+                    context, childProfile, pricing, missCounts, weekStart, nextWeekStart);
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -263,10 +256,8 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
     }
 
     /// <summary>
-    /// Pays the flat routine pool: WeeklyRoutinePayout × (credited instances ÷ total scheduled
-    /// instances). Computed as an exact fraction of the pool (not a sum of rounded slices) so the
-    /// ceiling is always exactly the pool (§3.2). Idempotent per (user, week): a null-chore
-    /// ChoreEarning row stamped with the week end marks the pool as already paid. UNCHANGED.
+    /// Pays the flat routine pool: WeeklyRoutinePayout × (credited ÷ total scheduled). Exact fraction
+    /// of the pool, idempotent per (user, week) via a null-chore ChoreEarning row. UNCHANGED.
     /// </summary>
     private async Task<(decimal Payout, int Credited, int Total)> ApplyRoutinePayoutAsync(
         ApplicationDbContext context, ChildProfile childProfile, List<ChoreLog> weekLogs,
@@ -291,7 +282,6 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
             return (payout, creditedInstances, totalInstances);
         }
 
-        // Idempotency: the routine pool payout is the one ChoreEarning row for the week with no chore.
         var alreadyPaid = await context.LedgerTransactions.AnyAsync(t =>
             t.UserId == childProfile.UserId &&
             t.Type == TransactionType.ChoreEarning &&
@@ -300,8 +290,6 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
 
         if (alreadyPaid)
         {
-            _logger.LogDebug("Routine pool already paid for {UserId} week ending {WeekEnd}",
-                childProfile.UserId, weekEnd);
             return (payout, creditedInstances, totalInstances);
         }
 
@@ -322,28 +310,27 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
     }
 
     /// <summary>
-    /// Counts this week's missed instances per priced chore, derived from the SCHEDULE
-    /// (MECHANICS_AMENDMENT.md §A/§D). SpecificDays: for each scheduled date (overrides honored via
-    /// <see cref="IChoreScheduleService.GetChoresForDateAsync"/>) a miss = no credited log and not
-    /// Help. WeeklyFrequency: misses = max(0, target − credited reps). Only chores present in
-    /// <paramref name="pricing"/> participate; every one gets an entry (0 when clean) so streaks reset.
+    /// Counts this week's missed and late-repaired occurrences per priced chore, from the SCHEDULE
+    /// (MECHANICS_AMENDMENT_II.md). SpecificDays: for each scheduled date, Help and Skipped are full
+    /// protection (not a miss); a completion on time is not a miss; a completion whose CompletedAt lands
+    /// on a LATER local day is a miss AND a late repair; no credit is a miss. WeeklyFrequency: misses =
+    /// max(0, target − credited reps), no repair path. Every priced chore gets an entry (0 when clean).
     /// </summary>
-    private async Task<Dictionary<int, int>> CountMissesAsync(
+    private async Task<Dictionary<int, MissTally>> CountMissesAsync(
         ApplicationDbContext context, ChildProfile childProfile, List<ChoreLog> weekLogs,
         WeekPricing pricing, DateOnly weekStart, DateOnly weekEnd)
     {
-        var misses = pricing.ChorePrices.Keys.ToDictionary(id => id, _ => 0);
-        if (misses.Count == 0)
+        var tallies = pricing.ChorePrices.Keys.ToDictionary(id => id, _ => new MissTally());
+        if (tallies.Count == 0)
         {
-            return misses;
+            return tallies;
         }
 
-        var pricedChoreIds = misses.Keys.ToList();
+        var pricedChoreIds = tallies.Keys.ToList();
         var pricedChores = await context.ChoreDefinitions
             .Where(c => pricedChoreIds.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id);
 
-        // Index logs by (chore, date) for SpecificDays lookups and keep credited-rep counts for flex.
         var logsByChoreDate = weekLogs
             .GroupBy(l => (l.ChoreDefinitionId, l.Date))
             .ToDictionary(g => g.Key, g => g.ToList());
@@ -355,54 +342,69 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
             foreach (var chore in choresToday)
             {
                 if (chore.ScheduleType != ChoreScheduleType.SpecificDays) continue;
-                if (!misses.ContainsKey(chore.Id)) continue; // only priced chores
+                if (!tallies.TryGetValue(chore.Id, out var tally)) continue; // only priced chores
                 if (chore.AssignedUserId != childProfile.UserId) continue;
 
                 var logs = logsByChoreDate.GetValueOrDefault((chore.Id, date));
-                var credited = logs != null && logs.Any(l => CreditedStatuses.Contains(l.Status));
-                var help = logs != null && logs.Any(l => l.Status == ChoreStatus.Help);
 
-                // A miss is a scheduled (chore, date) with no credit and no protective Help request.
-                if (!credited && !help)
+                // Full protection: a Help request or a parent excuse (Skipped) is never a miss.
+                if (logs != null && logs.Any(l => l.Status == ChoreStatus.Help)) continue;
+                if (logs != null && logs.Any(l => l.Status == ChoreStatus.Skipped)) continue;
+
+                var completedLogs = logs?
+                    .Where(l => l.Status is ChoreStatus.Completed or ChoreStatus.Approved)
+                    .ToList();
+
+                if (completedLogs is { Count: > 0 })
                 {
-                    misses[chore.Id]++;
+                    // Done on time if any completion lands on or before its scheduled day (a null
+                    // CompletedAt can't prove lateness, so it counts as on time).
+                    var onTime = completedLogs.Any(l =>
+                        l.CompletedAt == null || ToLocalDate(l.CompletedAt.Value) <= date);
+
+                    if (onTime) continue; // not a miss
+
+                    // Completed, but only late → a miss that has been repaired.
+                    tally.Misses++;
+                    tally.Repaired++;
+                    continue;
                 }
+
+                // No credit at all → a plain miss.
+                tally.Misses++;
             }
         }
 
-        // WeeklyFrequency: shortfall against the weekly target from credited reps anywhere in the week.
+        // WeeklyFrequency: shortfall against the weekly target; no per-occurrence late-repair path.
         foreach (var (choreId, chore) in pricedChores)
         {
             if (chore.ScheduleType != ChoreScheduleType.WeeklyFrequency) continue;
 
             var creditedReps = weekLogs.Count(l =>
                 l.ChoreDefinitionId == choreId && CreditedStatuses.Contains(l.Status));
-            misses[choreId] = Math.Max(0, chore.WeeklyTargetCount - creditedReps);
+            tallies[choreId].Misses = Math.Max(0, chore.WeeklyTargetCount - creditedReps);
+            tallies[choreId].Repaired = 0;
         }
 
-        return misses;
+        return tallies;
     }
 
     /// <summary>
-    /// Applies the screen-time side of reconciliation (MECHANICS_AMENDMENT.md §A/§B/§D):
-    /// per-chore loss = misses × per-instance price × streak multiplier, attributed to the chore's
-    /// pool; each pool's raw total is clamped to that pool's budget (the "miss everything = budget"
-    /// guarantee); redemption earn-back for over-target / busted-week reps (half the per-instance
-    /// price, capped per pool at the applied loss) nets down next week's loss. Writes one Deduction
-    /// <see cref="ScreenTimeEntry"/> per contributing chore (raw per-chore loss) and one EarnBack per
-    /// redeeming chore (raw earn-back); the <see cref="ChildWeeklyScreenTimeBudget"/> snapshot holds
-    /// the clamped, net (post-earn-back) values. Idempotent per (child, next week).
+    /// Applies the screen-time side (MECHANICS_AMENDMENT_II.md): per-chore raw loss = misses ×
+    /// per-occurrence price (no multiplier), summed per pool; each pool is capped at its budget; then a
+    /// proportional half-credit late-repair reduces the capped loss (never below zero). Writes one
+    /// Deduction entry per contributing chore (raw) and one EarnBack per pool with a repair credit; the
+    /// <see cref="ChildWeeklyScreenTimeBudget"/> snapshot holds the final (capped, post-repair) values.
+    /// Idempotent per (child, next week).
     /// </summary>
     private async Task<(int WeekdayLost, int WeekendLost, int AddedPerInverse, List<ChoreScreenTimeReduction> Reductions)>
         ApplyScreenTimeReductionAsync(
-            ApplicationDbContext context, ChildProfile childProfile, List<ChoreLog> weekLogs,
-            WeekPricing pricing, Dictionary<int, int> missCounts,
+            ApplicationDbContext context, ChildProfile childProfile,
+            WeekPricing pricing, Dictionary<int, MissTally> missCounts,
             DateOnly weekStart, DateOnly nextWeekStart)
     {
         var reductions = new List<ChoreScreenTimeReduction>();
 
-        // Idempotency guard: only process screen time once per (child, upcoming week). Re-running must
-        // not double-increment streaks or re-write entries.
         var existingBudget = await context.ChildWeeklyScreenTimeBudgets
             .FirstOrDefaultAsync(b => b.ChildProfileId == childProfile.Id && b.WeekStartDate == nextWeekStart);
         if (existingBudget != null)
@@ -420,8 +422,12 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
             .Where(c => pricedChoreIds.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id);
 
-        // Raw (pre-clamp) minutes lost per pool, and the ledger rows we will write.
         var poolRawLoss = new Dictionary<ScreenTimePool, int>
+        {
+            [ScreenTimePool.Weekday] = 0,
+            [ScreenTimePool.Weekend] = 0
+        };
+        var poolRepairedValue = new Dictionary<ScreenTimePool, int>
         {
             [ScreenTimePool.Weekday] = 0,
             [ScreenTimePool.Weekend] = 0
@@ -447,21 +453,23 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
                 states[choreId] = state;
             }
 
-            var misses = missCounts.GetValueOrDefault(choreId, 0);
+            var tally = missCounts.GetValueOrDefault(choreId) ?? new MissTally();
 
-            if (misses == 0)
+            if (tally.Misses == 0)
             {
-                // A clean week resets this chore's streak to 0 (§B / §5.3).
+                // A clean week resets this chore's bookkeeping (kept for display; no penalty effect).
                 state.ConsecutiveMissWeeks = 0;
                 state.CurrentWeeklyMinutesLost = 0;
             }
             else
             {
                 state.ConsecutiveMissWeeks += 1;
-                var multiplier = CompoundingMultiplier(state.ConsecutiveMissWeeks);
-                var choreLoss = ToIntMinutes(misses * price.PerInstanceMinutes * multiplier);
+
+                var choreLoss = tally.Misses * price.PerInstanceMinutes;      // raw, no multiplier
+                var choreRepaired = tally.Repaired * price.PerInstanceMinutes;
 
                 poolRawLoss[price.Pool] += choreLoss;
+                poolRepairedValue[price.Pool] += choreRepaired;
                 state.CurrentWeeklyMinutesLost = choreLoss;
 
                 if (choreLoss > 0)
@@ -473,9 +481,9 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
                         Pool = price.Pool,
                         Kind = ScreenTimeEntryKind.Deduction,
                         ChoreDefinitionId = choreId,
-                        Minutes = -choreLoss, // negative removes budget
-                        StreakMultiplier = multiplier,
-                        Note = $"{chore.Name}: {misses} missed × {price.PerInstanceMinutes}m × {multiplier:0.##}",
+                        Minutes = -choreLoss,
+                        StreakMultiplier = null,
+                        Note = $"{chore.Name}: {tally.Misses} missed × {price.PerInstanceMinutes}m",
                         CreatedAt = now
                     });
                 }
@@ -484,8 +492,8 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
                 {
                     ChoreDefinitionId = choreId,
                     ChoreName = chore.Name,
-                    MissedOccurrences = misses,
-                    ConsecutiveMissWeeks = state.ConsecutiveMissWeeks,
+                    MissedOccurrences = tally.Misses,
+                    RepairedOccurrences = tally.Repaired,
                     MinutesLost = choreLoss
                 });
             }
@@ -494,86 +502,40 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
             state.ModifiedAt = now;
         }
 
-        // Clamp each pool's raw loss to its budget — the per-pool cap that makes "miss everything =
-        // exactly the budget" hold even after the streak multiplier pushes a chore over its share (§A/§B).
-        var appliedWeekday = Math.Min(poolRawLoss[ScreenTimePool.Weekday], pricing.WeekdayBudgetMinutes);
-        var appliedWeekend = Math.Min(poolRawLoss[ScreenTimePool.Weekend], pricing.WeekendBudgetMinutes);
+        // Per-pool: cap, then proportional half-credit repair (MECHANICS_AMENDMENT_II.md — Calculation).
+        var netWeekdayLost = ReconciliationMath.FinalPoolLoss(
+            poolRawLoss[ScreenTimePool.Weekday], pricing.WeekdayBudgetMinutes,
+            poolRepairedValue[ScreenTimePool.Weekday]);
+        var netWeekendLost = ReconciliationMath.FinalPoolLoss(
+            poolRawLoss[ScreenTimePool.Weekend], pricing.WeekendBudgetMinutes,
+            poolRepairedValue[ScreenTimePool.Weekend]);
 
-        // Redemption earn-back (§D): over-target reps in a made-target week, plus ALL credited reps in a
-        // busted week, earn ST back (half the per-instance price) unless the child chose Money.
-        var poolEarnBack = new Dictionary<ScreenTimePool, int>
-        {
-            [ScreenTimePool.Weekday] = 0,
-            [ScreenTimePool.Weekend] = 0
-        };
+        var weekdayRepairCredit = ReconciliationMath.RepairCredit(
+            poolRawLoss[ScreenTimePool.Weekday], pricing.WeekdayBudgetMinutes,
+            poolRepairedValue[ScreenTimePool.Weekday]);
+        var weekendRepairCredit = ReconciliationMath.RepairCredit(
+            poolRawLoss[ScreenTimePool.Weekend], pricing.WeekendBudgetMinutes,
+            poolRepairedValue[ScreenTimePool.Weekend]);
 
-        foreach (var (choreId, price) in pricing.ChorePrices)
-        {
-            if (!choresById.TryGetValue(choreId, out var chore)) continue;
-            if (chore.ScheduleType != ChoreScheduleType.WeeklyFrequency) continue;
-
-            var creditedReps = weekLogs
-                .Where(l => l.ChoreDefinitionId == choreId && CreditedStatuses.Contains(l.Status))
-                .OrderBy(l => l.Id)
-                .ToList();
-            if (creditedReps.Count == 0) continue;
-
-            var madeTarget = creditedReps.Count >= chore.WeeklyTargetCount;
-            // Made target → only the over-target reps redeem; busted → every credited rep redeems.
-            var redemptiveReps = madeTarget
-                ? creditedReps.Skip(chore.WeeklyTargetCount)
-                : creditedReps;
-
-            var earningReps = redemptiveReps.Count(l => l.RedemptionChoice != RedemptionChoice.Money);
-            if (earningReps == 0) continue;
-
-            var perRepEarn = (int)Math.Round(price.PerInstanceMinutes * 0.5, MidpointRounding.AwayFromZero);
-            var choreEarnBack = earningReps * perRepEarn;
-            if (choreEarnBack <= 0) continue;
-
-            poolEarnBack[price.Pool] += choreEarnBack;
-
-            entries.Add(new ScreenTimeEntry
-            {
-                ChildProfileId = childProfile.Id,
-                WeekStartDate = nextWeekStart,
-                Pool = price.Pool,
-                Kind = ScreenTimeEntryKind.EarnBack,
-                ChoreDefinitionId = choreId,
-                Minutes = choreEarnBack, // positive restores budget
-                StreakMultiplier = null,
-                Note = $"Redemption earn-back: {chore.Name} ({earningReps} rep(s) × {perRepEarn}m)",
-                CreatedAt = now
-            });
-        }
-
-        // Cap earn-back per pool at that pool's applied loss (redemption recovers, never mints surplus).
-        var weekdayEarnBack = Math.Min(poolEarnBack[ScreenTimePool.Weekday], appliedWeekday);
-        var weekendEarnBack = Math.Min(poolEarnBack[ScreenTimePool.Weekend], appliedWeekend);
-
-        var netWeekdayLost = appliedWeekday - weekdayEarnBack;
-        var netWeekendLost = appliedWeekend - weekendEarnBack;
+        AddRepairEntry(entries, childProfile.Id, nextWeekStart, ScreenTimePool.Weekday, weekdayRepairCredit, now);
+        AddRepairEntry(entries, childProfile.Id, nextWeekStart, ScreenTimePool.Weekend, weekendRepairCredit, now);
 
         context.ScreenTimeEntries.AddRange(entries);
 
-        // Vacuum-fill soft targets (§C): added_minutes(routine) = AppliedWeeklyLoss(post-clamp) × share.
-        // The snapshot has a single per-routine scalar, so we persist the equal-split value (= the
-        // average of the share-weighted targets, since QOL shares sum to 100%). Per-routine
-        // share-weighting from QolShare is applied at display time; persisting it needs a schema change
-        // deferred to the QOL phase.
-        var totalAppliedLoss = appliedWeekday + appliedWeekend;
+        // Vacuum-fill soft targets (display-only): use the post-cap applied loss (pre-repair).
+        var totalAppliedLoss =
+            ReconciliationMath.AppliedLoss(poolRawLoss[ScreenTimePool.Weekday], pricing.WeekdayBudgetMinutes) +
+            ReconciliationMath.AppliedLoss(poolRawLoss[ScreenTimePool.Weekend], pricing.WeekendBudgetMinutes);
         var inverseFillCount = await context.ChoreDefinitions.CountAsync(c =>
             c.AssignedUserId == childProfile.UserId && c.IsActive && c.IsInverseFill);
         var addedPerInverse = inverseFillCount > 0 ? totalAppliedLoss / inverseFillCount : 0;
 
-        // Base pool minutes = the child's full weekly pool (the penalty budget from pricing is the
-        // at-risk cap on MinutesLost, not the whole allotment); MinutesLost = the net applied loss.
         context.ChildWeeklyScreenTimeBudgets.Add(new ChildWeeklyScreenTimeBudget
         {
             ChildProfileId = childProfile.Id,
             WeekStartDate = nextWeekStart,
-            WeekdayBasePoolMinutes = ToIntMinutes(childProfile.WeekdayScreenTimeHours * 60),
-            WeekendBasePoolMinutes = ToIntMinutes(childProfile.WeekendScreenTimeHours * 60),
+            WeekdayBasePoolMinutes = (int)Math.Round(childProfile.WeekdayScreenTimeHours * 60, MidpointRounding.AwayFromZero),
+            WeekendBasePoolMinutes = (int)Math.Round(childProfile.WeekendScreenTimeHours * 60, MidpointRounding.AwayFromZero),
             WeekdayMinutesLost = netWeekdayLost,
             WeekendMinutesLost = netWeekendLost,
             InverseFillAddedMinutesPerRoutine = addedPerInverse,
@@ -581,6 +543,49 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
         });
 
         return (netWeekdayLost, netWeekendLost, addedPerInverse, reductions);
+    }
+
+    private static void AddRepairEntry(
+        List<ScreenTimeEntry> entries, int childProfileId, DateOnly nextWeekStart,
+        ScreenTimePool pool, int credit, DateTime now)
+    {
+        if (credit <= 0)
+        {
+            return;
+        }
+
+        entries.Add(new ScreenTimeEntry
+        {
+            ChildProfileId = childProfileId,
+            WeekStartDate = nextWeekStart,
+            Pool = pool,
+            Kind = ScreenTimeEntryKind.EarnBack,
+            ChoreDefinitionId = null,
+            Minutes = credit, // positive restores budget
+            StreakMultiplier = null,
+            Note = "Late repair credit",
+            CreatedAt = now
+        });
+    }
+
+    /// <summary>Converts a UTC timestamp to the family-local calendar date (for on-time vs late).</summary>
+    private DateOnly ToLocalDate(DateTime utcTime)
+    {
+        var tz = ResolveTimeZone(_dateProvider.TimeZoneId);
+        var asUtc = DateTime.SpecifyKind(utcTime, DateTimeKind.Utc);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(asUtc, tz));
+    }
+
+    private static TimeZoneInfo ResolveTimeZone(string timeZoneId)
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        }
+        catch
+        {
+            return TimeZoneInfo.Utc;
+        }
     }
 
     public async Task<DateOnly?> GetLastReconciliationDateAsync()
@@ -600,7 +605,6 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
 
     public async Task<DateOnly> GetWeekEndToReconcileAsync()
     {
-        // The most recently COMPLETED week ends the day before the current week starts.
         var currentWeekStart = await _familySettingsService.GetWeekStartForDateAsync(_dateProvider.Today);
         return currentWeekStart.AddDays(-1);
     }
@@ -609,8 +613,6 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
     {
         var weekEndToReconcile = await GetWeekEndToReconcileAsync();
         var lastReconciliation = await GetLastReconciliationDateAsync();
-
-        // Needed until we have reconciled the most recently completed week.
         return lastReconciliation == null || lastReconciliation < weekEndToReconcile;
     }
 

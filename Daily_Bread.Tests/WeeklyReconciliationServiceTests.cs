@@ -10,9 +10,10 @@ using Xunit;
 namespace Daily_Bread.Tests;
 
 /// <summary>
-/// Guards the rewritten screen-time side of weekly reconciliation (MECHANICS_AMENDMENT.md §A/§B/§D):
-/// the simplified compounding curve, miss-counting derived from the schedule, importance-share
-/// pricing clamped per pool, streak escalation/reset, redemption earn-back (capped), and idempotency.
+/// Guards the screen-time side of weekly reconciliation under MECHANICS_AMENDMENT_II.md: bounded
+/// per-occurrence prices (Importance × 6), miss-counting from the schedule, the per-pool cap, NO streak
+/// multiplier, proportional half-credit late repair, and idempotency. The pure per-pool math lives in
+/// <see cref="ReconciliationMathTests"/>; these tests exercise it end-to-end over seeded weeks.
 /// </summary>
 public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
 {
@@ -48,7 +49,7 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
             User = child,
             DisplayName = "Kid",
             WeekdayScreenTimeHours = 40m,   // weekday budget = 40 × 30% × 60 = 720
-            WeekendScreenTimeHours = 20m,   // weekend budget = 20 × 50% × 60 = 600
+            WeekendScreenTimeHours = 20m,   // weekend budget = 20 × 50% × 60 = 600 (explicit below)
             WeekdayAtRiskPercent = 30,
             WeekendAtRiskPercent = 50
         };
@@ -61,47 +62,31 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
     public async Task DisposeAsync() => await _connection.DisposeAsync();
 
     // ============================================================
-    // Compounding curve
-    // ============================================================
-
-    [Fact]
-    public void CompoundingMultiplier_Follows_The_Simplified_Curve_And_Freezes_At_Three()
-    {
-        Assert.Equal(1.0m, WeeklyReconciliationService.CompoundingMultiplier(0));
-        Assert.Equal(1.0m, WeeklyReconciliationService.CompoundingMultiplier(1));
-        Assert.Equal(1.5m, WeeklyReconciliationService.CompoundingMultiplier(2));
-        Assert.Equal(2.0m, WeeklyReconciliationService.CompoundingMultiplier(3));
-        Assert.Equal(3.0m, WeeklyReconciliationService.CompoundingMultiplier(4));
-        Assert.Equal(3.0m, WeeklyReconciliationService.CompoundingMultiplier(9)); // frozen
-    }
-
-    // ============================================================
     // Miss counting from schedule
     // ============================================================
 
     [Fact]
-    public async Task SpecificDays_Chore_Counts_Uncredited_Scheduled_Days_As_Misses_Skipped_Is_Credited()
+    public async Task SpecificDays_Chore_Counts_Uncredited_Days_As_Misses_Help_And_Skipped_Protect()
     {
-        // Mon–Fri chore. Approved Mon/Tue, Skipped Wed (credited), no logs Thu/Fri → 2 misses.
+        // Mon–Fri chore. Approved Mon/Tue (on time), Skipped Wed (excused), no logs Thu/Fri → 2 misses.
         var chore = MakeChore("Trash", ChoreScheduleType.SpecificDays, importance: 2,
             activeDays: DaysOfWeek.Weekdays);
         await SeedChoresAsync(chore);
 
         await AddLogAsync(chore.Id, WeekAStart, ChoreStatus.Approved);            // Mon
         await AddLogAsync(chore.Id, WeekAStart.AddDays(1), ChoreStatus.Approved); // Tue
-        await AddLogAsync(chore.Id, WeekAStart.AddDays(2), ChoreStatus.Skipped);  // Wed (credited)
-        // Thu, Fri: no logs → misses.
+        await AddLogAsync(chore.Id, WeekAStart.AddDays(2), ChoreStatus.Skipped);  // Wed (excused)
 
         var result = await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
 
         var reduction = Assert.Single(result.ScreenTimeReductions);
         Assert.Equal(2, reduction.MissedOccurrences);
+        Assert.Equal(0, reduction.RepairedOccurrences);
     }
 
     [Fact]
     public async Task WeeklyFrequency_Chore_Misses_Are_Target_Minus_Credited_Reps()
     {
-        // Target 3, one credited rep → 2 misses.
         var chore = MakeChore("Walk Gemma", ChoreScheduleType.WeeklyFrequency, importance: 1,
             activeDays: DaysOfWeek.All, weeklyTargetCount: 3);
         await SeedChoresAsync(chore);
@@ -115,74 +100,62 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
     }
 
     // ============================================================
-    // Pricing integration + per-pool clamp
+    // Bounded pricing + pool sum
     // ============================================================
 
     [Fact]
-    public async Task Missing_Everything_On_Weekdays_Loses_Exactly_The_Pool_Budget()
+    public async Task Missing_Everything_Sums_The_Fixed_Prices_Under_The_Cap()
     {
-        // Same shape as the pricing test: Σ weekday instance-importance = 16, budget = 720.
         var choreA = MakeChore("A", ChoreScheduleType.SpecificDays, importance: 2,
-            activeDays: DaysOfWeek.Monday | DaysOfWeek.Wednesday | DaysOfWeek.Friday); // 3 inst
+            activeDays: DaysOfWeek.Monday | DaysOfWeek.Wednesday | DaysOfWeek.Friday); // 3 × 12 = 36
         var choreB = MakeChore("B", ChoreScheduleType.SpecificDays, importance: 3,
-            activeDays: DaysOfWeek.Tuesday | DaysOfWeek.Thursday);                     // 2 inst
+            activeDays: DaysOfWeek.Tuesday | DaysOfWeek.Thursday);                     // 2 × 18 = 36
         var choreC = MakeChore("C", ChoreScheduleType.WeeklyFrequency, importance: 1,
-            activeDays: DaysOfWeek.All, weeklyTargetCount: 4);                          // 4 inst
+            activeDays: DaysOfWeek.All, weeklyTargetCount: 4);                          // 4 × 6  = 24
         await SeedChoresAsync(choreA, choreB, choreC);
-        // No logs at all → every instance missed.
 
         var result = await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
 
-        Assert.Equal(720, result.WeekdayMinutesLost);   // exactly the budget
+        Assert.Equal(96, result.WeekdayMinutesLost);   // 36 + 36 + 24, under the 720 cap
         Assert.Equal(0, result.WeekendMinutesLost);
 
         var budget = await GetBudgetAsync(WeekBStart);
         Assert.NotNull(budget);
-        Assert.Equal(720, budget!.WeekdayMinutesLost);
-        Assert.True(budget.WeekdayMinutesLost <= 720);
+        Assert.Equal(96, budget!.WeekdayMinutesLost);
     }
 
     // ============================================================
-    // Streak escalation + reset
+    // No streak escalation (amendment II rule 3)
     // ============================================================
 
     [Fact]
-    public async Task Consecutive_Miss_Weeks_Escalate_Per_Curve_And_Pool_Clamp_Binds()
+    public async Task Repeated_Miss_Weeks_Do_Not_Escalate_The_Loss()
     {
-        // Lone weekday chore: 5 instances, importance 2 → per-instance = 2/10 × 720 = 144.
+        // Lone weekday chore: 5 instances, importance 2 → price 12 each → raw 60, under the cap.
         var chore = MakeChore("Dishes", ChoreScheduleType.SpecificDays, importance: 2,
             activeDays: DaysOfWeek.Weekdays);
         await SeedChoresAsync(chore);
 
-        // Week A: all 5 missed (no logs) → streak 1, ×1.0, raw 720, applied 720.
         var weekA = await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
-        Assert.Equal(720, weekA.WeekdayMinutesLost);
-        Assert.Equal(1, (await GetStateAsync(chore.Id))!.ConsecutiveMissWeeks);
-
-        // Week B: all 5 missed again → streak 2, ×1.5, raw 1080, clamped to 720.
         var weekB = await CreateService().ReconcileChildWeekAsync(ChildId, WeekBEnd);
-        Assert.Equal(720, weekB.WeekdayMinutesLost); // clamp binds (1080 → 720)
-        Assert.Equal(2, (await GetStateAsync(chore.Id))!.ConsecutiveMissWeeks);
 
-        // The Deduction entry (written for week B's upcoming week) records the raw pre-clamp loss
-        // and the ×1.5 multiplier.
+        Assert.Equal(60, weekA.WeekdayMinutesLost);
+        Assert.Equal(60, weekB.WeekdayMinutesLost); // identical — no multiplier
+
         var deduction = await GetSingleEntryAsync(WeekBEnd.AddDays(1), ScreenTimeEntryKind.Deduction);
-        Assert.Equal(1.5m, deduction.StreakMultiplier);
-        Assert.Equal(-1080, deduction.Minutes);
+        Assert.Null(deduction.StreakMultiplier);
+        Assert.Equal(-60, deduction.Minutes);
     }
 
     [Fact]
-    public async Task A_Clean_Week_Resets_The_Streak_And_Loss_To_Zero()
+    public async Task A_Clean_Week_Resets_The_Loss_To_Zero()
     {
         var chore = MakeChore("Dishes", ChoreScheduleType.SpecificDays, importance: 2,
             activeDays: DaysOfWeek.Weekdays);
         await SeedChoresAsync(chore);
 
-        // Week A: all missed → streak 1.
         await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
-        Assert.Equal(1, (await GetStateAsync(chore.Id))!.ConsecutiveMissWeeks);
 
-        // Week B: all 5 days approved → 0 misses → streak reset, no loss.
         for (var i = 0; i < 5; i++)
         {
             await AddLogAsync(chore.Id, WeekBStart.AddDays(i), ChoreStatus.Approved);
@@ -190,80 +163,55 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
         var weekB = await CreateService().ReconcileChildWeekAsync(ChildId, WeekBEnd);
 
         Assert.Equal(0, weekB.WeekdayMinutesLost);
-        Assert.Equal(0, (await GetStateAsync(chore.Id))!.ConsecutiveMissWeeks);
     }
 
     // ============================================================
-    // Redemption earn-back
+    // Late repair (amendment II rules 7–8)
     // ============================================================
 
     [Fact]
-    public async Task Busted_Week_Credited_Rep_Earns_Half_Its_Price_Back_When_Not_Money()
+    public async Task Late_Completion_Restores_Half_The_Loss_Uncapped()
     {
-        // Target 3, importance 1, lone chore → per-instance = 1/3 × 720 = 240.
-        var chore = MakeChore("Walk Gemma", ChoreScheduleType.WeeklyFrequency, importance: 1,
-            activeDays: DaysOfWeek.All, weeklyTargetCount: 3);
+        // Importance 5 chore Mon/Tue → price 30 each. Mon missed; Tue completed late (Wed).
+        // misses 2 (raw 60), repaired 1 (30) → credit 60·0.5·(30/60) = 15 → final 45.
+        var chore = MakeChore("Yard", ChoreScheduleType.SpecificDays, importance: 5,
+            activeDays: DaysOfWeek.Monday | DaysOfWeek.Tuesday);
         await SeedChoresAsync(chore);
 
-        // 1 credited rep (busted), choice = ScreenTime → misses 2 (raw 480), earn-back 120.
+        // Tuesday's chore done a day late.
         await AddLogAsync(chore.Id, WeekAStart.AddDays(1), ChoreStatus.Approved,
-            allowsMultiple: true, redemption: RedemptionChoice.ScreenTime);
+            completedAt: new DateTime(2026, 7, 8, 12, 0, 0, DateTimeKind.Utc));
 
         var result = await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
 
-        // Applied loss 480 − earn-back 120 = 360 net.
-        Assert.Equal(360, result.WeekdayMinutesLost);
+        Assert.Equal(45, result.WeekdayMinutesLost);
+
+        var reduction = Assert.Single(result.ScreenTimeReductions);
+        Assert.Equal(2, reduction.MissedOccurrences);
+        Assert.Equal(1, reduction.RepairedOccurrences);
 
         var earnBack = await GetSingleEntryAsync(WeekBStart, ScreenTimeEntryKind.EarnBack);
-        Assert.Equal(120, earnBack.Minutes);
+        Assert.Equal(15, earnBack.Minutes);
         Assert.Equal(ScreenTimePool.Weekday, earnBack.Pool);
     }
 
     [Fact]
-    public async Task A_Money_Rep_Earns_No_Screen_Time_Back()
+    public async Task On_Time_Completion_Is_Not_A_Miss_And_Earns_No_Repair()
     {
-        var chore = MakeChore("Walk Gemma", ChoreScheduleType.WeeklyFrequency, importance: 1,
-            activeDays: DaysOfWeek.All, weeklyTargetCount: 3);
+        var chore = MakeChore("Yard", ChoreScheduleType.SpecificDays, importance: 5,
+            activeDays: DaysOfWeek.Monday | DaysOfWeek.Tuesday);
         await SeedChoresAsync(chore);
 
-        await AddLogAsync(chore.Id, WeekAStart.AddDays(1), ChoreStatus.Approved,
-            allowsMultiple: true, redemption: RedemptionChoice.Money);
+        // Both done on their own day → no misses at all.
+        await AddLogAsync(chore.Id, WeekAStart, ChoreStatus.Completed,
+            completedAt: new DateTime(2026, 7, 6, 18, 0, 0, DateTimeKind.Utc));
+        await AddLogAsync(chore.Id, WeekAStart.AddDays(1), ChoreStatus.Completed,
+            completedAt: new DateTime(2026, 7, 7, 18, 0, 0, DateTimeKind.Utc));
 
         var result = await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
 
-        Assert.Equal(480, result.WeekdayMinutesLost); // full loss, no earn-back
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        Assert.False(await context.ScreenTimeEntries
-            .AnyAsync(e => e.WeekStartDate == WeekBStart && e.Kind == ScreenTimeEntryKind.EarnBack));
-    }
-
-    [Fact]
-    public async Task Redemption_EarnBack_Is_Capped_At_The_Applied_Loss()
-    {
-        // Loss chore L (Mon only, imp 1) and made-target chore R (target 1, imp 1) → per-instance 360.
-        var choreL = MakeChore("L", ChoreScheduleType.SpecificDays, importance: 1,
-            activeDays: DaysOfWeek.Monday);                                   // 1 weekday inst
-        var choreR = MakeChore("R", ChoreScheduleType.WeeklyFrequency, importance: 1,
-            activeDays: DaysOfWeek.All, weeklyTargetCount: 1);               // 1 weekday inst
-        await SeedChoresAsync(choreL, choreR);
-        // Σ weekday importance = 2 → per-instance = 1/2 × 720 = 360.
-
-        // L missed (Mon, no log) → applied loss 360.
-        // R: 4 credited reps, target 1 → 3 over-target, all ScreenTime → raw earn-back 3 × 180 = 540.
-        for (var i = 0; i < 4; i++)
-        {
-            await AddLogAsync(choreR.Id, WeekAStart.AddDays(i), ChoreStatus.Approved,
-                allowsMultiple: true, redemption: RedemptionChoice.ScreenTime);
-        }
-
-        var result = await CreateService().ReconcileChildWeekAsync(ChildId, WeekAEnd);
-
-        // Earn-back (540) capped at applied loss (360) → net 0. Never mints surplus.
         Assert.Equal(0, result.WeekdayMinutesLost);
-
-        // The raw EarnBack line item still records the full 540 (snapshot holds the capped net).
-        var earnBack = await GetSingleEntryAsync(WeekBStart, ScreenTimeEntryKind.EarnBack);
-        Assert.Equal(540, earnBack.Minutes);
+        Assert.Empty(result.ScreenTimeReductions);
     }
 
     // ============================================================
@@ -283,10 +231,6 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
         Assert.Equal(first.WeekdayMinutesLost, second.WeekdayMinutesLost);
 
         await using var context = await _contextFactory.CreateDbContextAsync();
-        // Streak advanced exactly once.
-        var state = await context.ChoreScreenTimeStates.SingleAsync(s => s.ChoreDefinitionId == chore.Id);
-        Assert.Equal(1, state.ConsecutiveMissWeeks);
-        // Exactly one snapshot and one Deduction entry for the upcoming week.
         Assert.Equal(1, await context.ChildWeeklyScreenTimeBudgets.CountAsync(b => b.WeekStartDate == WeekBStart));
         Assert.Equal(1, await context.ScreenTimeEntries
             .CountAsync(e => e.WeekStartDate == WeekBStart && e.Kind == ScreenTimeEntryKind.Deduction));
@@ -321,7 +265,7 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
 
     private async Task AddLogAsync(
         int choreId, DateOnly date, ChoreStatus status,
-        bool allowsMultiple = false, RedemptionChoice redemption = RedemptionChoice.None)
+        bool allowsMultiple = false, DateTime? completedAt = null)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         context.ChoreLogs.Add(new ChoreLog
@@ -330,7 +274,7 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
             Date = date,
             Status = status,
             AllowsMultiplePerDay = allowsMultiple,
-            RedemptionChoice = redemption
+            CompletedAt = completedAt
         });
         await context.SaveChangesAsync();
     }
@@ -340,13 +284,6 @@ public sealed class WeeklyReconciliationServiceTests : IAsyncLifetime
         await using var context = await _contextFactory.CreateDbContextAsync();
         return await context.ChildWeeklyScreenTimeBudgets
             .FirstOrDefaultAsync(b => b.ChildProfileId == _childProfileId && b.WeekStartDate == weekStart);
-    }
-
-    private async Task<ChoreScreenTimeState?> GetStateAsync(int choreId)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.ChoreScreenTimeStates
-            .FirstOrDefaultAsync(s => s.ChoreDefinitionId == choreId && s.ChildProfileId == _childProfileId);
     }
 
     private async Task<ScreenTimeEntry> GetSingleEntryAsync(DateOnly weekStart, ScreenTimeEntryKind kind)
