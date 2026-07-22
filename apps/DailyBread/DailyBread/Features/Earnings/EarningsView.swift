@@ -70,9 +70,17 @@ struct EarningsView: View {
                 }
             }
 
-            if session.features.enableGoals, let goal = store.primaryGoal {
-                Section {
-                    goalCard(goal)
+            if session.features.enableGoals {
+                Section("Goals") {
+                    if let goal = store.primaryGoal {
+                        goalCard(goal)
+                    }
+                    NavigationLink {
+                        GoalsView()
+                    } label: {
+                        Label(store.goals.isEmpty ? "Set a savings goal" : "Manage goals",
+                              systemImage: "target")
+                    }
                 }
             }
 

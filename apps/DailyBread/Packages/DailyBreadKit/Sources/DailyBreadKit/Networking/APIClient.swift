@@ -284,6 +284,21 @@ public actor APIClient {
         return try? await send(Goal.self, path: "api/v1/goals", method: "POST", body: body)
     }
 
+    /// Edit a goal in place. The target user rides in the GoalWrite body.
+    public func updateGoal(id: Int, _ goal: GoalWrite) async throws {
+        let body = try encodeBody(goal)
+        try await sendVoid(path: "api/v1/goals/\(id)", method: "PUT", body: body)
+    }
+
+    /// Make one goal the primary (the one shown front-and-centre on Earnings/Home).
+    public func setPrimaryGoal(id: Int, userId: String? = nil) async throws {
+        try await sendVoid(path: path("api/v1/goals/\(id)/primary", [("userId", userId)]), method: "POST")
+    }
+
+    public func deleteGoal(id: Int, userId: String? = nil) async throws {
+        try await sendVoid(path: path("api/v1/goals/\(id)", [("userId", userId)]), method: "DELETE")
+    }
+
     public func calendarRange(from: DayDate, to: DayDate, userId: String? = nil) async throws -> CalendarRange {
         try await send(CalendarRange.self, path: path("api/v1/calendar/range", [
             ("from", from.wireString), ("to", to.wireString), ("userId", userId)]))
