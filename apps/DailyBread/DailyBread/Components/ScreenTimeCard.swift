@@ -24,6 +24,7 @@ struct ScreenTimeCard: View {
     @Environment(\.colorScheme) private var scheme
     @State private var store = ScreenTimeStore()
     @State private var showHistory = false
+    @State private var showSettings = false
 
     var body: some View {
         if let summary = store.summary {
@@ -47,6 +48,18 @@ struct ScreenTimeCard: View {
                             .foregroundStyle(Color.accentColor)
                         }
                         .buttonStyle(.plain)
+                    }
+                    if session.currentUser?.isParent == true, userId != nil {
+                        Button {
+                            Haptics.tick()
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Adjust screen time settings")
                     }
                 }
 
@@ -81,6 +94,13 @@ struct ScreenTimeCard: View {
             .sheet(isPresented: $showHistory) {
                 ScreenTimeHistorySheet(entries: summary.recentEntries)
             }
+            .sheet(isPresented: $showSettings) {
+                ScreenTimeSettingsSheet(
+                    childUserId: userId ?? "",
+                    childName: childName,
+                    summary: summary,
+                    onSaved: { store.summary = $0 })
+            }
             .task(id: userId) { await store.load(session, userId: userId) }
         } else {
             // Load invisibly; the card only appears once there's a meter to show.
@@ -88,6 +108,11 @@ struct ScreenTimeCard: View {
                 .frame(height: 0)
                 .task(id: userId) { await store.load(session, userId: userId) }
         }
+    }
+
+    /// The name of the child this meter belongs to, for the settings sheet.
+    private var childName: String {
+        session.children.first { $0.userId == userId }?.userName.capitalized ?? "This kid"
     }
 
     private func pool(_ p: ScreenTimePool, name: String, tag: String) -> some View {

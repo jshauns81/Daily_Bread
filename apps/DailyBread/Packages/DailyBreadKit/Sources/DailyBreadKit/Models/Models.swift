@@ -469,6 +469,9 @@ public struct ScreenTimeSummary: Codable, Sendable {
     public var weekendPool: ScreenTimePool
     public var chorePrices: [ScreenTimeChorePrice]
     public var recentEntries: [ScreenTimeEntry]
+    /// Current tunables, echoed back so the settings panel prefills from real values.
+    public var weeklyRoutinePayout: Money
+    public var minutesPerImportancePoint: Int
 }
 
 public enum ScreenTimeFormat {
@@ -516,19 +519,25 @@ public struct ScreenTimeSettingsUpdate: Codable, Sendable {
     public var weeklyRoutinePayout: Money
     public var weekdayAtRiskPercent: Int
     public var weekendAtRiskPercent: Int
+    /// How many screen-time minutes one importance point is worth (the
+    /// "Consequences" dial). Sent every time; the server keeps its value when
+    /// omitted, so we always send it explicitly from the panel.
+    public var minutesPerImportancePoint: Int
 
     public init(userId: String,
                 weekdayHours: Double,
                 weekendHours: Double,
                 weeklyRoutinePayout: Money,
                 weekdayAtRiskPercent: Int,
-                weekendAtRiskPercent: Int) {
+                weekendAtRiskPercent: Int,
+                minutesPerImportancePoint: Int) {
         self.userId = userId
         self.weekdayHours = weekdayHours
         self.weekendHours = weekendHours
         self.weeklyRoutinePayout = weeklyRoutinePayout
         self.weekdayAtRiskPercent = weekdayAtRiskPercent
         self.weekendAtRiskPercent = weekendAtRiskPercent
+        self.minutesPerImportancePoint = minutesPerImportancePoint
     }
 }
 
