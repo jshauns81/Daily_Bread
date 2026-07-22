@@ -16,6 +16,20 @@
 ---
 
 
+## Single-child mode (first-class UI invariant)
+
+When a family has exactly one child, the app presents entirely in the SINGULAR and by name: no plural
+copy ("children" / "kids" / "all children"), no "All Children" filters, no child pickers / switchers /
+grids, no "which child" prompts, no steady-state "add another child" affordance. Plural, multi-child UI
+appears ONLY when there is genuinely more than one child.
+
+IMPLEMENTATION RULE (do not repeat the old app's mistake): never remove multi-child capability from the
+data/service layer — keep it fully multi-capable so nothing breaks. Adapt only the presentation, driven
+by ONE source of truth (child count). Build every screen singular-first and render plural affordances
+behind a `count > 1` check. Applies to Home, Approvals, Planner, Calendar, Activity, History, Settings,
+and any admin/user surface. This is a required invariant, not a preference.
+
+
 ## Victor's experience — the KID side is a first-class parity target (Shaun, 2026-07-20)
 
 "I don't want to forget a key piece which is my son's experience." This ties directly to the
