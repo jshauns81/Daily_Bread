@@ -1,44 +1,10 @@
 import SwiftUI
 import DailyBreadKit
 
-/// The parent's list of kids for screen-time tuning, from the dashboard.
-/// Only children with a userId can be tuned (the PUT needs an explicit id).
-@MainActor
-@Observable
-final class ScreenTimeChildrenStore {
-    var children: [ChildProgress] = []
-    var loadingChildId: String?
-
-    func load(_ session: SessionStore) async {
-        let dashboard = try? await session.client.parentDashboard()
-        // Server order — never re-sort.
-        children = (dashboard?.childrenProgress ?? []).filter { $0.userId != nil }
-    }
-
-    /// Fetch the child's current summary before opening the sheet.
-    /// Fails quietly (the row just settles back) — no alerts.
-    func fetchSummary(_ session: SessionStore, childId: String) async -> ScreenTimeSummary? {
-        loadingChildId = childId
-        defer { loadingChildId = nil }
-        return try? await session.client.screenTime(userId: childId)
-    }
-}
-
-/// Sheet payload: the child plus their freshly fetched summary.
-private struct ScreenTimeSheetTarget: Identifiable {
-    let userId: String
-    let name: String
-    let summary: ScreenTimeSummary
-
-    var id: String { userId }
-}
-
 struct SettingsView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
     @AppStorage("db.theme") private var themeRaw = DBTheme.guadalupe.rawValue
-    @State private var screenTimeStore = ScreenTimeChildrenStore()
-    @State private var screenTimeTarget: ScreenTimeSheetTarget?
 
     var body: some View {
         List {
@@ -91,25 +57,13 @@ struct SettingsView: View {
 
             if session.currentUser?.isParent == true {
                 Section {
-                    featureToggle("Savings goals", "Show goals to the kids", \.enableGoals)
+                    featureToggle("Savings goals", goalsSubtitle, \.enableGoals)
                     featureToggle("Confetti", "Celebrate completed days", \.enableConfetti)
                     featureToggle("Streaks", "Show streak counters", \.enableStreaks)
                 } header: {
                     Text("Family features")
                 } footer: {
-                    Text("These apply to the whole family, on every device.")
-                }
-
-                if !screenTimeStore.children.isEmpty {
-                    Section {
-                        ForEach(screenTimeStore.children) { child in
-                            screenTimeRow(child)
-                        }
-                    } header: {
-                        Text("Screen time")
-                    } footer: {
-                        Text("Tune each kid's weekly allowance and how much is at stake.")
-                    }
+                    Text("These apply on every device.")
                 }
             }
 
@@ -130,55 +84,15 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .graphiteBackground()
-        .task {
-            await session.refreshFeatures()
-            if session.currentUser?.isParent == true {
-                await screenTimeStore.load(session)
-            }
-        }
-        .sheet(item: $screenTimeTarget) { target in
-            ScreenTimeSettingsSheet(
-                childUserId: target.userId,
-                childName: target.name,
-                summary: target.summary
-            ) { _ in
-                // Settings has nothing on screen to refresh; the Today and
-                // screen-time cards pick up the change on their next load.
-            }
-        }
+        .task { await session.refreshFeatures() }
     }
 
-    /// One child row: name + chevron; tap fetches their current summary
-    /// (inline spinner) then presents the tuning sheet.
-    private func screenTimeRow(_ child: ChildProgress) -> some View {
-        Button {
-            guard let childId = child.userId,
-                  screenTimeStore.loadingChildId == nil else { return }
-            Haptics.tick()
-            Task {
-                if let summary = await screenTimeStore.fetchSummary(session, childId: childId) {
-                    screenTimeTarget = ScreenTimeSheetTarget(
-                        userId: childId,
-                        name: child.displayName,
-                        summary: summary)
-                }
-            }
-        } label: {
-            HStack {
-                Text(child.displayName)
-                    .foregroundStyle(.primary)
-                Spacer()
-                if screenTimeStore.loadingChildId == child.userId {
-                    ProgressView()
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .contentShape(Rectangle())
+    /// Single-child mode: name the one child instead of saying "the kids".
+    private var goalsSubtitle: String {
+        if let name = session.onlyChild?.userName {
+            return "Show goals to \(name.capitalized)"
         }
-        .buttonStyle(.plain)
+        return "Show savings goals"
     }
 
     /// A family-feature switch: flips locally, saves to the server, reverts

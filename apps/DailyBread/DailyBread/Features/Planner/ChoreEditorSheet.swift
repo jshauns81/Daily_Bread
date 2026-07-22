@@ -53,7 +53,9 @@ struct ChoreEditorSheet: View {
         _name = State(initialValue: chore?.name ?? "")
         _icon = State(initialValue: chore?.icon ?? "")
         _details = State(initialValue: chore?.description ?? "")
-        _assignedUserId = State(initialValue: chore?.assignedUserId ?? "")
+        // Single-child family: a new chore is simply theirs (the picker is hidden).
+        _assignedUserId = State(initialValue: chore?.assignedUserId
+            ?? (children.count == 1 ? (children.first?.userId ?? "") : ""))
         _isTaskKind = State(initialValue: chore.map { $0.kind == "Task" } ?? true)
         _earnText = State(initialValue: {
             if let chore, chore.kind == "Task" { return chore.earnValue.wireString }
@@ -214,7 +216,9 @@ struct ChoreEditorSheet: View {
 
     @ViewBuilder
     private var whoCard: some View {
-        if !children.isEmpty {
+        // Only ask "who's it for" when there is genuinely more than one child. In a
+        // single-child family the chore is simply theirs (assigned in init). Single-child mode.
+        if children.count > 1 {
             SheetCard(title: "Who's it for") {
                 Picker("For", selection: $assignedUserId) {
                     Text("Anyone").tag("")

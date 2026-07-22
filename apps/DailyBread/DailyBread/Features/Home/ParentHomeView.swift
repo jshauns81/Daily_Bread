@@ -68,7 +68,7 @@ struct ParentHomeView: View {
                     weekStrip(dash)
 
                     if !dash.childrenBalances.isEmpty {
-                        sectionHeader("Balances")
+                        sectionHeader(dash.childrenBalances.count == 1 ? "Balance" : "Balances")
                         balancesCard(dash)
                     }
 

@@ -174,9 +174,12 @@ struct ApprovalsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.choreName)
                     .font(.body.weight(.medium))
-                Text(item.childName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                // Whose chore it is only matters when there's more than one child (single-child mode).
+                if session.children.count > 1 {
+                    Text(item.childName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             Text(item.earnValue.display)

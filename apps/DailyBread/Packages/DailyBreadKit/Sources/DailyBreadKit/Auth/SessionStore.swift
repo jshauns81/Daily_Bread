@@ -26,6 +26,29 @@ public final class SessionStore {
         }
     }
 
+    /// The household's children — the single source of truth for single-child mode.
+    /// Fetched for parents on sign-in/foreground. When there is exactly one child the
+    /// whole app presents in the SINGULAR, by name: no child pickers, filters, switchers,
+    /// or "which child" affordances anywhere. (See the single-child-mode invariant.)
+    public var children: [AssignableChild] = []
+
+    /// True when the family has exactly one child — drives singular presentation everywhere.
+    public var isSingleChild: Bool { children.count == 1 }
+
+    /// The one child, when this is a single-child family (nil otherwise).
+    public var onlyChild: AssignableChild? { children.count == 1 ? children.first : nil }
+
+    /// Refreshes the children roster. Parents only; a child's own session keeps it empty.
+    public func refreshChildren() async {
+        guard currentUser?.isParent == true else {
+            children = []
+            return
+        }
+        if let roster = try? await client.assignableChildren() {
+            children = roster.children
+        }
+    }
+
     private enum Keys {
         static let serverURL = "db.serverURL"     // UserDefaults (not secret)
         static let access = "accessToken"          // Keychain
@@ -66,10 +89,12 @@ public final class SessionStore {
             // or sign out via the callbacks.
             state = .signedIn(user)
             await refreshFeatures()
+            await refreshChildren()
         } else if let user = try? await client.me() {
             persistUser(user)
             state = .signedIn(user)
             await refreshFeatures()
+            await refreshChildren()
         } else {
             state = .needsLogin
         }
@@ -87,6 +112,7 @@ public final class SessionStore {
         persist(tokens)
         state = .signedIn(tokens.user)
         await refreshFeatures()
+        await refreshChildren()
     }
 
     public func signOut() async {

@@ -162,7 +162,8 @@ struct PlannerView: View {
 
     var body: some View {
         List {
-            if !store.children.isEmpty && !store.chores.isEmpty {
+            // Single-child families never see a "which child" filter (single-child mode).
+            if store.children.count > 1 && !store.chores.isEmpty {
                 Section {
                     childFilter
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
@@ -284,7 +285,8 @@ struct PlannerView: View {
                 withAnimation(.snappy) { confirmingDeleteId = nil }
             }
         } else {
-            PlannerChoreRow(chore: chore, showAssignee: store.selectedChildId == nil) {
+            PlannerChoreRow(chore: chore,
+                            showAssignee: store.children.count > 1 && store.selectedChildId == nil) {
                 editorTarget = ChoreEditorTarget(chore: chore)
             }
             .swipeActions(edge: .leading, allowsFullSwipe: false) {
