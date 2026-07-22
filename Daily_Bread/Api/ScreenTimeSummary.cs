@@ -19,7 +19,9 @@ public static class ScreenTimeSummary
         WeekPricing pricing,
         ChildWeeklyScreenTimeBudget? snapshot,
         IReadOnlyDictionary<int, string> choreNames,
-        IReadOnlyList<ScreenTimeEntryDto> recentEntries)
+        IReadOnlyList<ScreenTimeEntryDto> recentEntries,
+        decimal weeklyRoutinePayout,
+        int minutesPerImportancePoint)
     {
         // Base pool: this week's frozen snapshot if reconciliation wrote one,
         // else the live profile settings.
@@ -67,7 +69,8 @@ public static class ScreenTimeSummary
             .ToList();
 
         return new ScreenTimeResponse(
-            userId, weekStart, weekEnd, weekday, weekend, prices, recentEntries);
+            userId, weekStart, weekEnd, weekday, weekend, prices, recentEntries,
+            weeklyRoutinePayout, minutesPerImportancePoint);
     }
 
     public static int HoursToMinutes(decimal hours) =>

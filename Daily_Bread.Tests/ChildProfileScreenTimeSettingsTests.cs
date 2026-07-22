@@ -50,7 +50,7 @@ public sealed class ChildProfileScreenTimeSettingsTests : IAsyncLifetime
 
         var result = await service.UpdateScreenTimeSettingsAsync(
             _profileId, weekdayHours: 35m, weekendHours: 18m, weeklyRoutinePayout: 12.50m,
-            weekdayAtRiskPercent: 25, weekendAtRiskPercent: 40);
+            weekdayAtRiskPercent: 25, weekendAtRiskPercent: 40, minutesPerImportancePoint: 8);
 
         Assert.True(result.Success);
 
@@ -61,6 +61,7 @@ public sealed class ChildProfileScreenTimeSettingsTests : IAsyncLifetime
         Assert.Equal(12.50m, profile.WeeklyRoutinePayout);
         Assert.Equal(25, profile.WeekdayAtRiskPercent);
         Assert.Equal(40, profile.WeekendAtRiskPercent);
+        Assert.Equal(8, profile.MinutesPerImportancePoint);
     }
 
     [Fact]
@@ -70,7 +71,7 @@ public sealed class ChildProfileScreenTimeSettingsTests : IAsyncLifetime
 
         var result = await service.UpdateScreenTimeSettingsAsync(
             _profileId, weekdayHours: 40m, weekendHours: 20m, weeklyRoutinePayout: 10m,
-            weekdayAtRiskPercent: 30, weekendAtRiskPercent: 150);
+            weekdayAtRiskPercent: 30, weekendAtRiskPercent: 150, minutesPerImportancePoint: 6);
 
         Assert.False(result.Success);
 
@@ -87,7 +88,7 @@ public sealed class ChildProfileScreenTimeSettingsTests : IAsyncLifetime
 
         var result = await service.UpdateScreenTimeSettingsAsync(
             _profileId, weekdayHours: -5m, weekendHours: 20m, weeklyRoutinePayout: 10m,
-            weekdayAtRiskPercent: 30, weekendAtRiskPercent: 50);
+            weekdayAtRiskPercent: 30, weekendAtRiskPercent: 50, minutesPerImportancePoint: 6);
 
         Assert.False(result.Success);
     }

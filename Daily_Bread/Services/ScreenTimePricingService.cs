@@ -46,24 +46,25 @@ public sealed record ChorePrice(
 /// </summary>
 public static class ScreenTimePricing
 {
-    /// <summary>Minutes of screen time each point of Importance puts at risk for one missed occurrence.</summary>
-    public const int MinutesPerImportancePoint = 6;
+    /// <summary>The default minutes each Importance point puts at risk for one missed occurrence.</summary>
+    public const int DefaultMinutesPerImportancePoint = 6;
 
-    /// <summary>The one-occurrence ceiling. Because Importance ≤ 10, this is a guardrail, not an active limit.</summary>
-    public const int MaxOccurrenceMinutes = 60;
+    /// <summary>Importance is bounded to this, so the per-occurrence ceiling is MaxImportance × rate.</summary>
+    public const int MaxImportance = 10;
 
     /// <summary>
-    /// The minutes lost for one missed occurrence: <c>clamp(Importance × 6, 0, 60)</c>. Importance 0
-    /// (or blank) means no screen-time impact.
+    /// The minutes lost for one missed occurrence: <c>min(Importance, 10) × minutesPerPoint</c>.
+    /// Importance 0 (or blank) means no screen-time impact. The rate is tunable per child
+    /// (ChildProfile.MinutesPerImportancePoint); the 10-point cap is the natural ceiling.
     /// </summary>
-    public static int PriceOccurrence(int importance)
+    public static int PriceOccurrence(int importance, int minutesPerPoint)
     {
-        if (importance <= 0)
+        if (importance <= 0 || minutesPerPoint <= 0)
         {
             return 0;
         }
 
-        return Math.Min(MaxOccurrenceMinutes, importance * MinutesPerImportancePoint);
+        return Math.Min(importance, MaxImportance) * minutesPerPoint;
     }
 }
 
@@ -142,7 +143,7 @@ public sealed class ScreenTimePricingService : IScreenTimePricingService
         var chorePrices = new Dictionary<int, ChorePrice>();
         foreach (var (choreId, tally) in instances)
         {
-            var perInstance = ScreenTimePricing.PriceOccurrence(tally.Importance);
+            var perInstance = ScreenTimePricing.PriceOccurrence(tally.Importance, childProfile.MinutesPerImportancePoint);
             chorePrices[choreId] = new ChorePrice(tally.Pool, tally.InstanceCount, perInstance);
         }
 

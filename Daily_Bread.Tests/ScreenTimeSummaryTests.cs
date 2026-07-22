@@ -28,7 +28,7 @@ public class ScreenTimeSummaryTests
         decimal weekendHours = 20m) =>
         ScreenTimeSummary.Build(
             "child-1", WeekStart, WeekEnd, weekdayHours, weekendHours,
-            pricing, snapshot, names ?? new Dictionary<int, string>(), []);
+            pricing, snapshot, names ?? new Dictionary<int, string>(), [], 10m, 6);
 
     [Fact]
     public void Without_A_Snapshot_Pools_Fall_Back_To_Live_Profile_Settings()

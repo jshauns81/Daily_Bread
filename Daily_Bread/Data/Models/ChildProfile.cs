@@ -82,6 +82,13 @@ public class ChildProfile
     public int WeekendAtRiskPercent { get; set; } = 20;
 
     /// <summary>
+    /// Minutes of screen time each point of Importance puts at risk for one missed occurrence
+    /// (MECHANICS_AMENDMENT_II.md rule 1; the "×6" made tunable). A missed occurrence costs
+    /// min(Importance,10) × this. Default 6, so a max-importance chore costs up to one hour.
+    /// </summary>
+    public int MinutesPerImportancePoint { get; set; } = 6;
+
+    /// <summary>
     /// Number of Time Machine (retro-correction) requests the child may make per week.
     /// Default: 3. The request flow that reads this is deferred; the column exists now to avoid a
     /// later migration. See MECHANICS_AMENDMENT.md §F.

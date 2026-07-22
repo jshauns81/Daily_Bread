@@ -275,7 +275,10 @@ public sealed record ScreenTimeResponse(
     ScreenTimePoolDto WeekdayPool,
     ScreenTimePoolDto WeekendPool,
     IReadOnlyList<ScreenTimeChorePriceDto> ChorePrices,
-    IReadOnlyList<ScreenTimeEntryDto> RecentEntries);
+    IReadOnlyList<ScreenTimeEntryDto> RecentEntries,
+    // Current tunables, so the settings panel prefills from real values.
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal WeeklyRoutinePayout,
+    int MinutesPerImportancePoint);
 
 /// <summary>
 /// One chore on the kid's "At Risk Today" card (MECHANICS_AMENDMENT.md §E).
@@ -316,7 +319,9 @@ public sealed record ScreenTimeSettingsRequest(
     decimal WeekendHours,
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal WeeklyRoutinePayout,
     int WeekdayAtRiskPercent,
-    int WeekendAtRiskPercent);
+    int WeekendAtRiskPercent,
+    // Optional so older clients that don't send it keep the current value.
+    int? MinutesPerImportancePoint);
 
 public sealed record DailyEarningDto(
     DateOnly Date,

@@ -174,7 +174,8 @@ public class ScreenTimeController : ControllerBase
             request.WeekendHours,
             request.WeeklyRoutinePayout,
             request.WeekdayAtRiskPercent,
-            request.WeekendAtRiskPercent);
+            request.WeekendAtRiskPercent,
+            request.MinutesPerImportancePoint ?? profile.MinutesPerImportancePoint);
 
         if (!result.Success)
         {
@@ -267,6 +268,8 @@ public class ScreenTimeController : ControllerBase
             pricing,
             snapshot,
             names,
-            entries);
+            entries,
+            profile.WeeklyRoutinePayout,
+            profile.MinutesPerImportancePoint);
     }
 }

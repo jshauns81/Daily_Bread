@@ -84,7 +84,8 @@ public interface IChildProfileService
         decimal weekendHours,
         decimal weeklyRoutinePayout,
         int weekdayAtRiskPercent,
-        int weekendAtRiskPercent);
+        int weekendAtRiskPercent,
+        int minutesPerImportancePoint);
 }
 
 public class ChildProfileService : IChildProfileService
@@ -316,7 +317,8 @@ public class ChildProfileService : IChildProfileService
         decimal weekendHours,
         decimal weeklyRoutinePayout,
         int weekdayAtRiskPercent,
-        int weekendAtRiskPercent)
+        int weekendAtRiskPercent,
+        int minutesPerImportancePoint)
     {
         if (weekdayHours < 0 || weekendHours < 0)
             return ServiceResult.Fail("Screen-time pool hours cannot be negative.");
@@ -327,6 +329,9 @@ public class ChildProfileService : IChildProfileService
         if (weekdayAtRiskPercent < 0 || weekdayAtRiskPercent > 100 ||
             weekendAtRiskPercent < 0 || weekendAtRiskPercent > 100)
             return ServiceResult.Fail("At-risk percents must be between 0 and 100.");
+
+        if (minutesPerImportancePoint < 1 || minutesPerImportancePoint > 30)
+            return ServiceResult.Fail("Minutes per importance point must be between 1 and 30.");
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -339,6 +344,7 @@ public class ChildProfileService : IChildProfileService
         profile.WeeklyRoutinePayout = weeklyRoutinePayout;
         profile.WeekdayAtRiskPercent = weekdayAtRiskPercent;
         profile.WeekendAtRiskPercent = weekendAtRiskPercent;
+        profile.MinutesPerImportancePoint = minutesPerImportancePoint;
         profile.ModifiedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();

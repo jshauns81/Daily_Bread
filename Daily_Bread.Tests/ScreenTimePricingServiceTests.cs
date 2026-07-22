@@ -64,27 +64,36 @@ public sealed class ScreenTimePricingServiceTests : IAsyncLifetime
     [Fact]
     public void PriceOccurrence_Is_Importance_Times_Six()
     {
-        Assert.Equal(0, ScreenTimePricing.PriceOccurrence(0));
-        Assert.Equal(6, ScreenTimePricing.PriceOccurrence(1));
-        Assert.Equal(12, ScreenTimePricing.PriceOccurrence(2));
-        Assert.Equal(18, ScreenTimePricing.PriceOccurrence(3));
-        Assert.Equal(30, ScreenTimePricing.PriceOccurrence(5));
-        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(10));
+        Assert.Equal(0, ScreenTimePricing.PriceOccurrence(0, 6));
+        Assert.Equal(6, ScreenTimePricing.PriceOccurrence(1, 6));
+        Assert.Equal(12, ScreenTimePricing.PriceOccurrence(2, 6));
+        Assert.Equal(18, ScreenTimePricing.PriceOccurrence(3, 6));
+        Assert.Equal(30, ScreenTimePricing.PriceOccurrence(5, 6));
+        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(10, 6));
     }
 
     [Fact]
     public void PriceOccurrence_Caps_At_Sixty_And_Floors_At_Zero()
     {
-        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(11));   // guardrail
-        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(100));
-        Assert.Equal(0, ScreenTimePricing.PriceOccurrence(-3));
+        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(11, 6));   // guardrail
+        Assert.Equal(60, ScreenTimePricing.PriceOccurrence(100, 6));
+        Assert.Equal(0, ScreenTimePricing.PriceOccurrence(-3, 6));
+    }
+
+    [Fact]
+    public void PriceOccurrence_Scales_With_The_Configured_Rate()
+    {
+        Assert.Equal(50, ScreenTimePricing.PriceOccurrence(5, 10)); // 5 × 10
+        Assert.Equal(15, ScreenTimePricing.PriceOccurrence(5, 3));  // 5 × 3
+        Assert.Equal(90, ScreenTimePricing.PriceOccurrence(10, 9)); // cap = 10 × rate
+        Assert.Equal(0, ScreenTimePricing.PriceOccurrence(5, 0));
     }
 
     [Fact]
     public void PriceOccurrence_Does_Not_Depend_On_Other_Chores()
     {
         // The whole point of the amendment: a chore's price is stable no matter how many others exist.
-        Assert.Equal(ScreenTimePricing.PriceOccurrence(2), ScreenTimePricing.PriceOccurrence(2));
+        Assert.Equal(ScreenTimePricing.PriceOccurrence(2, 6), ScreenTimePricing.PriceOccurrence(2, 6));
     }
 
     // ============================================================
