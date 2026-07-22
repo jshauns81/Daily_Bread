@@ -150,6 +150,15 @@ struct KidHomeView: View {
             .padding()
         }
         .navigationTitle("Home")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink {
+                    CalendarView(userId: nil, title: "My month")
+                } label: {
+                    Image(systemName: "calendar")
+                }
+            }
+        }
         .graphiteBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }

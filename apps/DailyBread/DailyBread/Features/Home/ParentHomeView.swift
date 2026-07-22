@@ -90,6 +90,17 @@ struct ParentHomeView: View {
             .padding()
         }
         .navigationTitle("Home")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink {
+                    CalendarView(
+                        userId: store.heatmapChild?.userId ?? session.children.first?.userId,
+                        title: "Calendar")
+                } label: {
+                    Image(systemName: "calendar")
+                }
+            }
+        }
         .graphiteBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
