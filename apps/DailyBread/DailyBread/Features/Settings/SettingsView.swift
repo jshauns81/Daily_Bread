@@ -66,6 +66,21 @@ struct SettingsView: View {
                     } label: {
                         Label("Achievements", systemImage: "trophy")
                     }
+                    NavigationLink {
+                        DrivingLogView(mode: .parent)
+                    } label: {
+                        Label("Driving approvals", systemImage: "car")
+                    }
+                }
+            }
+
+            if session.currentUser?.isChild == true {
+                Section("Mine") {
+                    NavigationLink {
+                        DrivingLogView(mode: .kid)
+                    } label: {
+                        Label("Driving log", systemImage: "car")
+                    }
                 }
             }
 

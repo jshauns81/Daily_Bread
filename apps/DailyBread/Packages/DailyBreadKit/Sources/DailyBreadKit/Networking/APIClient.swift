@@ -365,6 +365,35 @@ public actor APIClient {
         try await sendVoid(path: "api/v1/achievements/definitions/\(id)/toggle-active", method: "POST")
     }
 
+    // MARK: - Driving log
+
+    public func drivingEntries(userId: String? = nil) async throws -> [DrivingLogEntry] {
+        try await send([DrivingLogEntry].self, path: path("api/v1/driving", [("userId", userId)]))
+    }
+
+    public func drivingProgress(userId: String? = nil) async throws -> DrivingLogProgress {
+        try await send(DrivingLogProgress.self, path: path("api/v1/driving/progress", [("userId", userId)]))
+    }
+
+    public func pendingDrivingEntries() async throws -> [DrivingLogEntry] {
+        try await send([DrivingLogEntry].self, path: "api/v1/driving/pending")
+    }
+
+    public func createDrivingEntry(_ create: DrivingLogCreate) async throws -> DrivingLogEntry? {
+        let body = try encodeBody(create)
+        return try? await send(DrivingLogEntry.self, path: "api/v1/driving", method: "POST", body: body)
+    }
+
+    public func approveDrivingEntry(id: Int) async throws {
+        try await sendVoid(path: "api/v1/driving/\(id)/approve", method: "POST")
+    }
+
+    public func rejectDrivingEntry(id: Int, reason: String? = nil) async throws {
+        struct RejectBody: Codable { let reason: String? }
+        let body = try encodeBody(RejectBody(reason: reason))
+        try await sendVoid(path: "api/v1/driving/\(id)/reject", method: "POST", body: body)
+    }
+
     // MARK: - Screen time
 
     public func screenTime(userId: String? = nil) async throws -> ScreenTimeSummary {

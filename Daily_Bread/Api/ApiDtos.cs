@@ -519,3 +519,46 @@ public sealed record AchievementDefinitionWriteDto(
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal RewardCashAmount,
     string? RewardItemLabel,
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal RewardItemEstValue);
+
+
+/// <summary>One supervised-driving entry for the wire. Times are "HH:mm".</summary>
+public sealed record DrivingLogEntryDto(
+    int Id,
+    string ChildUserId,
+    string ChildName,
+    DateOnly Date,
+    string StartTime,
+    string EndTime,
+    int DurationMinutes,
+    bool IsNightDriving,
+    string SupervisorLabel,
+    string Weather,
+    string? RouteNotes,
+    bool CreatedByParent,
+    string Status,
+    DateTime CreatedAt,
+    DateTime? DecidedAt,
+    string? DecidedByLabel,
+    string? RejectionReason);
+
+/// <summary>Driving-hours progress toward the (optional) goals. Hours are plain numbers.</summary>
+public sealed record DrivingLogProgressDto(
+    decimal TotalHours,
+    decimal? TotalGoalHours,
+    decimal NightHours,
+    decimal? NightGoalHours);
+
+/// <summary>
+/// Log a drive. ChildUserId is null for a child logging their own; a parent
+/// passes the child's id. NightOverride null = derive night from the times;
+/// true/false = assert it. Weather is a WeatherCondition name.
+/// </summary>
+public sealed record DrivingLogCreateRequest(
+    string? ChildUserId,
+    DateOnly Date,
+    string StartTime,
+    string EndTime,
+    bool? NightOverride,
+    string? SupervisorName,
+    string Weather,
+    string? RouteNotes);
