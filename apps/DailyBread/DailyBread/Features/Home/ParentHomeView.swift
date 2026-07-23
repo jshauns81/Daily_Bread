@@ -35,6 +35,9 @@ struct ParentHomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                #if os(iOS)
+                homeHeader
+                #endif
                 if let dash = store.dashboard {
                     greetingCard(dash)
                     statsRow(dash)
@@ -91,24 +94,14 @@ struct ParentHomeView: View {
             .padding()
         }
         .navigationTitle("Home")
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #else
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                NavigationLink {
-                    CalendarView(
-                        userId: store.heatmapChild?.userId ?? session.children.first?.userId,
-                        title: "Calendar")
-                } label: {
-                    Image(systemName: "calendar")
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                NavigationLink {
-                    RewardClaimsView(mode: .parent, title: "Reward Claims")
-                } label: {
-                    Image(systemName: "gift")
-                }
-            }
+            ToolbarItem(placement: .primaryAction) { calendarLink }
+            ToolbarItem(placement: .primaryAction) { rewardsLink }
         }
+        #endif
         .graphiteBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
@@ -141,6 +134,44 @@ struct ParentHomeView: View {
             .buttonStyle(.plain)
         } else {
             content()
+        }
+    }
+
+    // MARK: - Header
+
+    /// "Home" and the quick-action icons on one line (iOS large-title replacement).
+    #if os(iOS)
+    private var homeHeader: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("Home")
+                .font(.largeTitle.weight(.bold))
+            Spacer()
+            HStack(spacing: 14) {
+                calendarLink
+                rewardsLink
+            }
+            .font(.title3)
+            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 6 }
+        }
+        .padding(.bottom, 2)
+    }
+    #endif
+
+    private var calendarLink: some View {
+        NavigationLink {
+            CalendarView(
+                userId: store.heatmapChild?.userId ?? session.children.first?.userId,
+                title: "Calendar")
+        } label: {
+            Image(systemName: "calendar")
+        }
+    }
+
+    private var rewardsLink: some View {
+        NavigationLink {
+            RewardClaimsView(mode: .parent, title: "Reward Claims")
+        } label: {
+            Image(systemName: "gift")
         }
     }
 
