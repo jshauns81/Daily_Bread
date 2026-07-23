@@ -275,6 +275,14 @@ public actor APIClient {
             ("userId", userId), ("limit", String(limit))]))
     }
 
+    /// Parent add/subtract on a child's balance. `amount` is signed (a negative
+    /// Money subtracts). `description` is the audited reason. Returns the fresh balance.
+    public func adjustBalance(userId: String, amount: Money, description: String) async throws -> Balance {
+        struct Body: Codable { let userId: String; let amount: Money; let description: String }
+        let body = try encodeBody(Body(userId: userId, amount: amount, description: description))
+        return try await send(Balance.self, path: "api/v1/ledger/adjust", method: "POST", body: body)
+    }
+
     public func goals(userId: String? = nil) async throws -> [Goal] {
         try await send([Goal].self, path: path("api/v1/goals", [("userId", userId)]))
     }

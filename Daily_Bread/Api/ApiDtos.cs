@@ -562,3 +562,10 @@ public sealed record DrivingLogCreateRequest(
     string? SupervisorName,
     string Weather,
     string? RouteNotes);
+
+
+/// <summary>Parent balance adjustment. Amount signed (negative subtracts); Description is the audited reason.</summary>
+public sealed record LedgerAdjustRequest(
+    string UserId,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal Amount,
+    string Description);

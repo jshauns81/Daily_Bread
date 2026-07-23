@@ -30,6 +30,7 @@ struct ParentHomeView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
     @State private var store = ParentHomeStore()
+    @State private var adjusting: AdjustBalanceTarget?
 
     var body: some View {
         ScrollView {
@@ -112,6 +113,20 @@ struct ParentHomeView: View {
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
+        .sheet(item: $adjusting) { target in
+            AdjustBalanceSheet(target: target) { _ in
+                Task { await store.load(session) }
+            }
+        }
+    }
+
+    /// The userId behind a balance row. Single-child: the only child. Otherwise
+    /// match by name. Nil disables adjust (never guesses the wrong kid).
+    private func balanceUserId(_ balance: ChildBalance) -> String? {
+        if session.children.count == 1 { return session.onlyChild?.userId }
+        return session.children.first {
+            $0.userName.caseInsensitiveCompare(balance.displayName) == .orderedSame
+        }?.userId
     }
 
     /// Wraps a kid card in a NavigationLink to their day.
@@ -313,21 +328,33 @@ struct ParentHomeView: View {
     private func balancesCard(_ dash: ParentDashboard) -> some View {
         VStack(spacing: 0) {
             ForEach(dash.childrenBalances) { child in
-                HStack(spacing: 8) {
-                    Text(child.displayName)
-                    if child.isCashOutReady {
-                        Text("Cash out ready")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(DB.success(scheme))
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
-                            .background(DB.success(scheme).opacity(0.15), in: Capsule())
+                Button {
+                    if let userId = balanceUserId(child) {
+                        adjusting = AdjustBalanceTarget(userId: userId, name: child.displayName, balance: child.balance)
                     }
-                    Spacer()
-                    Text(child.balance.display)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(DB.gold(scheme))
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(child.displayName)
+                        if child.isCashOutReady {
+                            Text("Cash out ready")
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(DB.success(scheme))
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(DB.success(scheme).opacity(0.15), in: Capsule())
+                        }
+                        Spacer()
+                        Text(child.balance.display)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(DB.gold(scheme))
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .disabled(balanceUserId(child) == nil)
                 .padding(.vertical, 10)
                 if child.id != dash.childrenBalances.last?.id {
                     Divider()
