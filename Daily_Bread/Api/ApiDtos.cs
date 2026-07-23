@@ -453,3 +453,69 @@ public sealed record RewardClaimDto(
 
 /// <summary>Reject body: an optional short reason shown back to the child.</summary>
 public sealed record RewardClaimRejectRequest(string? Reason);
+
+
+/// <summary>
+/// An achievement definition for the parent authoring screen. Enums ride as
+/// strings; the unlock condition is flattened into typed params (only the ones
+/// the type uses are meaningful). Money fields are strings; 0 means "not set"
+/// (the UI keys off UnlockConditionType / RewardType to know what applies).
+/// </summary>
+public sealed record AchievementDefinitionDto(
+    int Id,
+    string Code,
+    string Name,
+    string Description,
+    string? HiddenHint,
+    string Icon,
+    string? LockedIcon,
+    string Category,
+    string Rarity,
+    int Points,
+    int SortOrder,
+    bool IsHidden,
+    bool IsLegendary,
+    bool IsVisibleBeforeUnlock,
+    bool IsActive,
+    string UnlockConditionType,
+    int? Count,
+    int? Days,
+    int? Weeks,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal ConditionAmount,
+    int? ChoreId,
+    int? BeforeHour,
+    string? DayType,
+    int? ProgressTarget,
+    string? RewardType,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal RewardCashAmount,
+    string? RewardItemLabel,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal RewardItemEstValue);
+
+/// <summary>Create/update body for an achievement definition (Code is server-generated).</summary>
+public sealed record AchievementDefinitionWriteDto(
+    string Name,
+    string Description,
+    string? HiddenHint,
+    string Icon,
+    string? LockedIcon,
+    string Category,
+    string Rarity,
+    int Points,
+    int SortOrder,
+    bool IsHidden,
+    bool IsLegendary,
+    bool IsVisibleBeforeUnlock,
+    bool IsActive,
+    string UnlockConditionType,
+    int? Count,
+    int? Days,
+    int? Weeks,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal ConditionAmount,
+    int? ChoreId,
+    int? BeforeHour,
+    string? DayType,
+    int? ProgressTarget,
+    string? RewardType,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal RewardCashAmount,
+    string? RewardItemLabel,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal RewardItemEstValue);
