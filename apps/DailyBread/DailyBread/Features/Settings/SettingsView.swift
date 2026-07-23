@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
     @AppStorage("db.theme") private var themeRaw = DBTheme.sunroom.rawValue
+    @State private var themeExpanded = false
 
     var body: some View {
         List {
@@ -31,18 +32,31 @@ struct SettingsView: View {
             }
 
             Section {
-                ForEach(DBTheme.allCases) { theme in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            themeRaw = theme.rawValue
+                DisclosureGroup(isExpanded: $themeExpanded) {
+                    ForEach(DBTheme.allCases) { theme in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                themeRaw = theme.rawValue
+                                themeExpanded = false
+                            }
+                        } label: {
+                            themeRow(theme)
                         }
-                    } label: {
-                        themeRow(theme)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                } label: {
+                    HStack(spacing: 14) {
+                        ThemeSwatch(theme: currentTheme)
+                            .frame(width: 64, height: 44)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Theme")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Text(currentTheme.displayName)
+                                .font(.body.weight(.semibold))
+                        }
+                    }
                 }
-            } header: {
-                Text("Theme")
+                .tint(.primary)
             } footer: {
                 Text("Pick the look you like. It changes everywhere, on every device — switch whenever you feel like a change.")
             }
@@ -146,6 +160,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Family features
+
+    private var currentTheme: DBTheme { DBTheme(rawValue: themeRaw) ?? .sunroom }
 
     /// Single-child mode: name the one child instead of saying "the kids".
     private var goalsSubtitle: String {
