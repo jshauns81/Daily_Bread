@@ -168,6 +168,48 @@ final class PlannerStore {
             }
         }
     }
+
+    /// Canonical Sunday-first week, for ordering activeDays consistently.
+    static let weekFull = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+    /// Toggle one day of a chore's weekly schedule — optimistic, then saved.
+    /// Only SpecificDays chores have togglable days (WeeklyFrequency has none).
+    func toggleDay(_ chore: PlannerChore, dayFull: String, _ session: SessionStore) {
+        guard chore.scheduleType == "SpecificDays",
+              let index = chores.firstIndex(where: { $0.id == chore.id }) else { return }
+        let original = chores
+        var days = Set(chores[index].activeDays)
+        if days.contains(dayFull) { days.remove(dayFull) } else { days.insert(dayFull) }
+        let ordered = Self.weekFull.filter { days.contains($0) }
+        withAnimation(.snappy) { chores[index].activeDays = ordered }
+        Haptics.tick()
+
+        let write = Self.write(from: chores[index], activeDays: ordered)
+        Task {
+            do {
+                let fresh = try await session.client.updateChore(id: chore.id, write)
+                upsert(fresh)
+                errorMessage = nil
+            } catch {
+                withAnimation(.snappy) { self.chores = original }
+                errorMessage = error.localizedDescription
+                Haptics.warning()
+            }
+        }
+    }
+
+    /// Rebuild a ChoreWrite from a chore, swapping in new active days.
+    static func write(from c: PlannerChore, activeDays: [String]) -> ChoreWrite {
+        ChoreWrite(
+            name: c.name, description: c.description, icon: c.icon,
+            assignedUserId: c.assignedUserId, kind: c.kind, earnValue: c.earnValue,
+            importance: c.importance, allOrNothing: c.allOrNothing,
+            isInverseFill: c.isInverseFill, inverseFillBaselineMinutes: c.inverseFillBaselineMinutes,
+            scheduleType: c.scheduleType, activeDays: activeDays,
+            weeklyTargetCount: c.weeklyTargetCount, isRepeatable: c.isRepeatable,
+            startDate: c.startDate, endDate: c.endDate, isActive: c.isActive,
+            autoApprove: c.autoApprove, sortOrder: c.sortOrder)
+    }
 }
 
 /// Sheet payload: the chore being edited, or nil for a brand-new one.
@@ -184,8 +226,9 @@ struct PlannerView: View {
     @State private var editorTarget: ChoreEditorTarget?
     /// The row currently morphed into its inline delete confirm.
     @State private var confirmingDeleteId: Int?
+    @AppStorage("db.plannerGrid") private var isGrid = true
 
-    var body: some View {
+    private var listContent: some View {
         List {
             Section {
                 Picker("", selection: $store.kindFilter) {
@@ -248,6 +291,16 @@ struct PlannerView: View {
                 }
             }
         }
+    }
+
+    var body: some View {
+        Group {
+            if isGrid {
+                gridContent
+            } else {
+                listContent
+            }
+        }
         .navigationTitle("Planner")
         .graphiteBackground()
         .refreshable { await store.load(session) }
@@ -263,7 +316,7 @@ struct PlannerView: View {
         .toolbar {
             #if os(iOS)
             ToolbarItem(placement: .topBarLeading) {
-                if store.canReorder && store.chores.count > 1 {
+                if !isGrid && store.canReorder && store.chores.count > 1 {
                     EditButton()
                 }
             }
@@ -274,6 +327,15 @@ struct PlannerView: View {
                     editorTarget = ChoreEditorTarget(chore: nil)
                 } label: {
                     Label("Add chore", systemImage: "plus")
+                }
+            }
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    Haptics.tick()
+                    withAnimation(.easeInOut(duration: 0.2)) { isGrid.toggle() }
+                } label: {
+                    Label(isGrid ? "List view" : "Grid view",
+                          systemImage: isGrid ? "list.bullet" : "square.grid.2x2")
                 }
             }
             ToolbarItem(placement: .automatic) {
@@ -317,6 +379,48 @@ struct PlannerView: View {
     }
 
     // MARK: - Rows
+
+    /// The weekly grid: the schedule at a glance, editable in place.
+    private var gridContent: some View {
+        VStack(spacing: 12) {
+            Picker("", selection: $store.kindFilter) {
+                ForEach(PlannerKind.allCases) { Text($0.label).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.top, 8)
+
+            if store.children.count > 1 && !store.chores.isEmpty {
+                childFilter.padding(.horizontal)
+            }
+
+            if let error = store.errorMessage {
+                Label(error, systemImage: "wifi.exclamationmark")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+            }
+
+            if !store.visibleChores.isEmpty {
+                PlannerGridView(
+                    chores: store.visibleChores,
+                    showAssignee: store.children.count > 1 && store.selectedChildId == nil,
+                    onToggle: { chore, day in store.toggleDay(chore, dayFull: day, session) },
+                    onEdit: { chore in editorTarget = ChoreEditorTarget(chore: chore) })
+            } else if store.loading {
+                ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
+                Spacer()
+            } else if store.chores.isEmpty {
+                emptyState.padding()
+                Spacer()
+            } else {
+                Text(emptyFilterMessage)
+                    .font(.subheadline).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity).padding()
+                Spacer()
+            }
+        }
+    }
 
     @ViewBuilder
     private func row(_ chore: PlannerChore) -> some View {
