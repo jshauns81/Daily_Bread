@@ -40,7 +40,11 @@ public sealed record ApiUserDto(
     string UserId,
     string UserName,
     IReadOnlyList<string> Roles,
-    Guid? HouseholdId);
+    Guid? HouseholdId,
+    // "younger" | "teen" — drives age-appropriate voice on the client. Defaults
+    // to younger so token-issue (which doesn't compute age) stays valid; the
+    // authoritative value comes from GET me.
+    string AgeTier = "younger");
 
 public sealed record TokenResponse(
     string AccessToken,
@@ -278,7 +282,9 @@ public sealed record ScreenTimeResponse(
     IReadOnlyList<ScreenTimeEntryDto> RecentEntries,
     // Current tunables, so the settings panel prefills from real values.
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal WeeklyRoutinePayout,
-    int MinutesPerImportancePoint);
+    int MinutesPerImportancePoint,
+    // The child's birthdate (drives age-appropriate voice). Null when unset.
+    DateOnly? BirthDate = null);
 
 /// <summary>
 /// One chore on the kid's "At Risk Today" card (MECHANICS_AMENDMENT.md §E).
@@ -321,7 +327,9 @@ public sealed record ScreenTimeSettingsRequest(
     int WeekdayAtRiskPercent,
     int WeekendAtRiskPercent,
     // Optional so older clients that don't send it keep the current value.
-    int? MinutesPerImportancePoint);
+    int? MinutesPerImportancePoint,
+    // The child's birthdate. Null leaves it unchanged (can't be cleared here).
+    DateOnly? BirthDate = null);
 
 public sealed record DailyEarningDto(
     DateOnly Date,

@@ -25,6 +25,12 @@ public class ChildProfile
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// The child's birthdate, if known. Drives age-appropriate voice in the app
+    /// (see AgeTiers). Nullable — an unset birthdate reads as the younger tier.
+    /// </summary>
+    public DateOnly? BirthDate { get; set; }
+
+    /// <summary>
     /// Timestamp when the profile was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

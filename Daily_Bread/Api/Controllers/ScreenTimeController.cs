@@ -74,7 +74,7 @@ public class ScreenTimeController : ControllerBase
         }
 
         var response = await BuildScreenTimeResponseAsync(target.User!.Id, profile, entryLimit, ct);
-        return Ok(response);
+        return Ok(response with { BirthDate = profile.BirthDate });
     }
 
     /// <summary>
@@ -175,7 +175,8 @@ public class ScreenTimeController : ControllerBase
             request.WeeklyRoutinePayout,
             request.WeekdayAtRiskPercent,
             request.WeekendAtRiskPercent,
-            request.MinutesPerImportancePoint ?? profile.MinutesPerImportancePoint);
+            request.MinutesPerImportancePoint ?? profile.MinutesPerImportancePoint,
+            request.BirthDate);
 
         if (!result.Success)
         {
@@ -193,7 +194,7 @@ public class ScreenTimeController : ControllerBase
 
         var response = await BuildScreenTimeResponseAsync(
             target.User!.Id, updatedProfile, entryLimit: 20, ct);
-        return Ok(response);
+        return Ok(response with { BirthDate = updatedProfile.BirthDate });
     }
 
     /// <summary>

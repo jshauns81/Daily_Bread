@@ -85,7 +85,8 @@ public interface IChildProfileService
         decimal weeklyRoutinePayout,
         int weekdayAtRiskPercent,
         int weekendAtRiskPercent,
-        int minutesPerImportancePoint);
+        int minutesPerImportancePoint,
+        DateOnly? birthDate = null);
 }
 
 public class ChildProfileService : IChildProfileService
@@ -318,7 +319,8 @@ public class ChildProfileService : IChildProfileService
         decimal weeklyRoutinePayout,
         int weekdayAtRiskPercent,
         int weekendAtRiskPercent,
-        int minutesPerImportancePoint)
+        int minutesPerImportancePoint,
+        DateOnly? birthDate = null)
     {
         if (weekdayHours < 0 || weekendHours < 0)
             return ServiceResult.Fail("Screen-time pool hours cannot be negative.");
@@ -345,6 +347,10 @@ public class ChildProfileService : IChildProfileService
         profile.WeekdayAtRiskPercent = weekdayAtRiskPercent;
         profile.WeekendAtRiskPercent = weekendAtRiskPercent;
         profile.MinutesPerImportancePoint = minutesPerImportancePoint;
+        if (birthDate is { } bd)
+        {
+            profile.BirthDate = bd;
+        }
         profile.ModifiedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
