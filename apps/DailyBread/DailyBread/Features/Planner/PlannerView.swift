@@ -6,6 +6,14 @@ import DailyBreadKit
 /// + to add. One server-ordered list; the child filter is only a view
 /// over it — reordering stays global, so it's disabled while filtered.
 /// All mutations are optimistic with rollback; errors show inline.
+/// The two planner tabs. Tasks earn money; Routines are just expected.
+enum PlannerKind: String, CaseIterable, Identifiable {
+    case task = "Task"
+    case routine = "Routine"
+    var id: String { rawValue }
+    var label: String { self == .task ? "Tasks" : "Routines" }
+}
+
 @MainActor
 @Observable
 final class PlannerStore {
@@ -18,10 +26,18 @@ final class PlannerStore {
     var loading = false
     var errorMessage: String?
 
-    /// The rows on screen: server order, optionally narrowed to one child.
+    /// Which tab is showing — Tasks or Routines.
+    var kindFilter: PlannerKind = .task
+
+    /// True when a chore matches the current tab (and child) filter.
+    func isVisible(_ chore: PlannerChore) -> Bool {
+        chore.kind == kindFilter.rawValue
+            && (selectedChildId == nil || chore.assignedUserId == selectedChildId)
+    }
+
+    /// The rows on screen: server order, narrowed to the current tab (and child).
     var visibleChores: [PlannerChore] {
-        guard let id = selectedChildId else { return chores }
-        return chores.filter { $0.assignedUserId == id }
+        chores.filter(isVisible)
     }
 
     /// Order is global. Reordering a filtered subset would scramble the
@@ -53,7 +69,16 @@ final class PlannerStore {
     func move(from source: IndexSet, to destination: Int, _ session: SessionStore) {
         guard canReorder else { return }
         let original = chores
-        chores.move(fromOffsets: source, toOffset: destination)
+
+        // Reorder only the visible (current-tab) rows, keeping every other
+        // chore fixed in its slot, then renumber the whole list so the global
+        // sort order stays consistent across both tabs.
+        let slots = chores.indices.filter { isVisible(chores[$0]) }
+        var reordered = visibleChores
+        reordered.move(fromOffsets: source, toOffset: destination)
+        for (slot, choreIndex) in slots.enumerated() {
+            chores[choreIndex] = reordered[slot]
+        }
         for index in chores.indices {
             chores[index].sortOrder = index
         }
@@ -162,6 +187,15 @@ struct PlannerView: View {
 
     var body: some View {
         List {
+            Section {
+                Picker("", selection: $store.kindFilter) {
+                    ForEach(PlannerKind.allCases) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+                .listRowBackground(Color.clear)
+            }
+
             // Single-child families never see a "which child" filter (single-child mode).
             if store.children.count > 1 && !store.chores.isEmpty {
                 Section {
@@ -204,9 +238,9 @@ struct PlannerView: View {
                         .listRowBackground(Color.clear)
                 }
             } else {
-                // A kid is selected and has nothing yet.
+                // Nothing in the current tab (and/or for the selected child).
                 Section {
-                    Text("Nothing for \(selectedChildName) yet — add one with +.")
+                    Text(emptyFilterMessage)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
@@ -271,6 +305,15 @@ struct PlannerView: View {
 
     private var selectedChildName: String {
         store.children.first(where: { $0.userId == store.selectedChildId })?.userName ?? "them"
+    }
+
+    /// The "nothing here" line for the current tab (and child, when picked).
+    private var emptyFilterMessage: String {
+        let kind = store.kindFilter.label.lowercased()
+        if store.selectedChildId != nil {
+            return "No \(kind) for \(selectedChildName) yet — add one with +."
+        }
+        return "No \(kind) yet — add one with +."
     }
 
     // MARK: - Rows
