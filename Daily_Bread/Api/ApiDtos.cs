@@ -420,3 +420,28 @@ public sealed record AssignableChildDto(
     string UserName);
 
 public sealed record AssignableChildrenResponse(IReadOnlyList<AssignableChildDto> Children);
+
+
+/// <summary>
+/// One real-world reward claim from a TangibleReward achievement, flattened for
+/// the wire. RewardType is "Cash" | "Item". Status is "PendingApproval" |
+/// "Approved" | "FulfilledByParent" | "Rejected". CashAmount is a money string
+/// ("0.00" for item claims — the UI keys off RewardType). ItemEstValue is
+/// intentionally NOT on the wire (parent budgeting only, never shown to a child).
+/// </summary>
+public sealed record RewardClaimDto(
+    int Id,
+    string UserId,
+    string ChildName,
+    string AchievementName,
+    string AchievementIcon,
+    string RewardType,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal CashAmount,
+    string? ItemLabel,
+    string Status,
+    DateTime CreatedAt,
+    DateTime? DecidedAt,
+    string? RejectionReason);
+
+/// <summary>Reject body: an optional short reason shown back to the child.</summary>
+public sealed record RewardClaimRejectRequest(string? Reason);

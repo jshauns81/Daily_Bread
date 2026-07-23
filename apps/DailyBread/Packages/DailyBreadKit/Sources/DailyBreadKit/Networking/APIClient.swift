@@ -304,6 +304,28 @@ public actor APIClient {
             ("from", from.wireString), ("to", to.wireString), ("userId", userId)]))
     }
 
+    // MARK: - Reward claims
+
+    /// A user's own reward claims (all statuses). Parents may pass a child id.
+    public func rewardClaims(userId: String? = nil) async throws -> [RewardClaim] {
+        try await send([RewardClaim].self, path: path("api/v1/rewards/claims", [("userId", userId)]))
+    }
+
+    /// The household's pending reward claims (parent only).
+    public func pendingRewardClaims() async throws -> [RewardClaim] {
+        try await send([RewardClaim].self, path: "api/v1/rewards/claims/pending")
+    }
+
+    public func approveRewardClaim(id: Int) async throws {
+        try await sendVoid(path: "api/v1/rewards/claims/\(id)/approve", method: "POST")
+    }
+
+    public func rejectRewardClaim(id: Int, reason: String? = nil) async throws {
+        struct RejectBody: Codable { let reason: String? }
+        let body = try encodeBody(RejectBody(reason: reason))
+        try await sendVoid(path: "api/v1/rewards/claims/\(id)/reject", method: "POST", body: body)
+    }
+
     // MARK: - Family features / achievements
 
     public func familyFeatures() async throws -> FamilyFeatures {

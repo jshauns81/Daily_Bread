@@ -306,6 +306,32 @@ public struct CalendarRange: Codable, Sendable {
     public var days: [DaySummary]
 }
 
+// MARK: - Reward claims
+
+/// A real-world reward from a TangibleReward achievement — Cash (credited on
+/// approval) or Item (fulfilled by a parent). Type and status ride the wire as
+/// strings so an unexpected value can never fail the whole decode; the computed
+/// helpers read them.
+public struct RewardClaim: Codable, Hashable, Identifiable, Sendable {
+    public var id: Int
+    public var userId: String
+    public var childName: String
+    public var achievementName: String
+    public var achievementIcon: String
+    public var rewardType: String
+    public var cashAmount: Money
+    public var itemLabel: String?
+    public var status: String
+    public var createdAt: LenientDate?
+    public var decidedAt: LenientDate?
+    public var rejectionReason: String?
+
+    public var isCash: Bool { rewardType == "Cash" }
+    public var isPending: Bool { status == "PendingApproval" }
+    public var isApproved: Bool { status == "Approved" || status == "FulfilledByParent" }
+    public var isRejected: Bool { status == "Rejected" }
+}
+
 // MARK: - Approvals / dashboard
 
 public struct ApprovalItem: Codable, Hashable, Identifiable, Sendable {

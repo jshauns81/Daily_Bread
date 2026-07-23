@@ -100,6 +100,13 @@ struct ParentHomeView: View {
                     Image(systemName: "calendar")
                 }
             }
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink {
+                    RewardClaimsView(mode: .parent, title: "Reward Claims")
+                } label: {
+                    Image(systemName: "gift")
+                }
+            }
         }
         .graphiteBackground()
         .refreshable { await store.load(session) }

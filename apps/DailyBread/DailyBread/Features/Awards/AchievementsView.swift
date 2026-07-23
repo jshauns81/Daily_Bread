@@ -80,6 +80,15 @@ struct AchievementsView: View {
             .padding()
         }
         .navigationTitle("Awards")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink {
+                    RewardClaimsView(mode: .child, title: "My Rewards")
+                } label: {
+                    Image(systemName: "gift")
+                }
+            }
+        }
         .graphiteBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
