@@ -59,6 +59,16 @@ struct SettingsView: View {
                 }
             }
 
+            if session.currentUser?.isParent == true {
+                Section("Manage") {
+                    NavigationLink {
+                        AchievementDefinitionsView()
+                    } label: {
+                        Label("Achievements", systemImage: "trophy")
+                    }
+                }
+            }
+
             Section("Server") {
                 if let url = session.serverURL {
                     LabeledContent("Connected to", value: url.host() ?? url.absoluteString)

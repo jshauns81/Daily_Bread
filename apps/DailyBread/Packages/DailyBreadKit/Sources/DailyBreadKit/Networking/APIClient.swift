@@ -345,6 +345,26 @@ public actor APIClient {
         try? await sendVoid(path: "api/v1/achievements/seen", method: "POST")
     }
 
+    // MARK: - Achievement authoring (parent)
+
+    public func achievementDefinitions() async throws -> [AchievementDefinition] {
+        try await send([AchievementDefinition].self, path: "api/v1/achievements/definitions")
+    }
+
+    public func createAchievementDefinition(_ write: AchievementDefinitionWrite) async throws -> AchievementDefinition? {
+        let body = try encodeBody(write)
+        return try? await send(AchievementDefinition.self, path: "api/v1/achievements/definitions", method: "POST", body: body)
+    }
+
+    public func updateAchievementDefinition(id: Int, _ write: AchievementDefinitionWrite) async throws {
+        let body = try encodeBody(write)
+        try await sendVoid(path: "api/v1/achievements/definitions/\(id)", method: "PUT", body: body)
+    }
+
+    public func toggleAchievementActive(id: Int) async throws {
+        try await sendVoid(path: "api/v1/achievements/definitions/\(id)/toggle-active", method: "POST")
+    }
+
     // MARK: - Screen time
 
     public func screenTime(userId: String? = nil) async throws -> ScreenTimeSummary {
