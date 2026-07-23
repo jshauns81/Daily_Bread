@@ -379,6 +379,7 @@ struct HelpSheet: View {
     let item: ChoreItem
     var onSubmit: (String) -> Void
 
+    @Environment(SessionStore.self) private var session
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
     @State private var reason = ""
@@ -387,7 +388,7 @@ struct HelpSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    Text("Raising Help on **\(item.name)** protects it from tonight's penalty until a parent responds.")
+                    Text("Raising Help on **\(item.name)** protects it from tonight's penalty until \(session.voice.parent) responds.")
                         .font(.subheadline)
                 }
                 Section("What's going on?") {

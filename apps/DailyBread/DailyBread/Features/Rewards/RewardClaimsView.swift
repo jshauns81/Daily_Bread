@@ -200,7 +200,7 @@ struct RewardClaimsView: View {
     @ViewBuilder
     private func statusLine(_ claim: RewardClaim) -> some View {
         if claim.isPending {
-            label("Waiting for a grown-up", "hourglass", .secondary)
+            label("Waiting on \(session.voice.parents)", "hourglass", .secondary)
         } else if claim.isApproved {
             label(claim.isCash ? "Approved — added to your balance" : "Approved — coming your way",
                   "checkmark.seal.fill", DB.success(scheme))

@@ -26,6 +26,7 @@ struct ScreenTimeSettingsSheet: View {
     @State private var weekendPercent: Double
     @State private var minutesPerPoint: Double
     @State private var payoutText: String
+    @State private var birthday: Date?
 
     @State private var expertOpen = false
     @State private var saving = false
@@ -44,6 +45,7 @@ struct ScreenTimeSettingsSheet: View {
         _weekendPercent = State(initialValue: Double(Self.percent(of: summary.weekendPool, default: 20)))
         _minutesPerPoint = State(initialValue: Double(max(1, summary.minutesPerImportancePoint)))
         _payoutText = State(initialValue: summary.weeklyRoutinePayout.wireString)
+        _birthday = State(initialValue: summary.birthDate?.displayDate)
     }
 
     /// atRisk as a percent of base, guarded against an empty pool.
@@ -63,6 +65,7 @@ struct ScreenTimeSettingsSheet: View {
                     screenTimeCard
                     consequencesCard
                     allowanceCard
+                    aboutCard
                     expertCard
 
                     if let errorMessage {
@@ -189,6 +192,43 @@ struct ScreenTimeSettingsSheet: View {
     }
 
     // MARK: - Expert (exact numbers)
+
+    // MARK: - About (birthday → age-appropriate voice)
+
+    private var aboutCard: some View {
+        SheetCard(title: "About \(childName)") {
+            if let picked = birthday {
+                DatePicker(
+                    "Birthday",
+                    selection: Binding(get: { birthday ?? picked }, set: { birthday = $0 }),
+                    in: ...Date(),
+                    displayedComponents: .date)
+                    #if os(iOS)
+                    .datePickerStyle(.compact)
+                    #endif
+                Text("The app matches its wording to \(childName)'s age.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button {
+                    // Start the picker somewhere sensible rather than today.
+                    birthday = Calendar.current.date(byAdding: .year, value: -13, to: Date())
+                } label: {
+                    Label("Add \(childName)'s birthday", systemImage: "gift")
+                        .font(.subheadline.weight(.medium))
+                }
+                Text("Optional — lets the app speak to \(childName) in an age-appropriate way.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Device-local Y/M/D for the birthday — a plain calendar date, no time.
+    private static func dayDate(from date: Date) -> DayDate {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return DayDate(year: c.year ?? 2000, month: c.month ?? 1, day: c.day ?? 1)
+    }
 
     private var expertCard: some View {
         SheetCard {
@@ -339,7 +379,8 @@ struct ScreenTimeSettingsSheet: View {
             weeklyRoutinePayout: Money(payout),
             weekdayAtRiskPercent: Int(weekdayPercent),
             weekendAtRiskPercent: Int(weekendPercent),
-            minutesPerImportancePoint: Int(minutesPerPoint))
+            minutesPerImportancePoint: Int(minutesPerPoint),
+            birthDate: birthday.map(Self.dayDate(from:)))
 
         do {
             let fresh = try await session.client.updateScreenTimeSettings(update)

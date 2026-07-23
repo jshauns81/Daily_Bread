@@ -10,6 +10,9 @@ public struct ApiUser: Codable, Hashable, Sendable {
     public var userName: String
     public var roles: [String]
     public var householdId: String?
+    /// "younger" | "teen" — server-computed from the child's birthdate. Optional
+    /// for forward/backward compatibility; absent reads as younger.
+    public var ageTier: String?
 
     public var isParent: Bool { roles.contains("Parent") || roles.contains("Admin") }
     public var isChild: Bool { roles.contains("Child") }
@@ -498,6 +501,8 @@ public struct ScreenTimeSummary: Codable, Sendable {
     /// Current tunables, echoed back so the settings panel prefills from real values.
     public var weeklyRoutinePayout: Money
     public var minutesPerImportancePoint: Int
+    /// The child's birthdate, if set (drives age-appropriate voice).
+    public var birthDate: DayDate?
 }
 
 public enum ScreenTimeFormat {
@@ -549,6 +554,8 @@ public struct ScreenTimeSettingsUpdate: Codable, Sendable {
     /// "Consequences" dial). Sent every time; the server keeps its value when
     /// omitted, so we always send it explicitly from the panel.
     public var minutesPerImportancePoint: Int
+    /// The child's birthdate. Nil leaves it unchanged on the server.
+    public var birthDate: DayDate?
 
     public init(userId: String,
                 weekdayHours: Double,
@@ -556,7 +563,8 @@ public struct ScreenTimeSettingsUpdate: Codable, Sendable {
                 weeklyRoutinePayout: Money,
                 weekdayAtRiskPercent: Int,
                 weekendAtRiskPercent: Int,
-                minutesPerImportancePoint: Int) {
+                minutesPerImportancePoint: Int,
+                birthDate: DayDate? = nil) {
         self.userId = userId
         self.weekdayHours = weekdayHours
         self.weekendHours = weekendHours
@@ -564,6 +572,7 @@ public struct ScreenTimeSettingsUpdate: Codable, Sendable {
         self.weekdayAtRiskPercent = weekdayAtRiskPercent
         self.weekendAtRiskPercent = weekendAtRiskPercent
         self.minutesPerImportancePoint = minutesPerImportancePoint
+        self.birthDate = birthDate
     }
 }
 

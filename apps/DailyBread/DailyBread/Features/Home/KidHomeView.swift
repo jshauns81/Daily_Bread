@@ -440,7 +440,7 @@ struct KidHomeView: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(DB.gold(scheme))
                         } else if item.isHelp {
-                            Text("Help raised — waiting on a parent")
+                            Text("Help raised — waiting on \(session.voice.parents)")
                                 .font(.caption)
                                 .foregroundStyle(DB.help(scheme))
                         }

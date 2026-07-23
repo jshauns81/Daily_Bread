@@ -66,6 +66,18 @@ public final class SessionStore {
         return nil
     }
 
+    /// Age-appropriate voice for the signed-in child (younger by default).
+    public var voice: KidVoice { KidVoice(AgeTier(wire: currentUser?.ageTier)) }
+
+    /// Pull the authoritative user (roles, age tier) from the server and update
+    /// the signed-in state. Safe to call after an optimistic sign-in.
+    public func refreshCurrentUser() async {
+        if let fresh = try? await client.me() {
+            persistUser(fresh)
+            if case .signedIn = state { state = .signedIn(fresh) }
+        }
+    }
+
     public init() {}
 
     /// Call once at launch: restores server + tokens and lands on the right screen.
@@ -90,6 +102,7 @@ public final class SessionStore {
             state = .signedIn(user)
             await refreshFeatures()
             await refreshChildren()
+            await refreshCurrentUser()
         } else if let user = try? await client.me() {
             persistUser(user)
             state = .signedIn(user)
@@ -113,6 +126,7 @@ public final class SessionStore {
         state = .signedIn(tokens.user)
         await refreshFeatures()
         await refreshChildren()
+        await refreshCurrentUser()
     }
 
     public func signOut() async {
