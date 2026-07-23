@@ -569,3 +569,14 @@ public sealed record LedgerAdjustRequest(
     string UserId,
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal Amount,
     string Description);
+
+
+/// <summary>One household member for the family screen (no cross-household data).</summary>
+public sealed record FamilyMemberDto(
+    string Id,
+    string UserName,
+    IReadOnlyList<string> Roles,
+    bool IsLockedOut);
+
+/// <summary>Reset a household member's password.</summary>
+public sealed record ResetMemberPasswordRequest(string UserId, string NewPassword);

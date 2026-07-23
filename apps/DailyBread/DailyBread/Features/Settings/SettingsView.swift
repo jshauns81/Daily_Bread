@@ -71,6 +71,11 @@ struct SettingsView: View {
                     } label: {
                         Label("Driving approvals", systemImage: "car")
                     }
+                    NavigationLink {
+                        FamilyMembersView()
+                    } label: {
+                        Label("Family", systemImage: "person.2")
+                    }
                 }
             }
 

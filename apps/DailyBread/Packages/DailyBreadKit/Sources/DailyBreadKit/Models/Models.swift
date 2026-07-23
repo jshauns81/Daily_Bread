@@ -309,6 +309,24 @@ public struct CalendarRange: Codable, Sendable {
     public var days: [DaySummary]
 }
 
+// MARK: - Family members
+
+/// One household member for the family screen.
+public struct FamilyMember: Codable, Hashable, Identifiable, Sendable {
+    public var id: String
+    public var userName: String
+    public var roles: [String]
+    public var isLockedOut: Bool
+
+    public var isParent: Bool { roles.contains("Parent") || roles.contains("Admin") }
+    public var isChild: Bool { roles.contains("Child") }
+    public var roleLabel: String {
+        if isParent { return "Parent" }
+        if isChild { return "Child" }
+        return roles.first ?? "Member"
+    }
+}
+
 // MARK: - Reward claims
 
 /// A real-world reward from a TangibleReward achievement — Cash (credited on

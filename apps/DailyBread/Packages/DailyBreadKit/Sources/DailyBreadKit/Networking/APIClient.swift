@@ -345,6 +345,26 @@ public actor APIClient {
         return try await send(FamilyFeatures.self, path: "api/v1/family/features", method: "PUT", body: body)
     }
 
+    // MARK: - Family members (parent)
+
+    public func familyMembers() async throws -> [FamilyMember] {
+        try await send([FamilyMember].self, path: "api/v1/family/members")
+    }
+
+    public func resetMemberPassword(userId: String, newPassword: String) async throws {
+        struct Body: Codable { let userId: String; let newPassword: String }
+        let body = try encodeBody(Body(userId: userId, newPassword: newPassword))
+        try await sendVoid(path: "api/v1/family/members/reset-password", method: "POST", body: body)
+    }
+
+    public func lockMember(userId: String) async throws {
+        try await sendVoid(path: "api/v1/family/members/\(userId)/lock", method: "POST")
+    }
+
+    public func unlockMember(userId: String) async throws {
+        try await sendVoid(path: "api/v1/family/members/\(userId)/unlock", method: "POST")
+    }
+
     public func achievements(userId: String? = nil) async throws -> AchievementsList {
         try await send(AchievementsList.self, path: path("api/v1/achievements", [("userId", userId)]))
     }
