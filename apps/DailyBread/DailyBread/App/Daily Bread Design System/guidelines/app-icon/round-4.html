@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>App icon — round 4</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1060px;margin:0 auto;padding:34px 24px 80px}
+h1{font-size:32px;font-weight:800;letter-spacing:-.025em;margin:0 0 7px}
+.sub{font-size:15.5px;color:var(--ds-label-2);margin:0 0 9px;max-width:730px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:15px;display:grid;grid-template-columns:172px 1fr;gap:22px;align-items:start}
+.p{margin:0 0 9px;font-size:14px;max-width:64ch}
+.hd{display:flex;align-items:baseline;gap:9px;margin:0 0 7px;flex-wrap:wrap}
+.hd b{font-size:16.5px;font-weight:760}
+.tag{font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--ds-fill-strong);color:var(--ds-label-2)}
+.tag.pick{background:var(--ds-accent);color:var(--ds-on-accent)}
+.ladder{display:flex;gap:13px;align-items:flex-end;margin-top:13px;flex-wrap:wrap}
+.ladder figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ladder figcaption{font:600 9px var(--ds-font);color:var(--ds-label-3);letter-spacing:.3px}
+.ico{position:relative;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgb(0 0 0 / .18)}
+.big{width:150px;height:150px;box-shadow:0 10px 26px rgb(0 0 0 / .22)}
+.dockbg{background:linear-gradient(150deg,#7C6A55,#3E3227);padding:38px 26px 22px;border-radius:16px;margin-top:14px;display:flex;justify-content:center}
+.dock{padding:11px 15px 13px;border-radius:19px;background:rgb(255 255 255 / .16);backdrop-filter:blur(20px);border:1px solid rgb(255 255 255 / .2);display:flex;gap:13px;align-items:flex-end;width:max-content}
+.dock figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.dock figcaption{font:600 9.5px var(--ds-font);color:#fff;opacity:.85}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:12px}
+.note b{color:var(--ds-label)}
+.q{font-size:14px;font-weight:700;color:var(--ds-accent);margin-top:11px}
+.scale{display:flex;gap:0;margin-top:14px;border-radius:10px;overflow:hidden;width:max-content}
+.scale div{padding:9px 15px;font-size:12px;font-weight:650;background:var(--ds-fill);color:var(--ds-label-2);border-right:1px solid var(--ds-hairline)}
+.scale div:last-child{border-right:0}
+.scale b{display:block;font-size:10px;color:var(--ds-label-3);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px}
+</style></head><body>
+<div class="wrap">
+
+<h1>Round four — it was never a loaf</h1>
+<p class="sub">That reframes the whole thing, and it makes the icon <i>easier</i>. The Eucharistic bread is a <b>round host</b> — and a round gold disc is also a coin. Daily bread and daily money are the same shape. You don't need a metaphor that carries both meanings; the form already does.</p>
+<p class="sub" style="font-size:13.5px;color:var(--ds-label-3)">A circle is also the single most legible form at 29pt, which quietly solves the problem that killed the 7×7 grid. Three rounds of loaf-drawing were chasing the wrong noun.</p>
+
+<h2>How overt do you want it?</h2>
+<div class="card" style="grid-template-columns:1fr">
+<p class="p">This is the question I can't answer for you, and it should be settled before anything is drawn properly. The same form can sit anywhere on this scale:</p>
+<div class="scale">
+  <div><b>Quiet</b>An unmarked disc.<br>Reads as coin, bread, sun, cell.</div>
+  <div><b>Implied</b>Parallel incisions.<br>Bread scoring, no symbol.</div>
+  <div><b>Explicit</b>An incised cross.<br>Unmistakably Eucharistic.</div>
+</div>
+<div style="display:flex;gap:26px;margin-top:15px" id="scaletiles"></div>
+<div class="note">My instinct is <b>Implied</b> — three parallel slashes are how bread is genuinely scored before baking, so the mark stays bread and never becomes a symbol the app has to explain. <b>Explicit</b> keeps the cross but cuts it as a real incision rather than an applied bar; note that even done well it dominates the tile, because a centred equal-armed cross always will. Your family's app and your metaphor — this one is genuinely yours to call.</div>
+</div>
+
+<h2>The directions</h2>
+
+<div class="card">
+  <div id="n-big"></div>
+  <div>
+    <div class="hd"><b>N · The scored host</b><span class="tag pick">My pick</span></div>
+    <p class="p">A gold disc with three shallow incisions, the way bread is genuinely scored before baking. Reads as bread to anyone who bakes, as a coin to a child counting earnings, and — with the cross variant above — as a host to you. Nothing is announced; everything is present.</p>
+    <p class="p">It's also the most legible thing in any of the four rounds — a filled circle survives every size, and the scoring is a texture rather than a detail, so it doesn't vanish at 29pt.</p>
+    <div class="ladder" id="n-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="o-big"></div>
+  <div>
+    <div class="hd"><b>O · Broken</b><span class="tag">Most meaningful</span></div>
+    <p class="p">The fraction — bread broken and shared. Two halves, slightly parted. For an app about a family dividing work and provision between them, this is the closest any mark here gets to saying what Daily Bread actually <i>is</i>.</p>
+    <p class="p">It's the most emotionally loaded option and the most fragile: the gap must stay wide enough to read at 29pt without the halves drifting into two unrelated shapes.</p>
+    <div class="ladder" id="o-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="p-big"></div>
+  <div>
+    <div class="hd"><b>P · The rainbow host</b><span class="tag">Keeps the grid</span></div>
+    <p class="p">The disc, filled with the year's cells. Everything you didn't want to lose from round one, in a form that finally holds together small — the circle does the identifying, the cells do the meaning.</p>
+    <p class="p">Compared with the mosaic loaf, this is cleaner: a circle tolerates a coarse grid far better than a loaf silhouette does, because there's no delicate outline for the cells to fight.</p>
+    <div class="ladder" id="p-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="q-big"></div>
+  <div>
+    <div class="hd"><b>Q · Broken, with the year inside</b><span class="tag">Both ideas</span></div>
+    <p class="p">O and P together — the fraction, with the year showing in the break. The most complete statement of the product, and the busiest mark of the four.</p>
+    <p class="p">I'd only take this if it survives a vector pass at 40pt. It's carrying a lot.</p>
+    <div class="ladder" id="q-lad"></div>
+  </div>
+</div>
+
+<h2>Dock test</h2>
+<div class="card" style="grid-template-columns:1fr">
+<div class="dockbg"><div class="dock" id="dock"></div></div>
+<div class="note"><b>Current icon first, and the two best loaves from rounds two and three at the end.</b> Note how much better every circle holds at 64px than either loaf does — that's not taste, it's the form. A disc has no thin features to lose.</div>
+</div>
+
+<h2>Where I'd land</h2>
+<div class="card" style="grid-template-columns:1fr">
+<p class="p"><b>N if you want the app to be quiet about it, O if you want it to mean something out loud.</b> P is the one to take if the grid still matters most to you — and it's a genuinely better home for the grid than the loaf was.</p>
+<p class="p">One production note, since gold is doing a lot of work here: make the disc <b>matte, not metallic</b>. A gradient with any shine reads as a coin-collecting game. A flat or barely-graded gold reads as bread, wheat and warmth — which is the register the rest of the app is in.</p>
+<p class="p" style="color:var(--ds-label-3);font-size:13px">CSS studies. A circle is the one form I can draw accurately here, so these are closer to final than the loaves were — but the break edge in O and Q should be irregular in vector, not the clean straight cut I can manage in CSS.</p>
+</div>
+
+</div>
+<script>
+const R=s=>s*0.2237;
+function shell(size,bg){const d=document.createElement('div');d.className='ico';
+  d.style.width=size+'px';d.style.height=size+'px';d.style.borderRadius=R(size)+'px';d.style.background=bg;return d}
+const GOLD='linear-gradient(160deg,#E3AE47,#C48A22)';
+const HUES=[8,26,42,58,150,172,196,212,232,262,292,318,338,354,18,36];
+const LIGHT=[.95,.62,1,.78,.55,.92,.7,1,.84,.6,.97,.72,1,.66,.88,.94];
+
+function disc(size,d,fill,dia){
+  const c=document.createElement('div');
+  c.style.cssText=`position:absolute;left:${(size-dia)/2}px;top:${(size-dia)/2}px;width:${dia}px;height:${dia}px;
+    border-radius:50%;background:${fill};overflow:hidden`;
+  d.appendChild(c);return c;
+}
+function score(c,dia,mode){
+  const inc=(len,thick,rot,x,y,op)=>{
+    const s=document.createElement('div');
+    s.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${thick}px;height:${len}px;
+      background:rgb(120 78 12 / ${op});border-radius:99px;box-shadow:0 ${Math.max(thick*.5,.5)}px 0 rgb(255 250 236 / .34);
+      transform:rotate(${rot}deg);transform-origin:center center`;
+    c.appendChild(s);
+  };
+  if(mode==='implied'){
+    // three parallel incisions — how bread is actually scored. Never reads as a symbol.
+    const t=Math.max(dia*.036,1);
+    [-1,0,1].forEach(i=>inc(dia*.46,t,-40,dia*.5-t/2+i*dia*.17,dia*.27,.34));
+  } else if(mode==='explicit'){
+    // a genuine incision, not an applied bar: thin, dark, with a light lip below
+    const t=Math.max(dia*.034,1);
+    inc(dia*.60,t,0,dia*.5-t/2,dia*.20,.38);
+    inc(dia*.60,t,90,dia*.5-t/2,dia*.20,.38);
+  }
+}
+function cellsIn(c,cols,rows,gap,radius){
+  const g=document.createElement('div');
+  g.style.cssText=`position:absolute;inset:0;display:grid;grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr);gap:${gap}px`;
+  for(let i=0;i<cols*rows;i++){const h=HUES[i%16],l=LIGHT[i%16];
+    const e=document.createElement('div');
+    e.style.cssText=`border-radius:${radius}px;background:hsl(${h} ${34+l*48}% ${76-l*30}%)`;g.appendChild(e)}
+  c.appendChild(g);
+}
+function iconQuiet(size){const d=shell(size,'#FBF3E4');disc(size,d,GOLD,size*.62);return d}
+function iconN(size){
+  const d=shell(size,'#FBF3E4');const dia=size*.62;
+  const c=disc(size,d,GOLD,dia);score(c,dia,'implied');return d;
+}
+function iconExplicit(size){
+  const d=shell(size,'#FBF3E4');const dia=size*.62;
+  const c=disc(size,d,GOLD,dia);score(c,dia,'explicit');return d;
+}
+// comparators from earlier rounds, so the circle-vs-loaf claim is checkable here
+function iconLoaf(size){
+  const d=shell(size,'#FBF3E4');
+  const w=size*.66,h=size*.46;
+  const l=document.createElement('div');
+  l.style.cssText=`position:absolute;left:${(size-w)/2}px;top:${size*.29}px;width:${w}px;height:${h}px;background:${GOLD};
+    border-radius:${w*.5}px ${w*.5}px ${w*.13}px ${w*.13}px / ${h*.72}px ${h*.72}px ${h*.16}px ${h*.16}px;`;
+  for(let i=0;i<3;i++){const s=document.createElement('div');
+    s.style.cssText=`position:absolute;left:${w*(.2+i*.235)}px;top:${h*.16}px;width:${Math.max(w*.055,1.2)}px;height:${h*.42}px;
+      background:rgb(255 250 235 / .5);border-radius:99px;transform:rotate(24deg)`;l.appendChild(s)}
+  d.appendChild(l);return d;
+}
+function iconMosaicLoaf(size){
+  const d=shell(size,'#FBF3E4');
+  const w=size*.70,h=size*.48;
+  const box=document.createElement('div');
+  box.style.cssText=`position:absolute;left:${(size-w)/2}px;top:${size*.28}px;width:${w}px;height:${h}px;overflow:hidden;
+    border-radius:${w*.5}px ${w*.5}px ${w*.13}px ${w*.13}px / ${h*.72}px ${h*.72}px ${h*.16}px ${h*.16}px;`;
+  cellsIn(box,5,3,Math.max(size*.014,.6),Math.max(size*.02,1));
+  d.appendChild(box);return d;
+}
+function halves(size,d,fill,dia,inner){
+  const gap=Math.max(dia*.085,2);
+  [-1,1].forEach(dir=>{
+    const h=document.createElement('div');
+    h.style.cssText=`position:absolute;left:${(size-dia)/2+dir*gap/2}px;top:${(size-dia)/2}px;width:${dia}px;height:${dia}px;
+      border-radius:50%;background:${fill};overflow:hidden;
+      clip-path:inset(0 ${dir<0?'50% 0 0':'0 0 50%'});`;
+    if(inner)cellsIn(h,4,4,Math.max(dia*.018,.6),Math.max(dia*.03,1));
+    d.appendChild(h);
+  });
+}
+function iconO(size){const d=shell(size,'#FBF3E4');halves(size,d,GOLD,size*.62,false);return d}
+function iconP(size){
+  const d=shell(size,'#FBF3E4');const dia=size*.64;
+  const c=disc(size,d,'#FBF3E4',dia);
+  cellsIn(c,4,4,Math.max(dia*.02,.6),Math.max(dia*.032,1));return d;
+}
+function iconQ(size){const d=shell(size,'#FBF3E4');halves(size,d,'#FBF3E4',size*.64,true);return d}
+function iconCurrent(size){
+  const d=shell(size,'#1B2B33');
+  const img=document.createElement('img');
+  img.src='../../assets/app-icon-1024.png';img.alt='Current Daily Bread icon';
+  img.style.cssText=`position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit`;
+  d.appendChild(img);return d;
+}
+const MAKE={n:iconN,o:iconO,p:iconP,q:iconQ};
+const SIZES=[[180,'180 · @3x'],[120,'120 · @2x'],[87,'87 · settings'],[60,'60 · @1x'],[40,'40 · spotlight'],[29,'29 · smallest']];
+for(const [k,fn] of Object.entries(MAKE)){
+  const big=fn(150);big.classList.add('big');document.getElementById(k+'-big').appendChild(big);
+  const lad=document.getElementById(k+'-lad');
+  SIZES.forEach(([s,lbl])=>{const f=document.createElement('figure');
+    f.appendChild(fn(s));const c=document.createElement('figcaption');c.textContent=lbl;f.appendChild(c);lad.appendChild(f)});
+}
+const dock=document.getElementById('dock');
+[['Current · today',iconCurrent],['N · Scored',iconN],['O · Broken',iconO],['P · Rainbow host',iconP],['Q · Broken + year',iconQ],['F · Plain loaf',iconLoaf],['J · Mosaic loaf',iconMosaicLoaf]].forEach(([l,fn])=>{
+  const f=document.createElement('figure');f.appendChild(fn(64));
+  const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);dock.appendChild(f)});
+const sc=document.getElementById('scaletiles');
+[['Quiet',iconQuiet],['Implied',iconN],['Explicit',iconExplicit]].forEach(([l,fn])=>{
+  const f=document.createElement('figure');f.style.cssText='margin:0;display:flex;flex-direction:column;align-items:center;gap:7px';
+  f.appendChild(fn(78));
+  const c=document.createElement('figcaption');c.style.cssText='font:700 10px var(--ds-font);letter-spacing:.6px;text-transform:uppercase;color:var(--ds-label-3)';
+  c.textContent=l;f.appendChild(c);sc.appendChild(f)});
+</script>
+</body></html>

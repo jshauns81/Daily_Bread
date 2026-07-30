@@ -1,0 +1,64 @@
+<!-- @dsCard group="Themes" viewport="700x300" name="Harbor — surface hue fix" subtitle="Was navy-slate (219°), now teal-navy (205°). Mulberry shown as the reference the fix matches." -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Harbor surfaces</title>
+<link rel="stylesheet" href="../styles.css">
+<style>html,body{margin:0}
+body{font-family:var(--ds-font);-webkit-font-smoothing:antialiased;padding:14px;background:#0e0e10;color:#fff}
+*{box-sizing:border-box}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.75}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.pane{border-radius:12px;padding:14px;min-height:212px;display:flex;flexDirection:column}
+.lbl{font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;opacity:.62;margin-bottom:9px}
+.card{border-radius:14px;padding:12px 13px;margin-bottom:8px}
+.t1{font-size:14px;font-weight:600}
+.t2{font-size:11px;opacity:.6;margin-top:2px}
+.hx{font:10px ui-monospace,monospace;opacity:.5;margin-top:auto;padding-top:8px}
+.chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.chip{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px}</style>
+</head><body>
+<div class="row">
+
+  <!-- BEFORE: the source's navy -->
+  <div class="pane" style="background:linear-gradient(#223049,#161E2C)">
+    <div class="lbl">Before — navy 219°</div>
+    <div class="card" style="background:#2A3852;box-shadow:0 10px 10px -6px rgb(0 0 0/.25),0 0 0 .5px rgb(255 255 255/.07)">
+      <div class="t1" style="color:#fff">Emma's balance</div>
+      <div class="t2" style="color:#fff">Reads as grey — no water in it</div>
+      <div class="chips">
+        <span class="chip" style="background:#E7B44A;color:#20160a">$18.00</span>
+        <span class="chip" style="background:#4BA39C;color:#07201e">sea-teal</span>
+      </div>
+    </div>
+    <div class="hx">bg #223049 · card #2A3852</div>
+  </div>
+
+  <!-- AFTER: teal-navy -->
+  <div class="pane" style="background:linear-gradient(#1C2E3A,#111C24)">
+    <div class="lbl">After — teal-navy 205°</div>
+    <div class="card" style="background:#263E4F;box-shadow:0 10px 10px -6px rgb(0 0 0/.25),0 0 0 .5px rgb(255 255 255/.07)">
+      <div class="t1" style="color:#fff">Emma's balance</div>
+      <div class="t2" style="color:#fff">Surface carries the harbour</div>
+      <div class="chips">
+        <span class="chip" style="background:#E7B44A;color:#20160a">$18.00</span>
+        <span class="chip" style="background:#4BA39C;color:#07201e">sea-teal</span>
+      </div>
+    </div>
+    <div class="hx">bg #1C2E3A · card #263E4F</div>
+  </div>
+
+  <!-- REFERENCE: Mulberry already does this -->
+  <div class="pane" style="background:linear-gradient(#3E1B30,#2A1220)">
+    <div class="lbl">Mulberry — the reference</div>
+    <div class="card" style="background:#4A2237;box-shadow:0 10px 10px -6px rgb(0 0 0/.25),0 0 0 .5px rgb(255 255 255/.07)">
+      <div class="t1" style="color:#fff">Emma's balance</div>
+      <div class="t2" style="color:#fff">Plum bg, plum card — always did</div>
+      <div class="chips">
+        <span class="chip" style="background:#E7B44A;color:#20160a">$18.00</span>
+        <span class="chip" style="background:#2E8C86;color:#07201e">secondary</span>
+      </div>
+    </div>
+    <div class="hx">bg #3E1B30 · card #4A2237</div>
+  </div>
+
+</div>
+</body></html>

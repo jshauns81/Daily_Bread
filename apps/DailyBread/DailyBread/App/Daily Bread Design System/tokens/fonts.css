@@ -1,0 +1,9 @@
+/* Daily Bread is native-first: SwiftUI on iOS / iPadOS / macOS from one codebase.
+   Type is the SYSTEM font — SF Pro — plus SF Pro Rounded for one specific job
+   (the balance hero uses `design: .rounded`). Neither is redistributable, and
+   the app ships no font files, so there is nothing to @font-face here.
+
+   On Apple platforms the stacks below resolve to the real thing. Elsewhere they
+   fall back to the platform UI font; that is the intended behaviour, not a bug.
+   If you need a closer web stand-in for SF Pro Rounded, Nunito on Google Fonts
+   is the nearest match — flag the substitution when you use it. */

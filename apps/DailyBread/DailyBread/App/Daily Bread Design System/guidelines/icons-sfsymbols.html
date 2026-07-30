@@ -1,0 +1,111 @@
+<!-- @dsCard group="Brand" viewport="700x620" name="Iconography — Phosphor" subtitle="Phosphor is the chosen set. SF Symbols stays only where iOS draws its own chrome." -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>SF Symbols &amp; candidates</title><link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/iconoir@7.7.0/css/iconoir.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
+<style>html,body{margin:0}body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);padding:16px;box-sizing:border-box;min-height:100vh;-webkit-font-smoothing:antialiased}
+.sec{font-size:var(--ds-text-caption);font-weight:700;letter-spacing:var(--ds-kerning-section);text-transform:uppercase;color:var(--ds-label-2);margin-bottom:6px}
+.mono{font-family:var(--ds-font-mono);font-size:10px;color:var(--ds-label-2)}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.8}
+.set{display:grid;grid-template-columns:76px 1fr;align-items:center;gap:10px;padding:4px 0}
+.nm{font-size:9.5px;font-weight:750;letter-spacing:.3px;color:var(--ds-label-3);text-align:right;line-height:1.3}
+.nm b{display:block;font-size:10.5px;color:var(--ds-label-2);font-weight:800}
+.ico{display:grid;grid-template-columns:repeat(8,26px);gap:14px;align-items:center;color:var(--ds-label-2)}
+.ico i{font-size:22px;line-height:1;font-style:normal;text-align:center}
+.ico svg{width:22px;height:22px}
+.sfslot{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.miss{width:20px;height:20px;border-radius:4px;border:1px dashed var(--ds-label-3);opacity:.5}
+.pickrow{border-bottom:1px solid var(--ds-hairline);padding-bottom:7px;margin-bottom:3px}
+.pickrow .nm b{color:var(--ds-accent)}
+.pick .nm b{color:var(--ds-accent)}
+.grp{margin-bottom:12px}
+.caps{font-family:var(--ds-font-mono);font-size:8.5px;color:var(--ds-label-3);margin:4px 0 0 86px;line-height:1.5}
+.gold{color:var(--ds-gold)!important}.help{color:var(--ds-help)!important}.acc{color:var(--ds-accent)!important}.dim{color:var(--ds-label-3)!important}
+</style></head><body>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+
+<div class="grp"><div class="sec">Tabs &amp; sections</div><div id="g-tabs"></div><div class="caps" id="c-tabs"></div></div>
+<div class="grp"><div class="sec">State &amp; urgency</div><div id="g-state"></div><div class="caps" id="c-state"></div></div>
+<div class="grp"><div class="sec">Navigation &amp; actions</div><div id="g-nav"></div><div class="caps" id="c-nav"></div></div>
+
+<div class="mono" style="line-height:1.65;margin-top:6px">
+<b>Phosphor is the chosen set</b> — top row, via <code>PhosphorSwift</code>, behind a single <code>DBIcon</code> wrapper. Duotone for domain nouns, regular for chrome, fill for selected tabs.<br>
+<b>The names under each group are the SF Symbols the app uses today</b>, lifted from <code>systemImage:</code> in the Swift source — each column is that symbol's replacement. SF Symbols itself can't be shown here (Apple's licence forbids redistributing the glyphs) and it now survives only where <i>iOS</i> draws its own chrome: nav-bar backs, share sheets, context menus, swipe defaults. No override exists for those, so the seam is unavoidable and not worth fighting.<br>
+<b>Iconoir</b> and <b>Remix</b> are kept for reference; a dashed slot means that set has no such glyph. <b>Lucide</b> is the stand-in still used in these HTML kits — note how much colder it reads. Full comparison: <a href="icon-sets/index.html">Icon set candidates</a>.
+</div>
+
+<script>
+// [sfSymbol, phosphor, iconoir (| = fallback candidates), remix, lucide, tint]
+const G={
+ 'g-tabs':[['house','house','home-simple','home-line','house'],
+   ['checklist','list-checks','task-list','list-check','list-checks'],
+   ['calendar','calendar','calendar','calendar-line','calendar'],
+   ['target','target','crosshair|target|focus','focus-3-line','target'],
+   ['trophy','trophy','trophy','trophy-line','trophy'],
+   ['car','car','car','car-line','car'],
+   ['person.2','users','group','group-line','users'],
+   ['gift','gift','gift','gift-line','gift','gold']],
+ 'g-state':[['checkmark.circle.fill','check-circle','check-circle-solid|check-circle','checkbox-circle-fill','circle-check','acc'],
+   ['checkmark.seal.fill','seal-check','shield-check|badge-check|verified-badge','verified-badge-fill','badge-check','gold'],
+   ['questionmark.circle','question','help-circle|question-mark-circle|chat-bubble-question','question-line','circle-help','help'],
+   ['exclamationmark.circle','warning-circle','warning-circle','error-warning-line','circle-alert','help'],
+   ['xmark.circle','x-circle','xmark-circle','close-circle-line','circle-x','help'],
+   ['wifi.exclamationmark','wifi-slash','wifi-off','wifi-off-line','wifi-off','dim'],
+   ['lock.fill','lock','lock','lock-fill','lock','dim'],
+   ['party.popper','confetti','sparks','bard-line','party-popper','gold']],
+ 'g-nav':[['chevron.right','caret-right','nav-arrow-right','arrow-right-s-line','chevron-right'],
+   ['chevron.up.chevron.down','caret-up-down','sort','arrow-up-down-line','chevrons-up-down'],
+   ['plus','plus','plus','add-line','plus'],
+   ['ellipsis.circle','dots-three-circle','more-horiz-circle','more-line','ellipsis'],
+   ['slider.horizontal.3','sliders-horizontal','filter','equalizer-line','sliders-horizontal'],
+   ['pencil','pencil-simple','edit-pencil','pencil-line','pencil'],
+   ['trash','trash','trash','delete-bin-line','trash-2'],
+   ['star','star','star','star-line','star','gold']]
+};
+const SETS=[['Phosphor','ph','ph ph-',1],['Iconoir','io','iconoir-',2],['Remix','rm','ri-',3],['Lucide','lu','',4]];
+for(const [id,items] of Object.entries(G)){
+  const host=document.getElementById(id);
+  SETS.forEach(([label,key,prefix,idx])=>{
+    const r=document.createElement('div');
+    r.className='set'+(key==='ph'?' pick pickrow':'');
+    const n=document.createElement('div');n.className='nm';
+    n.innerHTML=`<b>${label}</b>${key==='ph'?'✓ chosen':''}`;
+    const box=document.createElement('div');box.className='ico';
+    items.forEach(it=>{
+      const tint=it[5]||'';
+      if(key==='lu'){
+        const e=document.createElement('i');e.setAttribute('data-lucide',it[idx]);
+        if(tint)e.className=tint;e.style.width='22px';e.style.height='22px';box.appendChild(e);
+      } else {
+        const e=document.createElement('i');
+        e.className=prefix+String(it[idx]).split('|')[0]+(tint?' '+tint:'');
+        e.dataset.set=key;e.dataset.candidates=it[idx];e.dataset.prefix=prefix;e.dataset.tint=tint;
+        e.title=String(it[idx]).split('|')[0];box.appendChild(e);
+      }
+    });
+    r.appendChild(n);r.appendChild(box);host.appendChild(r);
+  });
+  document.getElementById('c-'+id.split('-')[1]).textContent=items.map(i=>i[0]).join('  ·  ');
+}
+lucide.createIcons();
+
+// Iconoir paints ::before as currentColor masked by an SVG. An unknown class leaves
+// mask:none and the fill paints a SOLID BLOCK — worse than a blank, because tinted
+// gold or red it reads as a real filled icon. Try each candidate, then fail visibly.
+function resolveMasked(){
+  document.querySelectorAll('i[data-set="io"]').forEach(el=>{
+    const cands=el.dataset.candidates.split('|');
+    let ok=false;
+    for(const c of cands){
+      el.className=el.dataset.prefix+c+(el.dataset.tint?' '+el.dataset.tint:'');
+      const m=getComputedStyle(el,'::before').maskImage||getComputedStyle(el,'::before').webkitMaskImage;
+      if(m&&m!=='none'){ok=true;el.title=c;break}
+    }
+    if(!ok){const d=document.createElement('div');d.className='miss';d.title='not in Iconoir';el.replaceWith(d)}
+  });
+}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(resolveMasked);else resolveMasked();
+setTimeout(resolveMasked,600);
+</script>
+</body></html>

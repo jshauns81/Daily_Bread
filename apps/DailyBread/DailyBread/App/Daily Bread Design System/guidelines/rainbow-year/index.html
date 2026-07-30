@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html data-theme="harbor"><head><meta charset="utf-8"><title>The rainbow year — decisions</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1080px;margin:0 auto;padding:36px 26px 80px}
+h1{font-size:34px;font-weight:800;letter-spacing:-.025em;margin:0 0 8px;line-height:1.1}
+.sub{font-size:16px;color:var(--ds-label-2);margin:0 0 6px;max-width:680px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:44px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:18px 20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:15px}
+.p{margin:0 0 11px;font-size:14.5px;max-width:76ch}
+.p strong{font-weight:650}
+.lbl{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--ds-label-3);margin-bottom:8px}
+.hm{overflow-x:auto;padding:14px 0 8px;-webkit-overflow-scrolling:touch}
+.grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px;width:max-content}
+.c{width:13px;height:13px;border-radius:3px;transition:transform .12s}
+.c:hover{transform:scale(1.5);z-index:5;position:relative}
+.ticks{display:flex;gap:0;width:max-content;margin:0 0 7px}
+.tick{position:relative;padding-left:7px}
+.tick:before{content:'';position:absolute;left:0;top:1px;bottom:-6px;width:1px;background:var(--ds-accent);opacity:.55}
+.yrl{font:11px/1 ui-monospace,monospace;color:var(--ds-label-2);font-weight:700;letter-spacing:.8px}
+.seam{font-size:11px;color:var(--ds-label-3);margin-top:9px}
+.ctl{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.b{font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:99px;border:1px solid var(--ds-hairline);background:var(--ds-fill-strong);color:var(--ds-label-2);cursor:pointer}
+.b:hover{border-color:var(--ds-accent)}
+.b.sel{background:var(--ds-accent);color:var(--ds-on-accent);border-color:var(--ds-accent)}
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px}
+.li{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;max-width:210px}
+.lsw{width:15px;height:15px;border-radius:4px;flex-shrink:0;margin-top:2px}
+.li b{display:block;font-weight:700;font-size:12.5px}
+.li span{color:var(--ds-label-3);font-size:11.5px;line-height:1.45}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.pane{background:var(--ds-fill-strong);border-radius:12px;padding:14px}
+.pane.on{background:color-mix(in oklab,var(--ds-accent) 10%,var(--ds-card));outline:1.5px solid var(--ds-accent)}
+.big{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:210px}
+.bc{aspect-ratio:1;border-radius:5px}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:12px}
+.q{font-size:13.5px;font-weight:700;color:var(--ds-accent);margin-top:13px}
+.themebar{display:flex;gap:6px;margin:0 0 22px;flex-wrap:wrap}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+</style></head><body>
+<div class="wrap">
+
+<h1>The rainbow year</h1>
+<p class="sub">Your original idea, rebuilt — and the three decisions inside it that I can't make for you. Scroll the strip sideways; hover a day.</p>
+<div class="themebar" id="tb"></div>
+
+<h2>1 — The wheel doesn't restart, it continues</h2>
+<div class="card">
+<p class="p">Day-of-year maps to hue, so the year <em>is</em> the colour wheel. The part that makes it yours: because day 365 lands at hue 359° and the next day 1 lands at 0°, <strong>the seam is invisible</strong>. Scrolling back through years is one unbroken rainbow — rainbow-start to rainbow-start, as you put it. Three years run continuously below, no gap between them; the ticks mark where each begins. It opens on the first boundary.</p>
+<div class="hm"><div id="multi"></div></div>
+<div class="note"><strong>Why this beats a GitHub heatmap:</strong> a green-scale grid says only "how much". This says <em>when</em> — a March day is unmistakably a March colour, so a kid learns the shape of their own year. It also means a screenshot of any single week is uniquely identifiable, which is the sort of thing kids notice and like.</div>
+</div>
+
+<h2>2 — Decided: optionals add bloom, never withhold colour</h2>
+<div class="card">
+<p class="p">This is the hard part you flagged. Seven required, two open-ended (the "3× a week" kind) = 9 possible. He does 7. Is that day complete? Below is <strong>the same week under both rules</strong> — five of the seven days are ones where he met every requirement and left an optional untaken.</p>
+<p class="p"><strong>My strong recommendation is B.</strong> Under A, declining an optional he was never obliged to do leaves a visibly dimmer day on his year, forever — the calendar quietly punishes him for exercising a choice you deliberately gave him. That's the opposite of what an optional chore is. Under B, <strong>meeting the requirement is full brightness</strong> and optionals add a bloom on top: nothing is ever lost, only gained. <strong>This is the chosen behaviour.</strong></p>
+<div class="two">
+  <div class="pane"><div class="lbl">A — optionals count toward the total</div>
+    <div class="big" id="pa"></div>
+    <p class="p" style="margin:11px 0 0;font-size:12.5px;color:var(--ds-label-2)">Five of these seven days, he did every required chore and skipped an optional. 7 of 9 → 78%. Five dim squares in one week — and they stay dim on his year forever.</p>
+  </div>
+  <div class="pane on"><div class="lbl">B — required = full, optionals = bloom ✓</div>
+    <div class="big" id="pb"></div>
+    <p class="p" style="margin:11px 0 0;font-size:12.5px;color:var(--ds-label-2)">Same week. Every day met its requirement, so every day is full colour. The two days he reached further glow. Nothing lost, only gained.</p>
+  </div>
+</div>
+<div class="q">✓ Decided — B. Meeting the requirement is full brightness; optionals add glow on top.</div>
+</div>
+
+<h2>3 — The five states</h2>
+<div class="card">
+<p class="p">Each is the same hue at a different intensity, so the rainbow survives regardless of performance — a bad week is a <em>desaturated</em> week, not a grey hole.</p>
+<div class="legend" id="lg"></div>
+<div class="hm" style="margin-top:6px"><div id="states"></div></div>
+<div class="note"><strong>On the glow.</strong> Perfect days get a real bloom — <code>shadow</code> at the cell's own hue, plus a lifted core. On a wall of 365 that reads as scattered embers, and a good streak becomes a visible burning line. That's the payoff for R11 living on the same surface.</div>
+</div>
+
+<h2>4 — Decided: density</h2>
+<div class="card">
+<p class="p">A full year at a readable cell size is wider than a phone. Three honest options — the strip above is <strong>Scroll</strong>.</p>
+<div class="ctl" id="dens"></div>
+<div class="hm"><div id="dense"></div></div>
+<div class="q">✓ Decided — <strong>Card</strong> (last 12 weeks) is what sits on Today. Full year stays scrollable, one tap away.</div>
+</div>
+
+<h2>5 — What I'd build</h2>
+<div class="card">
+<p class="p"><strong>One <code>RainbowYear</code> view, three sizes.</strong> Card (last 12 weeks, on Today), Full (scrollable year, tap to open a day), Wall (iPad/macOS, whole year plus multi-year scroll). Same cell renderer, same maths, one component.</p>
+<p class="p"><strong>Cell payload.</strong> <code>{ date, requiredDone, requiredTotal, optionalDone, optionalTotal, isFuture }</code> — hue from day-of-year, intensity from <code>requiredDone/requiredTotal</code>, bloom from <code>optionalDone</code>. The server already knows all five numbers.</p>
+<p class="p"><strong>Multi-year scroll</strong> loads a year at a time and keeps hue continuous across the boundary, so it genuinely never ends — which was the point.</p>
+</div>
+
+</div>
+<script>
+const THEMES=[['harbor','Harbor'],['sunroom','Sunroom'],['sky','Sky'],['rosewater','Rosewater'],['meadow','Meadow'],['mulberry','Mulberry']];
+const tb=document.getElementById('tb');
+THEMES.forEach(([k,l],i)=>{const b=document.createElement('button');b.className='b'+(i===0?' sel':'');b.textContent=l;
+b.onclick=()=>{document.documentElement.dataset.theme=k;[...tb.children].forEach(c=>c.classList.remove('sel'));b.classList.add('sel')};tb.appendChild(b)});
+
+const isDark=()=>['harbor','mulberry'].includes(document.documentElement.dataset.theme);
+// deterministic pseudo-random so the picture is stable
+const rnd=(n)=>((n*2654435761)%1000)/1000;
+
+// state: 0 none .. 1 perfect. hue from day-of-year.
+function cellStyle(hue,ratio,bloom,future){
+  if(future) return {background:'transparent',boxShadow:'inset 0 0 0 1px rgb(128 128 128 / .18)'};
+  if(ratio<=0) return {background:`hsl(${hue} 12% ${isDark()?18:88}%)`,boxShadow:'none'};
+  const e=Math.pow(ratio,1.6); // non-linear: a shortfall must read as a shortfall
+  const sat=18+e*68, light=isDark()?(16+e*38):(84-e*40);
+  const s={background:`hsl(${hue} ${sat}% ${light}%)`,boxShadow:'none'};
+  if(bloom) s.boxShadow=`0 0 7px 1px hsl(${hue} 90% 55% / .75), inset 0 0 0 1px hsl(${hue} 95% 78% / .9)`;
+  return s;
+}
+function mkCell(hue,ratio,bloom,future,title,size){
+  const d=document.createElement('div');d.className='c';
+  if(size){d.style.width=size+'px';d.style.height=size+'px'}
+  Object.assign(d.style,cellStyle(hue,ratio,bloom,future));
+  d.title=title||'';return d;
+}
+// day profile -> ratio + bloom
+function day(i,seed){
+  const r=rnd(i+seed*7919);
+  if(r<0.13) return [0,false];
+  if(r<0.34) return [0.45,false];
+  if(r<0.62) return [0.78,false];
+  if(r<0.86) return [1,false];
+  return [1,true];
+}
+const YRW=53*13+52*3; // one year column, exactly
+function buildYear(host,years,size){
+  host.innerHTML='';
+  const ticks=document.createElement('div');ticks.className='ticks';
+  for(let y=0;y<years;y++){const t=document.createElement('div');t.className='tick';
+    t.style.width=YRW+'px';t.innerHTML=`<span class="yrl">${2024+y}</span>`;ticks.appendChild(t)}
+  host.appendChild(ticks);
+  const wrapEl=document.createElement('div');wrapEl.style.display='flex';wrapEl.style.gap='3px';
+  for(let y=0;y<years;y++){
+    const g=document.createElement('div');g.className='grid';
+    for(let i=0;i<365;i++){
+      const hue=(i/365)*360;
+      const [ratio,bloom]=day(i,y+1);
+      const future=(y===years-1&&i>205);
+      g.appendChild(mkCell(hue,ratio,bloom,future,`${2024+y} · day ${i+1} · ${Math.round(ratio*100)}%`,size));
+    }
+    wrapEl.appendChild(g);
+  }
+  host.appendChild(wrapEl);
+  const s=document.createElement('div');s.className='seam';
+  s.textContent='No divider between years — the column where 2024 becomes 2025 is the one under the second tick. It looks like any other week.';
+  host.appendChild(s);
+}
+buildYear(document.getElementById('multi'),3,null);
+// land the reader on the first year boundary, not 845px short of it
+requestAnimationFrame(()=>{const sc=document.getElementById('multi').closest('.hm');if(sc)sc.scrollLeft=YRW-260});
+
+// A vs B — a real week: 5 days where required was met but an optional went untaken, 2 fully perfect days
+const paneA=document.getElementById('pa'),paneB=document.getElementById('pb');
+const CONTESTED=[true,true,false,true,true,false,true];
+function drawPanes(){
+  [[paneA,'A'],[paneB,'B']].forEach(([host,mode])=>{
+    host.innerHTML='';
+    for(let i=0;i<7;i++){
+      const hue=((190+i*4)/365)*360;
+      const d=document.createElement('div');d.className='bc';
+      const c=CONTESTED[i];
+      const ratio = mode==='A' ? (c?7/9:1) : 1;
+      const bloom = mode==='B' && !c;
+      Object.assign(d.style,cellStyle(hue,ratio,bloom,false));
+      host.appendChild(d);
+    }
+  });
+}
+drawPanes();
+
+// states legend + strip
+const STATES=[['Nothing yet','0 of 7 required — the hue is still there, just drained. Never a grey hole.',0,false],
+['Started','A few done. Colour begins to arrive.',0.4,false],
+['Nearly','Most of the required work landed.',0.75,false],
+['Day met','Every required chore done. Full colour — this is "complete".',1,false],
+['Went beyond','Required met plus an optional. Full colour and a bloom.',1,true]];
+const lg=document.getElementById('lg');
+STATES.forEach(([t,d,r,b],i)=>{
+  const hue=(i/5)*300+20;
+  const el=document.createElement('div');el.className='li';
+  const sw=document.createElement('div');sw.className='lsw';Object.assign(sw.style,cellStyle(hue,r,b,false));
+  const tx=document.createElement('div');tx.innerHTML=`<b>${t}</b><span>${d}</span>`;
+  el.appendChild(sw);el.appendChild(tx);lg.appendChild(el);
+});
+const st=document.getElementById('states');
+{const g=document.createElement('div');g.className='grid';
+ for(let i=0;i<105;i++){const hue=((i+120)/365)*360;const [r,b]=day(i,3);
+   g.appendChild(mkCell(hue,r,b,false,'',16))}
+ st.appendChild(g);}
+
+// density
+const DENS=[['Scroll — full year, swipe sideways',13,365],['Compress — whole year on screen',6,365],['Recent — last 12 weeks on the card',18,84]];
+const dens=document.getElementById('dens'),dhost=document.getElementById('dense');
+function drawDense(size,count){
+  dhost.innerHTML='';const g=document.createElement('div');g.className='grid';
+  for(let i=0;i<count;i++){const hue=(i/365)*360;const [r,b]=day(i,2);
+    g.appendChild(mkCell(hue,r,b,false,'',size))}
+  dhost.appendChild(g);
+}
+DENS.forEach(([l,s,c],i)=>{const b=document.createElement('button');b.className='b'+(i===0?' sel':'');b.textContent=l;
+b.onclick=()=>{drawDense(s,c);[...dens.children].forEach(x=>x.classList.remove('sel'));b.classList.add('sel')};dens.appendChild(b)});
+drawDense(13,365);
+
+// redraw everything on theme change
+new MutationObserver(()=>{buildYear(document.getElementById('multi'),3,null);
+  drawPanes();
+  lg.innerHTML='';STATES.forEach(([t,d,r,b],i)=>{const hue=(i/5)*300+20;
+    const el=document.createElement('div');el.className='li';
+    const sw=document.createElement('div');sw.className='lsw';Object.assign(sw.style,cellStyle(hue,r,b,false));
+    const tx=document.createElement('div');tx.innerHTML=`<b>${t}</b><span>${d}</span>`;
+    el.appendChild(sw);el.appendChild(tx);lg.appendChild(el)});
+  st.innerHTML='';{const g=document.createElement('div');g.className='grid';
+   for(let i=0;i<105;i++){const hue=((i+120)/365)*360;const [r,b]=day(i,3);g.appendChild(mkCell(hue,r,b,false,'',16))}
+   st.appendChild(g)}
+  const sel=[...dens.children].findIndex(c=>c.classList.contains('sel'));
+  drawDense(DENS[sel<0?0:sel][1],DENS[sel<0?0:sel][2]);
+},{attributes:true,attributeFilter:['data-theme']}).observe(document.documentElement,{attributes:true});
+</script>
+</body></html>

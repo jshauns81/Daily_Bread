@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Icon set candidates</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/iconoir@7.7.0/css/iconoir.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1000px;margin:0 auto;padding:36px 26px 80px}
+h1{font-size:33px;font-weight:800;letter-spacing:-.025em;margin:0 0 8px}
+.sub{font-size:16px;color:var(--ds-label-2);margin:0 0 22px;max-width:680px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:40px 0 13px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:18px 20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:14px}
+.p{margin:0 0 10px;font-size:14.5px;max-width:76ch}
+.row{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;align-items:end;margin:6px 0 2px}
+.g{display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 2px;border-radius:9px}
+.g i{font-size:27px;line-height:1;color:var(--ds-label)}
+.g em{font-style:normal;font-size:9px;color:var(--ds-label-3);letter-spacing:.2px;text-align:center}
+.hd{display:flex;align-items:baseline;gap:10px;margin-bottom:2px}
+.hd b{font-size:15px;font-weight:750}
+.hd span{font-size:12px;color:var(--ds-label-3)}
+.themebar{display:flex;gap:6px;margin:0 0 24px;flex-wrap:wrap}
+.b{font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:99px;border:1px solid var(--ds-hairline);background:var(--ds-fill-strong);color:var(--ds-label-2);cursor:pointer}
+.b:hover{border-color:var(--ds-accent)}
+.b.sel{background:var(--ds-accent);color:var(--ds-on-accent);border-color:var(--ds-accent)}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:11px}
+.tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--ds-fill-strong);color:var(--ds-label-2)}
+.tag.pick{background:var(--ds-accent);color:var(--ds-on-accent)}
+.gold i{color:var(--ds-gold)}
+.help i{color:var(--ds-help)}
+.acc i{color:var(--ds-accent)}
+.sz{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}
+.sz div{display:flex;flex-direction:column;align-items:center;gap:5px}
+.sz em{font-style:normal;font-size:10px;color:var(--ds-label-3)}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-top:4px}
+th{text-align:left;font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--ds-label-3);padding:7px 10px 7px 0;border-bottom:1px solid var(--ds-hairline);font-weight:800}
+td{padding:9px 10px 9px 0;border-bottom:1px solid var(--ds-hairline);vertical-align:top;color:var(--ds-label-2)}
+td:first-child{color:var(--ds-label);font-weight:650;white-space:nowrap}
+</style></head><body>
+<div class="wrap">
+
+<h1>Icon set candidates</h1>
+<p class="sub">The same fourteen Daily Bread nouns rendered in every set that's a real option, at the size they'd actually appear. Switch themes — an icon set has to survive all six.</p>
+<div class="themebar" id="tb"></div>
+
+<h2>SF Symbols — what you have now</h2>
+<div class="card">
+<p class="p"><strong>It can't be shown on this page, and that's the honest headline.</strong> SF Symbols is a system font licensed for Apple platforms only — there is no web build, no CDN, no npm package. Everything below is what I <em>can</em> put in front of you; the incumbent has to be judged from the app itself.</p>
+<p class="p">What it gives you that nothing else does: optical alignment with SF text at every weight, automatic Dynamic Type scaling, <code>.symbolEffect</code> animations (bounce, pulse, variableColor, replace), hierarchical and palette rendering modes, and ~6,900 glyphs maintained by the platform vendor. <strong>The check-button transition in spec §1.1 is built on <code>.symbolEffect</code>.</strong></p>
+<div class="note">Anything you swap in loses <code>.symbolEffect</code>, Dynamic Type coupling, and optical alignment with SF text. That's the real price, and it's why my recommendation is a hybrid rather than a replacement.</div>
+</div>
+
+<h2>Phosphor — my recommendation</h2>
+<div class="card">
+<div class="hd"><b>Phosphor</b><span>~9,000 glyphs · 6 weights · MIT · <code>PhosphorSwift</code> SPM package</span> <span class="tag pick">Pick</span></div>
+<div class="lbl"></div>
+<div class="row" id="ph-r"></div>
+<div style="height:9px"></div>
+<div class="hd"><b style="font-size:13px">Duotone</b><span>the reason it wins</span></div>
+<div class="row" id="ph-d"></div>
+<div style="height:9px"></div>
+<div class="hd"><b style="font-size:13px">Fill</b><span>for selected tab states</span></div>
+<div class="row" id="ph-f"></div>
+<div class="note"><strong>Why this one.</strong> Rounded terminals and a generous counter — warm without being childish, which is the exact register Daily Bread needs and the thing most icon sets get wrong in one direction or the other. Six weights means the parent surfaces can run lighter than the kid ones from a single family. And <strong>Duotone gives a second layer you can colour independently</strong>: primary at label colour, secondary at the theme accent or gold. No other free set offers that, and it maps directly onto your themeing ambition.<br><br><em>Caveat, stated plainly:</em> in the web icon-font above, duotone's second layer is just reduced-opacity <code>currentColor</code> — you only get true independent layer colouring in SwiftUI/SVG via <code>PhosphorSwift</code>. So the two-tone advantage is real in the app but not fully visible on this page.</div>
+</div>
+
+<h2>Iconoir — the strongest single-set alternative</h2>
+<div class="card">
+<div class="hd"><b>Iconoir</b><span>~1,600 glyphs · one weight · MIT · SVG, no official Swift package</span></div>
+<div class="row" id="io-r"></div>
+<div class="note">Handsome, consistently drawn, and warmer than Lucide. Choose this if you'd rather have <strong>one uniform set everywhere</strong> and no hybrid to reason about. Two real costs: only one weight (no lighter parent / heavier kid distinction), and no Swift package — you'd vendor SVGs into the asset catalogue yourself, which also means no Dynamic Type scaling for free.</div>
+</div>
+
+<h2>Remix Icon — if tab states matter most</h2>
+<div class="card">
+<div class="hd"><b>Remix Icon</b><span>~3,000 glyphs · paired line + fill · Apache 2.0</span></div>
+<div class="row" id="rm-l"></div>
+<div style="height:9px"></div>
+<div class="hd"><b style="font-size:13px">Fill</b><span>every glyph has a matching filled twin</span></div>
+<div class="row" id="rm-f"></div>
+<div class="note">The line/fill pairing is genuinely well done and drops straight into a tab bar's unselected/selected states. But the drawing is squarer and more utilitarian than Phosphor or Iconoir — closer to a dashboard than to a family app.</div>
+</div>
+
+<h2>Ruled out — and why</h2>
+<div class="card">
+<table>
+<tr><th>Set</th><th>Why not here</th></tr>
+<tr><td>Lucide / Feather</td><td>Excellent sets, wrong register. The even 2px stroke and squared terminals read as developer-tool cold — the precise failure state you named at the very start. (These are what the HTML kits in this project currently use as a stand-in, which is why they feel a little clinical.)</td></tr>
+<tr><td>Material Symbols</td><td>Variable weight/fill/grade is technically the closest match to SF Symbols, but it carries Android's visual accent into an Apple-native app. Wrong platform grammar.</td></tr>
+<tr><td>Font Awesome</td><td>Free tier is thin, the paid tier is a subscription, and the drawing is dated.</td></tr>
+<tr><td>Heroicons</td><td>Only ~300 glyphs. You'd exhaust it on chore types alone.</td></tr>
+</table>
+</div>
+
+<h2>What I'd actually do</h2>
+<div class="card">
+<p class="p"><strong>Hybrid.</strong> Keep SF Symbols for system-adjacent affordances — chevrons, ellipsis, xmark, share, back — where they're invisible-by-design and where you need <code>.symbolEffect</code>. Add Phosphor Duotone for Daily Bread's own nouns: chore types, money, car, trophy, goals, badges.</p>
+<p class="p">The line is easy to hold: <strong>if the icon is part of iOS's furniture, SF Symbols. If it's part of your product's vocabulary, Phosphor.</strong> The furniture should disappear; the vocabulary should have character.</p>
+<div class="note">And because <code>icons.set</code> is in the YAML theme schema (spec §3.2), this is <strong>reversible per theme</strong> — you can ship the hybrid, and still let your son's custom theme swap the whole domain set. Which makes this a low-stakes decision, not a one-way door.</div>
+</div>
+
+</div>
+<script>
+const THEMES=[['sunroom','Sunroom'],['sky','Sky'],['rosewater','Rosewater'],['meadow','Meadow'],['mulberry','Mulberry'],['harbor','Harbor']];
+const tb=document.getElementById('tb');
+THEMES.forEach(([k,l],i)=>{const b=document.createElement('button');b.className='b'+(i===0?' sel':'');b.textContent=l;
+b.onclick=()=>{document.documentElement.dataset.theme=k;[...tb.children].forEach(c=>c.classList.remove('sel'));b.classList.add('sel')};tb.appendChild(b)});
+
+// noun -> [phosphor, iconoir, remix]
+const N=[['Chore','check-circle','check-circle','checkbox-circle'],
+['Money','coins','coins','coin'],
+['Planner','calendar','calendar','calendar'],
+['Screen time','clock','clock','time'],
+['Driving','car','car','car'],
+['Awards','trophy','trophy','trophy'],
+['Goal','target','target','focus-3'],
+['Badge','star','star','star'],
+['Reading','book-open','book','book'],
+['Bedroom','bed','bed-ready','hotel-bed'],
+['Rubbish','trash','trash','delete-bin'],
+['Family','users-three','group','group'],
+['Settings','gear','settings','settings-3'],
+['Help','question','question-mark-circle','question']];
+
+function fill(id,cls,idx,extra){
+  const host=document.getElementById(id);
+  N.forEach(n=>{
+    const d=document.createElement('div');d.className='g'+(extra?' '+extra:'');
+    const i=document.createElement('i');i.className=cls+n[idx];
+    const e=document.createElement('em');e.textContent=n[0];
+    d.appendChild(i);d.appendChild(e);host.appendChild(d);
+  });
+}
+fill('ph-r','ph ph-',1);
+fill('ph-d','ph-duotone ph-',1);
+fill('ph-f','ph-fill ph-',1);
+fill('io-r','iconoir-',2);
+fill('rm-l','ri-',3,null);
+fill('rm-f','ri-',3,null);
+// remix needs -line / -fill suffixes
+document.querySelectorAll('#rm-l i').forEach(i=>i.className=i.className+'-line');
+document.querySelectorAll('#rm-f i').forEach(i=>i.className=i.className+'-fill');
+// tint a few to show semantics survive
+document.querySelectorAll('[id^=ph-] .g:nth-child(2) i').forEach(i=>i.style.color='var(--ds-gold)');
+document.querySelectorAll('[id^=ph-] .g:nth-child(14) i').forEach(i=>i.style.color='var(--ds-help)');
+</script>
+</body></html>

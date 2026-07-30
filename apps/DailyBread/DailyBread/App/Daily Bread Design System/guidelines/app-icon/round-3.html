@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>App icon — round 3</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1060px;margin:0 auto;padding:34px 24px 80px}
+h1{font-size:32px;font-weight:800;letter-spacing:-.025em;margin:0 0 7px}
+.sub{font-size:15.5px;color:var(--ds-label-2);margin:0 0 9px;max-width:720px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:15px;display:grid;grid-template-columns:172px 1fr;gap:22px;align-items:start}
+.p{margin:0 0 9px;font-size:14px;max-width:64ch}
+.hd{display:flex;align-items:baseline;gap:9px;margin:0 0 7px;flex-wrap:wrap}
+.hd b{font-size:16.5px;font-weight:760}
+.tag{font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--ds-fill-strong);color:var(--ds-label-2)}
+.tag.pick{background:var(--ds-accent);color:var(--ds-on-accent)}
+.ladder{display:flex;gap:13px;align-items:flex-end;margin-top:13px;flex-wrap:wrap}
+.ladder figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ladder figcaption{font:600 9px var(--ds-font);color:var(--ds-label-3);letter-spacing:.3px}
+.ico{position:relative;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgb(0 0 0 / .18)}
+.big{width:150px;height:150px;box-shadow:0 10px 26px rgb(0 0 0 / .22)}
+.dockbg{background:linear-gradient(150deg,#7C6A55,#3E3227);padding:38px 26px 22px;border-radius:16px;margin-top:14px;display:flex;justify-content:center}
+.dock{padding:11px 15px 13px;border-radius:19px;background:rgb(255 255 255 / .16);backdrop-filter:blur(20px);border:1px solid rgb(255 255 255 / .2);display:flex;gap:13px;align-items:flex-end;width:max-content}
+.dock figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.dock figcaption{font:600 9.5px var(--ds-font);color:#fff;opacity:.85}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:12px}
+.note b{color:var(--ds-label)}
+.hsrow{display:flex;gap:22px;background:linear-gradient(160deg,#4A6B7C,#243642);padding:18px 22px;border-radius:16px;margin-top:14px;width:max-content}
+.hsrow figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.hsrow figcaption{font:500 10px var(--ds-font);color:#fff;opacity:.92}
+</style></head><body>
+<div class="wrap">
+
+<h1>Round three — both, not either</h1>
+<p class="sub">You don't want to give up the grid, and you're right that it doesn't announce itself. Those aren't actually in conflict: the grid can be <i>what the bread is made of</i>. Every option below is one silhouette, filled with the year.</p>
+<p class="sub" style="font-size:13.5px;color:var(--ds-label-3)">One thing that lowers the stakes first: <b>the app's name is always rendered directly under the icon</b> — home screen, Launchpad, Spotlight, Settings. The icon never has to carry identification alone. It has to be recognisable <i>once you know it</i>, and not look like a different product. That's a much lower bar than "explains itself to a stranger", and it's why abstract marks work fine for apps people actually use.</p>
+
+<h2>The synthesis</h2>
+
+<div class="card">
+  <div id="j-big"></div>
+  <div>
+    <div class="hd"><b>J · Mosaic loaf</b><span class="tag pick">My pick</span></div>
+    <p class="p">The loaf silhouette, built from the year's cells rather than filled with a gradient. At a glance it's bread; up close it's your heatmap. This is the only option here where the two ideas are the same object instead of one layered over the other.</p>
+    <p class="p">It also degrades in the right direction — as it shrinks the cells fuse into a warm loaf, so it gets <i>more</i> readable, not less.</p>
+    <div class="ladder" id="j-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="k-big"></div>
+  <div>
+    <div class="hd"><b>K · Crust and crumb</b><span class="tag">Cleanest structure</span></div>
+    <p class="p">A gold crust holding a rainbow crumb. The bread reading comes entirely from the outline, so the interior is free to be the year — and the two never compete, because they're doing different jobs.</p>
+    <p class="p">The most "designed" of the three, and the easiest to redraw well in vector. Also the easiest to animate later, if the crumb ever mirrors the real week.</p>
+    <div class="ladder" id="k-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="l-big"></div>
+  <div>
+    <div class="hd"><b>L · Loaf with one gold cell</b><span class="tag">Most restrained</span></div>
+    <p class="p">A muted rainbow loaf with a single cell burning gold — today. It carries the grid, the bread and the money invariant in one mark, and it's the only one that changes meaning as the day goes on.</p>
+    <p class="p">Quietest of the three. Risk: at 29pt the single cell is nearly lost, so it's really a large-size idea.</p>
+    <div class="ladder" id="l-lad"></div>
+  </div>
+</div>
+
+<h2>Dock test</h2>
+<div class="card" style="grid-template-columns:1fr">
+<div class="dockbg"><div class="dock" id="dock"></div></div>
+<div class="note"><b>Current icon first, then the three, then round two's plain loaf and round one's plain grid at the end.</b> The question to ask isn't "what is that" — the name is under it — but "does that look like a real product, and would I recognise it tomorrow."</div>
+</div>
+
+<h2>With the name attached</h2>
+<div class="card" style="grid-template-columns:1fr">
+<div class="hsrow" id="hs"></div>
+<div class="note">How it actually appears everywhere it matters. <b>The word does the naming; the mark does the recognising.</b></div>
+</div>
+
+<h2>Where I'd land</h2>
+<div class="card" style="grid-template-columns:1fr">
+<p class="p"><b>J.</b> It's the one that doesn't compromise — you keep the grid entirely, and it reads as bread because the silhouette is doing that work independently. K is the safer commission if you're paying an illustrator, because the outline and the fill can be perfected separately.</p>
+<p class="p">And the pin you put in widgets matters here: <b>once the widget carries the living rainbow, the icon is free to be a fixed mark.</b> It doesn't have to show today's state, because the thing right next to it already does. That takes all the pressure off this decision.</p>
+<p class="p" style="color:var(--ds-label-3);font-size:13px">CSS studies again — the loaf curves are approximate and a vector pass will improve all three.</p>
+</div>
+
+</div>
+<script>
+const R=s=>s*0.2237;
+function shell(size,bg){const d=document.createElement('div');d.className='ico';
+  d.style.width=size+'px';d.style.height=size+'px';d.style.borderRadius=R(size)+'px';d.style.background=bg;return d}
+const GOLD='linear-gradient(155deg,#E7B44A,#C08018)';
+const HUES=[8,26,42,58,150,172,196,212,232,262,292,318,338,354,18,36];
+const LIGHT=[.95,.62,1,.78,.55,.92,.7,1,.84,.6,.97,.72,1,.66,.88,.94];
+
+function loafBox(size,w,h,top){
+  const l=document.createElement('div');
+  l.style.cssText=`position:absolute;left:${(size-w)/2}px;top:${top}px;width:${w}px;height:${h}px;overflow:hidden;
+    border-radius:${w*.5}px ${w*.5}px ${w*.13}px ${w*.13}px / ${h*.72}px ${h*.72}px ${h*.16}px ${h*.16}px;`;
+  return l;
+}
+function cellGrid(cols,rows,gap,radius,muted){
+  const g=document.createElement('div');
+  g.style.cssText=`position:absolute;inset:0;display:grid;grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr);gap:${gap}px`;
+  for(let i=0;i<cols*rows;i++){
+    const h=HUES[i%16], l=LIGHT[i%16];
+    const c=document.createElement('div');
+    const sat=muted?18+l*20:34+l*48, lig=muted?66-l*14:76-l*30;
+    c.style.cssText=`border-radius:${radius}px;background:hsl(${h} ${sat}% ${lig}%)`;
+    g.appendChild(c);
+  }
+  return g;
+}
+// J — loaf built from cells
+function iconJ(size){
+  const d=shell(size,'#FBF3E4');
+  const w=size*.70,h=size*.48;
+  const box=loafBox(size,w,h,size*.28);
+  box.appendChild(cellGrid(5,3,Math.max(size*.014,.6),Math.max(size*.02,1),false));
+  d.appendChild(box);return d;
+}
+// K — gold crust, rainbow crumb
+function iconK(size){
+  const d=shell(size,'#FBF3E4');
+  const w=size*.70,h=size*.48;
+  const crust=loafBox(size,w,h,size*.28);
+  crust.style.background=GOLD;
+  const inset=w*.10;
+  const crumb=document.createElement('div');
+  const iw=w-inset*2, ih=h-inset*1.6;
+  crumb.style.cssText=`position:absolute;left:${inset}px;top:${inset*1.05}px;width:${iw}px;height:${ih}px;overflow:hidden;
+    border-radius:${iw*.5}px ${iw*.5}px ${iw*.1}px ${iw*.1}px / ${ih*.66}px ${ih*.66}px ${ih*.12}px ${ih*.12}px;`;
+  crumb.appendChild(cellGrid(4,2,Math.max(size*.012,.5),Math.max(size*.018,1),false));
+  crust.appendChild(crumb);d.appendChild(crust);return d;
+}
+// L — muted loaf, one gold cell
+function iconL(size){
+  const d=shell(size,'#FBF3E4');
+  const w=size*.70,h=size*.48;
+  const box=loafBox(size,w,h,size*.28);
+  const g=cellGrid(5,3,Math.max(size*.014,.6),Math.max(size*.02,1),true);
+  g.children[7].style.background='linear-gradient(150deg,#F0C868,#C98A1E)';
+  g.children[7].style.boxShadow=`0 0 ${size*.05}px rgb(231 180 74 / .8)`;
+  box.appendChild(g);d.appendChild(box);return d;
+}
+// references
+function iconLoaf(size){
+  const d=shell(size,'#FBF3E4');
+  const w=size*.66,h=size*.46;
+  const l=document.createElement('div');
+  l.style.cssText=`position:absolute;left:${(size-w)/2}px;top:${size*.29}px;width:${w}px;height:${h}px;background:${GOLD};
+    border-radius:${w*.5}px ${w*.5}px ${w*.13}px ${w*.13}px / ${h*.72}px ${h*.72}px ${h*.16}px ${h*.16}px;`;
+  for(let i=0;i<3;i++){const s=document.createElement('div');
+    s.style.cssText=`position:absolute;left:${w*(.2+i*.235)}px;top:${h*.16}px;width:${Math.max(w*.055,1.2)}px;height:${h*.42}px;
+      background:rgb(255 250 235 / .5);border-radius:99px;transform:rotate(24deg)`;l.appendChild(s)}
+  d.appendChild(l);return d;
+}
+function iconGrid(size){
+  const d=shell(size,'#FBF3E4');
+  const pad=size*.13,gap=Math.max(size*.012,.5);
+  const g=document.createElement('div');
+  g.style.cssText=`position:absolute;left:${pad}px;top:${pad}px;display:grid;grid-template-columns:repeat(4,1fr);gap:${gap}px;width:${size-pad*2}px;height:${size-pad*2}px`;
+  HUES.forEach((h,i)=>{const c=document.createElement('div');const l=LIGHT[i];
+    c.style.cssText=`border-radius:${Math.max(size*.022,1)}px;background:hsl(${h} ${34+l*48}% ${76-l*30}%)`;g.appendChild(c)});
+  d.appendChild(g);return d;
+}
+function iconCurrent(size){
+  const d=shell(size,'#1B2B33');
+  const img=document.createElement('img');
+  img.src='../../assets/app-icon-1024.png';img.alt='Current Daily Bread icon';
+  img.style.cssText=`position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit`;
+  d.appendChild(img);return d;
+}
+const MAKE={j:iconJ,k:iconK,l:iconL};
+const SIZES=[[180,'180 · @3x'],[120,'120 · @2x'],[87,'87 · settings'],[60,'60 · @1x'],[40,'40 · spotlight'],[29,'29 · smallest']];
+for(const [k,fn] of Object.entries(MAKE)){
+  const big=fn(150);big.classList.add('big');document.getElementById(k+'-big').appendChild(big);
+  const lad=document.getElementById(k+'-lad');
+  SIZES.forEach(([s,lbl])=>{const f=document.createElement('figure');
+    f.appendChild(fn(s));const c=document.createElement('figcaption');c.textContent=lbl;f.appendChild(c);lad.appendChild(f)});
+}
+const dock=document.getElementById('dock');
+[['Current · today',iconCurrent],['J · Mosaic',iconJ],['K · Crust',iconK],['L · Gold cell',iconL],['F · Plain loaf',iconLoaf],['A · Plain grid',iconGrid]].forEach(([l,fn])=>{
+  const f=document.createElement('figure');f.appendChild(fn(64));
+  const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);dock.appendChild(f)});
+const hs=document.getElementById('hs');
+[['J',iconJ],['K',iconK],['L',iconL]].forEach(([l,fn])=>{
+  const f=document.createElement('figure');f.appendChild(fn(60));
+  const c=document.createElement('figcaption');c.textContent='Daily Bread';f.appendChild(c);hs.appendChild(f)});
+</script>
+</body></html>

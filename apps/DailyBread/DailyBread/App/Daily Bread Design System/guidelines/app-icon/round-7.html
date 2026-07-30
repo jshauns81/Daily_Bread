@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>App icon — monstrance, tuned</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1060px;margin:0 auto;padding:34px 24px 80px}
+h1{font-size:32px;font-weight:800;letter-spacing:-.025em;margin:0 0 7px}
+.sub{font-size:15.5px;color:var(--ds-label-2);margin:0 0 9px;max-width:730px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:42px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:15px}
+.split{display:grid;grid-template-columns:172px 1fr;gap:22px;align-items:start}
+.p{margin:0 0 10px;font-size:14.5px;max-width:72ch}
+.hd{display:flex;align-items:baseline;gap:9px;margin:0 0 8px;flex-wrap:wrap}
+.hd b{font-size:16.5px;font-weight:760}
+.tag{font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--ds-fill-strong);color:var(--ds-label-2)}
+.tag.pick{background:var(--ds-accent);color:var(--ds-on-accent)}
+.ico{position:relative;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgb(0 0 0 / .18)}
+.big{width:150px;height:150px;box-shadow:0 10px 26px rgb(0 0 0 / .22)}
+.ladder{display:flex;gap:13px;align-items:flex-end;margin-top:13px;flex-wrap:wrap}
+.ladder figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ladder figcaption{font:600 9px var(--ds-font);color:var(--ds-label-3);letter-spacing:.3px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
+.vscol{background:var(--ds-fill);border-radius:12px;padding:15px;text-align:center}
+.vscol h4{margin:0 0 11px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--ds-label-3);font-weight:800}
+.vsrow{display:flex;gap:16px;justify-content:center;align-items:flex-end}
+.vsrow figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.vsrow figcaption{font:600 9px var(--ds-font);color:var(--ds-label-3)}
+.ctl{display:flex;align-items:center;gap:14px;margin:4px 0 12px;flex-wrap:wrap}
+.ctl input[type=range]{width:190px;accent-color:var(--ds-accent)}
+.count{font:800 14px var(--ds-font);color:var(--ds-label);min-width:92px}
+.stagerow{display:flex;gap:30px;align-items:flex-end;flex-wrap:wrap}
+.stagerow figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:7px}
+.stagerow figcaption{font:600 10px var(--ds-font);color:var(--ds-label-3)}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:12px}
+.note b{color:var(--ds-label)}
+.dockbg{background:linear-gradient(150deg,#7C6A55,#3E3227);padding:34px 26px 20px;border-radius:16px;margin-top:14px;display:flex;justify-content:center}
+.dock{padding:11px 15px 13px;border-radius:19px;background:rgb(255 255 255 / .16);backdrop-filter:blur(20px);border:1px solid rgb(255 255 255 / .2);display:flex;gap:13px;align-items:flex-end;width:max-content}
+.dock figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.dock figcaption{font:600 9.5px var(--ds-font);color:#fff;opacity:.85}
+ol{font-size:14px;color:var(--ds-label-2);padding-left:20px;line-height:1.7;max-width:72ch}
+ol b{color:var(--ds-label)}
+</style></head><body>
+<div class="wrap">
+
+<h1>Your monstrance, tuned for size</h1>
+<p class="sub">The whole object stays — rays, host, transverse arms, fleur finial, hills. Nothing removed. This is only about line weights, because the design is right and the only thing standing between it and shipping is that it's drawn for 1024 and lives at 60.</p>
+
+<h2>As drawn, at every size</h2>
+<div class="card"><div class="split">
+  <div id="a-big"></div>
+  <div>
+    <div class="hd"><b>Your version</b><span class="tag">Recreated in CSS</span></div>
+    <p class="p">A close recreation so the ladder is honest. Beautiful at 180. Watch what happens from 60 down: the alternating short rays merge with the long ones, the outline ring around the host closes up, the fleur terminals turn to blobs, and the three hill planes become one grey band.</p>
+    <div class="ladder" id="a-lad"></div>
+  </div>
+</div></div>
+
+<h2>Same object, tuned</h2>
+<div class="card"><div class="split">
+  <div id="b-big"></div>
+  <div>
+    <div class="hd"><b>Tuned</b><span class="tag pick">Ship this</span></div>
+    <p class="p">Every element you drew is still present. What changed: <b>nine rays instead of fourteen</b> (dropping the alternating short set), <b>rays and arms about 60% thicker</b>, <b>the outline ring removed</b> so the host reads as one solid form, <b>fleur terminals simplified to a diamond and a notch</b>, and <b>two hill planes instead of four</b>.</p>
+    <p class="p">The silhouette is unchanged at a glance. It just stops dissolving.</p>
+    <div class="ladder" id="b-lad"></div>
+  </div>
+</div></div>
+
+<div class="card">
+<div class="vs">
+  <div class="vscol"><h4>As drawn</h4><div class="vsrow" id="v1"></div></div>
+  <div class="vscol"><h4>Tuned</h4><div class="vsrow" id="v2"></div></div>
+</div>
+<div class="note"><b>Only the sizes that matter.</b> 60pt is the dock and home screen; 40 is Spotlight; 29 is Settings and search results. This pairing is the whole argument — at 180 you'd struggle to tell them apart.</div>
+</div>
+
+<h2>With the rays as chores</h2>
+<div class="card">
+  <div class="ctl">
+    <label style="font:700 10px var(--ds-font);letter-spacing:.7px;text-transform:uppercase;color:var(--ds-label-3)">Done</label>
+    <input type="range" id="sl" min="0" max="6" step="1" value="4">
+    <span class="count" id="cnt">4 of 6</span>
+  </div>
+  <div class="stagerow" id="stage"></div>
+  <div class="note"><b>Your idea on your artwork.</b> The host and the cross never dim — given, not earned. Unlit rays hold at 20% so the day's shape stays visible and an empty morning reads unfinished rather than broken. Lit outward from the centre, so it stays symmetrical at every count.<br><br>Live on the macOS dock and in widgets. The App Store icon ships fully radiant.</div>
+</div>
+
+<h2>Dock test</h2>
+<div class="card">
+<div class="dockbg"><div class="dock" id="dock"></div></div>
+<div class="note">Current shipping icon, your version as drawn, and the tuned version. The tuned tile is the only one of the three that survives a glance.</div>
+</div>
+
+<h2>For the vector pass</h2>
+<div class="card">
+<ol>
+<li><b>Rays as trapezoids</b>, ~30% wider at the outer end. Yours are parallel-sided, which reads as spokes; tapering reads as light. Biggest single improvement available.</li>
+<li><b>Drop the outline ring around the host.</b> At 1024 it's a refinement; below 87 it fills in and muddies the edge. The solid disc is stronger anyway.</li>
+<li><b>Keep the fleur terminals but build them from two shapes</b>, not five — a diamond plus a notch. They'll still read as fleurs at 180 and won't turn to mush at 40.</li>
+<li><b>Two hill planes, not four</b>, and drop the hairline top edges — those are the first thing to alias into shimmer.</li>
+<li><b>Remove the outer bezel.</b> iOS masks the tile and applies its own edge treatment; a drawn frame double-borders on device.</li>
+<li><b>Consider raising the horizon.</b> Yours sits at about 55% and the hills take the lower 45% — a lot of tile for a supporting element. At 40% the monstrance gets room and the hills still ground it.</li>
+<li><b>The gold is right.</b> Matte, no metallic gradient. Don't let anyone "improve" it with a shine.</li>
+</ol>
+</div>
+
+</div>
+<script>
+const R=s=>s*0.2237;
+const G='#E0A03C', GL='#EBB45C', BG='linear-gradient(170deg,#3C4859,#2B3440)';
+function tile(size){const d=document.createElement('div');d.className='ico';
+  d.style.width=size+'px';d.style.height=size+'px';d.style.borderRadius=R(size)+'px';d.style.background=BG;return d}
+function bar(d,x,y,w,h,color,rot,rad){
+  const e=document.createElement('div');
+  e.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${color};
+    border-radius:${rad||Math.min(w,h)*.5}px;${rot?`transform:rotate(${rot}deg);transform-origin:center center`:''}`;
+  d.appendChild(e);return e;
+}
+function fleur(d,cx,cy,s,color,vertical){
+  const dm=document.createElement('div');
+  dm.style.cssText=`position:absolute;left:${cx-s/2}px;top:${cy-s/2}px;width:${s}px;height:${s}px;background:${color};
+    border-radius:${s*.28}px;transform:rotate(45deg)`;
+  d.appendChild(dm);
+  const t=document.createElement('div');
+  const tw=s*.9,th=s*.42;
+  t.style.cssText=`position:absolute;left:${cx-(vertical?tw:th)/2}px;top:${cy-(vertical?th:tw)/2}px;
+    width:${vertical?tw:th}px;height:${vertical?th:tw}px;background:${color};border-radius:${s*.2}px`;
+  d.appendChild(t);
+}
+function hills(d,size,planes){
+  const set = planes===4
+    ? [[.66,-8,'#4A5A6E'],[.73,6,'#3A4756'],[.80,-5,'#323E4C'],[.87,4,'#28323E']]
+    : [[.72,-7,'#414F62'],[.83,5,'#2C3644']];
+  set.forEach(([t,rot,col],i)=>{
+    const h=document.createElement('div');
+    h.style.cssText=`position:absolute;left:${-size*.14}px;top:${size*t}px;width:${size*1.28}px;height:${size*.34}px;
+      background:${col};transform:rotate(${rot}deg);${planes===4?`border-top:${Math.max(size*.005,.4)}px solid rgb(190 205 225 / .45)`:''}`;
+    d.appendChild(h);
+  });
+}
+// mode: 'drawn' | 'tuned'; chores: null or {done,total}
+function icon(size,mode,chores){
+  const d=tile(size);
+  const tuned = mode==='tuned';
+  // landscape paints FIRST — the monstrance stands in front of it, not behind
+  hills(d,size,tuned?2:4);
+  const cx=size*.5, cy=size*.52;
+  const n = tuned?9:14;
+  const thick = size*(tuned?.042:.024);
+  const lit = chores ? new Set((()=>{const idx=[...Array(n).keys()],mid=(n-1)/2;
+      return idx.sort((a,b)=>Math.abs(a-mid)-Math.abs(b-mid)||a-b).slice(0,Math.round((chores.done/chores.total)*n))})()) : null;
+  for(let i=0;i<n;i++){
+    // upper hemisphere only — rays fan across 168°, not the full circle
+    const ang=-84+(168/(n-1))*i;
+    const longRay = tuned ? true : (i%2===0);
+    const inner=size*(tuned?.30:.29);
+    const outer=size*((longRay?.455:.395));
+    const on = !lit || lit.has(i);
+    const r=document.createElement('div');
+    r.style.cssText=`position:absolute;left:${cx}px;top:${cy}px;width:${thick}px;height:${outer-inner}px;
+      background:${on?G:'rgb(224 160 60 / .20)'};border-radius:${thick*.5}px;transform-origin:${thick/2}px 0;
+      transform:rotate(${ang+180}deg) translate(${-thick/2}px,${inner}px)`;
+    d.appendChild(r);
+  }
+  // host
+  const dia=size*(tuned?.44:.42);
+  if(!tuned){ // thin outline ring, as drawn
+    const ring=document.createElement('div');
+    ring.style.cssText=`position:absolute;left:${cx-dia*.58}px;top:${cy-dia*.58}px;width:${dia*1.16}px;height:${dia*1.16}px;
+      border-radius:50%;border:${Math.max(size*.018,.8)}px solid ${G}`;
+    d.appendChild(ring);
+  }
+  const host=document.createElement('div');
+  host.style.cssText=`position:absolute;left:${cx-dia/2}px;top:${cy-dia/2}px;width:${dia}px;height:${dia}px;
+    border-radius:50%;background:${G}`;
+  d.appendChild(host);
+  // transverse arm — sits above the horizon, crossing the host's lower third
+  const aw=size*(tuned?.66:.70), ah=size*(tuned?.048:.030);
+  const ay=cy+dia*.30;
+  bar(d,cx-aw/2,ay,aw,ah,G);
+  fleur(d,cx-aw/2,ay+ah/2,size*(tuned?.075:.06),G,false);
+  fleur(d,cx+aw/2,ay+ah/2,size*(tuned?.075:.06),G,false);
+  // vertical stem — Latin proportions, long lower limb through the host
+  const sw=size*(tuned?.052:.034);
+  bar(d,cx-sw/2,size*.075,sw,size*.50,G);
+  fleur(d,cx,size*.088,size*(tuned?.082:.066),G,true);
+  return d;
+}
+function iconCurrent(size){
+  const d=document.createElement('div');d.className='ico';
+  d.style.cssText=`width:${size}px;height:${size}px;border-radius:${R(size)}px;background:#1B2B33;position:relative;overflow:hidden`;
+  const img=document.createElement('img');img.src='../../assets/app-icon-1024.png';img.alt='Current icon';
+  img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit';
+  d.appendChild(img);return d;
+}
+const SIZES=[[180,'180 · @3x'],[120,'120 · @2x'],[87,'87 · settings'],[60,'60 · dock'],[40,'40 · spotlight'],[29,'29 · smallest']];
+[['a','drawn'],['b','tuned']].forEach(([k,m])=>{
+  const big=icon(150,m);big.classList.add('big');document.getElementById(k+'-big').appendChild(big);
+  const lad=document.getElementById(k+'-lad');
+  SIZES.forEach(([s,l])=>{const f=document.createElement('figure');f.appendChild(icon(s,m));
+    const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);lad.appendChild(f)});
+});
+[['v1','drawn'],['v2','tuned']].forEach(([id,m])=>{
+  const host=document.getElementById(id);
+  [[60,'60'],[40,'40'],[29,'29']].forEach(([s,l])=>{
+    const f=document.createElement('figure');f.appendChild(icon(s,m));
+    const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);host.appendChild(f)});
+});
+let done=4;const total=6;
+function drawChores(){
+  document.getElementById('cnt').textContent=`${done} of ${total}`;
+  const st=document.getElementById('stage');st.innerHTML='';
+  [[132,'132'],[87,'87'],[60,'60 · dock'],[40,'40'],[29,'29']].forEach(([s,l])=>{
+    const f=document.createElement('figure');f.appendChild(icon(s,'tuned',{done,total}));
+    const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);st.appendChild(f)});
+}
+document.getElementById('sl').addEventListener('input',e=>{done=+e.target.value;drawChores()});
+drawChores();
+const dock=document.getElementById('dock');
+[['Current · today',()=>iconCurrent(64)],['Yours · as drawn',()=>icon(64,'drawn')],['Yours · tuned',()=>icon(64,'tuned')]].forEach(([l,fn])=>{
+  const f=document.createElement('figure');f.appendChild(fn());
+  const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);dock.appendChild(f)});
+</script>
+</body></html>

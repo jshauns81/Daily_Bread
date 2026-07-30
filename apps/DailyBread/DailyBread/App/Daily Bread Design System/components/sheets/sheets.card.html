@@ -1,0 +1,79 @@
+<!-- @dsCard group="Components" viewport="700x760" name="Sheets" subtitle="SheetKit: header, cards, fields, action bar, pickers, toggles, DayPicker" -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Sheets</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>html,body{margin:0}body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);padding:16px;-webkit-font-smoothing:antialiased;min-height:100vh;box-sizing:border-box}
+*{box-sizing:border-box}
+.sec{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ds-label-3);margin:22px 0 9px}
+.sec:first-child{margin-top:0}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.8}</style>
+</head><body><div id="root"></div>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { SheetHeader, SheetCard, SheetField, SheetActionBar, TextField, SegmentedPicker, ToggleRow, Slider, Stepper, DayPicker, ALL_DAYS, InlineError } = window.DailyBreadDesignSystem_2a4964;
+function Demo(){
+  const [kind,setKind]=React.useState('task');
+  const [sched,setSched]=React.useState('days');
+  const [days,setDays]=React.useState(['Monday','Wednesday','Friday']);
+  const [amt,setAmt]=React.useState('1.50');
+  const [name,setName]=React.useState('Take out the trash');
+  const [icon,setIcon]=React.useState('🗑');
+  const [imp,setImp]=React.useState(3);
+  const [weekly,setWeekly]=React.useState(3);
+  const [auto,setAuto]=React.useState(true);
+  const [notes,setNotes]=React.useState('');
+  return <div style={{maxWidth:500,margin:'0 auto'}}>
+    <SheetHeader title={kind==='task' ? 'Edit Task' : 'Edit Routine'} />
+    <div style={{display:'flex',flexDirection:'column',gap:14,padding:'4px 0 12px'}}>
+      <SheetCard>
+        <div style={{display:'flex',gap:10}}>
+          <TextField value={icon} onChange={setIcon} placeholder="🧺" width={46} align="center" />
+          <TextField value={name} onChange={setName} placeholder="What's the chore?" />
+        </div>
+      </SheetCard>
+
+      <SheetCard>
+        <SegmentedPicker value={kind} onChange={setKind}
+          options={[{value:'task',label:'Earns'},{value:'routine',label:'Expected'}]} />
+        {kind==='task' && <SheetField label="Amount"><TextField prefix="$" value={amt} onChange={setAmt} /></SheetField>}
+        <div style={{fontSize:12,color:'var(--ds-label-2)'}}>
+          {kind==='task' ? "Earns money when it's done and approved." : 'Just expected — no money attached.'}
+        </div>
+      </SheetCard>
+
+      <SheetCard title="Schedule rule">
+        <SegmentedPicker value={sched} onChange={setSched}
+          options={[{value:'days',label:'Fixed days'},{value:'weekly',label:'Weekly goal'}]} />
+        {sched==='days' ? <>
+          <DayPicker selected={days} onChange={setDays} />
+          {days.length===0 && <InlineError icon="exclamationmark.circle" style={{color:'var(--ds-help)'}}>Pick at least one day.</InlineError>}
+        </> : <>
+          <Stepper label={'up to ' + weekly + '× a week'} value={weekly} min={1} max={7} onChange={setWeekly} />
+          <ToggleRow label="Bonus reps allowed" checked={false} onChange={()=>{}} />
+        </>}
+      </SheetCard>
+
+      <SheetCard title="Screen time">
+        <SheetField label={imp===0 ? 'No screen-time impact' : 'Importance'}
+          value={imp===0 ? null : imp + ' of 10'} valueColor="var(--ds-accent)">
+          <Slider value={imp} max={10} onChange={setImp} />
+        </SheetField>
+        {imp>0 && <div style={{fontSize:12,color:'var(--ds-label-2)'}}>Missing it costs a share of the weekly screen-time budget.</div>}
+      </SheetCard>
+
+      <SheetCard title="Options">
+        <ToggleRow label="Auto-approve completions" description="No parent check needed" checked={auto} onChange={setAuto} />
+        <SheetField label="Notes (optional)">
+          <TextField multiline rows={2} value={notes} onChange={setNotes} placeholder="e.g. don't forget under the bed" />
+        </SheetField>
+      </SheetCard>
+    </div>
+    <SheetActionBar saveTitle="Save" canSave={name.trim().length>0} onCancel={()=>{}} onSave={()=>{}} />
+  </div>
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script></body></html>

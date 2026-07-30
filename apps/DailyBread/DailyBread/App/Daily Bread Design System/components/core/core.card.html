@@ -1,0 +1,95 @@
+<!-- @dsCard group="Components" viewport="700x700" name="Core" subtitle="GlassCard, SectionHeader, Chip, StatTile, ProgressRing/Bar, Button, EmptyState, TabBar" -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Core</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>html,body{margin:0}body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);padding:16px;-webkit-font-smoothing:antialiased;min-height:100vh;box-sizing:border-box}
+*{box-sizing:border-box}
+.sec{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ds-label-3);margin:22px 0 9px}
+.sec:first-child{margin-top:0}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.8}</style>
+</head><body><div id="root"></div>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { GlassCard, SectionHeader, Chip, Tag, StatTile, ProgressRing, ProgressBar, Button, EmptyState, InlineError, TabBar, Icon, KID_TABS, PARENT_TABS } = window.DailyBreadDesignSystem_2a4964;
+function Demo(){
+  const [tab,setTab]=React.useState('home');
+  return <>
+    <div className="sec">GlassCard — 14 default · 12 tile · 16 greeting · 18 hero</div>
+    <div className="row" style={{alignItems:'stretch'}}>
+      <GlassCard style={{flex:1}}><SectionHeader>Screen time this week</SectionHeader>
+        <div style={{marginTop:8,fontSize:20,fontWeight:700,color:'var(--ds-accent)'}}>2h 30m</div></GlassCard>
+      <GlassCard padding="var(--ds-card-padding-tight)" style={{flex:1}}><SectionHeader kerning="eyebrow" color="var(--ds-accent)">Next up</SectionHeader>
+        <div style={{marginTop:6,fontSize:17,fontWeight:600}}>Take out the trash</div></GlassCard>
+      <GlassCard tone="var(--ds-gold)" padding="var(--ds-card-padding-tight)" style={{flex:1,textAlign:'center'}}>
+        <div style={{fontSize:30,fontFamily:'var(--ds-font-emoji)'}}>🔥</div>
+        <div style={{fontSize:13,fontWeight:600,marginTop:4}}>Earned</div></GlassCard>
+    </div>
+
+    <div className="sec">StatTile</div>
+    <div style={{display:'flex',gap:12}}>
+      <StatTile value="4" label="waiting on you" color="var(--ds-accent)" />
+      <StatTile value="$12.50" label="earned this week" color="var(--ds-gold)" />
+      <StatTile value="5/7" label="chores today" />
+      <StatTile value="270" label="points" color="var(--ds-gold)" />
+    </div>
+
+    <div className="sec">Chip · Tag</div>
+    <div className="row">
+      <Chip tone="var(--ds-gold)">✦ 3 awaiting approval</Chip>
+      <Chip emphasized={false}>✓ 4 done today</Chip>
+      <Chip tone="var(--ds-help)">! 1 needs help</Chip>
+      <Tag tone="var(--ds-help)" solid>HELP</Tag>
+      <Tag tone="var(--ds-success)">Cash out ready</Tag>
+      <Tag>Routine</Tag><Tag>Off</Tag>
+    </div>
+
+    <div className="sec">ProgressRing 64 / 48 / 44 · ProgressBar</div>
+    <div className="row" style={{gap:22}}>
+      <ProgressRing progress={5/7} label="5/7" />
+      <ProgressRing progress={1} label="7/7" size={48} />
+      <ProgressRing progress={0.25} label="1/4" size={44} />
+      <div style={{flex:1,minWidth:180,display:'flex',flexDirection:'column',gap:9}}>
+        <ProgressBar value={29} total={100} />
+        <ProgressBar value={70} total={100} tone="gold" />
+        <ProgressBar value={62} total={100} height={10} tone="progress" />
+      </div>
+    </div>
+
+    <div className="sec">Button — gold is Approve, and nothing else</div>
+    <div className="row">
+      <Button variant="gold" size="sm" icon="hand.thumbsup">Approve</Button>
+      <Button variant="prominent" icon="plus">Add a chore</Button>
+      <Button variant="bordered">Cancel</Button>
+      <Button variant="destructive">Delete</Button>
+      <Button variant="prominent" disabled>Disabled</Button>
+    </div>
+    <div className="row" style={{marginTop:10,maxWidth:340}}>
+      <Button variant="capsuleHelp" icon="questionmark.circle" style={{flex:1}}>Help</Button>
+      <Button variant="capsuleAccent" icon="checkmark.circle.fill" style={{flex:1}}>Done</Button>
+    </div>
+
+    <div className="sec">EmptyState · InlineError</div>
+    <div className="row" style={{alignItems:'stretch'}}>
+      <GlassCard style={{flex:1}}><EmptyState icon="checkmark.seal" title="All caught up"
+        description="Nothing needs your approval right now." style={{padding:'20px 12px'}} /></GlassCard>
+      <GlassCard style={{flex:1}}><EmptyState icon="checklist" title="No chores yet"
+        description="Add the first one. Tasks earn money; Routines are just expected."
+        action={<Button icon="plus">Add a chore</Button>} style={{padding:'16px 12px'}} /></GlassCard>
+    </div>
+    <div style={{marginTop:12}}><InlineError>The Internet connection appears to be offline.</InlineError></div>
+
+    <div className="sec">TabBar — parent (4) / kid (5)</div>
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{borderRadius:14,overflow:'hidden',boxShadow:'0 0 0 .5px var(--ds-card-stroke)'}}>
+        <TabBar tabs={PARENT_TABS} active={tab} badges={{approvals:4}} onSelect={setTab} /></div>
+      <div style={{borderRadius:14,overflow:'hidden',boxShadow:'0 0 0 .5px var(--ds-card-stroke)'}}>
+        <TabBar tabs={KID_TABS} active="kidHome" /></div>
+    </div>
+  </>
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script></body></html>

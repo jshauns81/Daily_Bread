@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Kid home" description="Daily Bread kid Home: greeting, level badge and XP bar in the tier's colour, goal, badges, and the Next Up card." -->
+<helmet>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="./ds-base.js"></script>
+<style>html,body{margin:0}body{background:var(--ds-background);color:var(--ds-label);font-family:var(--ds-font);-webkit-font-smoothing:antialiased;min-height:100vh}*{box-sizing:border-box}button{font-family:inherit}</style>
+</helmet>
+<div style="max-width:393px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column">
+<header style="display:flex;align-items:flex-end;padding:14px 16px 8px">
+<span style="font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.1">Home</span>
+</header>
+<main style="flex:1;padding:0 16px 20px;display:flex;flex-direction:column;gap:14px">
+<div style="font-size:22px;font-weight:700">Good evening, <span style="color:var(--ds-accent)">Ada</span></div>
+
+<section style="border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:18px;background:linear-gradient(to bottom, color-mix(in srgb, var(--db-level-3) 20%, var(--ds-card)), color-mix(in srgb, var(--db-level-3) 2%, var(--ds-card)));box-shadow:var(--ds-card-shadow), inset 0 0 0 1px color-mix(in srgb, var(--db-level-3) 28%, transparent)">
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.LevelBadge" percent="{{ pct }}" hint-size="180px,86px" style="align-self:center"></x-import>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.XPBar" done="{{ done }}" total="{{ total }}" hint-size="100%,64px"></x-import>
+<div style="font-size:12px;color:var(--ds-label-2);text-align:center">2 quests remaining</div>
+<div style="height:1px;background:color-mix(in srgb, var(--ds-label) 8%, transparent)"></div>
+<div style="display:flex;align-items:center;gap:18px;font-size:15px;flex-wrap:wrap">
+<span style="display:inline-flex;align-items:center;gap:5px"><span style="font-family:var(--ds-font-emoji)">💰</span><b style="color:var(--ds-gold)">$48.75</b></span>
+<span style="display:inline-flex;align-items:center;gap:5px"><span style="font-family:var(--ds-font-emoji)">🔥</span><b style="color:var(--db-streak);font-weight:600">7 day streak</b></span>
+</div>
+<div style="display:flex;align-items:center;gap:4px;font-size:15px">
+<span style="font-family:var(--ds-font-emoji)">✨</span><b style="color:var(--ds-gold);font-weight:800">+$2.00</b><span style="color:var(--ds-label-2)">today</span>
+</div>
+</section>
+
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.GoalCard" name="Nintendo Switch game" current="$48.75" target="$60.00" percent="{{ goalPct }}" hint-size="100%,110px"></x-import>
+
+<div style="display:flex;gap:12px;align-items:stretch">
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.GlassCard" hint-size="100%,96px" style="flex:1">
+<div style="display:flex;flex-direction:column;gap:6px">
+<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ds-label-2)">Latest</span>
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font-size:20px;font-family:var(--ds-font-emoji)">🔥</span>
+<span style="font-size:15px;font-weight:600">Seven days</span>
+</div>
+<span style="font-size:12px;font-weight:700;color:var(--ds-gold)">+50 pts</span>
+</div>
+</x-import>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.GlassCard" padding="12px" hint-size="96px,96px" style="min-width:96px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+<span style="display:flex;align-items:baseline;gap:2px">
+<span style="font-size:28px;font-weight:800;color:var(--ds-accent);line-height:1">6</span>
+<span style="font-size:15px;font-weight:600;color:var(--ds-label-2)">/ 9</span>
+</span>
+<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ds-label-2)">Badges</span>
+</div>
+</x-import>
+</div>
+
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.GlassCard" hint-size="100%,180px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ds-accent)">Next up</span>
+<div style="display:flex;align-items:center;gap:12px">
+<span style="width:46px;height:46px;flex:0 0 auto;border-radius:12px;background:var(--ds-fill);display:grid;place-items:center;font-size:22px;font-family:var(--ds-font-emoji)">🗑</span>
+<div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+<span style="font-size:17px;font-weight:600">Take out the trash</span>
+<span style="font-size:12px;font-weight:600;color:var(--ds-gold)">$1.50</span>
+</div>
+</div>
+<div style="display:flex;gap:10px">
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.Button" variant="capsuleHelp" icon="questionmark.circle" hint-size="100%,44px" style="flex:1">Help</x-import>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.Button" variant="capsuleAccent" icon="checkmark.circle.fill" hint-size="100%,44px" style="flex:1">Done</x-import>
+</div>
+</div>
+</x-import>
+</main>
+
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.TabBar" tabs="{{ kidTabs }}" active="kidHome" hint-size="100%,49px"></x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const done = 3, total = 5;
+    return {
+      done, total,
+      pct: Math.round((done / total) * 100),
+      goalPct: 81,
+      kidTabs: (window.DailyBreadDesignSystem_2a4964 || {}).KID_TABS || []
+    };
+  }
+}
+</script>
+</body>
+</html>

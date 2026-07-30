@@ -1,0 +1,74 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Family — admin" subtitle="Roster rows, driving log, achievement definitions, child picker" -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Family admin</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>html,body{margin:0}body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);padding:16px;-webkit-font-smoothing:antialiased}*{box-sizing:border-box}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.75}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+h4{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--ds-label-3)}</style>
+</head><body><div id="root"></div>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const {GlassCard,FamilyMemberRow,DrivingTotals,DrivingLogRow,AchievementDefRow,ChildPicker,CalendarMonth}=window.DailyBreadDesignSystem_2a4964;
+const HR=()=><div style={{height:'.5px',background:'var(--ds-hairline)'}}></div>;
+
+function Demo(){
+  const [who,setWho]=React.useState('Emma');
+  const [defs,setDefs]=React.useState({going:true,dream:true,legend:false});
+  return <div className="g">
+    <div>
+      <h4>Family roster</h4>
+      <GlassCard>
+        <FamilyMemberRow name="parent_test" role="Parent" isYou />
+        <HR/>
+        <FamilyMemberRow name="emma_test" role="Child" />
+        <HR/>
+        <FamilyMemberRow name="liam_test" role="Child" locked />
+      </GlassCard>
+      <div style={{marginTop:16}}>
+        <h4>Child picker — 3 children vs 1</h4>
+        <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+          <ChildPicker children={['Emma','Liam','Noah']} value={who} onChange={setWho} />
+          <ChildPicker children={['Emma']} value="Emma" />
+          <span style={{fontSize:12,color:'var(--ds-label-3)'}}>← one child renders nothing</span>
+        </div>
+      </div>
+      <div style={{marginTop:16}}>
+        <h4>Driving log</h4>
+        <DrivingTotals totalHours={12} nightHours={3} />
+        <div style={{height:10}}></div>
+        <GlassCard>
+          <DrivingLogRow date="Jun 25" duration="36m" from="22:03" to="22:39" supervisor="Dad" isNight status="Pending" note="Highway practice" />
+          <HR/>
+          <DrivingLogRow date="Jun 22" duration="1h 12m" from="14:10" to="15:22" supervisor="Mom" />
+        </GlassCard>
+      </div>
+    </div>
+    <div>
+      <h4>Achievement definitions</h4>
+      <GlassCard>
+        <AchievementDefRow icon="🔥" name="Getting Going" rarity="common" points={25} condition="Day streak"
+          enabled={defs.going} onToggle={(v)=>setDefs(d=>({...d,going:v}))} />
+        <HR/>
+        <AchievementDefRow icon="🎯" name="Dream Big" rarity="common" points={10} condition="First goal created"
+          enabled={defs.dream} onToggle={(v)=>setDefs(d=>({...d,dream:v}))} />
+        <HR/>
+        <AchievementDefRow icon="👑" name="Legendary Dedication" rarity="legendary" points={750} condition="Day streak"
+          enabled={defs.legend} onToggle={(v)=>setDefs(d=>({...d,legend:v}))} />
+      </GlassCard>
+      <div style={{marginTop:16}}>
+        <h4>Calendar month</h4>
+        <CalendarMonth monthLabel="July 2026" firstWeekday={3} selected={25}
+          days={Array.from({length:31},(_,i)=>{const d=i+1;
+            const s=d>25?undefined:['missed','allDone','inProgress','missed','inProgress'][d%5];
+            return {day:d,status:s,outside:d>25};})} />
+      </div>
+    </div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script></body></html>

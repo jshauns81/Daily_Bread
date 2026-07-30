@@ -1,0 +1,190 @@
+<!-- @dsCard group="macOS app" viewport="1280x854" name="macOS — Parent Home" subtitle="NavigationSplitView: sidebar, capped detail column, same cards as iPhone. Switch accounts, click every section." -->
+<!DOCTYPE html>
+<html data-theme="harbor"><head><meta charset="utf-8"><title>Daily Bread — macOS</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.75}
+::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--ds-label) 20%,transparent);border-radius:5px}
+button{font-family:inherit}</style>
+</head><body><div id="root"></div>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel" src="../kid_app/KidScreens.jsx"></script>
+<script type="text/babel" src="../parent_app/ParentScreens.jsx"></script>
+<script type="text/babel" src="MacShell.jsx"></script>
+<script type="text/babel">
+const DS=window.DailyBreadDesignSystem_2a4964;
+const {GlassCard,SectionHeader,EmptyState,Icon,ALL_DAYS,FamilyMemberRow,DrivingTotals,
+  DrivingLogRow,AchievementDefRow,CalendarMonth,ChildPicker,YearHeatmapCard}=DS;
+const HR=()=><div style={{height:'.5px',background:'var(--ds-hairline)'}}></div>;
+
+const KIDS=[
+  {name:'Emma',done:0,total:0,pending:0,helpRequests:11,balance:18.00},
+  {name:'Liam',done:0,total:0,pending:0,helpRequests:37,balance:7.75},
+  {name:'Noah',done:0,total:0,pending:0,helpRequests:23,balance:3.50},
+  {name:'Olivia',done:0,total:0,pending:0,helpRequests:35,balance:12.00}
+];
+const HELP=['Empty Dishwasher','Feed Pet','Make Bed','Brush Teeth (AM)','Trash Duty','Set Table']
+  .map((n,i)=>({id:i+1,choreName:n,childName:KIDS[i%4].name,value:[0.5,1.5,0,0,0.75,0][i],
+    reason:'I need help with this one'}));
+
+const DASH={children:KIDS,approvals:[],help:HELP,weekEarnings:23.00,
+  week:[{letter:'S',amount:'$15.75'},{letter:'M',amount:'$0.75'},{letter:'T',amount:'$3.00'},
+    {letter:'W',amount:'$3.50'},{letter:'T'},{letter:'F'},{letter:'S'}]};
+
+const CHORES=[
+  {id:1,icon:'🍴',name:'Empty Dishwasher',kind:'Task',value:'$0.50',days:['Monday','Wednesday','Friday'],importance:5,active:true,assignee:'Emma'},
+  {id:2,icon:'🗑',name:'Trash Duty',kind:'Task',value:'$0.75',days:['Tuesday','Friday'],importance:5,active:true,assignee:'Liam'},
+  {id:3,icon:'🧽',name:'Vacuum Room',kind:'Task',value:'$1.00',days:['Saturday'],importance:5,active:true,assignee:'Emma'},
+  {id:4,icon:'🐕',name:'Feed Pet',kind:'Task',value:'$1.50',weeklyTarget:3,importance:5,active:true,assignee:'Noah'},
+  {id:5,icon:'🌳',name:'Yard Work',kind:'Task',value:'$2.00',weeklyTarget:1,importance:5,active:true,assignee:'Olivia'},
+  {id:6,icon:'🧠',name:'Learning Activity',kind:'Task',value:'$0.75',weeklyTarget:4,importance:5,active:true,assignee:'Emma'},
+  {id:7,icon:'🛏',name:'Make Bed',kind:'Routine',days:ALL_DAYS,importance:3,active:true,assignee:'Emma'},
+  {id:8,icon:'🪥',name:'Brush Teeth (AM)',kind:'Routine',days:ALL_DAYS,importance:3,active:true,assignee:'Emma'},
+  {id:9,icon:'🪥',name:'Brush Teeth (PM)',kind:'Routine',days:ALL_DAYS,importance:3,active:true,assignee:'Emma'},
+  {id:10,icon:'🧹',name:'Tidy Room',kind:'Routine',days:ALL_DAYS,importance:3,active:true,assignee:'Emma'},
+  {id:11,icon:'📚',name:'Reading Time',kind:'Routine',days:ALL_DAYS,importance:3,active:true,assignee:'Emma'},
+  {id:12,icon:'🍽',name:'Set Table',kind:'Routine',days:ALL_DAYS,importance:3,active:true,assignee:'Emma'}
+];
+
+const DEFS=[
+  {icon:'👣',name:'First Steps',rarity:'common',points:10,condition:'First chore ever'},
+  {icon:'💵',name:'First Wages',rarity:'common',points:10,condition:'First dollar earned'},
+  {icon:'🎯',name:'Dream Big',rarity:'common',points:10,condition:'First goal created'},
+  {icon:'📅',name:'Weekly Warrior',rarity:'common',points:25,condition:'Perfect days'},
+  {icon:'🔥',name:'Getting Going',rarity:'common',points:25,condition:'Day streak'},
+  {icon:'🔥',name:'Week Warrior',rarity:'uncommon',points:50,condition:'Day streak'},
+  {icon:'🏆',name:'Monthly Master',rarity:'epic',points:200,condition:'Day streak'},
+  {icon:'⭐',name:'Unstoppable',rarity:'epic',points:400,condition:'Day streak'}
+];
+
+function App(){
+  const [isParent,setIsParent]=React.useState(true);
+  const [sec,setSec]=React.useState('home');
+  const [detail,setDetail]=React.useState(null);
+  const [drill,setDrill]=React.useState(null);
+  const [theme,setTheme]=React.useState('harbor');
+  const [dash,setDash]=React.useState(DASH);
+  const [chores,setChores]=React.useState(CHORES);
+  const [defs,setDefs]=React.useState(()=>Object.fromEntries(DEFS.map(d=>[d.name,true])));
+  const [who,setWho]=React.useState('Emma');
+  const [editor,setEditor]=React.useState(null);
+  const [helpReq,setHelpReq]=React.useState(null);
+  React.useEffect(()=>{document.documentElement.dataset.theme=theme},[theme]);
+
+  const sections=isParent?PARENT_SECTIONS:KID_SECTIONS;
+  const waiting=dash.approvals.length+dash.help.length;
+  const kidState={chores:[
+      {id:1,icon:'🛏',name:'Make Bed',done:false},
+      {id:2,icon:'🪥',name:'Brush Teeth (AM)',done:false},
+      {id:3,icon:'🧽',name:'Vacuum Room',value:1.00,minutes:30,done:false},
+      {id:4,icon:'🐕',name:'Feed Pet',value:1.50,minutes:30,done:false,weekly:{done:2,target:3}},
+      {id:5,icon:'🧠',name:'Learning Activity',value:0.75,done:false,weekly:{done:4,target:4}}
+    ],balance:18.00,streak:0,earnedToday:0,name:'Emma_Test',
+    goal:{name:'Nintendo Switch game',target:60},badges:{earned:6,total:46}};
+
+  const respondHelp=()=>{setDash(d=>({...d,help:d.help.filter(h=>h.id!==helpReq.id)}));setHelpReq(null)};
+  const toggleDay=(c,day)=>setChores(cs=>cs.map(x=>x.id===c.id
+    ?{...x,days:(x.days||[]).includes(day)?x.days.filter(d=>d!==day):ALL_DAYS.filter(d=>[...(x.days||[]),day].includes(d))}:x));
+
+  // ---- detail screens reached from the sidebar's toolbar or Settings ----
+  const DETAILS={
+    calendar:{title:'Calendar',body:<CalendarMonth monthLabel="July 2026" firstWeekday={3} selected={25}
+      days={Array.from({length:31},(_,i)=>{const d=i+1;
+        return {day:d,status:d>25?undefined:['missed','allDone','inProgress','missed','inProgress'][d%5],outside:d>25}})} />},
+    rewards:{title:'Reward Claims',body:<EmptyState icon="checkmark.seal" title="Nothing waiting"
+      description="When a reward is earned, it'll show up here for you to approve." />},
+    achievements:{title:'Achievements',body:<GlassCard>{DEFS.map((d,i)=><React.Fragment key={d.name}>
+      {i>0&&<HR/>}<AchievementDefRow {...d} enabled={defs[d.name]}
+        onToggle={(v)=>setDefs(s=>({...s,[d.name]:v}))} /></React.Fragment>)}</GlassCard>},
+    family:{title:'Family',body:<>
+      <GlassCard>
+        <FamilyMemberRow name="parent_test" role="Parent" isYou />
+        <HR/><FamilyMemberRow name="parent_test2" role="Parent" />
+        {KIDS.map(k=><React.Fragment key={k.name}><HR/>
+          <FamilyMemberRow name={k.name.toLowerCase()+'_test'} role="Child" /></React.Fragment>)}
+      </GlassCard>
+      <div style={{fontSize:'var(--ds-text-caption)',color:'var(--ds-label-2)',padding:'10px 4px 0'}}>
+        Reset a password if someone's locked out, or pause an account with lock.</div></>},
+    driving:{title:'Driving log',body:<>
+      <DrivingTotals totalHours={0} nightHours={0} />
+      <div style={{height:12}}></div>
+      <GlassCard><DrivingLogRow date="Jun 25" duration="36m" from="22:03" to="22:39"
+        supervisor="Dad" isNight status="Pending" note="na" /></GlassCard></>},
+    drivingApprovals:{title:'Driving approvals',body:<EmptyState icon="checkmark.seal" title="Nothing waiting"
+      description="Logged drives waiting for your approval will show up here." />}
+  };
+
+  let title, body, toolbar=null, back=null;
+  if(detail){ const d=DETAILS[detail]; title=d.title; body=d.body; back=()=>setDetail(null); }
+  else if(drill){ title=drill.name+"'s day"; body=<ParentChildDay child={drill} />; back=()=>setDrill(null); }
+  else if(isParent){
+    title=sec==='home'?'Home':sec==='planner'?'Planner':sec==='approvals'?'Approvals':'Settings';
+    if(sec==='home'){
+      toolbar=<><ToolbarButton icon="calendar" label="Calendar" onClick={()=>setDetail('calendar')} />
+        <ToolbarButton icon="gift" label="Reward claims" onClick={()=>setDetail('rewards')} /></>;
+      body=<><ParentHome dash={dash} onDrill={setDrill} onNav={setSec} />
+        <div style={{height:16}}></div>
+        <div style={{display:'flex',alignItems:'center',gap:10,paddingBottom:10}}>
+          <ChildPicker children={KIDS.map(k=>k.name)} value={who} onChange={setWho} /></div>
+        <YearHeatmapCard title={who+"'s year"} /></>;
+    }
+    else if(sec==='planner'){
+      toolbar=<><ToolbarButton icon="plus" label="Add chore" onClick={()=>setEditor({__new:true})} />
+        <ToolbarButton icon="list.bullet" label="List view" />
+        <ToolbarButton icon="ellipsis.circle" label="More" /></>;
+      body=<ParentPlanner chores={chores} singleChild={false} onToggleDay={toggleDay}
+        onEdit={setEditor} onAdd={()=>setEditor({__new:true})} />;
+    }
+    else if(sec==='approvals') body=<ParentApprovals dash={dash} onApprove={()=>{}}
+      onApproveAll={()=>{}} onHelp={setHelpReq} />;
+    else body=<AppSettings theme={theme} onTheme={setTheme} isParent childName="Emma"
+      features={{goals:false,confetti:true,streaks:true}} onFeature={()=>{}} onManage={setDetail} />;
+  } else {
+    title={kidHome:'Home',today:'Today',earnings:'Earnings',awards:'Awards',settings:'Settings'}[sec];
+    if(sec==='kidHome'){ toolbar=<ToolbarButton icon="calendar" label="Calendar" onClick={()=>setDetail('calendar')} />;
+      body=<KidHome state={kidState} onDone={()=>{}} onHelp={()=>{}} onNav={setSec} />; }
+    else if(sec==='today') body=<KidToday state={kidState} onDone={()=>{}} onHelp={()=>{}} />;
+    else if(sec==='earnings') body=<KidEarnings state={kidState} onNav={setSec} />;
+    else if(sec==='awards'){ toolbar=<ToolbarButton icon="gift" label="Rewards" onClick={()=>setDetail('rewards')} />;
+      body=<KidAwards />; }
+    else body=<AppSettings theme={theme} onTheme={setTheme} isParent={false} childName="Emma_Test"
+      features={{}} onFeature={()=>{}} onManage={setDetail} />;
+  }
+
+  return <>
+    <MacWindow sections={sections} active={sec} badges={isParent?{approvals:waiting}:{}}
+      onSelect={(k)=>{setDetail(null);setDrill(null);setSec(k)}}
+      title={title} toolbar={toolbar} back={back}>
+      {body}
+      <div style={{height:28}}></div>
+      <div style={{display:'flex',alignItems:'center',gap:10,paddingTop:14,borderTop:'.5px solid var(--ds-hairline)'}}>
+        <span style={{fontSize:'var(--ds-text-caption)',color:'var(--ds-label-3)'}}>Viewing as</span>
+        <button onClick={()=>{setIsParent(p=>!p);setSec(isParent?'kidHome':'home');setDetail(null);setDrill(null)}}
+          style={{background:'transparent',border:'none',cursor:'pointer',color:'var(--ds-accent)',
+            fontSize:'var(--ds-text-caption)',fontWeight:'var(--ds-weight-semibold)',padding:0}}>
+          {isParent?'parent_test — switch to Emma':'Emma_Test — switch to parent'}</button>
+      </div>
+    </MacWindow>
+
+    {editor&&<div style={{position:'fixed',inset:0,zIndex:500,background:'rgb(0 0 0 / .35)',
+      display:'grid',placeItems:'center'}} onClick={(e)=>{if(e.target===e.currentTarget)setEditor(null)}}>
+      <div style={{width:560,maxHeight:'86vh',background:'var(--ds-background)',borderRadius:14,
+        overflow:'hidden',boxShadow:'0 20px 60px rgb(0 0 0 / .4)'}}>
+        <ChoreEditorSheet chore={editor.__new?null:editor} singleChild={false}
+          onSave={()=>setEditor(null)} onCancel={()=>setEditor(null)} /></div></div>}
+
+    {helpReq&&<div style={{position:'fixed',inset:0,zIndex:500,background:'rgb(0 0 0 / .35)',
+      display:'grid',placeItems:'center'}} onClick={(e)=>{if(e.target===e.currentTarget)setHelpReq(null)}}>
+      <div style={{width:560,height:520,background:'var(--ds-background)',borderRadius:14,
+        overflow:'hidden',boxShadow:'0 20px 60px rgb(0 0 0 / .4)'}}>
+        <HelpRespondSheet request={helpReq} onChoose={respondHelp} onClose={()=>setHelpReq(null)} /></div></div>}
+  </>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

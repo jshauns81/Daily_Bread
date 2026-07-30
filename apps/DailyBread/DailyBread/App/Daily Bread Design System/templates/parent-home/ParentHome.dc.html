@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Parent home" description="Daily Bread parent Home: greeting card with the three chips, stat tiles, the child's ring, week strip, balance and the year heatmap." -->
+<helmet>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="./ds-base.js"></script>
+<style>html,body{margin:0}body{background:var(--ds-background);color:var(--ds-label);font-family:var(--ds-font);-webkit-font-smoothing:antialiased;min-height:100vh}*{box-sizing:border-box}button{font-family:inherit}</style>
+</helmet>
+<div style="max-width:393px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column">
+<header style="display:flex;align-items:flex-end;padding:14px 16px 8px">
+<span style="font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.1">Home</span>
+</header>
+<main style="flex:1;padding:0 16px 20px;display:flex;flex-direction:column;gap:16px">
+
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.GlassCard" padding="16px" hint-size="100%,110px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:8px">
+<span style="font-size:22px;font-weight:700">Good evening, <span style="color:var(--ds-accent)">Shaun</span></span>
+<span style="flex:1"></span>
+<span style="font-size:12px;color:var(--ds-label-2);white-space:nowrap">Friday, July 24</span>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.Chip" tone="var(--ds-gold)" hint-size="150px,24px">✦ 5 awaiting approval</x-import>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.Chip" emphasized="{{ false }}" hint-size="100px,24px">✓ 2 done today</x-import>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.Chip" tone="var(--ds-help)" hint-size="110px,24px">! 1 needs help</x-import>
+</div>
+</div>
+</x-import>
+
+<div style="display:flex;gap:12px">
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.StatTile" value="6" label="waiting on you" color="var(--ds-accent)" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.StatTile" value="$12.50" label="earned this week" color="var(--ds-gold)" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.StatTile" value="2/5" label="chores today" hint-size="100%,72px"></x-import>
+</div>
+
+<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ds-label-2)">Today</span>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.ChildRow" child="{{ ada }}" hint-size="100%,72px"></x-import>
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ds-label-2)">Quick view — this week</span>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.WeekStrip" days="{{ week }}" hint-size="100%,52px"></x-import>
+</div>
+
+<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ds-label-2)">Balance</span>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.GlassCard" hint-size="100%,68px">
+<div style="display:flex;align-items:center;gap:8px;min-height:44px">
+<span style="font-size:17px">Ada</span>
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.Tag" tone="var(--ds-success)" hint-size="110px,20px">Cash out ready</x-import>
+<span style="flex:1"></span>
+<span style="font-size:15px;font-weight:600;color:var(--ds-gold)">$48.75</span>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.YearHeatmapCard" title="Ada's year" hint-size="100%,180px"></x-import>
+</main>
+
+<x-import component-from-global-scope="DailyBreadDesignSystem_2a4964.TabBar" tabs="{{ parentTabs }}" active="home" badges="{{ badges }}" hint-size="100%,49px"></x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      false: false,
+      ada: { name: 'Ada', done: 2, total: 5, pending: 3, helpRequests: 1 },
+      week: [
+        { letter: 'S' }, { letter: 'M', amount: '$3.50' }, { letter: 'T', amount: '$2.00' },
+        { letter: 'W' }, { letter: 'T', amount: '$4.25' }, { letter: 'F', amount: '$2.75' }, { letter: 'S' }
+      ],
+      badges: { approvals: 6 },
+      parentTabs: (window.DailyBreadDesignSystem_2a4964 || {}).PARENT_TABS || []
+    };
+  }
+}
+</script>
+</body>
+</html>

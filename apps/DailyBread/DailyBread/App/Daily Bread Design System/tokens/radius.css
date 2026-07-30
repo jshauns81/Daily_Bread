@@ -1,0 +1,13 @@
+/* Every rounded rect in the app is `style: .continuous` — a squircle, not a
+   circular arc. In CSS the nearest honest approximation is a slightly larger
+   plain radius; do NOT try to fake it with a superellipse. */
+:root{
+  --ds-radius-card: 20px;      /* glassCard + achievement overlay     */
+  --ds-radius-hero: 24px;      /* the kid hero, the one bigger card    */
+  --ds-radius-swatch: 12px;    /* theme swatch, pool tile, action bar  */
+  --ds-radius-field: 10px;     /* inline field bg, icon tile           */
+  --ds-radius-icon-tile: 12px; /* the 46px Next-Up icon tile           */
+  --ds-radius-day-cell: 7px;   /* planner grid cell                   */
+  --ds-radius-heatmap: 2.5px;  /* one day in the year grid            */
+  --ds-radius-capsule: 999px;  /* chips, level badge, XP bar, buttons  */
+}

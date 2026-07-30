@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>App icon — round 5</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1060px;margin:0 auto;padding:34px 24px 80px}
+h1{font-size:32px;font-weight:800;letter-spacing:-.025em;margin:0 0 7px}
+.sub{font-size:15.5px;color:var(--ds-label-2);margin:0 0 9px;max-width:730px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:15px;display:grid;grid-template-columns:172px 1fr;gap:22px;align-items:start}
+.p{margin:0 0 9px;font-size:14px;max-width:64ch}
+.hd{display:flex;align-items:baseline;gap:9px;margin:0 0 7px;flex-wrap:wrap}
+.hd b{font-size:16.5px;font-weight:760}
+.tag{font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--ds-fill-strong);color:var(--ds-label-2)}
+.tag.pick{background:var(--ds-accent);color:var(--ds-on-accent)}
+.tag.risk{background:color-mix(in oklab,var(--ds-help) 20%,transparent);color:var(--ds-help)}
+.ladder{display:flex;gap:13px;align-items:flex-end;margin-top:13px;flex-wrap:wrap}
+.ladder figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ladder figcaption{font:600 9px var(--ds-font);color:var(--ds-label-3);letter-spacing:.3px}
+.ico{position:relative;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgb(0 0 0 / .18)}
+.big{width:150px;height:150px;box-shadow:0 10px 26px rgb(0 0 0 / .22)}
+.dockbg{background:linear-gradient(150deg,#7C6A55,#3E3227);padding:38px 26px 22px;border-radius:16px;margin-top:14px;display:flex;justify-content:center}
+.dock{padding:11px 15px 13px;border-radius:19px;background:rgb(255 255 255 / .16);backdrop-filter:blur(20px);border:1px solid rgb(255 255 255 / .2);display:flex;gap:13px;align-items:flex-end;width:max-content}
+.dock figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.dock figcaption{font:600 9.5px var(--ds-font);color:#fff;opacity:.85}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:12px}
+.note b{color:var(--ds-label)}
+.warn{background:color-mix(in oklab,var(--ds-help) 9%,var(--ds-fill))}
+.budget{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+.bcol{background:var(--ds-fill);border-radius:11px;padding:13px 15px}
+.bcol h4{margin:0 0 8px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--ds-label-3);font-weight:800}
+.bcol ul{margin:0;padding-left:17px;font-size:12.5px;color:var(--ds-label-2);line-height:1.65}
+</style></head><body>
+<div class="wrap">
+
+<h1>Round five — the monstrance</h1>
+<p class="sub">This is the best idea yet, and I don't think it was an accident. A radiant sunburst holding a disc, topped with a cross, <b>is a monstrance</b> — the vessel that displays the host. You've drawn the one object whose whole purpose is showing the bread.</p>
+<p class="sub">It also carries dawn, which no other direction did: morning, a new day, <i>give us this day</i>. That's the app's actual rhythm.</p>
+<p class="sub" style="font-size:13.5px;color:var(--ds-label-3)">So the concept is right. What follows is only about what has to be cut for it to survive being 29 pixels wide.</p>
+
+<h2>The problem, shown rather than argued</h2>
+<div class="card">
+  <div id="ref-big"></div>
+  <div>
+    <div class="hd"><b>As referenced</b><span class="tag risk">Collapses below 60pt</span></div>
+    <p class="p">My approximation of your reference — thin rays, a detailed finial, three landscape planes with hairlines, and a soft bloom. Watch the ladder: it's handsome at 180 and by 40 it's an amber smudge on charcoal.</p>
+    <p class="p">Nothing here is badly drawn. There's just more information than the format can carry.</p>
+    <div class="ladder" id="ref-lad"></div>
+  </div>
+</div>
+<div class="card" style="grid-template-columns:1fr">
+<div class="budget">
+  <div class="bcol"><h4>What's spending the budget</h4><ul>
+    <li><b>~14 rays</b>, most under 1px at 60pt</li>
+    <li><b>An ornate finial</b> — fleur tips resolve to mush</li>
+    <li><b>Three landscape planes</b> plus hairline edges — a second scene competing with the first</li>
+    <li><b>A radial bloom</b>, which turns to grey haze when downsampled</li>
+    <li><b>A baked-in bezel</b> — iOS masks and shades the tile itself, so a drawn frame double-borders</li>
+  </ul></div>
+  <div class="bcol"><h4>What it can afford</h4><ul>
+    <li><b>8 rays</b>, thick, with real gaps</li>
+    <li><b>One silhouette</b> — sun, or sun + horizon, not sun + hills + fields</li>
+    <li><b>A simple cross</b>, or none</li>
+    <li><b>Flat colour</b>, no glow</li>
+    <li><b>Full bleed to the tile edge</b>, no frame</li>
+  </ul></div>
+</div>
+<div class="note warn"><b>The rule of thumb:</b> an app icon has roughly <i>one shape and one modifier</i> of capacity. Your reference has about five. Everything below keeps the idea and spends the budget once.</div>
+</div>
+
+<h2>The reductions</h2>
+
+<div class="card">
+  <div id="v-big"></div>
+  <div>
+    <div class="hd"><b>V · Monstrance, reduced</b><span class="tag pick">My pick</span></div>
+    <p class="p">Eight thick rays, a solid half-sun on the horizon, one small cross. Same reading as your reference at a glance — radiance, dawn, the host displayed — with a quarter of the parts.</p>
+    <p class="p">Cream ground rather than charcoal, so it matches Sunroom and stops the gold from doing all the work alone.</p>
+    <div class="ladder" id="v-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="w-big"></div>
+  <div>
+    <div class="hd"><b>W · Dawn, no cross</b><span class="tag">The quiet version</span></div>
+    <p class="p">The same mark with the finial removed. Still a monstrance in structure, but it reads first as a sunrise — the meaning is available without being declared. This is the <i>Implied</i> position from round four, in your form rather than mine.</p>
+    <div class="ladder" id="w-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="x-big"></div>
+  <div>
+    <div class="hd"><b>X · Full host, radiant</b><span class="tag">Most legible</span></div>
+    <p class="p">A whole disc rather than a half — the host itself, with rays behind it. Loses the dawn reading but gains a strong centre, which is what makes an icon hold at 29pt. Structurally the closest to a real monstrance.</p>
+    <div class="ladder" id="x-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="y-big"></div>
+  <div>
+    <div class="hd"><b>Y · Reduced, on your dark ground</b><span class="tag">Keeps your mood</span></div>
+    <p class="p">V's geometry on the deep blue you chose. Warmer and more nocturnal — and a genuinely good argument for a dark tile, since gold on dark is how candlelight actually looks.</p>
+    <p class="p">One caveat: it matches no shipping theme, which was strike two against the current icon. Worth doing anyway if the mood matters more, but it should be a decision rather than an inheritance.</p>
+    <div class="ladder" id="y-lad"></div>
+  </div>
+</div>
+
+<h2>Dock test</h2>
+<div class="card" style="grid-template-columns:1fr">
+<div class="dockbg"><div class="dock" id="dock"></div></div>
+<div class="note"><b>Current icon, your reference as-drawn, then the four reductions, with round four's scored host last.</b> The reference and the current icon fail the same way — fine detail on dark, indistinguishable at a glance.</div>
+</div>
+
+<h2>Where I'd land</h2>
+<div class="card" style="grid-template-columns:1fr">
+<p class="p"><b>V, or W if you want it quieter.</b> You found the right object; it only needs to be drawn for the size it will actually live at. If you want the dark ground, Y is the same mark and I'd support it — just choose it deliberately.</p>
+<p class="p">Two notes for the vector pass: <b>rays should be trapezoids, not rectangles</b> — wider at the outer end, so they read as light rather than spokes. And <b>no bezel or inner border</b>; iOS masks the tile and adds its own shading, so a drawn frame ends up double-edged.</p>
+<p class="p" style="color:var(--ds-label-3);font-size:13px">The top tile is my CSS approximation of your reference, not your actual file — close enough to demonstrate the size behaviour, not a substitute for testing the real artwork.</p>
+</div>
+
+</div>
+<script>
+const R=s=>s*0.2237;
+function shell(size,bg){const d=document.createElement('div');d.className='ico';
+  d.style.width=size+'px';d.style.height=size+'px';d.style.borderRadius=R(size)+'px';d.style.background=bg;return d}
+const GOLD='linear-gradient(160deg,#F2C878,#D69B34)';
+const GOLDFLAT='#DFA53E';
+const DARK='linear-gradient(160deg,#3A4A57,#222E38)';
+
+function rays(host,size,cx,cy,n,inner,outer,thick,color,spanDeg,startDeg){
+  for(let i=0;i<n;i++){
+    const a=(startDeg+(spanDeg/(n-1))*i)*Math.PI/180;
+    const len=outer-inner;
+    const r=document.createElement('div');
+    r.style.cssText=`position:absolute;left:${cx}px;top:${cy}px;width:${thick}px;height:${len}px;background:${color};
+      border-radius:${thick*.4}px;transform-origin:${thick/2}px 0;
+      transform:rotate(${(startDeg+(spanDeg/(n-1))*i)+180}deg) translate(${-thick/2}px,${inner}px)`;
+    host.appendChild(r);
+  }
+}
+// approximation of the reference: many thin rays, finial, hills, bloom, bezel
+function iconRef(size){
+  const d=shell(size,DARK);
+  const glow=document.createElement('div');
+  glow.style.cssText=`position:absolute;left:${size*.16}px;top:${size*.12}px;width:${size*.68}px;height:${size*.62}px;
+    border-radius:50%;background:radial-gradient(circle,rgb(240 190 90 / .55),transparent 68%);filter:blur(${size*.03}px)`;
+  d.appendChild(glow);
+  const cx=size*.5, cy=size*.55;
+  rays(d,size,cx,cy,13,size*.20,size*.36,Math.max(size*.016,.7),'#E8B863',150,-165);
+  const sun=document.createElement('div');
+  sun.style.cssText=`position:absolute;left:${size*.31}px;top:${size*.34}px;width:${size*.38}px;height:${size*.19}px;
+    background:radial-gradient(ellipse at 50% 100%,#FBE0A8,#E0A342);border-radius:${size*.19}px ${size*.19}px 0 0;
+    box-shadow:inset 0 0 0 ${Math.max(size*.012,.6)}px #EFC072`;
+  d.appendChild(sun);
+  const stem=document.createElement('div');
+  stem.style.cssText=`position:absolute;left:${size*.487}px;top:${size*.16}px;width:${Math.max(size*.022,1)}px;height:${size*.24}px;background:#E8B863`;
+  d.appendChild(stem);
+  const arm=document.createElement('div');
+  arm.style.cssText=`position:absolute;left:${size*.19}px;top:${size*.515}px;width:${size*.62}px;height:${Math.max(size*.02,.9)}px;background:#E8B863;border-radius:99px`;
+  d.appendChild(arm);
+  [.20,.78].forEach(x=>{const k=document.createElement('div');
+    k.style.cssText=`position:absolute;left:${size*x}px;top:${size*.492}px;width:${size*.045}px;height:${size*.045}px;background:#E8B863;border-radius:${size*.012}px;transform:rotate(45deg)`;
+    d.appendChild(k)});
+  const f=document.createElement('div');
+  f.style.cssText=`position:absolute;left:${size*.468}px;top:${size*.145}px;width:${size*.06}px;height:${size*.045}px;background:#E8B863;border-radius:${size*.02}px`;
+  d.appendChild(f);
+  [[0,.60,-9],[.05,.70,7],[0,.80,-5]].forEach(([l,t,rot])=>{
+    const h=document.createElement('div');
+    h.style.cssText=`position:absolute;left:${-size*.1+size*l}px;top:${size*t}px;width:${size*1.2}px;height:${size*.16}px;
+      background:linear-gradient(180deg,#3E4E5B,#28343E);transform:rotate(${rot}deg);
+      border-top:${Math.max(size*.006,.5)}px solid rgb(230 200 150 / .5)`;
+    d.appendChild(h)});
+  const bez=document.createElement('div');
+  bez.style.cssText=`position:absolute;inset:${size*.03}px;border-radius:${R(size)*.85}px;border:${Math.max(size*.02,1)}px solid rgb(255 255 255 / .07)`;
+  d.appendChild(bez);
+  return d;
+}
+function monstrance(size,bg,cross,fullDisc){
+  const d=shell(size,bg);
+  const cx=size*.5, cy=fullDisc?size*.5:size*.62;
+  rays(d,size,cx,cy,8,size*.26,size*.44,Math.max(size*.055,2),GOLDFLAT,150,-165);
+  if(fullDisc){
+    const s=document.createElement('div');
+    s.style.cssText=`position:absolute;left:${size*.315}px;top:${size*.315}px;width:${size*.37}px;height:${size*.37}px;
+      border-radius:50%;background:${GOLD}`;
+    d.appendChild(s);
+  } else {
+    const s=document.createElement('div');
+    s.style.cssText=`position:absolute;left:${size*.295}px;top:${size*.415}px;width:${size*.41}px;height:${size*.205}px;
+      background:${GOLD};border-radius:${size*.205}px ${size*.205}px 0 0`;
+    d.appendChild(s);
+    const base=document.createElement('div');
+    base.style.cssText=`position:absolute;left:${size*.20}px;top:${size*.615}px;width:${size*.60}px;height:${Math.max(size*.045,2)}px;
+      background:${GOLDFLAT};border-radius:99px`;
+    d.appendChild(base);
+  }
+  if(cross){
+    const v=document.createElement('div');
+    v.style.cssText=`position:absolute;left:${size*.475}px;top:${size*.115}px;width:${Math.max(size*.05,2)}px;height:${size*.135}px;background:${GOLDFLAT};border-radius:${size*.012}px`;
+    const h=document.createElement('div');
+    h.style.cssText=`position:absolute;left:${size*.425}px;top:${size*.155}px;width:${size*.15}px;height:${Math.max(size*.05,2)}px;background:${GOLDFLAT};border-radius:${size*.012}px`;
+    d.appendChild(v);d.appendChild(h);
+  }
+  return d;
+}
+const iconV=s=>monstrance(s,'#FBF3E4',true,false);
+const iconW=s=>monstrance(s,'#FBF3E4',false,false);
+const iconX=s=>monstrance(s,'#FBF3E4',true,true);
+const iconY=s=>monstrance(s,DARK,true,false);
+function iconScored(size){
+  const d=shell(size,'#FBF3E4');const dia=size*.62;
+  const c=document.createElement('div');
+  c.style.cssText=`position:absolute;left:${(size-dia)/2}px;top:${(size-dia)/2}px;width:${dia}px;height:${dia}px;border-radius:50%;background:${GOLD};overflow:hidden`;
+  const t=Math.max(dia*.036,1);
+  [-1,0,1].forEach(i=>{const s=document.createElement('div');
+    s.style.cssText=`position:absolute;left:${dia*.5-t/2+i*dia*.17}px;top:${dia*.27}px;width:${t}px;height:${dia*.46}px;
+      background:rgb(120 78 12 / .34);border-radius:99px;box-shadow:0 ${Math.max(t*.5,.5)}px 0 rgb(255 250 236 / .34);transform:rotate(-40deg)`;
+    c.appendChild(s)});
+  d.appendChild(c);return d;
+}
+function iconCurrent(size){
+  const d=shell(size,'#1B2B33');
+  const img=document.createElement('img');
+  img.src='../../assets/app-icon-1024.png';img.alt='Current Daily Bread icon';
+  img.style.cssText=`position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit`;
+  d.appendChild(img);return d;
+}
+const MAKE={ref:iconRef,v:iconV,w:iconW,x:iconX,y:iconY};
+const SIZES=[[180,'180 · @3x'],[120,'120 · @2x'],[87,'87 · settings'],[60,'60 · @1x'],[40,'40 · spotlight'],[29,'29 · smallest']];
+for(const [k,fn] of Object.entries(MAKE)){
+  const big=fn(150);big.classList.add('big');document.getElementById(k+'-big').appendChild(big);
+  const lad=document.getElementById(k+'-lad');
+  SIZES.forEach(([s,lbl])=>{const f=document.createElement('figure');
+    f.appendChild(fn(s));const c=document.createElement('figcaption');c.textContent=lbl;f.appendChild(c);lad.appendChild(f)});
+}
+const dock=document.getElementById('dock');
+[['Current · today',iconCurrent],['Reference (approx)',iconRef],['V · Reduced',iconV],['W · No cross',iconW],['X · Full host',iconX],['Y · Dark',iconY],['N · Scored host',iconScored]].forEach(([l,fn])=>{
+  const f=document.createElement('figure');f.appendChild(fn(64));
+  const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);dock.appendChild(f)});
+</script>
+</body></html>

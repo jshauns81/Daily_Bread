@@ -1,0 +1,214 @@
+<!-- @dsCard group="Kid app" viewport="393x852" name="Kid — Home" subtitle="iPhone: level badge, XP bar, goal, badges, Next Up. Tap through all five tabs. Celebration ladder is tweakable." -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Daily Bread — Kid</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>html,body{margin:0;height:100%}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+#root{max-width:var(--ds-iphone-width);margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+a{color:var(--ds-accent);text-decoration:none}
+a:hover{color:var(--ds-accent-pressed,var(--ds-accent))}
+::-webkit-scrollbar{width:0}
+button{font-family:inherit}</style>
+</head><body><div id="root"></div>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="Celebration.jsx"></script>
+<script type="text/babel" src="KidScreens.jsx"></script>
+<script type="text/babel">
+const { TabBar, KID_TABS, Icon, EmptyState, CalendarMonth,
+  DrivingTotals } = window.DailyBreadDesignSystem_2a4964;
+
+const TITLES = {kidHome:'Home', today:'Today', earnings:'Earnings', awards:'Awards', settings:'Settings'};
+
+const START = [
+  {id:1, icon:'🗑', name:'Take out the trash', value:1.5, minutes:15, done:false},
+  {id:2, icon:'🍽', name:'Dishes', value:2, minutes:20, done:true, approvedBy:'Dad'},
+  {id:3, icon:'🐕', name:'Walk the dog', value:1, minutes:15, help:true},
+  {id:4, icon:'📚', name:'Read 20 minutes', value:1, done:false, weekly:{done:4,target:7}},
+  {id:5, icon:'🛏', name:'Make your bed', done:true}
+];
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "tier": "full",
+  "count": 1340,
+  "duration": 4100,
+  "emitter": "both",
+  "mix": "coinHeavy",
+  "gravity": 1800,
+  "drag": 2.35,
+  "burstVelocity": 1500,
+  "spin": 11.5,
+  "wobble": 54,
+  "depthBlur": 6,
+  "bloom": 0.8,
+  "themeTint": true,
+  "chime": true,
+  "reduceMotion": false
+}/*EDITMODE-END*/;
+
+function App(){
+  const [t,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  const [tab,setTab]=React.useState('kidHome');
+  const [chores,setChores]=React.useState(START);
+  const [balance,setBalance]=React.useState(48.75);
+  const [earnedToday,setEarned]=React.useState(2.00);
+  const [theme,setTheme]=React.useState('sunroom');
+  const [helpFor,setHelpFor]=React.useState(null);
+  const [manage,setManage]=React.useState(null);
+  const tapRef=React.useRef({x:196,y:400});
+  React.useEffect(()=>{document.documentElement.dataset.theme=theme},[theme]);
+
+  React.useEffect(()=>{
+    const onDown=(e)=>{
+      const box=document.getElementById('root').getBoundingClientRect();
+      tapRef.current={x:e.clientX-box.left, y:e.clientY-box.top};
+    };
+    window.addEventListener('pointerdown',onDown,true);
+    return ()=>window.removeEventListener('pointerdown',onDown,true);
+  },[]);
+
+  const applyTier=(v)=>{
+    setTweak('tier',v);
+    const p=CELEB_PRESETS[v]; if(!p) return;
+    Object.keys(p).forEach(k=>setTweak(k,p[k]));
+  };
+
+  const toggle=(id)=>{
+    const c=chores.find(x=>x.id===id); if(!c) return;
+    const completing=!c.done;
+    const at={...tapRef.current};
+    setChores(cs=>cs.map(x=>x.id===id?{...x,done:completing}:x));
+    if(c.value){
+      setBalance(b=>+(b+(completing?c.value:-c.value)).toFixed(2));
+      setEarned(e=>+(Math.max(0,e+(completing?c.value:-c.value))).toFixed(2));
+    }
+    if(!completing || !window.DBCelebrate) return;
+    const after=chores.map(x=>x.id===id?{...x,done:true}:x);
+
+    // Tier 1 — every completion. Gold ring when the chore earns.
+    window.DBCelebrate.pop(at, !!c.value);
+
+    // Tier 2 — the last earning chore lands: a coin arcs into the balance.
+    const earning=after.filter(x=>x.value && !x.help);
+    if(c.value && earning.length && earning.every(x=>x.done)){
+      setTimeout(()=>window.DBCelebrate&&window.DBCelebrate.threshold(at,
+        document.querySelector('[data-coin-target]')),140);
+    }
+
+    // Tier 3 — a genuinely perfect day.
+    if(after.every(x=>x.done||x.help) && after.filter(x=>!x.help).length>0){
+      setTimeout(()=>window.DBCelebrate&&window.DBCelebrate.perfect(),260);
+    }
+  };
+  const raiseHelp=(id)=>setHelpFor(chores.find(x=>x.id===id)||null);
+  const submitHelp=()=>{ setChores(cs=>cs.map(x=>x.id===helpFor.id?{...x,help:true}:x)); setHelpFor(null); };
+
+  const state={chores,balance,streak:7,earnedToday,name:'Ada',
+    goal:{name:'Nintendo Switch game',target:60}, badges:{earned:6,total:9}};
+
+  const MANAGE_TITLES={calendar:'Calendar',rewards:'Rewards',driving:'Driving log'};
+  const MANAGE_BODY={
+    calendar: <CalendarMonth monthLabel="July 2026" firstWeekday={3} selected={25}
+      days={Array.from({length:31},(_,i)=>{const d=i+1;
+        return {day:d,status:d>25?undefined:['missed','allDone','inProgress','missed','inProgress'][d%5],outside:d>25}})} />,
+    rewards: <EmptyState icon="gift" title="No rewards yet"
+      description="Rewards your grown-ups set up will show up here." />,
+    driving: <>
+      <DrivingTotals totalHours={0} nightHours={0} />
+      <div style={{height:12}}></div>
+      <EmptyState icon="car" title="No drives logged"
+        description="Tap + to log a supervised drive. It counts toward your hours once a parent approves." />
+    </>
+  };
+
+  const swift=celebSwiftConfig(t);
+
+  return <>
+    <header style={{display:'flex',alignItems:'flex-end',gap:10,padding:'14px 16px 8px',flexShrink:0}}>
+      {manage!==null && <button onClick={()=>setManage(null)} style={{background:'transparent',border:'none',cursor:'pointer',
+        color:'var(--ds-accent)',padding:0,marginBottom:6,display:'flex',alignItems:'center',gap:2,fontSize:17}}>
+        <Icon name="chevron.left" size={20} />Back</button>}
+      <span style={{fontSize: manage!==null ? 'var(--ds-text-title2)' : 'var(--ds-text-large-title)',
+        fontWeight:'var(--ds-weight-bold)',letterSpacing:'-.02em',lineHeight:1.1}}>
+        {manage!==null ? MANAGE_TITLES[manage] : TITLES[tab]}</span>
+      <span style={{flex:1}}></span>
+      {manage===null && (tab==='kidHome'||tab==='awards') && <button
+        aria-label={tab==='awards'?'Rewards':'Calendar'}
+        onClick={()=>setManage(tab==='awards'?'rewards':'calendar')}
+        style={{background:'transparent',border:'none',cursor:'pointer',color:'var(--ds-accent)',padding:0,marginBottom:5}}>
+        <Icon name={tab==='awards'?'gift':'calendar'} size={20} /></button>}
+    </header>
+
+    <main style={{flex:1,overflowY:'auto',padding:'0 16px 20px',WebkitOverflowScrolling:'touch'}}>
+      {manage!==null && MANAGE_BODY[manage]}
+      {manage===null && tab==='kidHome' && <KidHome state={state} onDone={toggle} onHelp={raiseHelp} onNav={setTab} />}
+      {manage===null && tab==='today' && <KidToday state={state} onDone={toggle} onHelp={raiseHelp} />}
+      {manage===null && tab==='earnings' && <KidEarnings state={state} onNav={setTab} />}
+      {manage===null && tab==='awards' && <KidAwards />}
+      {manage===null && tab==='settings' && <AppSettings theme={theme} onTheme={setTheme} isParent={false}
+        childName="Ada" features={{}} onFeature={()=>{}} onManage={setManage} />}
+    </main>
+
+    <div style={{flexShrink:0}}><TabBar tabs={KID_TABS} active={tab} onSelect={setTab} /></div>
+
+    <CelebrationLayer cfg={t} />
+
+    {helpFor && <div style={{position:'absolute',inset:0,zIndex:500,display:'flex',alignItems:'flex-end',
+      background:'rgb(0 0 0 / .3)'}} onClick={(e)=>{if(e.target===e.currentTarget)setHelpFor(null)}}>
+      <div style={{width:'100%',height:'62%',background:'var(--ds-background)',
+        borderTopLeftRadius:14,borderTopRightRadius:14,overflow:'hidden',
+        boxShadow:'0 -8px 30px rgb(0 0 0 / .18)'}}>
+        <HelpSheet choreName={helpFor.name} voiceParent="a grown-up" onSubmit={submitHelp} onCancel={()=>setHelpFor(null)} />
+      </div>
+    </div>}
+
+    <TweaksPanel>
+      <TweakSection label="Ladder" />
+      <TweakRadio label="Tier" value={t.tier} options={['off','modest','full']} onChange={applyTier} />
+      <TweakButton label="Fire perfect day" onClick={()=>window.DBCelebrate&&window.DBCelebrate.perfect()} />
+      <TweakButton label="Fire threshold coin" onClick={()=>window.DBCelebrate&&window.DBCelebrate.threshold(
+        {x:150,y:520}, document.querySelector('[data-coin-target]'))} />
+      <TweakButton label="Fire per-chore pop" onClick={()=>window.DBCelebrate&&window.DBCelebrate.pop({x:180,y:460},true)} />
+      <TweakButton label="Reset chores" onClick={()=>{setChores(START);setBalance(48.75);setEarned(2.00)}} />
+
+      <TweakSection label="Burst" />
+      <TweakSlider label="Particles" value={t.count} min={0} max={2400} step={20} onChange={(v)=>setTweak('count',v)} />
+      <TweakSlider label="Duration" value={t.duration} min={400} max={5000} step={100} unit="ms" onChange={(v)=>setTweak('duration',v)} />
+      <TweakRadio label="Emitter" value={t.emitter} options={['rain','burst','both']} onChange={(v)=>setTweak('emitter',v)} />
+      <TweakSelect label="Geometry" value={t.mix} options={['balanced','coinHeavy','ribbons','sparks']} onChange={(v)=>setTweak('mix',v)} />
+
+      <TweakSection label="Physics" />
+      <TweakSlider label="Gravity" value={t.gravity} min={0} max={2600} step={25} onChange={(v)=>setTweak('gravity',v)} />
+      <TweakSlider label="Drag" value={t.drag} min={0} max={3} step={0.05} onChange={(v)=>setTweak('drag',v)} />
+      <TweakSlider label="Burst velocity" value={t.burstVelocity} min={0} max={1800} step={20} onChange={(v)=>setTweak('burstVelocity',v)} />
+      <TweakSlider label="Spin" value={t.spin} min={0} max={16} step={0.5} onChange={(v)=>setTweak('spin',v)} />
+      <TweakSlider label="Wobble" value={t.wobble} min={0} max={90} step={2} onChange={(v)=>setTweak('wobble',v)} />
+
+      <TweakSection label="Look" />
+      <TweakSlider label="Depth blur" value={t.depthBlur} min={0} max={8} step={0.25} unit="px" onChange={(v)=>setTweak('depthBlur',v)} />
+      <TweakSlider label="Bloom" value={t.bloom} min={0} max={1.5} step={0.05} onChange={(v)=>setTweak('bloom',v)} />
+      <TweakToggle label="Theme tint + gold" value={t.themeTint} onChange={(v)=>setTweak('themeTint',v)} />
+
+      <TweakSection label="Sound & motion" />
+      <TweakToggle label="Rising chime" value={t.chime} onChange={(v)=>setTweak('chime',v)} />
+      <TweakToggle label="Reduce Motion" value={t.reduceMotion} onChange={(v)=>setTweak('reduceMotion',v)} />
+
+      <TweakSection label="SwiftUI" />
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        <button onClick={()=>navigator.clipboard&&navigator.clipboard.writeText(swift)}
+          style={{padding:'7px 10px',borderRadius:8,border:'1px solid rgb(255 255 255 / .18)',
+          background:'rgb(255 255 255 / .07)',color:'inherit',cursor:'pointer',fontSize:12,textAlign:'left'}}>
+          Copy CelebrationConfig.swift</button>
+        <pre style={{margin:0,padding:10,borderRadius:8,background:'rgb(0 0 0 / .28)',
+          fontSize:10,lineHeight:1.55,overflowX:'auto',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace'}}>{swift}</pre>
+      </div>
+    </TweaksPanel>
+  </>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

@@ -1,0 +1,35 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Label steps" subtitle="Opacities of the label colour — so they invert on dark themes for free." -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Labels</title><link rel="stylesheet" href="../styles.css">
+<style>html,body{margin:0}body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);padding:16px;box-sizing:border-box;min-height:100vh;-webkit-font-smoothing:antialiased}
+.sec{font-size:var(--ds-text-caption);font-weight:700;letter-spacing:var(--ds-kerning-section);text-transform:uppercase;color:var(--ds-label-2)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);box-shadow:var(--ds-card-shadow),0 0 0 .5px var(--ds-card-stroke);padding:var(--ds-card-padding)}
+.mono{font-family:var(--ds-font-mono);font-size:10px;color:var(--ds-label-2)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.8}
+</style></head><body><div style="display:flex;gap:14px">
+<div class="card" style="flex:1">
+<div style="font-size:17px;font-weight:500;color:var(--ds-label)">Take out the trash</div>
+<div style="font-size:12px;color:var(--ds-label-2);margin-top:3px">4 of 7 this week</div>
+<div style="font-size:11px;color:var(--ds-label-3);margin-top:3px">Mon–Fri</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px;justify-content:center">
+
+<div style="display:flex;align-items:center;gap:10px">
+ <span style="width:44px;height:22px;border-radius:6px;background:var(--ds-label);box-shadow:0 0 0 .5px var(--ds-card-stroke)"></span>
+ <span class="mono" style="font-size:10px">--ds-label</span>
+ <span style="font-size:11px;color:var(--ds-label-2)">100% · <span class="mono">.primary</span></span>
+</div>
+<div style="display:flex;align-items:center;gap:10px">
+ <span style="width:44px;height:22px;border-radius:6px;background:var(--ds-label-2);box-shadow:0 0 0 .5px var(--ds-card-stroke)"></span>
+ <span class="mono" style="font-size:10px">--ds-label-2</span>
+ <span style="font-size:11px;color:var(--ds-label-2)">60% · <span class="mono">.secondary</span></span>
+</div>
+<div style="display:flex;align-items:center;gap:10px">
+ <span style="width:44px;height:22px;border-radius:6px;background:var(--ds-label-3);box-shadow:0 0 0 .5px var(--ds-card-stroke)"></span>
+ <span class="mono" style="font-size:10px">--ds-label-3</span>
+ <span style="font-size:11px;color:var(--ds-label-2)">30% · <span class="mono">.tertiary</span></span>
+</div>
+</div></div>
+<div class="sec" style="margin-top:12px">This is why the system is theme-safe: almost no absolute colour exists below the theme layer.</div>
+</body></html>

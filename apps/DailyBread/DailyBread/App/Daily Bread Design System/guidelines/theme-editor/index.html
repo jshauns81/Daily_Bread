@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html data-theme="harbor"><head><meta charset="utf-8"><title>Theme editor — prototype</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1160px;margin:0 auto;padding:30px 24px 70px}
+h1{font-size:30px;font-weight:800;letter-spacing:-.025em;margin:0 0 6px}
+.sub{font-size:15px;color:var(--ds-label-2);margin:0 0 20px;max-width:700px}
+.bar{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.seg{display:flex;background:var(--ds-fill);border-radius:9px;padding:3px;gap:2px}
+.seg button{font:600 13px var(--ds-font);padding:6px 15px;border:0;border-radius:7px;background:transparent;color:var(--ds-label-2);cursor:pointer}
+.seg button.on{background:var(--ds-card);color:var(--ds-label);box-shadow:var(--ds-card-shadow)}
+.hint{font-size:12px;color:var(--ds-label-3)}
+.stage{display:flex;justify-content:center;padding:8px 0 0}
+
+/* ---- device shells ---- */
+.phone{width:390px;height:790px;border-radius:44px;background:#000;padding:11px;box-shadow:0 26px 60px rgb(0 0 0 / .4);position:relative;flex-shrink:0}
+.pscreen{width:100%;height:100%;border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.mac{width:1020px;border-radius:12px;overflow:hidden;box-shadow:0 26px 60px rgb(0 0 0 / .4);background:#2A2A2C}
+.mactitle{height:36px;display:flex;align-items:center;gap:8px;padding:0 13px;background:#333336;border-bottom:1px solid #0006}
+.dot{width:11px;height:11px;border-radius:50%}
+.mactitle span{font-size:12.5px;color:#B9B9BE;margin-left:8px;font-weight:600}
+.macbody{display:grid;grid-template-columns:1fr 380px;height:600px}
+
+/* ---- editor chrome ---- */
+.ehead{display:flex;align-items:center;justify-content:space-between;padding:13px 15px 10px;flex-shrink:0}
+.ehead h3{margin:0;font-size:16px;font-weight:750}
+.esave{font:700 13.5px var(--ds-font);padding:6px 15px;border-radius:8px;border:0;cursor:pointer}
+.esave.ok{background:var(--ds-accent);color:var(--ds-on-accent)}
+.esave.bad{background:var(--ds-fill);color:var(--ds-label-3);cursor:not-allowed}
+.ecancel{font:600 13.5px var(--ds-font);color:var(--ds-accent);background:0;border:0;cursor:pointer;padding:0}
+.modeseg{margin:0 15px 10px;display:flex;background:var(--ds-fill);border-radius:8px;padding:2.5px;gap:2px;flex-shrink:0}
+.modeseg button{flex:1;font:600 13px var(--ds-font);padding:6px 0;border:0;border-radius:6px;background:transparent;color:var(--ds-label-2);cursor:pointer}
+.modeseg button.on{background:var(--ds-card);color:var(--ds-label);box-shadow:0 1px 3px rgb(0 0 0 / .16)}
+
+/* ---- simple mode ---- */
+.rows{overflow:auto;padding:0 15px 14px;flex:1}
+.grow{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;margin-bottom:7px}
+.grow .lab{flex:1;min-width:0}
+.grow b{display:block;font-size:14.5px;font-weight:620}
+.grow em{font-style:normal;font-size:11.5px;color:var(--ds-label-3);display:block;line-height:1.35}
+.well{width:34px;height:34px;border-radius:9px;border:1.5px solid rgb(255 255 255 / .22);cursor:pointer;flex-shrink:0;padding:0;box-shadow:inset 0 1px 3px rgb(0 0 0 / .25)}
+.hexlbl{font-family:var(--ds-font-mono),ui-monospace;font-size:11.5px;color:var(--ds-label-3);width:62px;text-align:right}
+.gsec{font-size:10.5px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;margin:14px 0 7px 3px}
+
+/* ---- yaml mode ---- */
+.yamlwrap{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 0 0 0}
+.editor{flex:1;display:grid;grid-template-columns:34px 1fr;min-height:0;overflow:auto;position:relative}
+.gutter{padding:12px 0;display:flex;flex-direction:column;align-items:center}
+.gsw{width:15px;height:15px;border-radius:4px;border:1px solid rgb(255 255 255 / .25);cursor:pointer;padding:0;flex-shrink:0}
+.gspace{flex-shrink:0}
+.gerr{width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 11px var(--ds-font);color:#fff;flex-shrink:0}
+.code{position:relative}
+.code textarea{width:100%;height:100%;min-height:100%;background:transparent;border:0;outline:0;resize:none;padding:12px 12px 12px 4px;color:transparent;caret-color:currentColor;position:absolute;inset:0;z-index:2;white-space:pre;overflow:hidden}
+.code pre{margin:0;padding:12px 12px 12px 4px;pointer-events:none;white-space:pre;overflow:hidden}
+.code textarea,.code pre{font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:21px;tab-size:2}
+.tk{color:#8FB8D8}.tv{color:#E7C384}.tc{color:#6C7A85}.tp{color:#C7CCD1}
+.lint{flex-shrink:0;padding:9px 13px;font-size:12.5px;display:flex;gap:8px;align-items:flex-start;border-top:1px solid rgb(255 255 255 / .1)}
+.lint code{font-family:"SF Mono",ui-monospace,monospace;font-size:11.5px}
+.accessory{flex-shrink:0;display:flex;gap:5px;padding:7px 9px;border-top:1px solid rgb(255 255 255 / .1);overflow:auto}
+.accessory button{font-family:"SF Mono",ui-monospace,monospace;font-size:15px;font-weight:600;min-width:38px;height:34px;border-radius:7px;border:0;cursor:pointer}
+.kbd{flex-shrink:0;height:198px;background:rgb(0 0 0 / .3);display:flex;align-items:center;justify-content:center;font-size:11.5px;color:rgb(255 255 255 / .38);letter-spacing:.4px}
+
+/* ---- preview ---- */
+.pv{padding:14px;overflow:auto}
+.pvstrip{flex-shrink:0;border-top:1px solid rgb(255 255 255 / .1);padding:11px 13px;display:flex;gap:9px;align-items:center;overflow:hidden}
+.pvlab{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:9px}
+.pcard{border-radius:16px;padding:13px 15px;margin-bottom:9px}
+.pcard h4{margin:0 0 3px;font-size:14.5px;font-weight:700}
+.pcard p{margin:0;font-size:12.5px}
+.pbtn{border:0;border-radius:9px;padding:8px 15px;font:700 13px var(--ds-font);cursor:pointer}
+.prow{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:11px;margin-bottom:6px;font-size:13.5px}
+.pring{width:22px;height:22px;border-radius:50%;flex-shrink:0}
+.pbar{height:7px;border-radius:99px;overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;border-radius:99px}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:20px;max-width:900px;margin-left:auto;margin-right:auto}
+.note b{color:var(--ds-label)}
+</style></head><body>
+<div class="wrap">
+<h1>Theme editor</h1>
+<p class="sub">Both modes, both platforms, live. Type in the YAML and the preview follows. Tap a gutter swatch to open a colour picker. The <b>Smart quotes</b> button reproduces the one bug that will otherwise cost you an evening.</p>
+
+<div class="bar">
+  <div class="seg" id="plat"><button class="on" data-v="ios">iPhone</button><button data-v="mac">macOS</button></div>
+  <div class="seg" id="mode"><button data-v="simple">Simple</button><button class="on" data-v="yaml">YAML</button></div>
+  <button class="esave bad" id="smart" style="background:var(--ds-help);color:#fff;cursor:pointer">Insert smart quotes</button>
+  <span class="hint" id="hint">Harbor is active, so the template starts from Harbor.</span>
+</div>
+
+<div class="stage" id="stage"></div>
+
+<div class="note"><b>What to look at.</b> The gutter is where the idea earns its keep — every hex line gets a tappable swatch, so you rarely type a hex by hand and the typo surface mostly disappears. Lint runs as you type, not on save, and Save stays disabled with the reason visible. Switching Simple ⇄ YAML is lossless: both edit the same model.</div>
+</div>
+
+<script>
+const DEFAULTS={id:'harbor-copy',name:'Harbor copy',scheme:'dark',
+  bgTop:'#1C2E3A',bgBottom:'#111C24',card:'#263E4F',accent:'#5B9BE0',secondary:'#4BA39C',label:'#FFFFFF'};
+let M={...DEFAULTS};
+let plat='ios', mode='yaml';
+let yamlText=toYaml(M);
+
+const FIELDS=[
+ ['bgTop','background ▸ top','the app\u2019s ground, upper'],
+ ['bgBottom','background ▸ bottom','the app\u2019s ground, lower'],
+ ['card','card','every card, sheet and row surface'],
+ ['accent','accent','buttons, links, selected states'],
+ ['secondary','secondary','progress fills, secondary chips'],
+ ['label','label','all text and glyphs']];
+const KEYS=['id','name','scheme','background','top','bottom','card','accent','secondary','label','colors','meta','typography','motion','radius','face','scale'];
+
+function toYaml(m){
+return `meta:
+  id: ${m.id}
+  name: ${m.name}
+  scheme: ${m.scheme}
+
+colors:
+  background:
+    top: "${m.bgTop}"      # the app's ground, upper
+    bottom: "${m.bgBottom}"   # the app's ground, lower
+  card: "${m.card}"          # cards, sheets, rows
+  accent: "${m.accent}"        # buttons, links, selected
+  secondary: "${m.secondary}"     # progress, chips
+  label: "${m.label}"         # all text and glyphs
+
+typography:
+  face: system
+  scale: 1.0
+
+motion:
+  scale: 1.0
+  celebration: full`;
+}
+
+// ---- lint ----
+function lint(text){
+  const lines=text.split('\n'); const errs=[];
+  lines.forEach((ln,i)=>{
+    if(/[\u201C\u201D\u2018\u2019]/.test(ln))
+      errs.push({line:i,msg:'Curly quote on this line — YAML needs straight <code>"</code>. iOS substituted it for you.'});
+    else if(/[\u2013\u2014]/.test(ln))
+      errs.push({line:i,msg:'En/em dash on this line — YAML needs a plain hyphen.'});
+    const m=ln.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:/);
+    if(m&&!KEYS.includes(m[1])){
+      const near=KEYS.find(k=>k.length>3&&(k.startsWith(m[1].slice(0,3))||m[1].startsWith(k.slice(0,3))));
+      errs.push({line:i,msg:`<code>${m[1]}</code> isn't a key${near?` — did you mean <code>${near}</code>?`:''} <b>Ignored, not fatal.</b>`,warn:true});
+    }
+    const h=ln.match(/"(#[^"]*)"/);
+    if(h&&!/^#[0-9a-fA-F]{6}$/.test(h[1]))
+      errs.push({line:i,msg:`<code>${h[1]}</code> isn't a 6-digit hex.`});
+  });
+  return errs;
+}
+function parse(text){
+  const g=(k)=>{const m=text.match(new RegExp(k+':\\s*"(#[0-9a-fA-F]{6})"'));return m?m[1]:null};
+  return {bgTop:g('top')||M.bgTop,bgBottom:g('bottom')||M.bgBottom,card:g('card')||M.card,
+    accent:g('accent')||M.accent,secondary:g('secondary')||M.secondary,label:g('label')||M.label};
+}
+function hl(text){
+  return text.split('\n').map(ln=>{
+    let s=ln.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    s=s.replace(/(#.*)$/,'<span class="tc">$1</span>');
+    s=s.replace(/^(\s*)([A-Za-z_][A-Za-z0-9_]*)(:)/,'$1<span class="tk">$2</span><span class="tp">$3</span>');
+    s=s.replace(/("(?:[^"]*)")/,'<span class="tv">$1</span>');
+    return s||' ';
+  }).join('\n');
+}
+
+// ---- preview ----
+function previewHTML(m,compact){
+  const dim=(h,a)=>h+Math.round(a*255).toString(16).padStart(2,'0');
+  if(compact) return `<div style="width:74px;height:44px;border-radius:9px;background:linear-gradient(${m.bgTop},${m.bgBottom})"></div>
+   <div style="flex:1;background:${m.card};border-radius:10px;padding:8px 10px">
+     <div style="height:7px;width:52%;background:${dim(m.label,.85)};border-radius:9px;margin-bottom:6px"></div>
+     <div style="height:6px;width:78%;background:${dim(m.label,.35)};border-radius:9px"></div></div>
+   <div style="width:56px;height:30px;border-radius:8px;background:${m.accent}"></div>`;
+  return `<div class="pvlab" style="color:${dim(m.label,.5)}">Live preview</div>
+  <div class="pcard" style="background:${m.card};box-shadow:0 2px 10px rgb(0 0 0 / .2)">
+    <h4 style="color:${m.label}">Ada's day</h4>
+    <p style="color:${dim(m.label,.6)}">4 of 6 chores done</p>
+    <div class="pbar" style="background:${dim(m.label,.14)}"><i style="width:66%;background:${m.secondary}"></i></div>
+  </div>
+  <div class="prow" style="background:${m.card};color:${m.label}"><div class="pring" style="background:${m.accent}"></div>Feed the dog</div>
+  <div class="prow" style="background:${m.card};color:${m.label}"><div class="pring" style="border:2.5px solid ${dim(m.label,.25)};box-sizing:border-box"></div>Tidy your room</div>
+  <div class="prow" style="background:${m.card};color:${m.label}"><div class="pring" style="background:var(--ds-gold)"></div>Wash up <span style="margin-left:auto;color:var(--ds-gold);font-weight:700">$2.00</span></div>
+  <div style="display:flex;gap:8px;margin-top:11px">
+    <button class="pbtn" style="background:${m.accent};color:#fff">Approve</button>
+    <button class="pbtn" style="background:${dim(m.label,.12)};color:${m.label}">Not yet</button>
+  </div>`;
+}
+
+// ---- render ----
+function render(){
+  const m=parse(yamlText), errs=lint(yamlText);
+  const fatal=errs.filter(e=>!e.warn);
+  const dim=(h,a)=>h+Math.round(a*255).toString(16).padStart(2,'0');
+  const stage=document.getElementById('stage');
+
+  const head=`<div class="ehead"><button class="ecancel">Cancel</button><h3 style="color:${m.label}">New theme</h3>
+    <button class="esave ${fatal.length?'bad':'ok'}">Save</button></div>
+    <div class="modeseg">
+      <button class="${mode==='simple'?'on':''}" data-m="simple">Simple</button>
+      <button class="${mode==='yaml'?'on':''}" data-m="yaml">YAML</button></div>`;
+
+  const simple=`<div class="rows">
+    <div class="gsec" style="color:${dim(m.label,.45)}">Colours</div>
+    ${FIELDS.map(([k,l,d])=>`<div class="grow" style="background:${m.card}">
+      <div class="lab"><b style="color:${m.label}">${l}</b><em>${d}</em></div>
+      <span class="hexlbl">${m[k].toUpperCase()}</span>
+      <input class="well" type="color" value="${m[k]}" data-k="${k}">
+    </div>`).join('')}
+    <div class="gsec" style="color:${dim(m.label,.45)}">Appearance</div>
+    <div class="grow" style="background:${m.card}"><div class="lab"><b style="color:${m.label}">Scheme</b><em>forces light or dark</em></div>
+      <span class="hexlbl">${m.bgTop&&parseInt(m.bgTop.slice(1,3),16)<128?'Dark':'Light'}</span></div>
+  </div>`;
+
+  const lintbar=errs.length?`<div class="lint" style="background:${fatal.length?'var(--ds-help)22':'#E7B44A22'};color:${m.label}">
+      <span style="color:${fatal.length?'var(--ds-help)':'var(--ds-gold)'};font-weight:800">Line ${errs[0].line+1}</span>
+      <span>${errs[0].msg}</span></div>`:'';
+
+  const lineCount=yamlText.split('\n').length;
+  const gutter=yamlText.split('\n').map((ln,i)=>{
+    const e=errs.find(x=>x.line===i);
+    const h=ln.match(/"(#[0-9a-fA-F]{6})"/);
+    if(e&&!e.warn) return `<div class="gerr" style="background:var(--ds-help);margin-bottom:6px">!</div>`;
+    if(h) return `<input class="gsw" type="color" value="${h[1]}" data-line="${i}" style="margin-bottom:6px">`;
+    return `<div class="gspace" style="height:15px;margin-bottom:6px"></div>`;
+  }).join('');
+
+  const yaml=`<div class="yamlwrap">
+    <div class="editor" style="background:${dim('#000',.22)}">
+      <div class="gutter">${gutter}</div>
+      <div class="code" style="color:${m.label}"><pre>${hl(yamlText)}</pre><textarea spellcheck="false" autocapitalize="off" autocorrect="off">${yamlText.replace(/</g,'&lt;')}</textarea></div>
+    </div>${lintbar}`;
+
+  if(plat==='ios'){
+    stage.innerHTML=`<div class="phone"><div class="pscreen" style="background:linear-gradient(${m.bgTop},${m.bgBottom});color:${m.label}">
+      ${head}
+      ${mode==='simple'?simple:yaml+
+        `<div class="pvstrip" style="background:${dim('#000',.18)}">${previewHTML(m,true)}</div>
+         <div class="accessory" style="background:${dim('#000',.28)}">
+           ${[':','-','#','"','  ⇥'].map(c=>`<button style="background:${dim(m.label,.13)};color:${m.label}">${c}</button>`).join('')}
+         </div><div class="kbd">system keyboard</div></div>`}
+    </div></div>`;
+  } else {
+    stage.innerHTML=`<div class="mac"><div class="mactitle">
+        <div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div>
+        <span>New theme — Daily Bread</span></div>
+      <div class="macbody" style="background:linear-gradient(${m.bgTop},${m.bgBottom});color:${m.label}">
+        <div style="display:flex;flex-direction:column;min-height:0;border-right:1px solid ${dim(m.label,.1)}">
+          ${head}${mode==='simple'?simple:yaml+'</div>'}
+        </div>
+        <div class="pv" style="background:${dim('#000',.13)}">${previewHTML(m,false)}</div>
+      </div></div>`;
+  }
+  wire();
+}
+function wire(){
+  const ta=document.querySelector('.code textarea');
+  if(ta){
+    ta.addEventListener('input',e=>{yamlText=e.target.value;const p=e.target.selectionStart;render();
+      const n=document.querySelector('.code textarea');n.focus();n.setSelectionRange(p,p)});
+    ta.addEventListener('scroll',e=>{e.target.previousElementSibling.scrollTop=e.target.scrollTop});
+  }
+  document.querySelectorAll('.gsw').forEach(sw=>sw.addEventListener('input',e=>{
+    const i=+e.target.dataset.line, lines=yamlText.split('\n');
+    lines[i]=lines[i].replace(/"#[0-9a-fA-F]{6}"/,`"${e.target.value.toUpperCase()}"`);
+    yamlText=lines.join('\n');render();}));
+  document.querySelectorAll('.well').forEach(w=>w.addEventListener('input',e=>{
+    const k=e.target.dataset.k, key={bgTop:'top',bgBottom:'bottom'}[k]||k;
+    yamlText=yamlText.replace(new RegExp('('+key+':\\s*)"#[0-9a-fA-F]{6}"'),`$1"${e.target.value.toUpperCase()}"`);
+    render();}));
+  document.querySelectorAll('.modeseg button').forEach(b=>b.addEventListener('click',()=>{
+    mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on',x.dataset.v===mode));render()}));
+}
+document.getElementById('plat').addEventListener('click',e=>{
+  if(!e.target.dataset.v)return;plat=e.target.dataset.v;
+  [...e.currentTarget.children].forEach(c=>c.classList.toggle('on',c===e.target));render()});
+document.getElementById('mode').addEventListener('click',e=>{
+  if(!e.target.dataset.v)return;mode=e.target.dataset.v;
+  [...e.currentTarget.children].forEach(c=>c.classList.toggle('on',c===e.target));render()});
+document.getElementById('smart').addEventListener('click',()=>{
+  yamlText=yamlText.replace('"#5B9BE0"','\u201C#5B9BE0\u201D');mode='yaml';
+  document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on',x.dataset.v==='yaml'));
+  document.getElementById('hint').textContent='That is exactly what iOS does to your quotes by default.';render()});
+render();
+</script>
+</body></html>

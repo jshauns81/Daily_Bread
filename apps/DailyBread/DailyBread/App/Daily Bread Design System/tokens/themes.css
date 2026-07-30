@@ -1,0 +1,134 @@
+/* ===========================================
+   DAILY BREAD — THEMES
+   Ported from Packages/DailyBreadKit/.../Design/DesignSystem.swift
+
+   "Color is warmth, and warmth is the point: every theme owns the WHOLE
+    surface — its background, its cards, its accent — not just a tint over grey."
+
+   SIX themes. Four warm lights, two cozy darks. Each is a complete look:
+   its own background gradient, its own card colour, its own accent and
+   secondary. A theme is NOT an accent swap. Sunroom is the default.
+
+   Set on <html>: data-theme="sunroom|sky|rosewater|meadow|mulberry|harbor".
+   Each theme FORCES its own appearance — there is no separate light/dark
+   switch. `isDark` is a property of the theme.
+   =========================================== */
+
+:root,
+[data-theme="sunroom"]{
+  --db-theme-name: "Sunroom"; /* @kind other */
+  --db-theme-mood: "warm · light"; /* @kind other */
+  --db-bg-top:#FFFDF9; --db-bg-bottom:#FBF1E2;
+  --db-accent:#C7284F;          /* raspberry */
+  --db-secondary:#2E8C86;       /* teal      */
+  --db-card:#FFFFFF;
+  --db-label-rgb: 0 0 0; /* @kind other */
+  --db-on-accent:#FFFFFF;
+  --db-scheme: light; /* @kind other */
+}
+[data-theme="sky"]{
+  --db-theme-name: "Sky"; /* @kind other */
+  --db-theme-mood: "calm · light"; /* @kind other */
+  --db-bg-top:#FBFCFF; --db-bg-bottom:#EAF1FE;
+  --db-accent:#3D7BE0;
+  --db-secondary:#4BA39C;       /* sea-teal */
+  --db-card:#FFFFFF;
+  --db-label-rgb: 0 0 0; /* @kind other */
+  --db-on-accent:#FFFFFF;
+  --db-scheme: light; /* @kind other */
+}
+[data-theme="rosewater"]{
+  --db-theme-name: "Rosewater"; /* @kind other */
+  --db-theme-mood: "soft · light"; /* @kind other */
+  --db-bg-top:#FFF9FB; --db-bg-bottom:#FBEAF1;
+  --db-accent:#D24E86;
+  --db-secondary:#6BA3C6;       /* soft blue */
+  --db-card:#FFFFFF;
+  --db-label-rgb: 0 0 0; /* @kind other */
+  --db-on-accent:#FFFFFF;
+  --db-scheme: light; /* @kind other */
+}
+[data-theme="meadow"]{
+  --db-theme-name: "Meadow"; /* @kind other */
+  --db-theme-mood: "fresh · light"; /* @kind other */
+  --db-bg-top:#F8FBF6; --db-bg-bottom:#E9F4E7;
+  --db-accent:#3E9E6B;
+  --db-secondary:#8AA83E;       /* leaf */
+  --db-card:#FFFFFF;
+  --db-label-rgb: 0 0 0; /* @kind other */
+  --db-on-accent:#FFFFFF;
+  --db-scheme: light; /* @kind other */
+}
+[data-theme="mulberry"]{
+  --db-theme-name: "Mulberry"; /* @kind other */
+  --db-theme-mood: "cozy · dark"; /* @kind other */
+  --db-bg-top:#3E1B30; --db-bg-bottom:#2A1220;
+  --db-accent:#EA6E92;
+  --db-secondary:#2E8C86;
+  --db-card:#4A2237;
+  --db-label-rgb: 255 255 255; /* @kind other */
+  --db-on-accent:#FFFFFF;
+  --db-scheme: dark; /* @kind other */
+}
+[data-theme="harbor"]{
+  --db-theme-name: "Harbor"; /* @kind other */
+  --db-theme-mood: "quiet · dark"; /* @kind other */
+  /* Surfaces at hue ~218° — indigo-navy, deep evening. Matches
+     DesignSystem.swift exactly; the Swift source is the truth for Harbor.
+     (An earlier teal-navy variant at ~205° was reverted on request.) */
+  --db-bg-top:#223049; --db-bg-bottom:#161E2C;
+  --db-accent:#5B9BE0;
+  --db-secondary:#4BA39C;
+  --db-card:#2A3852;
+  --db-label-rgb: 255 255 255; /* @kind other */
+  --db-on-accent:#FFFFFF;
+  --db-scheme: dark; /* @kind other */
+}
+
+/* ---- Semantic invariants: the SAME meaning in every palette. ----
+   gold = money · glow = the Approve/Blessing moment · help = Help/alert.
+   Help is deliberately kept distinct from every theme accent so the alert
+   never hides in a pink or berry palette. */
+:root,
+[data-theme="sunroom"], [data-theme="sky"],
+[data-theme="rosewater"], [data-theme="meadow"]{
+  --db-gold:#C98A1E;
+  --db-glow:#E0A21E;
+  --db-help:#D1363B;
+  --db-success:#2E9E63;
+  --db-night:#5560A8;
+  --db-card-stroke: rgb(0 0 0 / .05);
+  --db-card-shadow-color: rgb(0 0 0 / .07);
+}
+[data-theme="mulberry"], [data-theme="harbor"]{
+  --db-gold:#E7B44A;
+  --db-glow:#F0C868;
+  --db-help:#F06B6B;
+  --db-success:#86C08F;
+  --db-night:#8D97D8;
+  --db-card-stroke: rgb(255 255 255 / .07);
+  --db-card-shadow-color: rgb(0 0 0 / .25);
+}
+
+/* Rarity hues — fixed, theme-independent (they are badge identities).
+   `rare` was `var(--db-accent)`, which made rarity mean something different in every
+   theme — indistinguishable from ordinary accent chrome in Sky. That's R6; fixed here. */
+:root{
+  --db-rarity-legendary: var(--db-gold);
+  --db-rarity-epic:#7A5AF8;
+  --db-rarity-rare:#3B82D6;
+  --db-rarity-uncommon: var(--db-success);
+  --db-rarity-common:#8A8F98;
+}
+
+/* Kid level tiers — also fixed hex in the source, because a level's colour is
+   its identity and must not shift when the theme changes. */
+:root{
+  --db-level-0:#8A8F98;  /* STARTER   🌱 */
+  --db-level-1:#6BA368;  /* COMMON    ⭐ */
+  --db-level-2:#4DA8C6;  /* UNCOMMON  ⚡ */
+  --db-level-3:#E8894A;  /* RARE      🔥 */
+  --db-level-4:#9B7BE0;  /* EPIC      💎 */
+  --db-level-5:#E0A93F;  /* LEGENDARY 👑 */
+  --db-streak:#E8894A;   /* the streak flame */
+}

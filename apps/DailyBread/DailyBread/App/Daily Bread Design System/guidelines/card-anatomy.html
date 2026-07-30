@@ -1,0 +1,26 @@
+<!-- @dsCard group="Themes" viewport="700x250" name="Glass card anatomy" subtitle="20px squircle, 0.5px stroke, one close soft shadow. No blur." -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Card anatomy</title><link rel="stylesheet" href="../styles.css">
+<style>html,body{margin:0}body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);padding:16px;box-sizing:border-box;min-height:100vh;-webkit-font-smoothing:antialiased}
+.sec{font-size:var(--ds-text-caption);font-weight:700;letter-spacing:var(--ds-kerning-section);text-transform:uppercase;color:var(--ds-label-2)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);box-shadow:var(--ds-card-shadow),0 0 0 .5px var(--ds-card-stroke);padding:var(--ds-card-padding)}
+.mono{font-family:var(--ds-font-mono);font-size:10px;color:var(--ds-label-2)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.8}
+</style></head><body><div style="display:flex;gap:16px;align-items:flex-start">
+<div class="card" style="flex:1">
+  <div class="sec">Pending approvals</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:15px">
+    <span style="font-weight:500">Dishes</span><span style="color:var(--ds-gold);font-weight:600">$2.00</span></div>
+  <div style="height:1px;background:var(--ds-hairline);margin:10px 0"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;font-size:15px">
+    <span style="font-weight:500">Take out the trash</span><span style="color:var(--ds-gold);font-weight:600">$1.50</span></div>
+</div>
+<div style="flex:1;font-size:12px;line-height:1.75;color:var(--ds-label-2)">
+<div><b style="color:var(--ds-label)">radius</b> 20px, <span class="mono">style: .continuous</span> — a squircle</div>
+<div><b style="color:var(--ds-label)">fill</b> the theme's <span class="mono">cardColor</span> (opaque)</div>
+<div><b style="color:var(--ds-label)">stroke</b> 0.5px · black@5% light / white@7% dark</div>
+<div><b style="color:var(--ds-label)">shadow</b> radius 10, y 3 · black@7% / @25%</div>
+<div><b style="color:var(--ds-label)">padding</b> 14 default · 12 tile · 16 greeting · 18 hero</div>
+<div style="margin-top:10px;color:var(--ds-label-3)">The modifier is called <span class="mono">GlassCard</span> but there is no blur. The “glass” is the soft stroke plus the close shadow.</div>
+</div></div></body></html>

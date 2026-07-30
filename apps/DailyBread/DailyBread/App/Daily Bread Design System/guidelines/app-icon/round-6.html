@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>App icon — rays as chores</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1060px;margin:0 auto;padding:34px 24px 80px}
+h1{font-size:32px;font-weight:800;letter-spacing:-.025em;margin:0 0 7px}
+.sub{font-size:15.5px;color:var(--ds-label-2);margin:0 0 9px;max-width:730px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:42px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:15px}
+.p{margin:0 0 10px;font-size:14.5px;max-width:72ch}
+.hd{display:flex;align-items:baseline;gap:9px;margin:0 0 8px;flex-wrap:wrap}
+.hd b{font-size:16.5px;font-weight:760}
+.tag{font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--ds-fill-strong);color:var(--ds-label-2)}
+.tag.pick{background:var(--ds-accent);color:var(--ds-on-accent)}
+.ico{position:relative;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgb(0 0 0 / .18)}
+.stagerow{display:flex;gap:34px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 4px}
+.stagerow figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:7px}
+.stagerow figcaption{font:600 10px var(--ds-font);color:var(--ds-label-3);letter-spacing:.4px}
+.ctl{display:flex;align-items:center;gap:15px;margin:16px 0 4px;flex-wrap:wrap}
+.ctl input[type=range]{width:270px;accent-color:var(--ds-accent)}
+.count{font:800 15px var(--ds-font);color:var(--ds-label);min-width:96px}
+.b{font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:99px;border:1px solid var(--ds-hairline);background:var(--ds-fill-strong);color:var(--ds-label-2);cursor:pointer}
+.b:hover{border-color:var(--ds-accent)}
+.b.sel{background:var(--ds-accent);color:var(--ds-on-accent);border-color:var(--ds-accent)}
+.seq{display:flex;gap:11px;flex-wrap:wrap;margin-top:12px}
+.seq figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.seq figcaption{font:600 9px var(--ds-font);color:var(--ds-label-3)}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:12px}
+.note b{color:var(--ds-label)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.pane{background:var(--ds-fill);border-radius:12px;padding:15px}
+.pane h4{margin:0 0 9px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--ds-label-3);font-weight:800}
+.widget{background:linear-gradient(160deg,#4A6B7C,#243642);padding:20px;border-radius:16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.wtile{background:rgb(255 255 255 / .12);backdrop-filter:blur(14px);border-radius:18px;padding:13px;display:flex;flex-direction:column;gap:8px;border:1px solid rgb(255 255 255 / .16)}
+.wtile .wl{font:700 10px var(--ds-font);color:#fff;opacity:.8;letter-spacing:.4px}
+.wtile .wv{font:800 15px var(--ds-font);color:#fff}
+.q{font-size:13.5px;font-weight:700;color:var(--ds-accent);margin-top:12px}
+</style></head><body>
+<div class="wrap">
+
+<h1>Rays as chores</h1>
+<p class="sub">That's the idea. The monstrance holds the host — <b>the bread is always there, given</b> — and the radiance around it is what the day adds. Every chore lights a ray. A finished day is a fully radiant one.</p>
+<p class="sub" style="font-size:13.5px;color:var(--ds-label-3)">It's also the correct reading of the object: in a monstrance the host is the constant and the rays are the response to it. You've landed on a metaphor where the theology and the product mechanic are the same shape. Drag the slider.</p>
+
+<h2>Live</h2>
+<div class="card">
+  <div class="ctl">
+    <label style="font:700 10px var(--ds-font);letter-spacing:.7px;text-transform:uppercase;color:var(--ds-label-3)">Done</label>
+    <input type="range" id="sl" min="0" max="6" step="1" value="4" style="width:180px">
+    <label style="font:700 10px var(--ds-font);letter-spacing:.7px;text-transform:uppercase;color:var(--ds-label-3)">Chores today</label>
+    <input type="range" id="tot" min="3" max="12" step="1" value="6" style="width:180px">
+    <span class="count" id="cnt">4 of 6 done</span>
+    <div style="display:flex;gap:6px" id="modes">
+      <button class="b sel" data-m="fixed">8 rays, proportional</button>
+      <button class="b" data-m="literal">One ray per chore</button>
+    </div>
+  </div>
+  <div class="stagerow" id="stage"></div>
+  <div class="note" id="modenote"></div>
+</div>
+
+<h2>A day, in sequence</h2>
+<div class="card">
+  <div class="seq" id="seq"></div>
+  <div class="note"><b>This is the payoff.</b> The mark isn't decorative — it's a status. Glance at the dock and you know where the day stands without opening anything. And the last step earns its brightness, because you watched it get there.</div>
+</div>
+
+<h2>Where it can actually be live</h2>
+<div class="card">
+<div class="two">
+  <div class="pane"><h4>Live — do it</h4>
+    <p class="p" style="font-size:13px;margin:0 0 8px"><b>macOS dock.</b> <code>NSApp.applicationIconImage</code> re-rendered on every completion. Your original question, and this is the form that makes it worth doing.</p>
+    <p class="p" style="font-size:13px;margin:0"><b>Widgets.</b> Small widget = this mark at size. Medium = mark plus the day's list. Reload on completion.</p>
+  </div>
+  <div class="pane"><h4>Static — accept it</h4>
+    <p class="p" style="font-size:13px;margin:0 0 8px"><b>iOS home screen icon.</b> Cannot render at runtime. Ships at <b>full radiance</b> — the aspirational state, and the one that looks best in the App Store.</p>
+    <p class="p" style="font-size:13px;margin:0">The widget sitting beside it carries the live version, so nothing is lost.</p>
+  </div>
+</div>
+<div class="widget" id="wid"></div>
+<div class="note">Small widget, live. This is the surface your family will actually glance at.</div>
+</div>
+
+<h2>The one real decision</h2>
+<div class="card">
+<p class="p"><b>Fixed rays or one ray per chore?</b> Toggle it above, then drag <i>Chores today</i> — that second slider is where the difference shows.</p>
+<p class="p"><b>Fixed 8, lit proportionally.</b> The mark has one silhouette forever, whether the day holds 3 chores or 12. Always balanced, always symmetrical, reads instantly. Cost: a ray isn't literally <i>your</i> chore, so the connection is thematic rather than exact.</p>
+<p class="p"><b>One ray per chore.</b> Honest and personal — that ray is the bins. But at 3 chores the mark looks sparse and broken, at 12 the rays crowd into a blur, and it can't be the App Store icon because there's no canonical form.</p>
+<div class="q">My recommendation: fixed 8, proportional. Keep the literal mapping for the <i>widget</i>, where there's room for it to be exact and where a changing shape is expected.</div>
+</div>
+
+<h2>Notes for the vector pass</h2>
+<div class="card">
+<p class="p">① <b>Unlit rays must stay visible, not vanish.</b> They're the shape of the day ahead. Hold them at ~18% — present, clearly unearned. If they disappear the mark loses its silhouette and a bad morning looks broken rather than unfinished.</p>
+<p class="p">② <b>Light them outward from the centre</b>, alternating left and right, not clockwise. Symmetry survives partial states; a clockwise sweep looks lopsided at 3 of 6.</p>
+<p class="p">③ <b>The host never dims.</b> It is given, not earned — that's the whole point, and it's also what keeps a zero-chore morning from looking like a dead icon.</p>
+<p class="p">④ <b>Rays as trapezoids</b>, wider at the outer end. Rectangles read as spokes; tapered forms read as light.</p>
+<p class="p">⑤ At 29pt, rely on the <b>overall glow mass</b> rather than counting — the difference between 2 lit and 6 lit should be legible as brightness even when individual rays aren't resolvable.</p>
+</div>
+
+</div>
+<script>
+const R=s=>s*0.2237;
+const LIT='#E0A63C', LITBRIGHT='#F5D089', DIMMED='rgb(140 110 60 / .20)';
+function tile(size,bg){const d=document.createElement('div');d.className='ico';
+  d.style.width=size+'px';d.style.height=size+'px';d.style.borderRadius=R(size)+'px';d.style.background=bg;return d}
+
+// order rays outward from centre, alternating — symmetry survives partial states
+function litOrder(n){
+  const idx=[...Array(n).keys()];
+  const mid=(n-1)/2;
+  return idx.sort((a,b)=>Math.abs(a-mid)-Math.abs(b-mid)||a-b);
+}
+function monstrance(size,done,total,mode,bg){
+  const d=tile(size,bg||'#FBF3E4');
+  const n = mode==='literal' ? Math.max(total,3) : 8;
+  const litCount = mode==='literal' ? done : Math.round((done/total)*8);
+  const order=litOrder(n);
+  const lit=new Set(order.slice(0,litCount));
+  const cx=size*.5, cy=size*.60;
+  const span=152, start=-166;
+  for(let i=0;i<n;i++){
+    const ang=start+(span/(n-1))*i;
+    const on=lit.has(i);
+    const thick=Math.max(size*(mode==='literal'?.05:.055),2);
+    const inner=size*.26, outer=size*(on?.45:.42);
+    const r=document.createElement('div');
+    r.style.cssText=`position:absolute;left:${cx}px;top:${cy}px;width:${thick}px;height:${outer-inner}px;
+      background:${on?LIT:DIMMED};border-radius:${thick*.45}px;transform-origin:${thick/2}px 0;
+      transform:rotate(${ang+180}deg) translate(${-thick/2}px,${inner}px);
+      ${on?`box-shadow:0 0 ${size*.035}px rgb(230 170 60 / .55)`:''}`;
+    d.appendChild(r);
+  }
+  // the host — constant, never dims
+  const h=document.createElement('div');
+  h.style.cssText=`position:absolute;left:${size*.315}px;top:${size*.415}px;width:${size*.37}px;height:${size*.185}px;
+    background:linear-gradient(160deg,#F7DFA9,#DCA542);border-radius:${size*.185}px ${size*.185}px 0 0`;
+  d.appendChild(h);
+  const base=document.createElement('div');
+  base.style.cssText=`position:absolute;left:${size*.22}px;top:${size*.598}px;width:${size*.56}px;height:${Math.max(size*.042,2)}px;
+    background:#DCA542;border-radius:99px`;
+  d.appendChild(base);
+  // finial — a LATIN cross: bar in the upper third, lower limb clearly longest
+  const stemTop=size*.085, stemH=size*.155;
+  const v=document.createElement('div');
+  v.style.cssText=`position:absolute;left:${size*.478}px;top:${stemTop}px;width:${Math.max(size*.044,2)}px;height:${stemH}px;background:#DCA542;border-radius:${size*.011}px`;
+  const armW=size*.108;
+  const hb=document.createElement('div');
+  hb.style.cssText=`position:absolute;left:${size*.5-armW/2}px;top:${stemTop+stemH*.30}px;width:${armW}px;height:${Math.max(size*.044,2)}px;background:#DCA542;border-radius:${size*.011}px`;
+  d.appendChild(v);d.appendChild(hb);
+  // glow mass grows with completion — carries the read at 29pt
+  if(litCount>0){
+    const g=document.createElement('div');
+    const p=litCount/(mode==='literal'?Math.max(total,3):8);
+    g.style.cssText=`position:absolute;left:${size*.12}px;top:${size*.16}px;width:${size*.76}px;height:${size*.62}px;
+      border-radius:50%;background:radial-gradient(circle,rgb(240 195 100 / ${.10+p*.32}),transparent 70%);pointer-events:none`;
+    d.insertBefore(g,d.firstChild);
+  }
+  return d;
+}
+
+let done=4, total=6, mode='fixed';
+const SHOW=[[132,'132'],[87,'87 · settings'],[60,'60 · dock'],[40,'40'],[29,'29 · smallest']];
+function draw(){
+  document.getElementById('cnt').textContent=`${done} of ${total} done`;
+  const st=document.getElementById('stage');st.innerHTML='';
+  SHOW.forEach(([s,l])=>{const f=document.createElement('figure');
+    f.appendChild(monstrance(s,done,total,mode));
+    const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);st.appendChild(f)});
+  document.getElementById('modenote').innerHTML = mode==='fixed'
+    ? '<b>Fixed 8, proportional.</b> The silhouette never changes — drag <i>Chores today</i> from 3 to 12 and the mark holds exactly the same shape. That stability is what makes it usable as the App Store icon. Lit count is <code>round(done / total × 8)</code>.'
+    : '<b>One ray per chore.</b> Literal and personal — but drag <i>Chores today</i> to 3 and it looks sparse and broken; drag it to 12 and the rays crowd into a blur. The mark has no canonical form, so this can only live on surfaces that redraw.';
+  const wid=document.getElementById('wid');wid.innerHTML='';
+  const t=document.createElement('div');t.className='wtile';
+  t.appendChild(monstrance(104,done,total,mode,'linear-gradient(160deg,#FBF3E4,#F3E6CE)'));
+  const l=document.createElement('div');l.className='wl';l.textContent='TODAY';
+  const v=document.createElement('div');v.className='wv';v.textContent=`${done} of ${total}`;
+  t.appendChild(l);t.appendChild(v);wid.appendChild(t);
+  const t2=document.createElement('div');t2.className='wtile';t2.style.flexDirection='row';t2.style.alignItems='center';t2.style.gap='14px';
+  t2.appendChild(monstrance(84,done,total,mode,'linear-gradient(160deg,#FBF3E4,#F3E6CE)'));
+  const col=document.createElement('div');
+  col.innerHTML=`<div class="wl">ADA · TODAY</div><div class="wv" style="margin:3px 0 6px">${done} of ${total} done</div>`+
+    ['Feed the dog','Tidy your room','Wash up'].map((x,i)=>`<div style="font:600 11.5px var(--ds-font);color:#fff;opacity:${i<done?.95:.5};margin-bottom:2px">${i<done?'●':'○'} ${x}</div>`).join('');
+  t2.appendChild(col);wid.appendChild(t2);
+}
+document.getElementById('sl').addEventListener('input',e=>{done=+e.target.value;draw()});
+document.getElementById('tot').addEventListener('input',e=>{
+  total=+e.target.value;
+  const sl=document.getElementById('sl');sl.max=total;
+  if(done>total){done=total;sl.value=done}
+  draw()});
+document.getElementById('modes').addEventListener('click',e=>{
+  if(!e.target.dataset.m)return;mode=e.target.dataset.m;
+  [...e.currentTarget.children].forEach(c=>c.classList.toggle('sel',c===e.target));draw()});
+draw();
+const seq=document.getElementById('seq');
+['Nothing yet','One down','Two','Three','Four','Five','Day complete'].forEach((l,i)=>{
+  const f=document.createElement('figure');f.appendChild(monstrance(84,i,6,'fixed'));
+  const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);seq.appendChild(f)});
+</script>
+</body></html>

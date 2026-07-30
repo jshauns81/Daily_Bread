@@ -1,0 +1,22 @@
+/* SwiftUI stack spacings actually used in the app. Not a strict 4pt grid —
+   14 and 18 appear as often as 12 and 16. Copy the value, don't snap it. */
+:root{
+  --ds-space-1: 2px;
+  --ds-space-2: 4px;
+  --ds-space-3: 6px;
+  --ds-space-4: 8px;
+  --ds-space-5: 10px;
+  --ds-space-6: 12px;
+  --ds-space-7: 14px;   /* default glassCard padding + default VStack gap */
+  --ds-space-8: 16px;
+  --ds-space-9: 18px;
+  --ds-space-10: 20px;
+  --ds-space-12: 24px;
+
+  --ds-card-padding: 14px;        /* glassCard() default        */
+  --ds-card-padding-tight: 12px;  /* glassCard(padding: 12) tiles */
+  --ds-card-padding-roomy: 18px;  /* the balance hero            */
+  --ds-screen-padding: 16px;      /* .padding() on a screen      */
+  --ds-list-gap: 14px;            /* between stacked cards       */
+  --ds-touch-target: 44px;        /* never smaller               */
+}

@@ -1,0 +1,32 @@
+/* ===========================================
+   LAYOUT. This is a native app: iPhone tabs, macOS sidebar split. Widths below
+   are for recreating those surfaces on the web.
+   =========================================== */
+:root{
+  --ds-iphone-width: 393px;      /* iPhone 16/15/14 logical width */
+  --ds-iphone-height: 852px;
+  --ds-sidebar-width: 220px;     /* macOS NavigationSplitView sidebar */
+  --ds-mac-sidebar: 264px;       /* as measured in the running macOS app */
+  --ds-mac-content: 1000px;      /* detail column cap — cards never span a 30" display */
+  --ds-tabbar-height: 49px;      /* iOS tab bar                       */
+  --ds-navbar-height: 44px;      /* iOS inline navigation bar         */
+  --ds-content-max: 700px;
+
+  /* Fixed sizes lifted straight from the source — use these exact numbers. */
+  --ds-ring-today: 64px;         /* Today header progress ring   */
+  --ds-ring-child: 44px;         /* parent child-row ring        */
+  --ds-ring-child-tile: 48px;    /* parent child-tile ring       */
+  --ds-ring-stroke: 7px;
+  --ds-icon-tile: 40px;          /* chore row icon tile          */
+  --ds-icon-tile-lg: 46px;       /* Next Up icon tile            */
+  --ds-avatar: 44px;             /* settings profile circle      */
+  --ds-day-cell: 32px;           /* planner grid cell            */
+  --ds-day-gap: 3px;
+  --ds-day-pill: 36px;           /* DayPicker circle             */
+  --ds-heatmap-cell: 10px;
+  --ds-heatmap-gap: 2.5px;
+  --ds-xp-bar-height: 10px;
+
+  --ds-z-sheet: 500; /* @kind other */
+  --ds-z-toast: 800; /* @kind other */
+}

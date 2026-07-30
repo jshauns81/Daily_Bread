@@ -1,0 +1,146 @@
+<!-- @dsCard group="Components" viewport="700x1180" name="Family" subtitle="Chore rows, at-risk, screen time, heatmap, level/XP, badges, approvals, planner, themes" -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Family</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>html,body{margin:0}body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);padding:16px;-webkit-font-smoothing:antialiased;min-height:100vh;box-sizing:border-box}
+*{box-sizing:border-box}
+.sec{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ds-label-3);margin:22px 0 9px}
+.sec:first-child{margin-top:0}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.8}</style>
+</head><body><div id="root"></div>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { GlassCard, SectionHeader, Button, StatTile, ChoreRow, AtRiskCard, ScreenTimeCard, YearHeatmapCard, LevelBadge, XPBar, TierFor, AchievementCard, ApprovalRow, HelpRow, PlannerChoreRow, PlannerGrid, WeekStrip, BalanceHero, GoalCard, TransactionRow, ChildRow, ChildTile, ThemeSwatch, ThemeRow, DB_THEMES, ExpandRow, ConfirmRow, ALL_DAYS } = window.DailyBreadDesignSystem_2a4964;
+function Demo(){
+  const [done,setDone]=React.useState({1:false,2:true,4:false});
+  const [approved,setApproved]=React.useState(false);
+  const [expanded,setExpanded]=React.useState(false);
+  const [confirming,setConfirming]=React.useState(false);
+  const [theme,setTheme]=React.useState('sunroom');
+  const [gDays,setGDays]=React.useState({2:['Wednesday','Saturday']});
+  const total=4, doneN=Object.values(done).filter(Boolean).length+1;
+  const pct=Math.round(doneN/total*100);
+  const tier=TierFor(pct);
+  return <>
+    <div className="sec">Kid hero — LevelBadge + XPBar (the one card that opts out of GlassCard)</div>
+    <div style={{borderRadius:'var(--ds-radius-hero)',padding:20,
+      background:'linear-gradient(to bottom, color-mix(in srgb, '+tier.color+' 20%, var(--ds-card)), color-mix(in srgb, '+tier.color+' 2%, var(--ds-card)))',
+      boxShadow:'var(--ds-card-shadow), inset 0 0 0 1px color-mix(in srgb, '+tier.color+' 28%, transparent)',
+      display:'flex',flexDirection:'column',gap:18}}>
+      <LevelBadge percent={pct} style={{alignSelf:'center'}} />
+      <XPBar done={doneN} total={total} />
+      <div style={{height:1,background:'color-mix(in srgb, var(--ds-label) 8%, transparent)'}} />
+      <div className="row" style={{gap:18,fontSize:15}}>
+        <span><span style={{fontFamily:'var(--ds-font-emoji)'}}>💰</span> <b style={{color:'var(--ds-gold)'}}>$48.75</b></span>
+        <span><span style={{fontFamily:'var(--ds-font-emoji)'}}>🔥</span> <b style={{color:'var(--db-streak)'}}>7 day streak</b></span>
+        <span><span style={{fontFamily:'var(--ds-font-emoji)'}}>✨</span> <b style={{color:'var(--ds-gold)',fontWeight:800}}>+$4.25</b> <span style={{color:'var(--ds-label-2)'}}>today</span></span>
+      </div>
+    </div>
+
+    <div className="sec">ChoreRow — the daily driver</div>
+    <GlassCard>
+      <ChoreRow icon="🗑" name="Take out the trash" value="$1.50" done={done[1]}
+        onToggle={()=>setDone(d=>({...d,1:!d[1]}))} onHelp={()=>{}} />
+      <ChoreRow icon="🍽" name="Dishes" value="$2.00" done={done[2]} approvedBy="Dad"
+        onToggle={()=>setDone(d=>({...d,2:!d[2]}))} />
+      <ChoreRow icon="🐕" name="Walk the dog" help />
+      <ChoreRow icon="📚" name="Read 20 minutes" value="$1.00" weekly={{done:4,target:7}} done={done[4]}
+        onToggle={()=>setDone(d=>({...d,4:!d[4]}))} onHelp={()=>{}} />
+      <ChoreRow icon="🛏" name="Make your bed" done allowHelp={false} />
+    </GlassCard>
+
+    <div className="sec">AtRiskCard — stated, then silent</div>
+    <div className="row" style={{alignItems:'stretch'}}>
+      <AtRiskCard style={{flex:1}} totalMoney="$2.00" totalMinutes={35} items={[
+        {name:'Dishes',detail:'Due tonight · weekday pool',urgency:'DueTonight',money:'$2.00',minutes:20},
+        {name:'Walk the dog',detail:'Must happen every day',urgency:'MustDoDaily',minutes:15},
+        {name:'Read 20 minutes',detail:'4 of 7 — getting tight',urgency:'GettingTight'}]} />
+      <AtRiskCard style={{flex:1}} previewLine="Trash goes out tomorrow." />
+    </div>
+
+    <div className="sec">ScreenTimeCard · YearHeatmapCard</div>
+    <div className="row" style={{alignItems:'flex-start'}}>
+      <ScreenTimeCard style={{flex:1,minWidth:280}}
+        weekday={{minutes:'2h 30m',floor:'1h 30m',atRisk:60}}
+        weekend={{minutes:'4h',floor:'3h',atRisk:60}}
+        prices={[{name:'Take out the trash',minutes:15},{name:'Dishes',minutes:20},{name:'Mow the lawn',minutes:30}]}
+        onHistory={()=>{}} onSettings={()=>{}} />
+      <YearHeatmapCard style={{flex:1,minWidth:280}} title="Ada's year" />
+    </div>
+
+    <div className="sec">BalanceHero · GoalCard · TransactionRow</div>
+    <div className="row" style={{alignItems:'flex-start'}}>
+      <BalanceHero balance="$48.75" style={{flex:1,minWidth:180}} />
+      <GoalCard style={{flex:1,minWidth:180}} name="Nintendo Switch game" current="$48.75" target="$60.00" percent={81} onTap={()=>{}} />
+      <GlassCard style={{flex:1,minWidth:200}}>
+        <TransactionRow description="Dishes" date="Jul 24" amount="+$2.00" />
+        <TransactionRow description="Take out the trash" date="Jul 24" amount="+$1.50" />
+        <TransactionRow description="Cash out" date="Jul 20" amount="−$25.00" negative />
+      </GlassCard>
+    </div>
+
+    <div className="sec">AchievementCard</div>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+      <AchievementCard icon="🌱" name="First chore" description="Do your very first one" points={10} rarity="common" earned />
+      <AchievementCard icon="🔥" name="Seven days" description="A full week, every chore" points={50} rarity="rare" earned />
+      <AchievementCard icon="💎" name="Fifty dollars" description="Earn $50 all together" points={80} rarity="epic" progress={48} target={50} />
+      <AchievementCard icon="👑" name="Centurion" description="Earn $100 all together" points={150} rarity="legendary" progress={48} target={100} />
+    </div>
+
+    <div className="sec">ApprovalRow · HelpRow · ExpandRow · ConfirmRow</div>
+    <GlassCard>
+      {confirming
+        ? <ConfirmRow message="Approve 5 chores?" confirmTitle="Approve — $12.50" keepTitle="Cancel"
+            tone="var(--ds-gold)" onKeep={()=>setConfirming(false)} onConfirm={()=>setConfirming(false)} />
+        : <button onClick={()=>setConfirming(true)} style={{display:'flex',alignItems:'center',gap:6,width:'100%',
+            background:'transparent',border:'none',cursor:'pointer',fontFamily:'inherit',padding:'10px 0',
+            fontSize:15,fontWeight:700,color:'var(--ds-gold)',textAlign:'left',minHeight:44}}>
+            ✓ Approve all (5) — $12.50</button>}
+      <ApprovalRow choreName="Dishes" value="$2.00" approved={approved}
+        onApprove={()=>{setApproved(true);setTimeout(()=>setApproved(false),900)}} />
+      <ApprovalRow choreName="Take out the trash" value="$1.50" onApprove={()=>{}} />
+      <ExpandRow expanded={expanded} moreCount={3} label="more waiting" color="var(--ds-gold)" onToggle={()=>setExpanded(e=>!e)} />
+      <div style={{height:'.5px',background:'var(--ds-hairline)',margin:'4px 0'}} />
+      <HelpRow choreName="Walk the dog" reason="It's raining really hard and I can't find the leash" onOpen={()=>{}} />
+    </GlassCard>
+
+    <div className="sec">PlannerGrid · PlannerChoreRow</div>
+    <GlassCard>
+      <PlannerGrid onToggle={(c,d)=>setGDays(g=>{const cur=g[c.id]||c.days||[];return {...g,[c.id]:cur.includes(d)?cur.filter(x=>x!==d):[...cur,d]}})}
+        onEdit={()=>{}} chores={[
+        {id:1,icon:'🛏',name:'Make your bed',isTask:false,days:['Monday','Tuesday','Wednesday','Thursday','Friday']},
+        {id:2,icon:'🗑',name:'Take out the trash',value:'$1.50',days:gDays[2]},
+        {id:3,icon:'🍽',name:'Dishes',value:'$2.00',days:ALL_DAYS},
+        {id:4,icon:'📚',name:'Read 20 minutes',value:'$1.00',weeklyTarget:5}]} />
+    </GlassCard>
+    <GlassCard style={{marginTop:10}}>
+      <PlannerChoreRow icon="🗑" name="Take out the trash" value="$1.50" schedule="Wed, Sat" importance={3} onTap={()=>{}} />
+      <PlannerChoreRow icon="🛏" name="Make your bed" isTask={false} schedule="Every day" onTap={()=>{}} />
+      <PlannerChoreRow icon="🦷" name="Brush teeth" isTask={false} schedule="Every day" active={false} onTap={()=>{}} />
+    </GlassCard>
+
+    <div className="sec">WeekStrip · ChildRow · ChildTile</div>
+    <GlassCard><SectionHeader>Quick view — this week</SectionHeader>
+      <div style={{marginTop:8}}><WeekStrip days={[{letter:'S'},{letter:'M',amount:'$3.50'},{letter:'T',amount:'$2.00'},{letter:'W'},{letter:'T',amount:'$4.25'},{letter:'F',amount:'$2.75'},{letter:'S'}]} /></div>
+    </GlassCard>
+    <div className="row" style={{marginTop:10,alignItems:'stretch'}}>
+      <ChildRow style={{flex:1}} child={{name:'Ada',done:5,total:7,pending:2}} onTap={()=>{}} />
+      <ChildRow style={{flex:1}} child={{name:'Theo',done:4,total:4}} onTap={()=>{}} />
+      <ChildTile style={{width:130}} child={{name:'Mira',done:1,total:4,helpRequests:1}} onTap={()=>{}} />
+    </div>
+
+    <div className="sec">ThemeSwatch · ThemeRow — the live theme picker</div>
+    <GlassCard>
+      {DB_THEMES.map(t=><ThemeRow key={t.key} theme={t} selected={t.key===theme}
+        onSelect={(k)=>{setTheme(k);document.documentElement.dataset.theme=k}} />)}
+      <div style={{fontSize:12,color:'var(--ds-label-2)',marginTop:10,lineHeight:1.5}}>
+        Pick the look you like. It changes everywhere, on every device — switch whenever you feel like a change.</div>
+    </GlassCard>
+  </>
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script></body></html>

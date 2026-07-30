@@ -1,0 +1,199 @@
+<!-- @dsCard group="Widgets" viewport="1000x860" name="Widgets" subtitle="Every WidgetKit family: home screen, Lock Screen, StandBy, macOS." -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Daily Bread — Widgets</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1000px;margin:0 auto;padding:32px 24px 80px}
+h1{font-size:31px;font-weight:800;letter-spacing:-.025em;margin:0 0 7px}
+.sub{font-size:15px;color:var(--ds-label-2);margin:0 0 8px;max-width:700px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:38px 0 13px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:19px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:14px}
+.p{margin:0 0 9px;font-size:14px;max-width:74ch}
+.ctl{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-bottom:15px}
+.ctl label{font:700 9.5px var(--ds-font);letter-spacing:.7px;text-transform:uppercase;color:var(--ds-label-3)}
+.ctl input[type=range]{width:150px;accent-color:var(--ds-accent)}
+.b{font-size:12px;font-weight:600;padding:6px 12px;border-radius:99px;border:1px solid var(--ds-hairline);background:var(--ds-fill-strong);color:var(--ds-label-2);cursor:pointer;font-family:inherit}
+.b:hover{border-color:var(--ds-accent)}
+.b.sel{background:var(--ds-accent);color:var(--ds-on-accent);border-color:var(--ds-accent)}
+.wall{background:linear-gradient(165deg,#5C7A88,#2A3C46);padding:26px;border-radius:20px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.wall.dark{background:linear-gradient(165deg,#1E2830,#0E1418)}
+.spec{margin:0;display:flex;flex-direction:column;gap:7px;align-items:center}
+.spec figcaption{font:600 10px var(--ds-font);color:#fff;opacity:.78;letter-spacing:.3px}
+.lockwrap{display:flex;gap:26px;align-items:center;padding:18px 22px;border-radius:18px;background:rgb(255 255 255 / .1);backdrop-filter:blur(12px)}
+.note{font-size:12.5px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:11px 13px;margin-top:11px}
+.note b{color:var(--ds-label)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pane{background:var(--ds-fill);border-radius:11px;padding:13px 15px}
+.pane h4{margin:0 0 7px;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--ds-label-3);font-weight:800}
+.pane p{margin:0 0 6px;font-size:12.5px;color:var(--ds-label-2)}
+.themebar{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+</style></head><body>
+<div class="wrap">
+
+<h1>Widgets</h1>
+<p class="sub">The rainbow year, and the day's state, on every surface iOS gives you. This is where the icon's job ends and the widget's begins — the icon identifies, the widget informs.</p>
+<div class="themebar" id="tb"></div>
+<div class="ctl">
+  <label>Done</label><input type="range" id="sl" min="0" max="6" step="1" value="3">
+  <label>Chores</label><input type="range" id="tot" min="3" max="9" step="1" value="6">
+  <span style="font:800 14px var(--ds-font)" id="cnt">3 of 6</span>
+  <div style="display:flex;gap:6px" id="who">
+    <button class="b sel" data-w="kid">Kid</button>
+    <button class="b" data-w="parent">Parent</button>
+  </div>
+</div>
+
+<h2>Home screen</h2>
+<div class="card">
+<div class="wall" id="home"></div>
+<div class="note" id="homenote"></div>
+</div>
+
+<h2>Second medium: Today, interactive</h2>
+<div class="card">
+<div class="wall" id="today2"></div>
+<div class="note"><b>A separate widget kind, not a replacement.</b> The year widget answers "how am I doing"; this one answers "what's left" and lets a kid check it off without opening the app (App Intents, iOS 17+). Offering both and letting them choose is cheaper than guessing.</div>
+</div>
+
+<h2>Lock Screen &amp; StandBy</h2>
+<div class="card">
+<div class="wall dark" id="lock"></div>
+<div class="note"><b>Accessory widgets are monochrome</b> — iOS tints them, so colour carries no meaning and the rainbow cannot appear. Everything reads from shape and fill alone. <b>StandBy</b> (landscape, charging, bedside) is the exception and gets 26 weeks at full colour.</div>
+</div>
+
+<h2>What goes where</h2>
+<div class="card">
+<div class="two">
+  <div class="pane"><h4>Kid</h4>
+    <p><b>Small</b> — 4-week rainbow + today's ring.</p>
+    <p><b>Medium · Year</b> — 12 weeks, matching the Today card.</p>
+    <p><b>Medium · Today</b> — the day's chores, checkable inline.</p>
+    <p><b>Large</b> — the full year + balance + streak.</p>
+    <p><b>Lock</b> — circular ring, rectangular count, inline.</p>
+  </div>
+  <div class="pane"><h4>Parent</h4>
+    <p><b>Small</b> — approvals waiting. A count that means "you owe someone a response".</p>
+    <p><b>Medium</b> — at risk today.</p>
+    <p><b>Large</b> — week rings + the 12-week rainbow.</p>
+    <p><b>Lock rectangular</b> — "2 waiting on you".</p>
+  </div>
+</div>
+<div class="note"><b>Single-child rule holds here too.</b> With one child, no name labels, no per-child rows, no picker — the parent's medium shows the chores, not "Ada: 3 of 6".</div>
+</div>
+
+<h2>Implementation notes</h2>
+<div class="card">
+<p class="p">① <b>Interactive widgets via App Intents (iOS 17+).</b> Checking a chore from the medium widget without opening the app is the highest-value item here — the core interaction, on the home screen. <code>Button(intent: CompleteChoreIntent(id:))</code>.</p>
+<p class="p">② <b>Reload on completion, not just on a timer.</b> <code>WidgetCenter.shared.reloadTimelines(ofKind:)</code> after every mutation, plus a morning refresh at the household's day-start hour.</p>
+<p class="p">③ <b>The widget owns its theme.</b> Read the active theme from the shared App Group container. A widget in default colours beside a Harbor app looks broken — and widgets run in a separate process, so this is easy to forget.</p>
+<p class="p">④ <b>Never show money on the Lock Screen by default.</b> It's visible to anyone who picks up the phone. Ship count-only; make the balance opt-in.</p>
+<p class="p">⑤ <b>Snapshots must be instant.</b> Cache last-known state in the App Group so <code>getSnapshot</code> never waits on the server — a spinning widget is worse than a stale one.</p>
+<p class="p">⑥ <b>Hue is <code>dayOfYear / 365 × 360</code>, always</b> — never position-within-window. Get this wrong and every widget renders a full spectrum regardless of range, which destroys the property that makes the year legible.</p>
+<p class="p">⑦ <b>macOS: same widgets, plus the live dock icon</b> (§1.2a) — the one surface where the mark itself can carry state.</p>
+</div>
+
+</div>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="Widgets.jsx"></script>
+<script type="text/babel">
+const CHORES=[{icon:'🐕',name:'Feed the dog'},{icon:'🛏',name:'Tidy your room'},{icon:'🍽',name:'Wash up'},
+{icon:'📚',name:'Homework'},{icon:'🗑',name:'Take the bins out'},{icon:'🎹',name:'Practice piano'},
+{icon:'🌱',name:'Water the plants'},{icon:'👕',name:'Fold laundry'},{icon:'🍞',name:'Set the table'}];
+
+let done=3,total=6,who='kid';
+const roots={};
+function mount(id,node){
+  const host=document.getElementById(id);
+  if(!roots[id])roots[id]=ReactDOM.createRoot(host);
+  roots[id].render(node);
+}
+function fig(label,node){
+  return <figure className="spec">{node}<figcaption>{label}</figcaption></figure>;
+}
+function draw(){
+  document.getElementById('cnt').textContent=`${done} of ${total}`;
+  const m=wmode();
+  const yrWeeks=m.large.weeks*(m.large.bands||1);
+  const largeLabel=yrWeeks>=52?'Large · the year':`Large · ${yrWeeks} weeks`;
+  document.getElementById('homenote').innerHTML=
+    `<b>The rainbow is on every size</b>, windowed to fit — ${m.small.weeks} weeks small, `+
+    `${m.medium.weeks} medium, ${yrWeeks} large. Hue comes from the real day-of-year, so a given `+
+    `day is the same colour on all three; the small widget is a genuine slice of the wheel, not a `+
+    `compressed copy of it.`;
+  mount('home', who==='kid'
+    ? <>{fig(`Small · ${m.small.weeks} weeks`,<SmallKid done={done} total={total}/>)}
+        {fig(`Medium · ${m.medium.weeks} weeks`,<MediumYear done={done} total={total}/>)}
+        {fig(largeLabel,<LargeKid done={done} total={total}/>)}</>
+    : <>{fig('Small',<SmallParent/>)}
+        {fig('Medium',<MediumParent done={done} total={total}/>)}
+        {fig('Large',<LargeParent done={done} total={total}/>)}</>);
+  mount('today2', fig('Medium · Today',<MediumToday done={done} total={total} chores={CHORES}/>));
+  mount('lock',
+    <>
+      <div className="lockwrap">
+        {fig('Circular',<AccCircular done={done} total={total}/>)}
+        {fig('Rectangular',<AccRect done={done} total={total} who={who}/>)}
+        {fig('Inline',<AccInline done={done} total={total}/>)}
+      </div>
+      {fig(`StandBy · ${wmode().standby.weeks} weeks, charging`,<StandBy/>)}
+    </>);
+}
+const THEMES=[['sunroom','Sunroom'],['sky','Sky'],['rosewater','Rosewater'],['meadow','Meadow'],['mulberry','Mulberry'],['harbor','Harbor']];
+const tb=document.getElementById('tb');
+THEMES.forEach(([k,l],i)=>{const b=document.createElement('button');b.className='b'+(i===0?' sel':'');b.textContent=l;
+b.onclick=()=>{document.documentElement.dataset.theme=k;[...tb.children].forEach(c=>c.classList.remove('sel'));b.classList.add('sel')};tb.appendChild(b)});
+document.getElementById('sl').addEventListener('input',e=>{done=+e.target.value;draw()});
+document.getElementById('tot').addEventListener('input',e=>{total=+e.target.value;
+  const s=document.getElementById('sl');s.max=total;if(done>total){done=total;s.value=done}draw()});
+document.getElementById('who').addEventListener('click',e=>{if(!e.target.dataset.w)return;
+  who=e.target.dataset.w;[...e.currentTarget.children].forEach(c=>c.classList.toggle('sel',c===e.target));draw()});
+draw();
+
+/* ---- Tweaks: three controls that reshape what the widget set is ---- */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "reading": "balanced",
+  "shortfall": "forgiving",
+  "perfect": "glow"
+}/*EDITMODE-END*/;
+
+function WidgetTweaks(){
+  const [t,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  React.useEffect(()=>{ window.DB_WIDGET_CFG={reading:t.reading,shortfall:t.shortfall,perfect:t.perfect}; draw(); },
+    [t.reading,t.shortfall,t.perfect]);
+  const note={fontSize:11,lineHeight:1.5,opacity:.65};
+  return <TweaksPanel>
+    <TweakSection label="Reading" />
+    <TweakRadio label="Range" value={t.reading} options={['ambient','balanced','countable']}
+      onChange={(v)=>setTweak('reading',v)} />
+    <div style={note}>How much year each family shows versus how countable a single day is.
+      <b> Ambient</b> trades the numbers away for a longer wall; <b>countable</b> shrinks the
+      window until you can point at Tuesday.</div>
+
+    <TweakSection label="What a bad day looks like" />
+    <TweakRadio label="Shortfall" value={t.shortfall} options={['forgiving','honest','stark']}
+      onChange={(v)=>setTweak('shortfall',v)} />
+    <div style={note}>The intensity ramp. <b>Forgiving</b> keeps a half-done day a colour you'd
+      still want on the wall; <b>stark</b> drains everything but near-perfect days. This is the
+      tone of the product, not a colour setting.</div>
+
+    <TweakSection label="How a perfect day celebrates" />
+    <TweakRadio label="Perfect" value={t.perfect} options={['flat','glow','ember']}
+      onChange={(v)=>setTweak('perfect',v)} />
+    <div style={note}><b>Ember</b> gives perfect days a hot core and a bright rim, so a streak
+      burns as a line across the year. <b>Flat</b> removes the reward entirely — useful for judging
+      whether the rainbow carries the wall on its own.</div>
+  </TweaksPanel>;
+}
+const tweakHost=document.createElement('div');
+document.body.appendChild(tweakHost);
+ReactDOM.createRoot(tweakHost).render(<WidgetTweaks />);
+</script>
+</body></html>

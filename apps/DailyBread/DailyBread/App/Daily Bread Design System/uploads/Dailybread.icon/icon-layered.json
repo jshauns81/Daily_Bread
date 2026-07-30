@@ -1,0 +1,90 @@
+{
+  "fill": {
+    "solid": "extended-srgb:0.23137,0.26667,0.32941,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "fill": "none",
+          "glass": true,
+          "image-name": "1-cloth-back.svg",
+          "name": "Cloth back",
+          "position": {
+            "scale": 0.75,
+            "translation-in-points": [
+              0,
+              -10.081624061732668
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "layers": [
+        {
+          "fill": "none",
+          "glass": true,
+          "image-name": "2-monstrance-back.svg",
+          "name": "Monstrance back",
+          "position": {
+            "scale": 0.75,
+            "translation-in-points": [
+              0,
+              -10.081624061732668
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      }
+    },
+    {
+      "layers": [
+        {
+          "fill": "none",
+          "glass": true,
+          "image-name": "3-cloth-front.svg",
+          "name": "Cloth front",
+          "position": {
+            "scale": 0.75,
+            "translation-in-points": [
+              0,
+              -10.081624061732668
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "layers": [
+        {
+          "fill": "none",
+          "glass": true,
+          "image-name": "4-monstrance-front.svg",
+          "name": "Monstrance front",
+          "position": {
+            "scale": 0.75,
+            "translation-in-points": [
+              0,
+              -10.081624061732668
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "specular": true
+    }
+  ],
+  "supported-platforms": {
+    "circles": [
+      "watchOS"
+    ],
+    "squares": "shared"
+  }
+}

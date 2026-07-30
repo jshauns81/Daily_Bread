@@ -1,0 +1,27 @@
+<!-- @dsCard group="Guidelines" name="App Icon — render check" subtitle="Is the browser rendering the SVG faithfully?" viewport="1280x854" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Render check</title><style>body{margin:0;background:#161E2C;color:#E8EAF0;font:14px -apple-system,system-ui,sans-serif;padding:44px 48px}h1{font:600 20px/1 -apple-system,system-ui;margin:0 0 6px}p.sub{color:#8B95AA;margin:0 0 32px;font-size:13px;max-width:70ch}h2{font:600 12px/1 -apple-system,system-ui;letter-spacing:.06em;text-transform:uppercase;color:#8B95AA;margin:0 0 12px}.row{display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap;margin-bottom:44px}.col{display:flex;flex-direction:column;gap:10px}.col>img{display:block;width:360px;height:auto}.note{font-size:12px;color:#8B95AA;max-width:360px;line-height:1.5}.sizes{display:flex;gap:24px;align-items:flex-end}.s{display:flex;flex-direction:column;gap:6px;align-items:center}.s span{font-size:11px;color:#8B95AA}a{color:#D99C2B}a:hover{color:#F2CC6B}</style></head><body>
+<h1>Render check</h1>
+<p class="sub">Same file, two ways. If A and B look different, the baked drop&#8209;shadow filters are the cause. If A matches your Figma canvas, the browser is rendering it faithfully and the file is what it is.</p>
+<div class="row">
+<div class="col"><h2>A &mdash; file as exported</h2><img src="../../uploads/Daily Bread team library.svg"><div class="note">Native 1512&times;1522, no added corner radius, nothing forced.</div></div>
+<div class="col"><h2>B &mdash; glow filters stripped</h2><img src="../../uploads/_control-noglow.svg"><div class="note">Identical geometry, the five <code>feMorphology&nbsp;+&nbsp;feGaussianBlur</code> gold shadows removed.</div></div>
+</div>
+<h2>A at real icon sizes</h2>
+<div class="sizes" style="margin-bottom:40px">
+<div class="s"><img src="../../uploads/Daily Bread team library.svg" style="width:180px"><span>180</span></div>
+<div class="s"><img src="../../uploads/Daily Bread team library.svg" style="width:120px"><span>120</span></div>
+<div class="s"><img src="../../uploads/Daily Bread team library.svg" style="width:80px"><span>80</span></div>
+<div class="s"><img src="../../uploads/Daily Bread team library.svg" style="width:58px"><span>58</span></div>
+<div class="s"><img src="../../uploads/Daily Bread team library.svg" style="width:40px"><span>40</span></div>
+<div class="s"><img src="../../uploads/Daily Bread team library.svg" style="width:29px"><span>29</span></div>
+</div>
+<h2>B at real icon sizes</h2>
+<div class="sizes">
+<div class="s"><img src="../../uploads/_control-noglow.svg" style="width:180px"><span>180</span></div>
+<div class="s"><img src="../../uploads/_control-noglow.svg" style="width:120px"><span>120</span></div>
+<div class="s"><img src="../../uploads/_control-noglow.svg" style="width:80px"><span>80</span></div>
+<div class="s"><img src="../../uploads/_control-noglow.svg" style="width:58px"><span>58</span></div>
+<div class="s"><img src="../../uploads/_control-noglow.svg" style="width:40px"><span>40</span></div>
+<div class="s"><img src="../../uploads/_control-noglow.svg" style="width:29px"><span>29</span></div>
+</div>
+</body></html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>App icon — directions</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+.wrap{max-width:1060px;margin:0 auto;padding:34px 24px 80px}
+h1{font-size:32px;font-weight:800;letter-spacing:-.025em;margin:0 0 7px}
+.sub{font-size:15.5px;color:var(--ds-label-2);margin:0 0 8px;max-width:700px}
+h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke);margin-bottom:15px;display:grid;grid-template-columns:172px 1fr;gap:22px;align-items:start}
+.p{margin:0 0 9px;font-size:14px;max-width:64ch}
+.hd{display:flex;align-items:baseline;gap:9px;margin:0 0 7px;flex-wrap:wrap}
+.hd b{font-size:16.5px;font-weight:760}
+.tag{font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--ds-fill-strong);color:var(--ds-label-2)}
+.tag.pick{background:var(--ds-accent);color:var(--ds-on-accent)}
+.tag.risk{background:color-mix(in oklab,var(--ds-help) 20%,transparent);color:var(--ds-help)}
+.ladder{display:flex;gap:13px;align-items:flex-end;margin-top:13px;flex-wrap:wrap}
+.ladder figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ladder figcaption{font:600 9px var(--ds-font);color:var(--ds-label-3);letter-spacing:.3px}
+.ico{position:relative;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgb(0 0 0 / .18)}
+.big{width:150px;height:150px;box-shadow:0 10px 26px rgb(0 0 0 / .22)}
+.hs{display:flex;gap:15px;align-items:flex-start;background:linear-gradient(160deg,#4A6B7C,#243642);padding:15px;border-radius:16px;margin-top:14px;width:max-content}
+.hs figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.hs figcaption{font:500 9.5px var(--ds-font);color:#fff;opacity:.9}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:12px}
+.note b{color:var(--ds-label)}
+.warn{background:color-mix(in oklab,var(--ds-help) 9%,var(--ds-fill))}
+</style></head><body>
+<div class="wrap">
+
+<h1>App icon — five directions</h1>
+<p class="sub">Every one is shown at 29pt as well as 1024 — including the one you have now, at the top, so the comparison is direct. 29pt is the size that kills icons.</p>
+<p class="sub" style="font-size:13.5px;color:var(--ds-label-3)">These are <b>directions, not finished art</b> — geometry I can build in CSS so you can judge the idea. Whichever you pick should be redrawn properly in a vector tool before it ships.</p>
+
+<h2>What's wrong with the current one</h2>
+<div class="card">
+<div id="cur-big"></div>
+<div>
+<div class="hd"><b>Current · shipping today</b><span class="tag">The baseline</span></div>
+<p class="p">Judge the claims below against the ladder, not against my description of it.</p>
+<div class="ladder" id="cur-lad"></div>
+</div>
+</div>
+<div class="card" style="grid-template-columns:1fr">
+<div class="note warn"><b>Three problems, in order of severity.</b> ① The grid is too fine — by 40pt the cells are sub-pixel and it reads as noise. ② The dark teal ground matches no shipping theme, including Sunroom, the default. ③ A single gold cell in a field of grey is a "one thing among many" idea, which is a <i>completion</i> metaphor — but the app's emotional centre is warmth and accumulation, not a lone highlight. The rainbow year fixes ③ for free, since the accumulated colour <i>is</i> the story.</div>
+</div>
+
+<h2>The directions</h2>
+
+<div class="card">
+  <div id="a-big"></div>
+  <div>
+    <div class="hd"><b>A · Rainbow year</b><span class="tag pick">My pick</span></div>
+    <p class="p">A coarse 4×4 of the year's own hues, brightness varying like real days. It's the app's signature view reduced to sixteen cells — nobody else's icon looks like this, and it means the thing on the home screen is literally the thing inside.</p>
+    <p class="p">Coarse is deliberate: 4×4 survives 29pt where 7×7 doesn't. It also gets <i>better</i> as it shrinks, blurring into a warm rainbow smear rather than falling apart.</p>
+    <div class="ladder" id="a-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="b-big"></div>
+  <div>
+    <div class="hd"><b>B · The arc</b><span class="tag">Strongest at small sizes</span></div>
+    <p class="p">One rainbow sweep on cream. The same idea as A with all the detail removed — a year as a single gesture. This is the most legible option at every size and the most likely to still look right in five years.</p>
+    <p class="p">The cost is that it's more abstract: it says "warm" and "spectrum", not "chores" or "family". Whether that matters for an app only five people will ever install is a fair question.</p>
+    <div class="ladder" id="b-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="c-big"></div>
+  <div>
+    <div class="hd"><b>C · One gold cell</b><span class="tag">Most native</span></div>
+    <p class="p">Cream ground, a single rounded gold square. Maximum reduction, and it leans on the system's one true invariant — gold means money. Reads instantly at any size and sits comfortably beside Apple's own icons.</p>
+    <p class="p">It is also the least distinctive of the five. A gold rounded square is a shape several apps already own.</p>
+    <div class="ladder" id="c-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="d-big"></div>
+  <div>
+    <div class="hd"><b>D · The ring</b><span class="tag">Ties to the interaction</span></div>
+    <p class="p">The check ring, mid-completion, in gold on the Sunroom ground. It depicts the single action the whole app is built around, and the gold flash on an earning chore is already the nicest moment in the product.</p>
+    <p class="p">Risk: progress rings are extremely common on iOS, and a partial ring reads as "activity" or "storage" to anyone who doesn't know the app.</p>
+    <div class="ladder" id="d-lad"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="e-big"></div>
+  <div>
+    <div class="hd"><b>E · Wordmark</b><span class="tag risk">Weakest</span></div>
+    <p class="p">"db" set in SF Pro Rounded on gold. Included because it's the honest baseline — you have no logo, and a clean wordmark beats a mediocre picture.</p>
+    <p class="p">But it's the one direction that says nothing about the product, and two lowercase letters at 29pt is a lot of nothing. I'd only take this if none of the others land.</p>
+    <div class="ladder" id="e-lad"></div>
+  </div>
+</div>
+
+<h2>On a home screen</h2>
+<div class="card" style="grid-template-columns:1fr">
+<div class="hs" id="hs"></div>
+<div class="note"><b>This is the test that matters.</b> Squint. The current icon is first, so the comparison is direct. A and B still read; C holds but could be any app; D reads as a progress indicator; E disappears. If you want my one-line answer: <b>A, redrawn properly, with B as the fallback if it doesn't survive a real icon designer.</b></div>
+</div>
+
+<h2>If you pick A</h2>
+<div class="card" style="grid-template-columns:1fr">
+<p class="p">Three things to get right when it's redrawn:</p>
+<p class="p">① <b>Don't use the literal day-1-to-365 hue ramp.</b> A true spectrum has a muddy olive band around 70–90°. Hand-pick sixteen hues that stay warm and skip the mud.</p>
+<p class="p">② <b>Vary brightness, not just hue.</b> Uniform cells read as a colour-picker swatch. Uneven ones read as lived-in — which is the point.</p>
+<p class="p">③ <b>Ground it in Sunroom's cream</b>, not white and not dark. The icon should look like the default theme, since that's what most people will open into.</p>
+</div>
+
+</div>
+<script>
+const R=s=>s*0.2237; // iOS squircle approximation
+function shell(size,bg){const d=document.createElement('div');d.className='ico';
+  d.style.width=size+'px';d.style.height=size+'px';d.style.borderRadius=R(size)+'px';d.style.background=bg;return d}
+
+// A — coarse rainbow grid, hand-picked warm hues, uneven brightness
+const HUES=[8,26,42,58,150,172,196,212,232,262,292,318,338,354,18,36];
+const LIGHT=[.95,.62,1,.78,.55,.92,.7,1,.84,.6,.97,.72,1,.66,.88,.94];
+function iconA(size){
+  const d=shell(size,'#FBF3E4');
+  const pad=size*.13, cell=(size-pad*2)/4, gap=Math.max(size*.012,.5);
+  const g=document.createElement('div');
+  g.style.cssText=`position:absolute;left:${pad}px;top:${pad}px;display:grid;grid-template-columns:repeat(4,1fr);gap:${gap}px;width:${size-pad*2}px;height:${size-pad*2}px`;
+  HUES.forEach((h,i)=>{const c=document.createElement('div');
+    const l=LIGHT[i];
+    c.style.cssText=`border-radius:${Math.max(size*.022,1)}px;background:hsl(${h} ${34+l*48}% ${76-l*30}%)`;
+    g.appendChild(c)});
+  d.appendChild(g);return d;
+}
+// B — single rainbow arc
+function iconB(size){
+  const d=shell(size,'#FBF3E4');
+  const a=document.createElement('div');const t=size*.155;
+  a.style.cssText=`position:absolute;left:${size*.17}px;top:${size*.2}px;width:${size*.66}px;height:${size*.66}px;
+    border-radius:50%;background:conic-gradient(from 200deg,#E0552F,#E7942B,#E7B44A,#7FA84C,#3F9E8E,#3B82D6,#7A5AF8,#C0459B,#E0552F);
+    -webkit-mask:radial-gradient(circle at 50% 50%, transparent ${size*.33-t}px, #000 ${size*.33-t+.5}px);
+    mask:radial-gradient(circle at 50% 50%, transparent ${size*.33-t}px, #000 ${size*.33-t+.5}px);`;
+  d.appendChild(a);return d;
+}
+// C — one gold cell
+function iconC(size){
+  const d=shell(size,'#FBF3E4');
+  const c=document.createElement('div');
+  c.style.cssText=`position:absolute;left:${size*.28}px;top:${size*.28}px;width:${size*.44}px;height:${size*.44}px;
+    border-radius:${size*.13}px;background:linear-gradient(150deg,#F0C868,#C98A1E);box-shadow:0 ${size*.012}px ${size*.04}px rgb(120 80 10 / .3)`;
+  d.appendChild(c);return d;
+}
+// D — the ring
+function iconD(size){
+  const d=shell(size,'#FBF3E4');
+  const t=size*.115;
+  const r=document.createElement('div');
+  r.style.cssText=`position:absolute;left:${size*.21}px;top:${size*.21}px;width:${size*.58}px;height:${size*.58}px;border-radius:50%;
+    background:conic-gradient(#C98A1E 0turn .72turn, rgb(180 150 100 / .22) .72turn 1turn);
+    -webkit-mask:radial-gradient(circle at 50% 50%, transparent ${size*.29-t}px, #000 ${size*.29-t+.5}px);
+    mask:radial-gradient(circle at 50% 50%, transparent ${size*.29-t}px, #000 ${size*.29-t+.5}px);`;
+  d.appendChild(r);return d;
+}
+// E — wordmark
+function iconE(size){
+  const d=shell(size,'linear-gradient(155deg,#E7B44A,#C98A1E)');
+  const s=document.createElement('div');
+  s.style.cssText=`position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font:800 ${size*.46}px ui-rounded,-apple-system,var(--ds-font);color:#FFF8EA;letter-spacing:${-size*.02}px`;
+  s.textContent='db';d.appendChild(s);return d;
+}
+// Current shipping icon — the baseline every claim above is measured against
+function iconCurrent(size){
+  const d=shell(size,'#1B2B33');
+  const img=document.createElement('img');
+  img.src='../../assets/app-icon-1024.png';img.alt='Current Daily Bread icon';
+  img.style.cssText=`position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit`;
+  d.appendChild(img);return d;
+}
+const MAKE={a:iconA,b:iconB,c:iconC,d:iconD,e:iconE};
+const SIZES=[[180,'180 · @3x'],[120,'120 · @2x'],[87,'87 · settings'],[60,'60 · @1x'],[40,'40 · spotlight'],[29,'29 · smallest']];
+{const big=iconCurrent(150);big.classList.add('big');document.getElementById('cur-big').appendChild(big);
+ const lad=document.getElementById('cur-lad');
+ SIZES.forEach(([s,lbl])=>{const f=document.createElement('figure');
+   f.appendChild(iconCurrent(s));const c=document.createElement('figcaption');c.textContent=lbl;f.appendChild(c);lad.appendChild(f)});}
+for(const [k,fn] of Object.entries(MAKE)){
+  const big=fn(150);big.classList.add('big');document.getElementById(k+'-big').appendChild(big);
+  const lad=document.getElementById(k+'-lad');
+  SIZES.forEach(([s,lbl])=>{const f=document.createElement('figure');
+    f.appendChild(fn(s));const c=document.createElement('figcaption');c.textContent=lbl;f.appendChild(c);lad.appendChild(f)});
+}
+const hs=document.getElementById('hs');
+{const f=document.createElement('figure');f.appendChild(iconCurrent(60));
+ const c=document.createElement('figcaption');c.textContent='Current';f.appendChild(c);hs.appendChild(f)}
+[['a','A · Rainbow'],['b','B · Arc'],['c','C · Cell'],['d','D · Ring'],['e','E · Wordmark']].forEach(([k,l])=>{
+  const f=document.createElement('figure');f.appendChild(MAKE[k](60));
+  const c=document.createElement('figcaption');c.textContent=l;f.appendChild(c);hs.appendChild(f)});
+</script>
+</body></html>

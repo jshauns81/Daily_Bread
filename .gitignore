@@ -471,6 +471,13 @@ CLAUDE.md
 # Source files that legitimately contain "token" in the name (auth code, not secrets)
 !*Token*.cs
 
+# Design system tokens (CSS custom properties / Tokens Studio JSON, not secrets)
+!tokens/
+!*.tokens.json
+
+# macOS Finder metadata
+.DS_Store
+
 # dotnet run-file discovery cache - build artifact, not source
 dotnet/
 

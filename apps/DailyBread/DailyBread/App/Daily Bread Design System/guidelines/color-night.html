@@ -1,0 +1,96 @@
+<!-- @dsCard group="Colors" viewport="1280x854" name="Night — candidates" subtitle="Choosing the night-driving hex. It must not collide with Sky, Harbor or rarity-epic." -->
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Night hex</title><link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);padding:36px 40px;line-height:1.5}
+h1{font:800 24px/1.1 var(--ds-font);letter-spacing:-.02em;margin:0 0 6px}
+p.sub{font-size:14px;color:var(--ds-label-2);margin:0 0 26px;max-width:78ch}
+h2{font:800 11px var(--ds-font);letter-spacing:1.2px;text-transform:uppercase;color:var(--ds-label-2);margin:30px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--ds-hairline)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;color:var(--ds-label-3)}
+.cands{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cand{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:16px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke)}
+.cand h3{font:800 13px var(--ds-font);margin:0 0 2px}
+.cand .why{font-size:12px;color:var(--ds-label-2);margin:6px 0 12px;min-height:56px}
+.pair{display:flex;height:52px;border-radius:10px;overflow:hidden;margin-bottom:7px}
+.pair div{flex:1}
+.ctx{display:flex;flex-direction:column;gap:7px}
+.row{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:8px 10px;border-radius:9px}
+.row.lt{background:#FFFFFF;color:#111}
+.row.dk{background:#2A3852;color:#fff}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.pill{font:800 9px var(--ds-font);letter-spacing:.6px;padding:3px 7px;border-radius:99px;color:#fff}
+.collide{display:flex;gap:0;border-radius:10px;overflow:hidden;height:64px}
+.collide div{flex:1;display:flex;align-items:flex-end;padding:6px;font:700 9px var(--ds-font);color:#fff;text-shadow:0 1px 2px rgb(0 0 0 / .4)}
+.warn{font-size:13px;background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:10px}
+.warn b{color:var(--ds-label)}
+a{color:var(--ds-accent)}a:hover{opacity:.72}
+</style></head><body>
+
+<h1>Night — decided: B, dusk slate</h1>
+<p class="sub"><code class="mono">DrivingLogView.swift:147</code> hardcodes <code class="mono">Color.indigo</code> for night driving — the only unowned hue in the app. Whatever replaces it becomes an invariant, so it has to stay legible next to <b>two blue theme accents</b> (Sky, Harbor) and next to <b>rarity&#8209;epic</b>, which is already violet.</p>
+
+<h2>The neighbours it must not become</h2>
+<div class="collide">
+  <div style="background:#3D7BE0">SKY ACCENT #3D7BE0</div>
+  <div style="background:#5B9BE0">HARBOR ACCENT #5B9BE0</div>
+  <div style="background:#9B7BE0">EPIC #9B7BE0</div>
+  <div style="background:#2E8C86">SECONDARY #2E8C86</div>
+</div>
+
+<h2>Three candidates</h2>
+<div class="cands">
+
+<div class="cand">
+  <h3>A · Indigo</h3>
+  <div class="mono">#4C5FD7 / #7B8AF0 &middot; hue 232&deg;</div>
+  <div class="why">Closest to the <code class="mono">Color.indigo</code> it replaces, so nothing looks like it changed. But it sits between Sky's blue and epic's violet, and at small sizes it can read as either.</div>
+  <div class="pair"><div style="background:#4C5FD7"></div><div style="background:#7B8AF0"></div></div>
+  <div class="ctx">
+    <div class="row lt"><span class="dot" style="background:#4C5FD7"></span>Night drive &middot; 40 min<span style="flex:1"></span><span class="pill" style="background:#4C5FD7">NIGHT</span></div>
+    <div class="row dk"><span class="dot" style="background:#7B8AF0"></span>Night drive &middot; 40 min<span style="flex:1"></span><span class="pill" style="background:#7B8AF0">NIGHT</span></div>
+  </div>
+</div>
+
+<div class="cand">
+  <h3>B · Dusk slate ✅</h3>
+  <div class="mono">#5560A8 / #8D97D8 &middot; hue 232&deg;, low sat</div>
+  <div class="why">Same hue as A, desaturated. Reads as <i>night</i> rather than as a brand colour, and being visibly duller than every accent means it can never be mistaken for one. The safest of the three.</div>
+  <div class="pair"><div style="background:#5560A8"></div><div style="background:#8D97D8"></div></div>
+  <div class="ctx">
+    <div class="row lt"><span class="dot" style="background:#5560A8"></span>Night drive &middot; 40 min<span style="flex:1"></span><span class="pill" style="background:#5560A8">NIGHT</span></div>
+    <div class="row dk"><span class="dot" style="background:#8D97D8"></span>Night drive &middot; 40 min<span style="flex:1"></span><span class="pill" style="background:#8D97D8">NIGHT</span></div>
+  </div>
+</div>
+
+<div class="cand">
+  <h3>C · Blue-violet</h3>
+  <div class="mono">#5A45C8 / #8C79EE &middot; hue 252&deg;</div>
+  <div class="why">Furthest from both blue accents, and the most distinctive on its own. But it moves <i>toward</i> epic — and a legendary-adjacent violet on a driving row is a worse confusion than a bluish one.</div>
+  <div class="pair"><div style="background:#5A45C8"></div><div style="background:#8C79EE"></div></div>
+  <div class="ctx">
+    <div class="row lt"><span class="dot" style="background:#5A45C8"></span>Night drive &middot; 40 min<span style="flex:1"></span><span class="pill" style="background:#5A45C8">NIGHT</span></div>
+    <div class="row dk"><span class="dot" style="background:#8C79EE"></span>Night drive &middot; 40 min<span style="flex:1"></span><span class="pill" style="background:#8C79EE">NIGHT</span></div>
+  </div>
+</div>
+</div>
+
+<h2>Side by side against the neighbours</h2>
+<div class="collide" style="margin-bottom:8px">
+  <div style="background:#3D7BE0">SKY</div>
+  <div style="background:#4C5FD7">A</div>
+  <div style="background:#5560A8">B</div>
+  <div style="background:#5A45C8">C</div>
+  <div style="background:#9B7BE0">EPIC</div>
+</div>
+<div class="collide">
+  <div style="background:#5B9BE0">HARBOR</div>
+  <div style="background:#7B8AF0">A dark</div>
+  <div style="background:#8D97D8">B dark</div>
+  <div style="background:#8C79EE">C dark</div>
+  <div style="background:#9B7BE0">EPIC</div>
+</div>
+
+<div class="warn"><b>✅ Decided: B — dusk slate.</b> <code class="mono">#5560A8</code> light / <code class="mono">#8D97D8</code> dark, live as <code class="mono">--ds-night</code>. Night is a fact about a drive, not a reward or a brand colour — it should be the quietest hue in the app, and being desaturated is what guarantees it never competes with an accent or a rarity. A and C both fight something.</div>
+
+<div class="warn"><b>✅ Also fixed while checking this.</b> <code class="mono">tokens/themes.css</code> had <code class="mono">--db-rarity-epic:#9B7BE0</code> against the spec's <code class="mono">#7A5AF8</code>, and <code class="mono">--db-rarity-rare: var(--db-accent)</code> — the exact bug R6 exists to fix, living in the tokens as well as the Swift. Both are now fixed hex.</div></div>
+
+</body></html>

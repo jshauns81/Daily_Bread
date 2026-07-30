@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html data-theme="sunroom"><head><meta charset="utf-8"><title>Daily Bread — design recommendations</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+html,body{margin:0}
+body{font-family:var(--ds-font);background:var(--ds-background);color:var(--ds-label);-webkit-font-smoothing:antialiased;line-height:1.5}
+*{box-sizing:border-box}
+a{color:var(--ds-accent);text-decoration:none}a:hover{opacity:.72}
+.wrap{max-width:940px;margin:0 auto;padding:40px 28px 90px}
+h1{font-size:40px;font-weight:800;letter-spacing:-.025em;margin:0 0 10px;line-height:1.08}
+.sub{font-size:17px;color:var(--ds-label-2);margin:0 0 8px;max-width:660px}
+h2{font-size:13px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--ds-label-2);margin:52px 0 16px;padding-bottom:9px;border-bottom:1px solid var(--ds-hairline)}
+.card{background:var(--ds-card);border-radius:var(--ds-radius-card);padding:18px 20px;box-shadow:var(--ds-card-shadow);border:.5px solid var(--ds-card-stroke)}
+.rec{margin-bottom:16px}
+.rechead{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin-bottom:9px}
+.num{font:800 12px/1 ui-monospace,monospace;color:var(--ds-on-accent);background:var(--ds-accent);padding:5px 7px;border-radius:6px;letter-spacing:.5px}
+.rectitle{font-size:19px;font-weight:700;letter-spacing:-.015em}
+.chip{font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;padding:3px 8px;border-radius:99px}
+.c-high{background:var(--ds-help);color:#fff}
+.c-med{background:var(--ds-gold);color:#241905}
+.c-low{background:var(--ds-fill-strong);color:var(--ds-label-2)}
+.c-keep{background:var(--ds-success);color:#fff}
+.ev{font:11.5px/1.6 ui-monospace,SFMono-Regular,monospace;color:var(--ds-label-3);margin:0 0 11px;word-break:break-word}
+.p{margin:0 0 11px;font-size:14.5px;color:var(--ds-label);max-width:74ch}
+.p strong{font-weight:650}
+.lbl{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--ds-label-3);margin-bottom:7px}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0 4px}
+.pane{background:var(--ds-fill);border-radius:12px;padding:13px}
+.pane.after{background:color-mix(in oklab,var(--ds-accent) 7%,var(--ds-card))}
+ul.t{margin:0;padding-left:19px;font-size:14px;color:var(--ds-label-2)}ul.t li{margin-bottom:5px}
+ul.t b{color:var(--ds-label);font-weight:650}
+/* chore row mock */
+.row{display:flex;align-items:center;gap:11px;background:var(--ds-card);border-radius:11px;padding:9px 11px}
+.ico{width:38px;height:38px;border-radius:10px;background:var(--ds-fill-strong);display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.nm{font-size:14px;font-weight:550}
+.val{font-size:13px;font-weight:700;color:var(--ds-gold);margin-left:auto}
+.oldcheck{width:23px;height:23px;border-radius:50%;border:1.8px solid var(--ds-label-3);flex-shrink:0}
+.newcheck{width:29px;height:29px;border-radius:50%;border:2.5px solid color-mix(in oklab,var(--ds-label) 22%,transparent);flex-shrink:0;position:relative;transition:all .18s}
+.newcheck.on{background:var(--ds-accent);border-color:var(--ds-accent);box-shadow:0 0 0 5px color-mix(in oklab,var(--ds-accent) 16%,transparent)}
+.newcheck.on::after{content:"";position:absolute;left:9px;top:5px;width:6px;height:12px;border:solid #fff;border-width:0 2.6px 2.6px 0;transform:rotate(43deg)}
+/* time mocks */
+.stockfield{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--ds-fill-strong);border-radius:9px;margin-bottom:7px;font-size:13.5px}
+.stockval{background:var(--ds-fill);padding:4px 9px;border-radius:7px;font-size:13px;color:var(--ds-label-2)}
+.chiprow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.tchip{font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:99px;background:var(--ds-fill-strong);color:var(--ds-label-2);cursor:pointer}
+.tchip.sel{background:var(--ds-accent);color:var(--ds-on-accent)}
+.bigdur{font-size:34px;font-weight:800;letter-spacing:-.03em;text-align:center;padding:6px 0 2px}
+.durhint{font-size:11.5px;color:var(--ds-label-3);text-align:center;margin-bottom:10px}
+/* pips */
+.pips{display:flex;gap:5px}
+.pip{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--ds-fill-strong);color:var(--ds-label-3)}
+.pip.on{background:var(--ds-accent);color:var(--ds-on-accent)}
+/* swatch scatter */
+.scat{display:flex;gap:8px;flex-wrap:wrap}
+.sw{text-align:center}
+.swb{width:56px;height:38px;border-radius:8px;border:.5px solid var(--ds-hairline)}
+.swl{font:9.5px/1.5 ui-monospace,monospace;color:var(--ds-label-3);margin-top:3px}
+.rar{display:flex;gap:7px;flex-wrap:wrap}
+.rarb{font-size:11px;font-weight:800;letter-spacing:.6px;padding:5px 10px;border-radius:7px;color:#fff}
+.themebar{display:flex;gap:6px;margin:0 0 26px;flex-wrap:wrap}
+.tb{font-size:12px;font-weight:600;padding:6px 12px;border-radius:99px;border:1px solid var(--ds-hairline);background:var(--ds-card);color:var(--ds-label-2);cursor:pointer}
+.tb:hover{border-color:var(--ds-accent)}
+.tb.sel{background:var(--ds-accent);color:var(--ds-on-accent);border-color:var(--ds-accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.kv{display:flex;gap:9px;font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--ds-hairline)}
+.kv:last-child{border-bottom:none}
+.kv .k{font-weight:650;min-width:132px;flex-shrink:0}
+.kv .v{color:var(--ds-label-2)}
+.note{font-size:13px;color:var(--ds-label-2);background:var(--ds-fill);border-radius:10px;padding:12px 14px;margin-top:12px}
+@media(max-width:760px){.ba,.two{grid-template-columns:1fr}}
+</style></head><body>
+<div class="wrap">
+
+<h1>Where Daily Bread could be better</h1>
+<p class="sub">A design pass on the SwiftUI app — not a description of it. Every item is a recommendation with a proposal, ordered by how much it would change the feel of the app per unit of work.</p>
+<p class="sub" style="font-size:14px">Read from source at <code style="font-size:12.5px">DailyBread/</code>. Line references are real; open them alongside.</p>
+
+<div class="themebar" id="tb"></div>
+
+<h2>The thesis — two vocabularies, unevenly distributed</h2>
+<div class="card">
+<p class="p">There are two design languages in this app, and the split is not where you'd want it. The <strong>authored</strong> language — themes, <code>glassCard</code>, <code>YearHeatmapCard</code>, <code>AtRiskCard</code>, <code>ScreenTimeCard</code>, <code>ConfettiView</code>, <code>SheetKit</code>, <code>DayPicker</code> — is genuinely good and specific to this product. The <strong>stock</strong> language is raw SwiftUI: 7 segmented pickers, 6 menu pickers, 7 sliders, 2 steppers, 5 date pickers, 12 lists.</p>
+<p class="p">The problem isn't that stock exists. It's <strong>where</strong> it sits. The authored work is concentrated in the <em>display</em> surfaces — the things you look at. The stock work is concentrated in the <em>input</em> surfaces — the things you touch. So the app looks bespoke and feels generic, and the gap is widest at exactly the moments that carry emotion: checking off a chore, logging a drive, setting what a chore is worth.</p>
+<div class="two" style="margin-top:14px">
+  <div><div class="lbl">Authored — the things you look at</div>
+  <ul class="t"><li><b>YearHeatmapCard</b> — 365 cells, the app's best idea</li><li><b>AtRiskCard</b> — stakes before the list</li><li><b>ScreenTimeCard</b> — earned/spent as one object</li><li><b>ConfettiView</b> — the day-complete moment</li><li><b>Themes</b> — 6 palettes, whole-surface</li><li><b>SheetKit</b> — header / card / field / action bar</li><li><b>DayPicker</b> — 7 tappable day pips</li></ul></div>
+  <div><div class="lbl">Stock — the things you touch</div>
+  <ul class="t"><li><b>The check button</b> — <code>Image(systemName:"circle")</code></li><li><b>Drive logging</b> — 3 stacked <code>DatePicker</code>s</li><li><b>Weekly target</b> — a <code>Stepper</code></li><li><b>Importance</b> — a bare 0–10 <code>Slider</code></li><li><b>Rarity / Category / Condition</b> — menu pickers</li><li><b>Date range</b> — 2 more <code>DatePicker</code>s</li><li><b>Every admin form</b> — <code>List</code> + <code>Form</code></li></ul></div>
+</div>
+<div class="note"><strong>The one-line version:</strong> you authored the nouns and left the verbs stock. The recommendations below mostly move craft from display to input.</div>
+</div>
+
+<h2>Recommendations</h2>
+
+<!-- R1 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R1</span><span class="rectitle">Author the check button</span><span class="chip c-high">Highest impact</span></div>
+<p class="ev">TodayView.swift:354 — <code>Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")</code> · <code>.foregroundStyle(item.isDone ? Color.accentColor : Color.secondary)</code></p>
+<p class="p">This is the most-tapped control in the product and the single most stock thing in it. A grey SF Symbol <code>circle</code> at <code>.title2</code>. Two problems beyond the styling: <strong>grey reads as disabled</strong> rather than as an empty vessel waiting to be filled, and <strong>completing one chore produces no feedback at all</strong> — confetti only fires when the entire day is done, so 90% of completions land silently. A kid does this six times a day for years. It should feel like something.</p>
+<p class="p"><strong>Proposal.</strong> A purpose-built <code>ChoreCheck</code>: unchecked is a 2.5px ring in <code>label.opacity(0.22)</code> — warm, empty, clearly waiting; checked springs to filled accent with a halo that blooms and settles. Add a rigid haptic on check and nothing on uncheck (undo shouldn't be rewarded). For earning chores, flash the ring <em>gold</em> for ~180ms before it settles to accent — the one moment where money and action are the same event, using the semantic colour you already reserve.</p>
+<div class="ba">
+  <div class="pane"><div class="lbl">Now</div>
+    <div class="row"><div class="ico">🧺</div><div><div class="nm">Laundry</div></div><div class="val">$1.50</div><div class="oldcheck"></div></div>
+    <div style="height:7px"></div>
+    <div class="row"><div class="ico">🍽</div><div><div class="nm" style="text-decoration:line-through;color:var(--ds-label-3)">Dishes</div></div><div class="val" style="opacity:.5">$2.00</div><div class="oldcheck" style="background:var(--ds-accent);border-color:var(--ds-accent)"></div></div>
+  </div>
+  <div class="pane after"><div class="lbl">Proposed — tap them</div>
+    <div class="row"><div class="ico">🧺</div><div><div class="nm">Laundry</div></div><div class="val">$1.50</div><div class="newcheck" onclick="this.classList.toggle('on')"></div></div>
+    <div style="height:7px"></div>
+    <div class="row"><div class="ico">🍽</div><div><div class="nm">Dishes</div></div><div class="val">$2.00</div><div class="newcheck on" onclick="this.classList.toggle('on')"></div></div>
+  </div>
+</div>
+</div>
+
+<!-- R2 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R2</span><span class="rectitle">Drive logging should ask for duration, not three timestamps</span><span class="chip c-high">Highest impact</span></div>
+<p class="ev">DrivingLogView.swift:247–249 — three <code>DatePicker</code>s (Date, Start, End) stacked inside an authored <code>SheetCard(title:"When")</code></p>
+<p class="p">This is the sharpest stock/authored collision in the app: your own sheet card wrapping three iOS system pickers, which makes the stock contents <em>more</em> conspicuous, not less. But the real problem is conceptual. <strong>The log exists to accumulate hours toward a licence.</strong> Duration is the payload; start and end are bookkeeping the teen has to do arithmetic on. Right now the number that matters is the one number the form never shows.</p>
+<p class="p"><strong>Proposal.</strong> Lead with the date as chips (most drives are logged same-day — Today / Yesterday / pick), then make duration the hero: large, adjustable, with preset chips for the common cases. Keep exact start/end behind a "Set exact times" disclosure for the states that require it. Night driving already auto-detects from the times — if exact times are collapsed, keep <em>Auto</em> but let them override, which the segmented control already allows.</p>
+<div class="ba">
+  <div class="pane"><div class="lbl">Now</div>
+    <div class="stockfield"><span>Date</span><span class="stockval">25 Jul 2026</span></div>
+    <div class="stockfield"><span>Start</span><span class="stockval">18:20</span></div>
+    <div class="stockfield"><span>End</span><span class="stockval">19:05</span></div>
+    <div style="font-size:11.5px;color:var(--ds-label-3);padding-top:4px">Duration is never shown — the teen works it out.</div>
+  </div>
+  <div class="pane after"><div class="lbl">Proposed</div>
+    <div class="chiprow"><span class="tchip sel">Today</span><span class="tchip">Yesterday</span><span class="tchip">Pick…</span></div>
+    <div class="bigdur">45<span style="font-size:19px;font-weight:600"> min</span></div>
+    <div class="durhint">brings you to 12.8 of 50 hours</div>
+    <div class="chiprow"><span class="tchip">15</span><span class="tchip">30</span><span class="tchip sel">45</span><span class="tchip">1h</span><span class="tchip">1h30</span><span class="tchip">2h</span></div>
+    <div style="font-size:12px;color:var(--ds-accent);font-weight:600">Set exact times ⌄</div>
+  </div>
+</div>
+</div>
+
+<!-- R3 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R3</span><span class="rectitle">A Stepper sits 12 lines from your own DayPicker</span><span class="chip c-high">Cheap + obvious</span></div>
+<p class="ev">ChoreEditorSheet.swift:195 <code>Stepper("up to \(weeklyTarget)× a week", …)</code> — and ChoreEditorSheet.swift:207 <code>DayPicker(selected: $selectedDays)</code></p>
+<p class="p">Same sheet, same question ("when does this happen?"), two completely different vocabularies. You already <em>solved</em> this: <code>DayPicker</code> is seven tappable pips and it's good. The weekly-frequency branch reaches for a system Stepper instead, so the user toggling between "specific days" and "n times a week" watches the control language change underneath them.</p>
+<p class="p"><strong>Proposal.</strong> Reuse the DayPicker geometry for count — seven pips, tap the nth to set the target. Identical rhythm, identical hit targets, one vocabulary for scheduling. It also makes the 1–7 bound self-evident instead of enforced by an invisible <code>in: 1...7</code>.</p>
+<div class="ba">
+  <div class="pane"><div class="lbl">Now — weekly frequency</div>
+    <div class="stockfield"><span>up to 4× a week</span><span class="stockval">−&nbsp;&nbsp;+</span></div>
+    <div class="lbl" style="margin-top:12px">Now — specific days (same sheet)</div>
+    <div class="pips"><span class="pip on">M</span><span class="pip">T</span><span class="pip on">W</span><span class="pip">T</span><span class="pip on">F</span><span class="pip">S</span><span class="pip">S</span></div>
+  </div>
+  <div class="pane after"><div class="lbl">Proposed — weekly frequency</div>
+    <div class="pips"><span class="pip on">1</span><span class="pip on">2</span><span class="pip on">3</span><span class="pip on">4</span><span class="pip">5</span><span class="pip">6</span><span class="pip">7</span></div>
+    <div style="font-size:12px;color:var(--ds-label-2);margin-top:8px">up to <b>4×</b> a week</div>
+    <div class="lbl" style="margin-top:12px">Specific days — unchanged</div>
+    <div class="pips"><span class="pip on">M</span><span class="pip">T</span><span class="pip on">W</span><span class="pip">T</span><span class="pip on">F</span><span class="pip">S</span><span class="pip">S</span></div>
+  </div>
+</div>
+</div>
+
+<!-- R4 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R4</span><span class="rectitle">"Importance 7" doesn't mean anything to a parent</span><span class="chip c-med">Medium</span></div>
+<p class="ev">ChoreEditorSheet.swift:242 — <code>Slider(value: $importance, in: 0...10, step: 1)</code></p>
+<p class="p">A bare 0–10 slider asks the parent to invent a scale. Is 6 a lot? What's the difference between 6 and 7? Nobody knows, including the person who set it — and this value feeds the urgency language in <code>AtRiskCard</code>, so an arbitrary number becomes real words on the kid's screen.</p>
+<p class="p"><strong>Proposal.</strong> Five named stakes, as chips. The label <em>is</em> the scale, and it maps directly onto the urgency copy already written. Keep the 0–10 storage; change only the input.</p>
+<div class="ba">
+  <div class="pane"><div class="lbl">Now</div>
+    <div style="display:flex;justify-content:space-between;font-size:13px"><span>Importance</span><span style="color:var(--ds-accent);font-weight:650">7</span></div>
+    <div style="height:4px;border-radius:99px;background:var(--ds-fill-strong);margin:11px 0 6px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:70%;background:var(--ds-accent);border-radius:99px"></div><div style="position:absolute;left:70%;top:-7px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgb(0 0 0/.3);margin-left:-9px"></div></div>
+  </div>
+  <div class="pane after"><div class="lbl">Proposed</div>
+    <div class="chiprow" style="margin-bottom:6px"><span class="tchip">Nice to have</span><span class="tchip">Normal</span><span class="tchip">Matters</span><span class="tchip sel">Big deal</span><span class="tchip">Critical</span></div>
+    <div style="font-size:11.5px;color:var(--ds-label-3)">Shows as "getting tight" on their day when it slips.</div>
+  </div>
+</div>
+</div>
+
+<!-- R5 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R5</span><span class="rectitle">Seven different opacities all mean "off"</span><span class="chip c-med">Systemic</span></div>
+<p class="ev">Across 8 files: <code>Color.secondary.opacity(</code> 0.06 · 0.12 · 0.13 · 0.14 · 0.16 · 0.3 · 0.35 — CalendarView:142, PlannerGridView:126, PlannerView:480, SheetKit:164, ScreenTimeSettingsSheet:115, ApprovalsView:419</p>
+<p class="p">These are all the same intent — the unselected/inactive fill behind a toggle, pip, or chip — written seven ways. Individually invisible; collectively it's why two adjacent controls can look subtly mismatched, and it's the kind of thing that drifts further with every new screen.</p>
+<p class="p"><strong>Proposal.</strong> Two named tokens on <code>DB</code> — <code>fillOff</code> (~0.12) for control backgrounds and <code>fillSubtle</code> (~0.06) for large surfaces — and one <code>fillStrong</code> (~0.32) for the pressed/prominent case. Three values, named, done. This is a 30-minute change that permanently removes a class of inconsistency.</p>
+<div class="scat" style="margin-top:12px">
+  <div class="sw"><div class="swb" style="background:color-mix(in oklab,var(--ds-label) 6%,var(--ds-card))"></div><div class="swl">.06</div></div>
+  <div class="sw"><div class="swb" style="background:color-mix(in oklab,var(--ds-label) 12%,var(--ds-card))"></div><div class="swl">.12</div></div>
+  <div class="sw"><div class="swb" style="background:color-mix(in oklab,var(--ds-label) 13%,var(--ds-card))"></div><div class="swl">.13</div></div>
+  <div class="sw"><div class="swb" style="background:color-mix(in oklab,var(--ds-label) 14%,var(--ds-card))"></div><div class="swl">.14</div></div>
+  <div class="sw"><div class="swb" style="background:color-mix(in oklab,var(--ds-label) 16%,var(--ds-card))"></div><div class="swl">.16</div></div>
+  <div class="sw"><div class="swb" style="background:color-mix(in oklab,var(--ds-label) 30%,var(--ds-card))"></div><div class="swl">.30</div></div>
+  <div class="sw"><div class="swb" style="background:color-mix(in oklab,var(--ds-label) 35%,var(--ds-card))"></div><div class="swl">.35</div></div>
+</div>
+</div>
+
+<!-- R6 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R6</span><span class="rectitle">Rarity is a semantic colour riding on a themeable one</span><span class="chip c-med">Invariant leak</span></div>
+<p class="ev">AchievementsView.swift:180 — <code>case "rare": return .accentColor</code></p>
+<p class="p">You treat gold and Help-red as invariants that survive every theme, correctly. Rarity is the same kind of thing — "rare" should mean one colour everywhere, the way it does in every game a kid has played. But <code>rare</code> resolves to the theme accent, so rare is raspberry in Sunroom, blue in Sky and pink in Rosewater. Worse, in Sky it becomes indistinguishable from every ordinary accent control on the screen, so the badge stops signalling anything.</p>
+<p class="p"><strong>Proposal.</strong> Move the four rarities into the invariant set alongside gold and help — fixed hues, tuned once for legibility on both light and dark grounds. Rarity is information, not decoration.</p>
+<div class="ba">
+  <div class="pane"><div class="lbl">Now — "rare" follows the theme</div>
+    <div class="rar"><span class="rarb" style="background:var(--ds-label-3)">COMMON</span><span class="rarb" style="background:var(--ds-accent)">RARE</span><span class="rarb" style="background:#7A5AF8">EPIC</span><span class="rarb" style="background:var(--ds-gold);color:#241905">LEGENDARY</span></div>
+    <div style="font-size:11.5px;color:var(--ds-label-3);margin-top:9px">Switch the theme above — RARE moves with it.</div>
+  </div>
+  <div class="pane after"><div class="lbl">Proposed — invariant</div>
+    <div class="rar"><span class="rarb" style="background:#8A8F98">COMMON</span><span class="rarb" style="background:#3B82D6">RARE</span><span class="rarb" style="background:#7A5AF8">EPIC</span><span class="rarb" style="background:#E7B44A;color:#241905">LEGENDARY</span></div>
+    <div style="font-size:11.5px;color:var(--ds-label-3);margin-top:9px">Fixed across all six themes, like gold and help.</div>
+  </div>
+</div>
+</div>
+
+<!-- R7 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R7</span><span class="rectitle">One hardcoded hue in the whole app — and it's indigo</span><span class="chip c-low">Small</span></div>
+<p class="ev">DrivingLogView.swift:147 — <code>.foregroundStyle(entry.isNightDriving ? Color.indigo : Color.accentColor)</code></p>
+<p class="p">Theme discipline across this codebase is genuinely strong; this is nearly the only hue that escapes it. Indigo is a reasonable instinct for "night", but it's unowned — it belongs to no theme and will clash somewhere. If night driving needs its own colour, it's an invariant and should join the set in R6. If it doesn't, use <code>DB.secondary</code>.</p>
+</div>
+
+<!-- R8 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R8</span><span class="rectitle">Menu pickers hide information you've already designed</span><span class="chip c-med">Medium</span></div>
+<p class="ev">AchievementDefinitionsView.swift:249–266 — <code>.pickerStyle(.menu)</code> for Rarity, Category, Condition · DrivingLogView:253 Weather</p>
+<p class="p">Rarity has a full visual identity — colour, weight, meaning — and the editor reduces it to a grey menu row reading "Rare ⌄". The parent authoring an achievement can't see what they're choosing. Weather is four options with obvious glyphs, also behind a menu.</p>
+<p class="p"><strong>Proposal.</strong> Where the option set is small and visually coded, show the options: rarity as its four coloured chips, weather as its four SF Symbols. Keep <code>.menu</code> only for genuinely long lists (Category, Which chore, Before-hour). Rule of thumb — <strong>if the choice has a colour or a glyph, don't hide it in a menu.</strong></p>
+</div>
+
+<!-- R9 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R9</span><span class="rectitle">Lists you're already fighting</span><span class="chip c-low">Structural</span></div>
+<p class="ev">TodayView.swift:165–210 — every Section carries <code>.listRowBackground(Color.clear)</code> + custom <code>listRowInsets</code></p>
+<p class="p">On the card-heavy screens, <code>List</code> is being neutralised row by row so authored cards can sit inside it. You're paying for List's chrome and then deleting it. <strong>But not everywhere:</strong> Today's chore rows use <code>swipeActions</code> for Done and Help, which is real, native and worth keeping — don't throw List out there.</p>
+<p class="p"><strong>Proposal.</strong> Split by need. Screens whose rows are all clear-backgrounded cards with no swipe (Earnings, Awards, the heatmap/screen-time stacks) → <code>ScrollView</code> + <code>LazyVStack</code> with your own spacing. Screens with swipe actions (Today, Approvals, Planner) → keep <code>List</code>. The win is that spacing becomes yours rather than negotiated with UIKit.</p>
+</div>
+
+<!-- R10 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R10</span><span class="rectitle">The chore icon is a free-text emoji field</span><span class="chip c-low">Small</span></div>
+<p class="ev">ChoreEditorSheet.swift:133 <code>TextField("🧺", text: $icon)</code> · AchievementDefinitionsView.swift:238 <code>TextField("🏆", text: $icon)</code></p>
+<p class="p">Charming, and I'd keep the spirit — emoji as chore icons is warmer than an icon set and lets a family use their own shorthand. But an unbounded text field accepts "asdf", accepts three emoji, accepts nothing, and the result is rendered at 40pt in the kid's list every day.</p>
+<p class="p"><strong>Proposal.</strong> Keep free entry, add a curated first-run grid — the ~24 chores families actually have (🧺 🍽 🐕 🗑 🛏 📚 🦷 🚿 🧹 …) — with the text field as the escape hatch beneath it. Faster for the common case, still open.</p>
+</div>
+
+<!-- R11 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R11</span><span class="rectitle">Completion has one celebration and it's all-or-nothing</span><span class="chip c-med">Emotional</span></div>
+<p class="ev">TodayView.swift:187 — confetti gated on <code>store.allDone</code>; ConfettiView.swift is the only celebratory component</p>
+<p class="p">Related to R1 but bigger than the control. The app has exactly one reward moment and it requires a perfect day. A kid who does five of six chores gets the same feedback as a kid who does none: nothing. Given the brief — <em>alive and kind in the hand</em>, for a family under strain — that's a lot of unclaimed warmth, and it's the difference between a tracker and a companion.</p>
+<p class="p"><strong>Proposal.</strong> A three-tier ladder, ascending and cheap: <strong>per-chore</strong> — the R1 check bloom plus haptic; <strong>threshold</strong> — a quiet flourish when the last <em>earning</em> chore lands or a streak extends, well short of full confetti; <strong>perfect day</strong> — the existing confetti, now genuinely rarer and therefore worth more. Keep it under the existing <code>enableConfetti</code> setting so a teen can turn the whole ladder down.</p>
+</div>
+
+<!-- R12 -->
+<div class="card rec">
+<div class="rechead"><span class="num">R12</span><span class="rectitle">Ratify the root tint — it's the best decision in the codebase</span><span class="chip c-keep">Keep, document</span></div>
+<p class="ev">DailyBreadApp.swift:34 — <code>content.tint(theme.accent(scheme))</code></p>
+<p class="p">Worth calling out because it's easy to mistake for a smell. Roughly 40 call sites use bare <code>Color.accentColor</code> rather than <code>DB.accent(scheme)</code>, which looks like theme leakage — it isn't. One <code>.tint()</code> at the root means every downstream control, including system ones, inherits the theme for free. That's why the stock pickers and sliders are at least <em>coloured</em> correctly even where they're shaped wrong.</p>
+<p class="p"><strong>Proposal.</strong> Write it down as the rule, so nobody "fixes" it later: <strong>use <code>Color.accentColor</code> for accent; reach for <code>DB.*</code> only for the invariants</strong> (gold, help, success, rarity). Same for the <code>graphiteBackground()</code> name — a fossil from the pre-theme era, already flagged in-source as kept for call-site stability. Rename it <code>themeBackground()</code> whenever you next touch those files; it's cosmetic but it misleads every new reader.</p>
+</div>
+
+<h2>If you only do three</h2>
+<div class="card">
+<div class="kv"><span class="k">This weekend</span><span class="v"><b>R1</b> the check button, and <b>R3</b> the Stepper→pips swap. Both are contained, both are felt daily.</span></div>
+<div class="kv"><span class="k">Next</span><span class="v"><b>R2</b> duration-first drive logging — the biggest single jump from stock to authored, and the surface a teen judges the app by.</span></div>
+<div class="kv"><span class="k">Then, quietly</span><span class="v"><b>R5</b> the fill tokens and <b>R6</b> rarity invariants — invisible individually, but they stop the drift.</span></div>
+<div class="note">Deliberately not recommended: a custom date picker for the chore date-range (R-none). System <code>DatePicker</code> is correct there — it's a rare, precise, admin-side input, and Apple's is better than anything worth building. Stock isn't the enemy; stock <em>at the emotional centre</em> is.</div>
+</div>
+
+</div>
+<script>
+const THEMES=[['sunroom','Sunroom'],['sky','Sky'],['rosewater','Rosewater'],['meadow','Meadow'],['mulberry','Mulberry'],['harbor','Harbor']];
+const tb=document.getElementById('tb');
+THEMES.forEach(([k,l],i)=>{const b=document.createElement('button');b.className='tb'+(i===0?' sel':'');b.textContent=l;
+b.onclick=()=>{document.documentElement.dataset.theme=k;[...tb.children].forEach(c=>c.classList.remove('sel'));b.classList.add('sel')};tb.appendChild(b)});
+</script>
+</body></html>

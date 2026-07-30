@@ -1,0 +1,49 @@
+/* ===========================================
+   SEMANTIC LAYER — what product code should consume.
+   Everything resolves through themes.css, so a component that only touches
+   these is theme-safe by construction.
+   =========================================== */
+:root{
+  /* The screen background is a GRADIENT, never flat. */
+  --ds-background: linear-gradient(to bottom, var(--db-bg-top), var(--db-bg-bottom));
+  /* Dark themes end the gradient early (endPoint y:0.6) so the bottom half
+     settles into the deeper tone instead of continuing to lighten. */
+  --ds-background-dark: linear-gradient(to bottom, var(--db-bg-top) 0%, var(--db-bg-bottom) 60%);
+
+  /* The card surface that floats on it. */
+  --ds-card: var(--db-card);
+  --ds-card-stroke: var(--db-card-stroke);
+  /* The raw shadow colour, for one-off shadows (popovers, menus) that need the
+     theme's depth but not GlassCard's full --ds-card-shadow recipe. */
+  --ds-card-shadow-color: var(--db-card-shadow-color);
+
+  /* Label steps — SwiftUI's .primary / .secondary / .tertiary. */
+  --ds-label: rgb(var(--db-label-rgb));
+  --ds-label-2: rgb(var(--db-label-rgb) / .6);
+  --ds-label-3: rgb(var(--db-label-rgb) / .3);
+
+  /* Fill steps — SwiftUI's .quaternary, used for icon tiles, inline field
+     backgrounds, week-strip cells, unselected day pills, progress tracks. */
+  --ds-fill: rgb(var(--db-label-rgb) / .10);
+  --ds-fill-soft: rgb(var(--db-label-rgb) / .05);
+  --ds-fill-strong: rgb(var(--db-label-rgb) / .14);
+  --ds-hairline: rgb(var(--db-label-rgb) / .08);
+
+  /* Interactive */
+  --ds-accent: var(--db-accent);
+  --ds-secondary: var(--db-secondary);
+  --ds-on-accent: var(--db-on-accent);
+
+  /* Invariants */
+  --ds-gold: var(--db-gold);        /* MONEY. Nothing else. */
+  --ds-glow: var(--db-glow);        /* the Approve moment   */
+  --ds-help: var(--db-help);        /* Help / alert         */
+  --ds-success: var(--db-success);  /* done / perfect day   */
+  --ds-night: var(--db-night);      /* night driving. The quietest hue in the app,
+                                       deliberately duller than every accent and
+                                       every rarity so it can't be mistaken for one. */
+
+  /* Progress glow — ONE warm family, accent deepening into gold-warm.
+     (This is the documented fix to an earlier two-hue bar that muddied.) */
+  --ds-progress: linear-gradient(to right, var(--db-accent), #E7A83C);
+}

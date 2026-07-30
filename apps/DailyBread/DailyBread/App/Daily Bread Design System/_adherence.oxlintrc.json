@@ -1,0 +1,674 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/core/**",
+              "components/family/**",
+              "components/sheets/**",
+              "ui_kits/kid_app/**",
+              "ui_kits/mac_app/**",
+              "ui_kits/parent_app/**",
+              "ui_kits/widgets/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AchievementCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|name|description|points|rarity|earned|progress|target|style|key|ref|className|style|children)$/]",
+        "message": "<AchievementCard> doesn't accept that prop. Declared props: icon, name, description, points, rarity, earned, progress, target, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AchievementCard'] > JSXAttribute[name.name='rarity'] > Literal[value!=/^(?:common|uncommon|rare|epic|legendary)$/]",
+        "message": "<AchievementCard> rarity must be one of 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AchievementDefRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|name|rarity|points|condition|enabled|onToggle|style|key|ref|className|style|children)$/]",
+        "message": "<AchievementDefRow> doesn't accept that prop. Declared props: icon, name, rarity, points, condition, enabled, onToggle, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AchievementDefRow'] > JSXAttribute[name.name='rarity'] > Literal[value!=/^(?:common|uncommon|rare|epic|legendary)$/]",
+        "message": "<AchievementDefRow> rarity must be one of 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ApprovalRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:choreName|childName|value|approved|busy|onApprove|style|key|ref|className|style|children)$/]",
+        "message": "<ApprovalRow> doesn't accept that prop. Declared props: choreName, childName, value, approved, busy, onApprove, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AtRiskItem'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|detail|urgency|money|minutes|key|ref|className|style|children)$/]",
+        "message": "<AtRiskItem> doesn't accept that prop. Declared props: name, detail, urgency, money, minutes."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AtRiskItem'] > JSXAttribute[name.name='urgency'] > Literal[value!=/^(?:DueTonight|MustDoDaily|GettingTight)$/]",
+        "message": "<AtRiskItem> urgency must be one of 'DueTonight' | 'MustDoDaily' | 'GettingTight'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='BalanceHero'] > JSXAttribute > JSXIdentifier[name!=/^(?:balance|label|style|key|ref|className|style|children)$/]",
+        "message": "<BalanceHero> doesn't accept that prop. Declared props: balance, label, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|icon|block|disabled|busy|size|onClick|children|style|key|ref|className|style|children)$/]",
+        "message": "<Button> doesn't accept that prop. Declared props: variant, icon, block, disabled, busy, size, onClick, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:prominent|gold|bordered|destructive|capsuleAccent|capsuleHelp|plain)$/]",
+        "message": "<Button> variant must be one of 'prominent' | 'gold' | 'bordered' | 'destructive' | 'capsuleAccent' | 'capsuleHelp' | 'plain'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md|lg)$/]",
+        "message": "<Button> size must be one of 'sm' | 'md' | 'lg'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CalendarDay'] > JSXAttribute > JSXIdentifier[name!=/^(?:day|status|outside|key|ref|className|style|children)$/]",
+        "message": "<CalendarDay> doesn't accept that prop. Declared props: day, status, outside."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CalendarDay'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:allDone|inProgress|missed)$/]",
+        "message": "<CalendarDay> status must be one of 'allDone' | 'inProgress' | 'missed'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ChildPicker'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|value|onChange|style|key|ref|className|style|children)$/]",
+        "message": "<ChildPicker> doesn't accept that prop. Declared props: children, value, onChange, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ChildProgress'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|done|total|pending|helpRequests|key|ref|className|style|children)$/]",
+        "message": "<ChildProgress> doesn't accept that prop. Declared props: name, done, total, pending, helpRequests."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Chip'] > JSXAttribute > JSXIdentifier[name!=/^(?:tone|emphasized|children|style|key|ref|className|style|children)$/]",
+        "message": "<Chip> doesn't accept that prop. Declared props: tone, emphasized, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ChoreRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|icon|value|done|help|approvedBy|weekly|allowHelp|onToggle|onHelp|style|key|ref|className|style|children)$/]",
+        "message": "<ChoreRow> doesn't accept that prop. Declared props: name, icon, value, done, help, approvedBy, weekly, allowHelp, onToggle, onHelp, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='DayPicker'] > JSXAttribute > JSXIdentifier[name!=/^(?:selected|onChange|style|key|ref|className|style|children)$/]",
+        "message": "<DayPicker> doesn't accept that prop. Declared props: selected, onChange, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='DrivingTotals'] > JSXAttribute > JSXIdentifier[name!=/^(?:totalHours|nightHours|style|key|ref|className|style|children)$/]",
+        "message": "<DrivingTotals> doesn't accept that prop. Declared props: totalHours, nightHours, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='EmptyState'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|title|description|action|style|key|ref|className|style|children)$/]",
+        "message": "<EmptyState> doesn't accept that prop. Declared props: icon, title, description, action, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ExpandRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:expanded|moreCount|label|color|onToggle|style|key|ref|className|style|children)$/]",
+        "message": "<ExpandRow> doesn't accept that prop. Declared props: expanded, moreCount, label, color, onToggle, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='FamilyMemberRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|role|isYou|locked|onResetPassword|onToggleLock|style|key|ref|className|style|children)$/]",
+        "message": "<FamilyMemberRow> doesn't accept that prop. Declared props: name, role, isYou, locked, onResetPassword, onToggleLock, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='FamilyMemberRow'] > JSXAttribute[name.name='role'] > Literal[value!=/^(?:Parent|Child)$/]",
+        "message": "<FamilyMemberRow> role must be one of 'Parent' | 'Child'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='GlassCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:padding|tone|children|style|key|ref|className|style|children)$/]",
+        "message": "<GlassCard> doesn't accept that prop. Declared props: padding, tone, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='GoalCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|current|target|percent|empty|onTap|style|key|ref|className|style|children)$/]",
+        "message": "<GoalCard> doesn't accept that prop. Declared props: name, current, target, percent, empty, onTap, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='HelpRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:choreName|reason|childName|onOpen|style|key|ref|className|style|children)$/]",
+        "message": "<HelpRow> doesn't accept that prop. Declared props: choreName, reason, childName, onOpen, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Icon'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|size|color|strokeWidth|style|key|ref|className|style|children)$/]",
+        "message": "<Icon> doesn't accept that prop. Declared props: name, size, color, strokeWidth, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='InlineError'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|children|style|key|ref|className|style|children)$/]",
+        "message": "<InlineError> doesn't accept that prop. Declared props: icon, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='LevelTier'] > JSXAttribute > JSXIdentifier[name!=/^(?:level|title|icon|color|key|ref|className|style|children)$/]",
+        "message": "<LevelTier> doesn't accept that prop. Declared props: level, title, icon, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PlannerChoreRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|icon|value|isTask|schedule|assignee|importance|active|onTap|style|key|ref|className|style|children)$/]",
+        "message": "<PlannerChoreRow> doesn't accept that prop. Declared props: name, icon, value, isTask, schedule, assignee, importance, active, onTap, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PlannerGridChore'] > JSXAttribute > JSXIdentifier[name!=/^(?:id|name|icon|value|isTask|days|weeklyTarget|assignee|active|key|ref|className|style|children)$/]",
+        "message": "<PlannerGridChore> doesn't accept that prop. Declared props: id, name, icon, value, isTask, days, weeklyTarget, assignee, active."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ProgressBar'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|total|height|tone|style|key|ref|className|style|children)$/]",
+        "message": "<ProgressBar> doesn't accept that prop. Declared props: value, total, height, tone, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ProgressBar'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:accent|gold|success|progress)$/]",
+        "message": "<ProgressBar> tone must be one of 'accent' | 'gold' | 'success' | 'progress'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ProgressRing'] > JSXAttribute > JSXIdentifier[name!=/^(?:progress|label|size|stroke|color|style|key|ref|className|style|children)$/]",
+        "message": "<ProgressRing> doesn't accept that prop. Declared props: progress, label, size, stroke, color, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ScreenTimePool'] > JSXAttribute > JSXIdentifier[name!=/^(?:minutes|floor|atRisk|key|ref|className|style|children)$/]",
+        "message": "<ScreenTimePool> doesn't accept that prop. Declared props: minutes, floor, atRisk."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SectionHeader'] > JSXAttribute > JSXIdentifier[name!=/^(?:kerning|color|children|style|key|ref|className|style|children)$/]",
+        "message": "<SectionHeader> doesn't accept that prop. Declared props: kerning, color, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SectionHeader'] > JSXAttribute[name.name='kerning'] > Literal[value!=/^(?:section|eyebrow)$/]",
+        "message": "<SectionHeader> kerning must be one of 'section' | 'eyebrow'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SegmentedPicker'] > JSXAttribute > JSXIdentifier[name!=/^(?:options|value|onChange|style|key|ref|className|style|children)$/]",
+        "message": "<SegmentedPicker> doesn't accept that prop. Declared props: options, value, onChange, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SheetActionBar'] > JSXAttribute > JSXIdentifier[name!=/^(?:saveTitle|saving|canSave|cancelTitle|onCancel|onSave|style|key|ref|className|style|children)$/]",
+        "message": "<SheetActionBar> doesn't accept that prop. Declared props: saveTitle, saving, canSave, cancelTitle, onCancel, onSave, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SheetCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|children|style|key|ref|className|style|children)$/]",
+        "message": "<SheetCard> doesn't accept that prop. Declared props: title, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SheetField'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|valueColor|children|style|key|ref|className|style|children)$/]",
+        "message": "<SheetField> doesn't accept that prop. Declared props: label, value, valueColor, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SheetHeader'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|style|key|ref|className|style|children)$/]",
+        "message": "<SheetHeader> doesn't accept that prop. Declared props: title, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Slider'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|min|max|step|onChange|style|key|ref|className|style|children)$/]",
+        "message": "<Slider> doesn't accept that prop. Declared props: value, min, max, step, onChange, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatTile'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|label|color|style|key|ref|className|style|children)$/]",
+        "message": "<StatTile> doesn't accept that prop. Declared props: value, label, color, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Stepper'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|min|max|onChange|style|key|ref|className|style|children)$/]",
+        "message": "<Stepper> doesn't accept that prop. Declared props: label, value, min, max, onChange, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TabItem'] > JSXAttribute > JSXIdentifier[name!=/^(?:id|label|icon|key|ref|className|style|children)$/]",
+        "message": "<TabItem> doesn't accept that prop. Declared props: id, label, icon."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TextField'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|onChange|placeholder|prefix|prefixColor|multiline|rows|align|width|style|key|ref|className|style|children)$/]",
+        "message": "<TextField> doesn't accept that prop. Declared props: value, onChange, placeholder, prefix, prefixColor, multiline, rows, align, width, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TextField'] > JSXAttribute[name.name='align'] > Literal[value!=/^(?:left|center)$/]",
+        "message": "<TextField> align must be one of 'left' | 'center'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='DBThemeInfo'] > JSXAttribute > JSXIdentifier[name!=/^(?:key|name|mood|top|bottom|card|accent|gold|dark|key|ref|className|style|children)$/]",
+        "message": "<DBThemeInfo> doesn't accept that prop. Declared props: key, name, mood, top, bottom, card, accent, gold, dark."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ToggleRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|description|checked|onChange|style|key|ref|className|style|children)$/]",
+        "message": "<ToggleRow> doesn't accept that prop. Declared props: label, description, checked, onChange, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TransactionRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:description|date|amount|negative|style|key|ref|className|style|children)$/]",
+        "message": "<TransactionRow> doesn't accept that prop. Declared props: description, date, amount, negative, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='WeekStrip'] > JSXAttribute > JSXIdentifier[name!=/^(?:days|style|key|ref|className|style|children)$/]",
+        "message": "<WeekStrip> doesn't accept that prop. Declared props: days, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='HeatmapDay'] > JSXAttribute > JSXIdentifier[name!=/^(?:requiredDone|requiredTotal|optionalDone|optionalTotal|isFuture|key|ref|className|style|children)$/]",
+        "message": "<HeatmapDay> doesn't accept that prop. Declared props: requiredDone, requiredTotal, optionalDone, optionalTotal, isFuture."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "AchievementCard": {
+        "replaces": []
+      },
+      "AchievementDefRow": {
+        "replaces": []
+      },
+      "ApprovalRow": {
+        "replaces": []
+      },
+      "AtRiskItem": {
+        "replaces": []
+      },
+      "BalanceHero": {
+        "replaces": []
+      },
+      "Button": {
+        "replaces": []
+      },
+      "CalendarDay": {
+        "replaces": []
+      },
+      "ChildPicker": {
+        "replaces": []
+      },
+      "ChildProgress": {
+        "replaces": []
+      },
+      "Chip": {
+        "replaces": []
+      },
+      "ChoreRow": {
+        "replaces": []
+      },
+      "DayPicker": {
+        "replaces": []
+      },
+      "DrivingTotals": {
+        "replaces": []
+      },
+      "EmptyState": {
+        "replaces": []
+      },
+      "ExpandRow": {
+        "replaces": []
+      },
+      "FamilyMemberRow": {
+        "replaces": []
+      },
+      "GlassCard": {
+        "replaces": []
+      },
+      "GoalCard": {
+        "replaces": []
+      },
+      "HelpRow": {
+        "replaces": []
+      },
+      "Icon": {
+        "replaces": []
+      },
+      "InlineError": {
+        "replaces": []
+      },
+      "LevelTier": {
+        "replaces": []
+      },
+      "PlannerChoreRow": {
+        "replaces": []
+      },
+      "PlannerGridChore": {
+        "replaces": []
+      },
+      "ProgressBar": {
+        "replaces": []
+      },
+      "ProgressRing": {
+        "replaces": []
+      },
+      "ScreenTimePool": {
+        "replaces": []
+      },
+      "SectionHeader": {
+        "replaces": []
+      },
+      "SegmentedPicker": {
+        "replaces": []
+      },
+      "SheetActionBar": {
+        "replaces": []
+      },
+      "SheetCard": {
+        "replaces": []
+      },
+      "SheetField": {
+        "replaces": []
+      },
+      "SheetHeader": {
+        "replaces": []
+      },
+      "Slider": {
+        "replaces": []
+      },
+      "StatTile": {
+        "replaces": []
+      },
+      "Stepper": {
+        "replaces": []
+      },
+      "TabItem": {
+        "replaces": []
+      },
+      "TextField": {
+        "replaces": []
+      },
+      "DBThemeInfo": {
+        "replaces": []
+      },
+      "ToggleRow": {
+        "replaces": []
+      },
+      "TransactionRow": {
+        "replaces": []
+      },
+      "WeekStrip": {
+        "replaces": []
+      },
+      "HeatmapDay": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--db-accent",
+      "--db-bg-bottom",
+      "--db-bg-top",
+      "--db-card",
+      "--db-card-shadow-color",
+      "--db-card-stroke",
+      "--db-glow",
+      "--db-gold",
+      "--db-help",
+      "--db-label-rgb",
+      "--db-level-0",
+      "--db-level-1",
+      "--db-level-2",
+      "--db-level-3",
+      "--db-level-4",
+      "--db-level-5",
+      "--db-night",
+      "--db-on-accent",
+      "--db-rarity-common",
+      "--db-rarity-epic",
+      "--db-rarity-legendary",
+      "--db-rarity-rare",
+      "--db-rarity-uncommon",
+      "--db-scheme",
+      "--db-secondary",
+      "--db-streak",
+      "--db-success",
+      "--db-theme-mood",
+      "--db-theme-name",
+      "--ds-accent",
+      "--ds-avatar",
+      "--ds-background",
+      "--ds-background-dark",
+      "--ds-beat-approve",
+      "--ds-beat-confetti",
+      "--ds-beat-earn-pop",
+      "--ds-blessing-wash",
+      "--ds-card",
+      "--ds-card-padding",
+      "--ds-card-padding-roomy",
+      "--ds-card-padding-tight",
+      "--ds-card-shadow",
+      "--ds-card-shadow-color",
+      "--ds-card-stroke",
+      "--ds-content-max",
+      "--ds-day-cell",
+      "--ds-day-gap",
+      "--ds-day-pill",
+      "--ds-duration-quick",
+      "--ds-duration-snappy",
+      "--ds-duration-spring",
+      "--ds-ease-in-out",
+      "--ds-ease-out",
+      "--ds-fill",
+      "--ds-fill-soft",
+      "--ds-fill-strong",
+      "--ds-font",
+      "--ds-font-emoji",
+      "--ds-font-mono",
+      "--ds-font-rounded",
+      "--ds-glow",
+      "--ds-gold",
+      "--ds-hairline",
+      "--ds-heatmap-cell",
+      "--ds-heatmap-gap",
+      "--ds-help",
+      "--ds-icon-tile",
+      "--ds-icon-tile-lg",
+      "--ds-iphone-height",
+      "--ds-iphone-width",
+      "--ds-kerning-eyebrow",
+      "--ds-kerning-level",
+      "--ds-kerning-section",
+      "--ds-label",
+      "--ds-label-2",
+      "--ds-label-3",
+      "--ds-level-glow",
+      "--ds-list-gap",
+      "--ds-mac-content",
+      "--ds-mac-sidebar",
+      "--ds-navbar-height",
+      "--ds-night",
+      "--ds-on-accent",
+      "--ds-progress",
+      "--ds-radius-capsule",
+      "--ds-radius-card",
+      "--ds-radius-day-cell",
+      "--ds-radius-field",
+      "--ds-radius-heatmap",
+      "--ds-radius-hero",
+      "--ds-radius-icon-tile",
+      "--ds-radius-swatch",
+      "--ds-ring-child",
+      "--ds-ring-child-tile",
+      "--ds-ring-stroke",
+      "--ds-ring-today",
+      "--ds-screen-padding",
+      "--ds-secondary",
+      "--ds-sidebar-width",
+      "--ds-snappy",
+      "--ds-space-1",
+      "--ds-space-10",
+      "--ds-space-12",
+      "--ds-space-2",
+      "--ds-space-3",
+      "--ds-space-4",
+      "--ds-space-5",
+      "--ds-space-6",
+      "--ds-space-7",
+      "--ds-space-8",
+      "--ds-space-9",
+      "--ds-spring",
+      "--ds-spring-slow",
+      "--ds-success",
+      "--ds-tabbar-height",
+      "--ds-text-body",
+      "--ds-text-caption",
+      "--ds-text-caption2",
+      "--ds-text-footnote",
+      "--ds-text-headline",
+      "--ds-text-hero",
+      "--ds-text-large-title",
+      "--ds-text-subheadline",
+      "--ds-text-title",
+      "--ds-text-title2",
+      "--ds-text-title3",
+      "--ds-touch-target",
+      "--ds-weight-bold",
+      "--ds-weight-heavy",
+      "--ds-weight-medium",
+      "--ds-weight-regular",
+      "--ds-weight-semibold",
+      "--ds-xp-bar-height",
+      "--ds-z-sheet",
+      "--ds-z-toast"
+    ],
+    "tokenKinds": {
+      "--db-theme-name": "other",
+      "--db-theme-mood": "other",
+      "--db-bg-top": "color",
+      "--db-bg-bottom": "color",
+      "--db-accent": "color",
+      "--db-secondary": "color",
+      "--db-card": "color",
+      "--db-label-rgb": "other",
+      "--db-on-accent": "color",
+      "--db-scheme": "other",
+      "--db-gold": "color",
+      "--db-glow": "color",
+      "--db-help": "color",
+      "--db-success": "color",
+      "--db-night": "color",
+      "--db-card-stroke": "color",
+      "--db-card-shadow-color": "shadow",
+      "--db-rarity-legendary": "color",
+      "--db-rarity-epic": "color",
+      "--db-rarity-rare": "color",
+      "--db-rarity-uncommon": "color",
+      "--db-rarity-common": "color",
+      "--db-level-0": "color",
+      "--db-level-1": "color",
+      "--db-level-2": "color",
+      "--db-level-3": "color",
+      "--db-level-4": "color",
+      "--db-level-5": "color",
+      "--db-streak": "color",
+      "--ds-background": "color",
+      "--ds-background-dark": "color",
+      "--ds-card": "color",
+      "--ds-card-stroke": "color",
+      "--ds-card-shadow-color": "shadow",
+      "--ds-label": "color",
+      "--ds-label-2": "color",
+      "--ds-label-3": "color",
+      "--ds-fill": "color",
+      "--ds-fill-soft": "color",
+      "--ds-fill-strong": "color",
+      "--ds-hairline": "color",
+      "--ds-accent": "color",
+      "--ds-secondary": "color",
+      "--ds-on-accent": "color",
+      "--ds-gold": "color",
+      "--ds-glow": "color",
+      "--ds-help": "color",
+      "--ds-success": "color",
+      "--ds-night": "color",
+      "--ds-progress": "color",
+      "--ds-font": "font",
+      "--ds-font-rounded": "radius",
+      "--ds-font-mono": "font",
+      "--ds-font-emoji": "font",
+      "--ds-text-large-title": "other",
+      "--ds-text-title": "other",
+      "--ds-text-title2": "other",
+      "--ds-text-title3": "other",
+      "--ds-text-headline": "font",
+      "--ds-text-body": "other",
+      "--ds-text-subheadline": "other",
+      "--ds-text-footnote": "other",
+      "--ds-text-caption": "other",
+      "--ds-text-caption2": "other",
+      "--ds-text-hero": "other",
+      "--ds-weight-regular": "other",
+      "--ds-weight-medium": "other",
+      "--ds-weight-semibold": "other",
+      "--ds-weight-bold": "other",
+      "--ds-weight-heavy": "other",
+      "--ds-kerning-section": "other",
+      "--ds-kerning-eyebrow": "other",
+      "--ds-kerning-level": "spacing",
+      "--ds-space-1": "spacing",
+      "--ds-space-2": "spacing",
+      "--ds-space-3": "spacing",
+      "--ds-space-4": "spacing",
+      "--ds-space-5": "spacing",
+      "--ds-space-6": "spacing",
+      "--ds-space-7": "spacing",
+      "--ds-space-8": "spacing",
+      "--ds-space-9": "spacing",
+      "--ds-space-10": "spacing",
+      "--ds-space-12": "spacing",
+      "--ds-card-padding": "spacing",
+      "--ds-card-padding-tight": "spacing",
+      "--ds-card-padding-roomy": "spacing",
+      "--ds-screen-padding": "spacing",
+      "--ds-list-gap": "spacing",
+      "--ds-touch-target": "spacing",
+      "--ds-radius-card": "radius",
+      "--ds-radius-hero": "radius",
+      "--ds-radius-swatch": "radius",
+      "--ds-radius-field": "radius",
+      "--ds-radius-icon-tile": "radius",
+      "--ds-radius-day-cell": "radius",
+      "--ds-radius-heatmap": "radius",
+      "--ds-radius-capsule": "radius",
+      "--ds-card-shadow": "shadow",
+      "--ds-level-glow": "other",
+      "--ds-blessing-wash": "color",
+      "--ds-snappy": "other",
+      "--ds-spring": "other",
+      "--ds-spring-slow": "other",
+      "--ds-ease-out": "other",
+      "--ds-ease-in-out": "other",
+      "--ds-duration-snappy": "other",
+      "--ds-duration-spring": "other",
+      "--ds-duration-quick": "other",
+      "--ds-beat-earn-pop": "other",
+      "--ds-beat-approve": "other",
+      "--ds-beat-confetti": "other",
+      "--ds-iphone-width": "spacing",
+      "--ds-iphone-height": "spacing",
+      "--ds-sidebar-width": "spacing",
+      "--ds-mac-sidebar": "spacing",
+      "--ds-mac-content": "spacing",
+      "--ds-tabbar-height": "spacing",
+      "--ds-navbar-height": "spacing",
+      "--ds-content-max": "spacing",
+      "--ds-ring-today": "spacing",
+      "--ds-ring-child": "spacing",
+      "--ds-ring-child-tile": "spacing",
+      "--ds-ring-stroke": "color",
+      "--ds-icon-tile": "spacing",
+      "--ds-icon-tile-lg": "spacing",
+      "--ds-avatar": "spacing",
+      "--ds-day-cell": "spacing",
+      "--ds-day-gap": "spacing",
+      "--ds-day-pill": "spacing",
+      "--ds-heatmap-cell": "spacing",
+      "--ds-heatmap-gap": "spacing",
+      "--ds-xp-bar-height": "spacing",
+      "--ds-z-sheet": "other",
+      "--ds-z-toast": "other"
+    },
+    "fontFamilies": []
+  }
+}

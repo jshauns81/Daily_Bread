@@ -1,0 +1,13 @@
+/* ===========================================
+   ELEVATION. One card shadow, close and soft — SwiftUI
+   `.shadow(color:, radius: 10, y: 3)`, which is roughly a 20px CSS blur.
+   Light themes: black @7%. Dark themes: black @25%. Nothing else is elevated
+   except the level badge, which glows in its own tier colour.
+   =========================================== */
+:root{
+  --ds-card-shadow: 0 3px 20px var(--db-card-shadow-color);
+  /* The level badge: .shadow(color: tier.opacity(0.5), radius: 16, y: 5) */
+  --ds-level-glow: 0 5px 32px; /* @kind other */
+  /* Approve/Blessing: the row itself washes gold at 18% — not a shadow. */
+  --ds-blessing-wash: color-mix(in srgb, var(--db-glow) 18%, transparent);
+}

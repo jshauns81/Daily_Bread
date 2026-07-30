@@ -1,0 +1,41 @@
+/* ===========================================
+   TYPOGRAPHY — Apple text styles. No custom face, no display font.
+   Sizes are the iOS defaults at the Large (default) Dynamic Type size; the
+   real app scales with the user's setting, so treat these as the baseline.
+   =========================================== */
+:root{
+  /* Resolves to SF Pro on Apple platforms via -apple-system; elsewhere the
+     platform UI font. Deliberately no quoted "SF Pro" — it is not shippable. */
+  --ds-font: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
+  /* SF Pro Rounded — used for exactly one thing: the balance hero numeral.
+     ui-rounded resolves to it on Apple platforms. */
+  --ds-font-rounded: ui-rounded, -apple-system, system-ui, sans-serif;
+  --ds-font-mono: ui-monospace, Menlo, monospace;
+  /* Emoji carry identity in this app; give them the colour-emoji stack. */
+  --ds-font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+
+  --ds-text-large-title: 34px; /* @kind other */
+  --ds-text-title: 28px;       /* @kind other */
+  --ds-text-title2: 22px;      /* @kind other */
+  --ds-text-title3: 20px;      /* @kind other */
+  --ds-text-headline: 17px;    /* semibold by definition. @kind other */
+  --ds-text-body: 17px;        /* @kind other */
+  --ds-text-subheadline: 15px; /* @kind other */
+  --ds-text-footnote: 13px;    /* @kind other */
+  --ds-text-caption: 12px;     /* @kind other */
+  --ds-text-caption2: 11px;    /* @kind other */
+  /* The balance hero: .system(size: 42, weight: .bold, design: .rounded) */
+  --ds-text-hero: 42px;        /* @kind other */
+
+  --ds-weight-regular: 400; /* @kind other */
+  --ds-weight-medium: 500;  /* @kind other */
+  --ds-weight-semibold: 600;/* @kind other */
+  --ds-weight-bold: 700;    /* @kind other */
+  --ds-weight-heavy: 800;   /* @kind other */
+
+  /* Section headers are uppercase caption/bold with real kerning. Two values
+     appear in the source and both matter. */
+  --ds-kerning-section: 0.8px; /* @kind other */
+  --ds-kerning-eyebrow: 1px;   /* @kind other */
+  --ds-kerning-level: 1.6px;   /* the LEGENDARY/EPIC tier word. @kind other */
+}
