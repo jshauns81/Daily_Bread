@@ -142,7 +142,11 @@ Two reasons, neither of them "enable a swap": per-call-site sizing has already d
 - **Earning chores:** flash the ring money-gold for ~180ms before settling to accent. The one moment where money and action are the same event.
 - `awaitingApproval` and `helpRaised` are terminal from the kid's side — tapping shows the reason, does not toggle.
 
-**This absorbs the HELP capsule.** Remove the row's trailing HELP button; help is now raised through the same control. Every row gains one consistent control position.
+~~**This absorbs the HELP capsule.**~~ **AMENDED 2026-07-30 by Shaun — Help stays visible.**
+Help/forgive is a core mechanic of the app, and a safety valve only works if the kid can see
+it before he needs it. The row KEEPS a distinct, always-visible Help affordance. The check's
+`helpRaised` state still renders as specced above (it shows the *result*), but raising Help
+must never be hidden behind the check control. Do not relitigate.
 
 **Acceptance:** all four states reachable in a preview; VoiceOver labels distinguish "not done", "done", "waiting for approval", "help raised".
 

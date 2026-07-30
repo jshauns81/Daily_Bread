@@ -58,7 +58,8 @@ you (or a future me) can't quietly undo it.
 | Where it lives | 12-week card on **Today**, full year one tap away, wall on iPad/macOS | §1.2 |
 | Cell shape | **Always square.** Size the grid from the cell edge, never from the box | learned twice the hard way |
 | Cell fill | **Opaque.** Never mix toward a translucent token | same day must be the same colour on every surface |
-| **Chore check** | Four states: unchecked / done / awaiting approval / help raised | §1.1 — absorbs the HELP capsule |
+| **Chore check** | Four states: unchecked / done / awaiting approval / help raised | §1.1 — as amended: check shows the help-raised *state* only |
+| **Help stays visible** (2026-07-30) | The row keeps its own always-visible Help affordance — §1.1's "absorbs the HELP capsule" is overruled | Help is core to the app; a safety valve the kid can't see isn't one |
 | **Celebrations** | Three tiers: per-chore bloom → coin arc to balance → perfect-day particles | §1.3, built in `ui_kits/kid_app/Celebration.jsx` |
 | **Icon set** | **SF Symbols stays.** Phosphor/Iconoir/Lucide evaluated and rejected | "Icon set" section |
 | **App icon** | Stable identity mark (monstrance). The *living* rainbow goes in widgets + macOS dock | §1.2a |
@@ -79,10 +80,11 @@ Nothing here blocks Phase 0 or Phase 1.
    baked glow filters that fuzz at small sizes. `guidelines/app-icon/round-8-review.html`
    compares it against a redraw; `guidelines/app-icon/round-8-render-check.html` proves the
    render is faithful. **Not a blocker for shipping.**
-2. **`ChoreCheck` removes the HELP capsule** from every Today row. Confirm you're happy
-   losing it as a visible affordance.
-3. **Reduce Motion behaviour** for tier 3 — currently collapses to the bloom alone.
-   Confirm that's the degradation you want rather than nothing.
+2. ~~**`ChoreCheck` removes the HELP capsule**~~ **DECIDED 2026-07-30: it doesn't.** Help
+   stays a visible affordance on the row — see the Decided table. Overrules §1.1.
+3. ~~**Reduce Motion behaviour** for tier 3~~ **DECIDED 2026-07-30: the default stands** —
+   collapses to the bloom alone, never to nothing. (One-line change if it ever feels wrong
+   in practice.)
 4. **Phase 2 and Phase 3 are specced but not started.** Ship Phase 1 first; your family
    doesn't need either to start using the app.
 
@@ -149,3 +151,11 @@ To resume with **Claude Code**, in your Xcode project:
 > Read `design_handoff_phase0_phase1/README.md` in the attached design system folder, then
 > implement Phase 0 as separate commits, one per numbered task. Don't start Phase 1 until
 > I've reviewed Phase 0.
+
+**Status 2026-07-30: Phase 0 is DONE** — four commits on master (fill tokens, DBRarity +
+night, themeBackground rename, DBIcon), iOS + macOS builds green. Every open decision above
+is settled. The only remaining work before the family uses the app is **Phase 1**, honoring
+the Help amendment in §1.1. To resume:
+
+> Pick up Daily Bread. Read `START-HERE.md` and `design_handoff_phase0_phase1/README.md`
+> (as amended), then implement Phase 1 task by task, one commit per task.

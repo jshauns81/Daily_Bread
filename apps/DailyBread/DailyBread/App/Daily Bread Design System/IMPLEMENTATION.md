@@ -78,7 +78,7 @@ New component, four states:
 | `unchecked` | 2.5px `label.opacity(0.22)` | none | none | warm, empty, clearly tappable |
 | `done` | accent | accent | white check | spring + halo bloom, rigid haptic |
 | `awaitingApproval` | 2.5px gold, dashed | gold @ 12% | small gold check | "he says it's done, you haven't looked" |
-| `helpRaised` | 2.5px help-red | help @ 12% | `questionmark` | replaces the current separate HELP capsule |
+| `helpRaised` | 2.5px help-red | help @ 12% | `questionmark` | shows the help-raised *state*; the row's Help affordance stays (see below) |
 
 - Target 44×44 via `contentShape`; visual 29pt.
 - Transition `.spring(response: 0.28, dampingFraction: 0.55)`, halo blooms to 1.35× and fades over ~320ms. `.symbolEffect(.bounce)` on the checkmark is free here — one of the reasons staying on SF Symbols was the right call.
@@ -86,7 +86,7 @@ New component, four states:
 - **Earning chores:** flash the ring gold for ~180ms before settling to accent. The one moment where money and action are the same event.
 - `awaitingApproval` and `helpRaised` are terminal from the kid's side — tapping shows the reason, doesn't toggle.
 
-Absorbing HELP into the check removes the row's trailing capsule and gives every row one consistent control position.
+~~Absorbing HELP into the check removes the row's trailing capsule and gives every row one consistent control position.~~ **AMENDED 2026-07-30 by Shaun — overruled. Help stays visible.** Help/forgive is a core mechanic; a safety valve the kid can't see before he needs it isn't one. The row keeps a distinct, always-visible Help affordance; the check's `helpRaised` state only *displays* the result. Do not relitigate.
 
 ### 1.2 The rainbow year — replaces `YearHeatmapCard`
 
