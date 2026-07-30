@@ -30,6 +30,8 @@ public sealed class HouseholdGuardTests : IAsyncLifetime
     private TestDbContextFactory _contextFactory = null!;
     private int _homeChoreLogId;
     private int _outsiderChoreLogId;
+    private int _homeChoreId;
+    private int _outsiderChoreId;
 
     public async Task InitializeAsync()
     {
@@ -64,6 +66,8 @@ public sealed class HouseholdGuardTests : IAsyncLifetime
 
         _homeChoreLogId = homeLog.Id;
         _outsiderChoreLogId = outsiderLog.Id;
+        _homeChoreId = homeChore.Id;
+        _outsiderChoreId = outsiderChore.Id;
     }
 
     public async Task DisposeAsync() => await _connection.DisposeAsync();
@@ -174,5 +178,28 @@ public sealed class HouseholdGuardTests : IAsyncLifetime
     {
         var guard = CreateGuard(new FakeCurrentUser(ParentId, null, "Admin"));
         Assert.False(await guard.ChoreLogIsInCallerHouseholdAsync(_homeChoreLogId));
+    }
+
+    // ---------- ChoreDefinitionIsInCallerHouseholdAsync ----------
+
+    [Fact]
+    public async Task Chore_Definition_In_Caller_Household_Is_Allowed()
+    {
+        var guard = CreateGuard(new FakeCurrentUser(ParentId, HomeId, "Parent"));
+        Assert.True(await guard.ChoreDefinitionIsInCallerHouseholdAsync(_homeChoreId));
+    }
+
+    [Fact]
+    public async Task Chore_Definition_In_Other_Household_Is_Denied()
+    {
+        var guard = CreateGuard(new FakeCurrentUser(ParentId, HomeId, "Parent"));
+        Assert.False(await guard.ChoreDefinitionIsInCallerHouseholdAsync(_outsiderChoreId));
+    }
+
+    [Fact]
+    public async Task Unknown_Chore_Definition_Is_Denied()
+    {
+        var guard = CreateGuard(new FakeCurrentUser(ParentId, HomeId, "Parent"));
+        Assert.False(await guard.ChoreDefinitionIsInCallerHouseholdAsync(999999));
     }
 }

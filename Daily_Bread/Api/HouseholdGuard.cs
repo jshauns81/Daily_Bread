@@ -38,6 +38,13 @@ public interface IHouseholdGuard
     /// Used to guard approve/help-respond, which address logs by id.
     /// </summary>
     Task<bool> ChoreLogIsInCallerHouseholdAsync(int choreLogId, CancellationToken ct = default);
+
+    /// <summary>
+    /// True if the chore definition's assigned user belongs to the caller's
+    /// household. Used to guard the day actions (excuse/miss/reset), which
+    /// address chores by definition + date — a log row may not exist yet.
+    /// </summary>
+    Task<bool> ChoreDefinitionIsInCallerHouseholdAsync(int choreDefinitionId, CancellationToken ct = default);
 }
 
 public class HouseholdGuard : IHouseholdGuard
@@ -97,6 +104,34 @@ public class HouseholdGuard : IHouseholdGuard
         var assignedUserId = await db.ChoreLogs
             .Where(cl => cl.Id == choreLogId)
             .Select(cl => cl.ChoreDefinition.AssignedUserId)
+            .FirstOrDefaultAsync(ct);
+
+        if (assignedUserId == null)
+        {
+            return false;
+        }
+
+        var targetHousehold = await db.Users
+            .Where(u => u.Id == assignedUserId)
+            .Select(u => u.HouseholdId)
+            .FirstOrDefaultAsync(ct);
+
+        return targetHousehold != null && targetHousehold == callerHousehold;
+    }
+
+    public async Task<bool> ChoreDefinitionIsInCallerHouseholdAsync(int choreDefinitionId, CancellationToken ct = default)
+    {
+        await _currentUser.InitializeAsync();
+        var callerHousehold = _currentUser.HouseholdId;
+        if (callerHousehold == null)
+        {
+            return false;
+        }
+
+        await using var db = await _contextFactory.CreateDbContextAsync(ct);
+        var assignedUserId = await db.ChoreDefinitions
+            .Where(cd => cd.Id == choreDefinitionId)
+            .Select(cd => cd.AssignedUserId)
             .FirstOrDefaultAsync(ct);
 
         if (assignedUserId == null)

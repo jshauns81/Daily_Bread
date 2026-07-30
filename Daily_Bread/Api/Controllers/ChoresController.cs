@@ -166,6 +166,72 @@ public class ChoresController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Excuses a chore for a day (→ Skipped): no earning, no screen-time hit,
+    /// counts as credited toward weekly pools. Parent-only; any date.
+    /// </summary>
+    [HttpPost("{choreDefinitionId:int}/excuse")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Parent,Admin")]
+    public Task<IActionResult> Excuse(
+        int choreDefinitionId,
+        [FromBody] ChoreDayActionRequest request,
+        CancellationToken ct)
+        => DayActionAsync(choreDefinitionId, request, ct, "ExcuseFailed",
+            (id, date, actingUserId) => _trackerService.MarkChoreSkippedAsync(id, date, actingUserId));
+
+    /// <summary>Marks a chore not done for a day (→ Missed). Parent-only; any date.</summary>
+    [HttpPost("{choreDefinitionId:int}/miss")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Parent,Admin")]
+    public Task<IActionResult> Miss(
+        int choreDefinitionId,
+        [FromBody] ChoreDayActionRequest request,
+        CancellationToken ct)
+        => DayActionAsync(choreDefinitionId, request, ct, "MissFailed",
+            (id, date, actingUserId) => _trackerService.MarkChoreMissedAsync(id, date, actingUserId));
+
+    /// <summary>
+    /// Resets a chore to Pending for a day — undoes an approval (removing its
+    /// earning) or restores a Missed/Skipped chore. Parent-only; any date.
+    /// </summary>
+    [HttpPost("{choreDefinitionId:int}/reset")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Parent,Admin")]
+    public Task<IActionResult> Reset(
+        int choreDefinitionId,
+        [FromBody] ChoreDayActionRequest request,
+        CancellationToken ct)
+        => DayActionAsync(choreDefinitionId, request, ct, "ResetFailed",
+            (id, date, actingUserId) => _trackerService.ResetChoreToPendingAsync(id, date, actingUserId));
+
+    /// <summary>
+    /// Shared shape of the day actions: household-guard the definition (the
+    /// tracker only re-verifies the parent role, not the household), resolve
+    /// the date server-side, delegate with the acting parent's id.
+    /// </summary>
+    private async Task<IActionResult> DayActionAsync(
+        int choreDefinitionId,
+        ChoreDayActionRequest request,
+        CancellationToken ct,
+        string failureCode,
+        Func<int, DateOnly, string, Task<ServiceResult>> action)
+    {
+        if (!await _guard.ChoreDefinitionIsInCallerHouseholdAsync(choreDefinitionId, ct))
+        {
+            // Not-found rather than forbidden: don't leak other households' chore ids.
+            return NotFound(new ApiError("NotFound", "Chore not found."));
+        }
+
+        await _currentUser.InitializeAsync();
+        var date = request.Date ?? _dateProvider.Today;
+
+        var result = await action(choreDefinitionId, date, _currentUser.UserId);
+        if (!result.Success)
+        {
+            return BadRequest(new ApiError(failureCode, result.ErrorMessage ?? "Could not update the chore."));
+        }
+
+        return NoContent();
+    }
+
     /// <summary>Weekly-frequency chore progress for the week containing asOf (default today).</summary>
     [HttpGet("week")]
     public async Task<ActionResult<WeekProgressResponse>> Week(

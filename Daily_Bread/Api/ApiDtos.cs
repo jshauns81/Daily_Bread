@@ -92,6 +92,15 @@ public sealed record HelpRaiseRequest(DateOnly? Date, string Reason);
 /// <summary>Response: "CompletedByParent" | "Excused" | "Denied".</summary>
 public sealed record HelpRespondRequest(string Response, string? Note);
 
+// ---------- Activity (per-day chore status actions) ----------
+
+/// <summary>
+/// Parent-only day action (excuse/miss/reset) on a chore, addressed by
+/// definition + date because a log row may not exist yet. Date defaults to
+/// the family "today". The target child is implicit via the chore's assignee.
+/// </summary>
+public sealed record ChoreDayActionRequest(DateOnly? Date);
+
 // ---------- Week progress ----------
 
 public sealed record WeekChoreProgressDto(
