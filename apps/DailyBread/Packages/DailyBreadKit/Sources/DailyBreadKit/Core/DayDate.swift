@@ -37,6 +37,17 @@ public struct DayDate: Hashable, Comparable, Sendable {
         self.init(year: y, month: m, day: d)
     }
 
+    /// The date `delta` days away, calendar-correct across month and year
+    /// boundaries. Display-side stepping only (day navigators) — the server
+    /// still owns "today" and every date crosses the wire explicitly.
+    public func addingDays(_ delta: Int) -> DayDate {
+        guard let stepped = Calendar.current.date(byAdding: .day, value: delta, to: displayDate) else {
+            return self
+        }
+        let parts = Calendar.current.dateComponents([.year, .month, .day], from: stepped)
+        return DayDate(year: parts.year ?? year, month: parts.month ?? month, day: parts.day ?? day)
+    }
+
     /// Midday Date in the current calendar — safe for display formatting.
     public var displayDate: Date {
         var parts = DateComponents()

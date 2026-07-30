@@ -78,4 +78,55 @@ final class WireTypeTests: XCTestCase {
         XCTAssertEqual(today.items[0].earnValue.wireString, "2.50")
         XCTAssertTrue(today.items[0].isPending)
     }
+
+    func testChoreItemSkippedAndMissedStatuses() throws {
+        func item(_ status: String) throws -> ChoreItem {
+            let json = """
+            {"choreDefinitionId":1,"choreLogId":10,"name":"Dishes","description":null,
+             "icon":null,"earnValue":"2.50","penaltyValue":"0.00","status":"\(status)",
+             "scheduleType":"SpecificDays","weeklyTargetCount":0,"weeklyCompletedCount":0,
+             "isRepeatable":false,"helpReason":null,"helpRequestedAtUtc":null,
+             "approvedByUserName":null,"approvedAtUtc":null}
+            """
+            return try JSONDecoder().decode(ChoreItem.self, from: Data(json.utf8))
+        }
+        let skipped = try item("Skipped")
+        XCTAssertTrue(skipped.isSkipped)
+        XCTAssertFalse(skipped.isDone)
+        XCTAssertFalse(skipped.isMissed)
+        let missed = try item("Missed")
+        XCTAssertTrue(missed.isMissed)
+        XCTAssertFalse(missed.isSkipped)
+        XCTAssertFalse(missed.isPending)
+    }
+
+    // MARK: - DayDate stepping
+
+    func testAddingDaysWithinMonth() {
+        XCTAssertEqual(DayDate(year: 2026, month: 7, day: 15).addingDays(1),
+                       DayDate(year: 2026, month: 7, day: 16))
+        XCTAssertEqual(DayDate(year: 2026, month: 7, day: 15).addingDays(-1),
+                       DayDate(year: 2026, month: 7, day: 14))
+    }
+
+    func testAddingDaysCrossesMonthBoundary() {
+        XCTAssertEqual(DayDate(year: 2026, month: 7, day: 31).addingDays(1),
+                       DayDate(year: 2026, month: 8, day: 1))
+        XCTAssertEqual(DayDate(year: 2026, month: 8, day: 1).addingDays(-1),
+                       DayDate(year: 2026, month: 7, day: 31))
+    }
+
+    func testAddingDaysCrossesYearBoundary() {
+        XCTAssertEqual(DayDate(year: 2026, month: 12, day: 31).addingDays(1),
+                       DayDate(year: 2027, month: 1, day: 1))
+        XCTAssertEqual(DayDate(year: 2026, month: 1, day: 1).addingDays(-1),
+                       DayDate(year: 2025, month: 12, day: 31))
+    }
+
+    func testAddingDaysHandlesLeapYear() {
+        XCTAssertEqual(DayDate(year: 2028, month: 2, day: 28).addingDays(1),
+                       DayDate(year: 2028, month: 2, day: 29))
+        XCTAssertEqual(DayDate(year: 2027, month: 2, day: 28).addingDays(1),
+                       DayDate(year: 2027, month: 3, day: 1))
+    }
 }

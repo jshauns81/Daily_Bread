@@ -213,6 +213,31 @@ public actor APIClient {
         try await sendVoid(path: "api/v1/chores/\(choreDefinitionId)/help", method: "POST", body: body)
     }
 
+    // Parent-only day actions (Activity screen). The target child is implicit
+    // via the chore's assignee; date nil = the family "today".
+
+    /// Excuse for the day (→ Skipped): no earning, no screen-time hit.
+    public func excuseChore(choreDefinitionId: Int, date: DayDate?) async throws {
+        struct DayActionBody: Codable { let date: DayDate? }
+        let body = try encodeBody(DayActionBody(date: date))
+        try await sendVoid(path: "api/v1/chores/\(choreDefinitionId)/excuse", method: "POST", body: body)
+    }
+
+    /// Mark not done for the day (→ Missed).
+    public func missChore(choreDefinitionId: Int, date: DayDate?) async throws {
+        struct DayActionBody: Codable { let date: DayDate? }
+        let body = try encodeBody(DayActionBody(date: date))
+        try await sendVoid(path: "api/v1/chores/\(choreDefinitionId)/miss", method: "POST", body: body)
+    }
+
+    /// Back to Pending — undoes an approval (removing its earning) or
+    /// restores a Missed/Skipped chore.
+    public func resetChore(choreDefinitionId: Int, date: DayDate?) async throws {
+        struct DayActionBody: Codable { let date: DayDate? }
+        let body = try encodeBody(DayActionBody(date: date))
+        try await sendVoid(path: "api/v1/chores/\(choreDefinitionId)/reset", method: "POST", body: body)
+    }
+
     public func weekProgress(asOf: DayDate? = nil, userId: String? = nil) async throws -> WeekProgress {
         try await send(WeekProgress.self, path: path("api/v1/chores/week", [
             ("asOf", asOf?.wireString), ("userId", userId)]))

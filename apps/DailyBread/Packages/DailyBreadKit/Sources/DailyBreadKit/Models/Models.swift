@@ -57,6 +57,8 @@ public struct ChoreItem: Codable, Hashable, Identifiable, Sendable {
     public var isApproved: Bool { status == "Approved" }
     public var isHelp: Bool { status == "Help" }
     public var isPending: Bool { status == "Pending" }
+    public var isMissed: Bool { status == "Missed" }
+    public var isSkipped: Bool { status == "Skipped" }
     public var isEarning: Bool { !earnValue.isZero }
 }
 
@@ -379,6 +381,30 @@ public struct HelpRequest: Codable, Hashable, Identifiable, Sendable {
     public var requestedAtUtc: LenientDate?
 
     public var id: Int { choreLogId }
+
+    /// Memberwise init so app screens (e.g. Activity) can synthesize a
+    /// request from a chore row when opening the Help respond sheet.
+    public init(
+        choreLogId: Int,
+        choreDefinitionId: Int,
+        choreName: String,
+        childName: String,
+        childUserId: String? = nil,
+        earnValue: Money? = nil,
+        reason: String? = nil,
+        date: DayDate,
+        requestedAtUtc: LenientDate? = nil
+    ) {
+        self.choreLogId = choreLogId
+        self.choreDefinitionId = choreDefinitionId
+        self.choreName = choreName
+        self.childName = childName
+        self.childUserId = childUserId
+        self.earnValue = earnValue
+        self.reason = reason
+        self.date = date
+        self.requestedAtUtc = requestedAtUtc
+    }
 }
 
 public struct ApprovalsQueue: Codable, Sendable {
