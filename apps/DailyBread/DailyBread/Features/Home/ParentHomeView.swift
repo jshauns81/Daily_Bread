@@ -127,7 +127,7 @@ struct ParentHomeView: View {
     private func drillIn(_ child: ChildProgress, @ViewBuilder content: () -> some View) -> some View {
         if let userId = child.userId {
             NavigationLink {
-                TodayView(userId: userId, title: "\(child.displayName)'s day")
+                ActivityView(userId: userId, title: "\(child.displayName)'s day")
             } label: {
                 content()
             }

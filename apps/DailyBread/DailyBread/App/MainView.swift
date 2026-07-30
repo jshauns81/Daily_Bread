@@ -15,6 +15,7 @@ struct MainView: View {
         case earnings = "Earnings"
         case awards = "Awards"
         case home = "Home "
+        case activity = "Activity"
         case planner = "Planner"
         case approvals = "Approvals"
         case settings = "Settings"
@@ -31,6 +32,7 @@ struct MainView: View {
             case .earnings: return "dollarsign.circle"
             case .awards: return "trophy"
             case .home: return "house"
+            case .activity: return "list.bullet.clipboard"
             case .planner: return "checklist"
             case .approvals: return "checkmark.circle"
             case .settings: return "gearshape"
@@ -40,7 +42,7 @@ struct MainView: View {
 
     private var sections: [Section] {
         user.isParent
-            ? [.home, .planner, .approvals, .settings]
+            ? [.home, .activity, .planner, .approvals, .settings]
             : [.kidHome, .today, .earnings, .awards, .settings]
     }
 
@@ -96,6 +98,7 @@ struct MainView: View {
         case .earnings: EarningsView()
         case .awards: AchievementsView()
         case .home: ParentHomeView()
+        case .activity: ActivityView()
         case .planner: PlannerView()
         case .approvals: ApprovalsView()
         case .settings: SettingsView()
