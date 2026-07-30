@@ -90,7 +90,7 @@ struct GoalsView: View {
             }
         }
         .navigationTitle("Goals")
-        .graphiteBackground()
+        .themeBackground()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -272,7 +272,7 @@ struct GoalEditorSheet: View {
                 onSave: { Task { await save() } })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 440, idealWidth: 480, minHeight: 420, idealHeight: 460)
         #endif

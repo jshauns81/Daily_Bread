@@ -67,7 +67,7 @@ struct FamilyMembersView: View {
             }
         }
         .navigationTitle("Family")
-        .graphiteBackground()
+        .themeBackground()
         .sheet(item: $resetting) { member in
             ResetPasswordSheet(member: member) { Task { await store.load(session) } }
         }
@@ -173,7 +173,7 @@ private struct ResetPasswordSheet: View {
                            onCancel: { dismiss() }, onSave: { Task { await save() } })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 420, idealWidth: 460, minHeight: 320, idealHeight: 340)
         #endif

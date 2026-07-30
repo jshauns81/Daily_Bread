@@ -99,7 +99,7 @@ struct RewardClaimsView: View {
             }
         }
         .navigationTitle(title)
-        .graphiteBackground()
+        .themeBackground()
         .refreshable { await store.load(session, mode: mode) }
         .refreshOnForeground { await store.load(session, mode: mode) }
         .task { await store.load(session, mode: mode) }
@@ -266,7 +266,7 @@ private struct RejectReasonSheet: View {
                 })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 420, idealWidth: 460, minHeight: 320, idealHeight: 340)
         #endif

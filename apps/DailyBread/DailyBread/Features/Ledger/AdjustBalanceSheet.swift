@@ -82,7 +82,7 @@ struct AdjustBalanceSheet: View {
                            onCancel: { dismiss() }, onSave: { Task { await save() } })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 420, idealWidth: 460, minHeight: 420, idealHeight: 460)
         #endif

@@ -225,8 +225,8 @@ public extension View {
     }
 }
 
-/// Screen background — the chosen theme's warm gradient. (Name kept for call-site stability.)
-public struct GraphiteBackground: ViewModifier {
+/// Screen background — the chosen theme's warm gradient.
+public struct ThemeBackground: ViewModifier {
     @AppStorage(ThemeStore.key) private var themeRaw = DBTheme.sunroom.rawValue
 
     private var theme: DBTheme { DBTheme(rawValue: themeRaw) ?? .sunroom }
@@ -239,8 +239,8 @@ public struct GraphiteBackground: ViewModifier {
 }
 
 public extension View {
-    func graphiteBackground() -> some View {
-        modifier(GraphiteBackground())
+    func themeBackground() -> some View {
+        modifier(ThemeBackground())
     }
 }
 

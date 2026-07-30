@@ -26,6 +26,10 @@ struct DailyBreadApp: App {
 }
 
 /// Applies the theme accent for the current appearance.
+///
+/// This tint is load-bearing: it is why every stock control is coloured right in every
+/// theme. Use bare `Color.accentColor` for accent. Reach for `DB.*` only for invariants:
+/// money, blessing, help, done, rarity, night.
 private struct ThemedTint: ViewModifier {
     let theme: DBTheme
     @Environment(\.colorScheme) private var scheme

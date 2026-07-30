@@ -119,7 +119,7 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
-        .graphiteBackground()
+        .themeBackground()
         .task { await session.refreshFeatures() }
     }
 

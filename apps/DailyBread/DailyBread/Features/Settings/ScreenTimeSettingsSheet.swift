@@ -88,7 +88,7 @@ struct ScreenTimeSettingsSheet: View {
                 onSave: { Task { await save() } })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 460, idealWidth: 500, minHeight: 600, idealHeight: 660)
         #endif

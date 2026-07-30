@@ -116,7 +116,7 @@ struct ChoreEditorSheet: View {
                 onSave: { Task { await save() } })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 460, idealWidth: 500, minHeight: 620, idealHeight: 700)
         #endif

@@ -89,7 +89,7 @@ struct AchievementsView: View {
                 }
             }
         }
-        .graphiteBackground()
+        .themeBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }

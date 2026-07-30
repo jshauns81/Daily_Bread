@@ -68,7 +68,7 @@ struct AchievementDefinitionsView: View {
             }
         }
         .navigationTitle("Achievements")
-        .graphiteBackground()
+        .themeBackground()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { creating = true } label: { Image(systemName: "plus") }
@@ -218,7 +218,7 @@ struct AchievementEditorSheet: View {
                            onCancel: { dismiss() }, onSave: { Task { await save() } })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 480, idealWidth: 520, minHeight: 620, idealHeight: 720)
         #endif

@@ -154,7 +154,7 @@ struct ApprovalsView: View {
             }
         }
         .navigationTitle("Approvals")
-        .graphiteBackground()
+        .themeBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
@@ -382,7 +382,7 @@ struct HelpRespondSheet: View {
                 }
             }
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(iOS)
         .presentationDetents([.medium, .large])
         #endif

@@ -162,7 +162,7 @@ struct DayDetailSheet: View {
                 }
             }
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(iOS)
         .presentationDetents([.height(260)])
         #endif

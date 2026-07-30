@@ -205,7 +205,7 @@ struct ActivityView: View {
             }
         }
         .navigationTitle(title)
-        .graphiteBackground()
+        .themeBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task(id: taskKey) {

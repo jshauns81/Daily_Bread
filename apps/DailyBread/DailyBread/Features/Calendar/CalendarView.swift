@@ -61,7 +61,7 @@ struct CalendarView: View {
             .padding()
         }
         .navigationTitle(title)
-        .graphiteBackground()
+        .themeBackground()
         .task(id: anchor.wireString) { await reload() }
         .refreshOnForeground { await reload() }
     }

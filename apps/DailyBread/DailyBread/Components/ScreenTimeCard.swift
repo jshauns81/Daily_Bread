@@ -202,7 +202,7 @@ struct ScreenTimeHistorySheet: View {
                 }
             }
         }
-        .graphiteBackground()
+        .themeBackground()
     }
 
     private func icon(_ kind: String) -> String {

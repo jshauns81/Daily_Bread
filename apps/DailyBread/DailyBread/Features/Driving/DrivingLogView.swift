@@ -89,7 +89,7 @@ struct DrivingLogView: View {
             }
         }
         .navigationTitle(mode == .parent ? "Driving approvals" : "Driving log")
-        .graphiteBackground()
+        .themeBackground()
         .toolbar {
             if mode == .kid {
                 ToolbarItem(placement: .primaryAction) {
@@ -274,7 +274,7 @@ private struct DriveEditorSheet: View {
                            onCancel: { dismiss() }, onSave: { Task { await save() } })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 440, idealWidth: 480, minHeight: 480, idealHeight: 520)
         #endif
@@ -343,7 +343,7 @@ private struct DrivingRejectSheet: View {
                            onSave: { onDecline(reason); dismiss() })
                 .padding()
         }
-        .graphiteBackground()
+        .themeBackground()
         #if os(macOS)
         .frame(minWidth: 420, idealWidth: 460, minHeight: 300, idealHeight: 320)
         #endif
