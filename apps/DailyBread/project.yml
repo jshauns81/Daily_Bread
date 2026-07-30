@@ -18,7 +18,11 @@ targets:
     type: application
     supportedDestinations: [iOS, macOS]
     sources:
-      - DailyBread
+      # The design system folder is reference material (HTML/JSX/tokens), not app
+      # sources or bundle resources — never let it into the target.
+      - path: DailyBread
+        excludes:
+          - "App/Daily Bread Design System"
     dependencies:
       - package: DailyBreadKit
     info:
