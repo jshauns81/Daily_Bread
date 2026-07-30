@@ -144,7 +144,7 @@ struct DrivingLogView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: entry.isNightDriving ? "moon.stars.fill" : "car.fill")
-                    .foregroundStyle(entry.isNightDriving ? Color.indigo : Color.accentColor)
+                    .foregroundStyle(entry.isNightDriving ? DB.night(scheme) : Color.accentColor)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(entry.date.shortDisplay) · \(entry.durationLabel)")
                         .font(.body.weight(.semibold))

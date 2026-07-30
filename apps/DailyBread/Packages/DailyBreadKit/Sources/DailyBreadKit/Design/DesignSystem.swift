@@ -163,6 +163,34 @@ public enum DB {
     public static func fillStrong(_ scheme: ColorScheme) -> Color {
         Color.secondary.opacity(0.32)
     }
+
+    /// Night driving — a fact about a drive, not a reward, so it is the quietest hue in the
+    /// app: deliberately duller than every theme accent and every rarity ("dusk slate").
+    public static func night(_ scheme: ColorScheme) -> Color {
+        scheme == .dark ? Color(hex: 0x8D97D8) : Color(hex: 0x5560A8)
+    }
+}
+
+/// Achievement rarity — invariant across themes so rarity means the same thing in every
+/// palette. Uncommon borrows the success invariant, legendary the money gold; the rest are
+/// fixed hexes. Not themeable, not YAML-overridable.
+public enum DBRarity: String, Codable, CaseIterable, Sendable {
+    case common, uncommon, rare, epic, legendary
+
+    /// Lenient: accepts any casing ("Rare", "RARE"); unknown strings read as common.
+    public init(_ raw: String) {
+        self = DBRarity(rawValue: raw.lowercased()) ?? .common
+    }
+
+    public func color(_ scheme: ColorScheme) -> Color {
+        switch self {
+        case .common: return Color(hex: 0x8A8F98)
+        case .uncommon: return DB.success(scheme)
+        case .rare: return Color(hex: 0x3B82D6)
+        case .epic: return Color(hex: 0x7A5AF8)
+        case .legendary: return DB.gold(scheme)
+        }
+    }
 }
 
 /// Reads the currently chosen theme from storage (used by the theme-aware modifiers).

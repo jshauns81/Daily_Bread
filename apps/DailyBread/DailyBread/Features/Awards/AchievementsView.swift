@@ -174,13 +174,7 @@ struct AchievementsView: View {
     }
 
     private func rarityColor(_ rarity: String) -> Color {
-        switch rarity.lowercased() {
-        case "legendary": return DB.gold(scheme)
-        case "epic": return Color(hex: 0x9B7BE0)
-        case "rare": return .accentColor
-        case "uncommon": return DB.success(scheme)
-        default: return .secondary
-        }
+        DBRarity(rarity).color(scheme)
     }
 
     private func sectionHeader(_ title: String) -> some View {
