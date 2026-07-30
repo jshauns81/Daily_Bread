@@ -145,7 +145,7 @@ struct SettingsView: View {
 
             ZStack {
                 Circle()
-                    .strokeBorder(selected ? theme.accent(scheme) : Color.secondary.opacity(0.35),
+                    .strokeBorder(selected ? theme.accent(scheme) : DB.fillStrong(scheme),
                                   lineWidth: selected ? 6 : 1.5)
                     .frame(width: 22, height: 22)
                 if selected {

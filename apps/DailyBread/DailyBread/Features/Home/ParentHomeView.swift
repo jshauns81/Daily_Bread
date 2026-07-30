@@ -213,7 +213,7 @@ struct ParentHomeView: View {
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(
-                (emphasized ? color : Color.secondary).opacity(0.13),
+                emphasized ? color.opacity(0.13) : DB.fillOff(scheme),
                 in: Capsule())
             .lineLimit(1)
             .minimumScaleFactor(0.75)

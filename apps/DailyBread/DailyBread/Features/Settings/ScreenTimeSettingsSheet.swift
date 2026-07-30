@@ -112,7 +112,7 @@ struct ScreenTimeSettingsSheet: View {
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity, minHeight: 38)
                             .foregroundStyle(on ? Color.white : Color.secondary)
-                            .background(on ? Color.accentColor : Color.secondary.opacity(0.14),
+                            .background(on ? Color.accentColor : DB.fillOff(scheme),
                                         in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                     }
                     .buttonStyle(.plain)

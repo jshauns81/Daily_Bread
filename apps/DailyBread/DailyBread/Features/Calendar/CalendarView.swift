@@ -88,7 +88,7 @@ struct CalendarView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(canGoForward ? Color.accentColor : Color.secondary.opacity(0.4))
+                    .foregroundStyle(canGoForward ? Color.accentColor : DB.fillStrong(scheme))
             }
             .buttonStyle(.plain)
             .disabled(!canGoForward)
@@ -139,7 +139,7 @@ struct CalendarView: View {
             .frame(height: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.06)))
+                    .fill(isSelected ? Color.accentColor.opacity(0.16) : DB.fillSubtle(scheme)))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .strokeBorder(isToday ? Color.accentColor : Color.clear, lineWidth: 1.5))
@@ -151,7 +151,7 @@ struct CalendarView: View {
     /// faint when there was nothing (or the day hasn't happened yet).
     private func dotColor(_ summary: DaySummary?, isFuture: Bool) -> Color {
         guard let s = summary, s.totalChores > 0, !isFuture else {
-            return Color.secondary.opacity(0.18)
+            return DB.fillOff(scheme)
         }
         if s.completedChores + s.approvedChores >= s.totalChores {
             return DB.success(scheme)

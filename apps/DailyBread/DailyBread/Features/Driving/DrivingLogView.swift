@@ -203,7 +203,7 @@ struct DrivingLogView: View {
         } else {
             Text("Pending").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                 .padding(.horizontal, 7).padding(.vertical, 3)
-                .background(Color.secondary.opacity(0.15), in: Capsule())
+                .background(DB.fillOff(scheme), in: Capsule())
         }
     }
 

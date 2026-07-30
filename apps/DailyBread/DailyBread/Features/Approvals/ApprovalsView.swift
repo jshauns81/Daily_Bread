@@ -416,7 +416,7 @@ struct HelpRespondSheet: View {
             .padding(.vertical, 6)
         }
         .buttonStyle(.borderedProminent)
-        .tint(prominent ? DB.gold(scheme) : Color.secondary.opacity(0.35))
+        .tint(prominent ? DB.gold(scheme) : DB.fillStrong(scheme))
         .foregroundStyle(prominent ? Color.black.opacity(0.8) : Color.primary)
     }
 }

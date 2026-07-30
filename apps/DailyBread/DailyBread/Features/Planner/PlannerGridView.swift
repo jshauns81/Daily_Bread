@@ -123,7 +123,7 @@ struct PlannerGridView: View {
             onToggle(chore, full)
         } label: {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(on ? Color.accentColor : Color.secondary.opacity(0.12))
+                .fill(on ? Color.accentColor : DB.fillOff(scheme))
                 .frame(width: cell, height: cell)
                 .overlay {
                     if on {

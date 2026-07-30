@@ -477,7 +477,7 @@ struct PlannerView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
-                    selected ? Color.accentColor : Color.secondary.opacity(0.13),
+                    selected ? Color.accentColor : DB.fillOff(scheme),
                     in: Capsule())
                 .foregroundStyle(selected ? Color.white : Color.primary)
         }
@@ -538,7 +538,7 @@ private struct PlannerChoreRow: View {
                                 .font(.caption2.weight(.heavy))
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.15), in: Capsule())
+                                .background(DB.fillOff(scheme), in: Capsule())
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -559,7 +559,7 @@ private struct PlannerChoreRow: View {
                             .font(.caption2.weight(.bold))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(Color.secondary.opacity(0.13), in: Capsule())
+                            .background(DB.fillOff(scheme), in: Capsule())
                             .foregroundStyle(.secondary)
                     }
                     if chore.importance > 0 {

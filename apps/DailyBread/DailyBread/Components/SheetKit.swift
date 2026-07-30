@@ -87,6 +87,7 @@ struct SheetField<Content: View>: View {
 /// Cancel + primary action, side by side, pinned at the sheet's foot — one
 /// action zone, not a Save-in-the-form plus Cancel-in-the-toolbar split.
 struct SheetActionBar: View {
+    @Environment(\.colorScheme) private var scheme
     var saveTitle: String
     var saving: Bool
     var canSave: Bool
@@ -117,7 +118,7 @@ struct SheetActionBar: View {
                 .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
-            .background(canSave ? Color.accentColor : Color.secondary.opacity(0.3),
+            .background(canSave ? Color.accentColor : DB.fillStrong(scheme),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .disabled(saving || !canSave)
         }
@@ -127,6 +128,7 @@ struct SheetActionBar: View {
 /// Compact Sunday-first day toggles (S M T W T F S) — accent-filled when on.
 /// Reads as a day selector, not a row of big buttons.
 struct DayPicker: View {
+    @Environment(\.colorScheme) private var scheme
     @Binding var selected: Set<String>   // full day names ("Sunday" … "Saturday")
 
     private struct Day: Identifiable {
@@ -161,7 +163,7 @@ struct DayPicker: View {
                     Text(day.letter)
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 36, height: 36)
-                        .background(on ? Color.accentColor : Color.secondary.opacity(0.14),
+                        .background(on ? Color.accentColor : DB.fillOff(scheme),
                                     in: Circle())
                         .foregroundStyle(on ? Color.white : Color.primary)
                 }

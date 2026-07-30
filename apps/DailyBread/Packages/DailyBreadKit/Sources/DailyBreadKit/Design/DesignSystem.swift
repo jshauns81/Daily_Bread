@@ -145,6 +145,24 @@ public enum DB {
     public static func success(_ scheme: ColorScheme) -> Color {
         scheme == .dark ? Color(hex: 0x86C08F) : Color(hex: 0x2E9E63)
     }
+
+    // Fill levels — the only opacities that may mean "off"/inactive. Three levels, no in-betweens.
+    // Scheme is accepted for API consistency; Color.secondary already resolves per scheme.
+
+    /// 0.06 — large surfaces (unselected day cells, big quiet areas).
+    public static func fillSubtle(_ scheme: ColorScheme) -> Color {
+        Color.secondary.opacity(0.06)
+    }
+
+    /// 0.12 — control backgrounds, unselected chips and toggles.
+    public static func fillOff(_ scheme: ColorScheme) -> Color {
+        Color.secondary.opacity(0.12)
+    }
+
+    /// 0.32 — pressed / prominent fills and disabled-but-visible chrome.
+    public static func fillStrong(_ scheme: ColorScheme) -> Color {
+        Color.secondary.opacity(0.32)
+    }
 }
 
 /// Reads the currently chosen theme from storage (used by the theme-aware modifiers).
