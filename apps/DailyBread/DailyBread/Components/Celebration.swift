@@ -324,6 +324,35 @@ struct CoinArcLayer: View {
     }
 }
 
+#if DEBUG
+/// Launch with environment `DB_TEST_CELEBRATION=1` (e.g. `SIMCTL_CHILD_DB_TEST_CELEBRATION=1
+/// xcrun simctl launch …`) to fire the perfect-day celebration on a 4s loop from any
+/// screen — for eyeballing tier-3 tuning without doing six chores. DEBUG builds only.
+struct CelebrationTestLoop: ViewModifier {
+    @State private var start: Date?
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if let start {
+                    PerfectDayCelebration(start: start)
+                }
+            }
+            .task {
+                guard ProcessInfo.processInfo.environment["DB_TEST_CELEBRATION"] == "1" else { return }
+                while !Task.isCancelled {
+                    start = Date()
+                    try? await Task.sleep(for: .seconds(4))
+                }
+            }
+    }
+}
+
+extension View {
+    func celebrationTestLoop() -> some View { modifier(CelebrationTestLoop()) }
+}
+#endif
+
 // MARK: - Chime
 
 /// Two-note (threshold) or four-note rising (perfect day) chime, synthesized —

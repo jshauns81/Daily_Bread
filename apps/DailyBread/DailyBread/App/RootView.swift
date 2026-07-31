@@ -5,16 +5,21 @@ struct RootView: View {
     @Environment(SessionStore.self) private var session
 
     var body: some View {
-        switch session.state {
-        case .loading:
-            ProgressView()
-        case .needsServer:
-            ServerSetupView()
-        case .needsLogin:
-            LoginView()
-        case .signedIn(let user):
-            MainView(user: user)
+        Group {
+            switch session.state {
+            case .loading:
+                ProgressView()
+            case .needsServer:
+                ServerSetupView()
+            case .needsLogin:
+                LoginView()
+            case .signedIn(let user):
+                MainView(user: user)
+            }
         }
+        #if DEBUG
+        .celebrationTestLoop()
+        #endif
     }
 }
 
