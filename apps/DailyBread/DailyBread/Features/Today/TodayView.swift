@@ -20,8 +20,12 @@ final class TodayStore {
 
     /// Set when a completion earns money — drives the "+$2.50" pop.
     var earnPop: (amount: Money, at: Date)?
-    /// Set when the day's last chore completes — drives the confetti.
+    /// Set when the day's last chore completes — drives the tier-3 celebration.
     var celebrationStart: Date?
+    /// Set when the last EARNING chore lands — drives the tier-2 coin arc.
+    var coinFlight: (choreId: Int, start: Date)?
+    /// Incremented when the coin arrives; the header money line pulses on change.
+    var balancePulse = 0
 
     init(targetUserId: String? = nil) {
         self.targetUserId = targetUserId
@@ -120,13 +124,28 @@ final class TodayStore {
             }
         }
         if doneCount == totalCount, totalCount > 0 {
+            // Tier 3: a genuinely perfect day.
             celebrationStart = Date()
             Haptics.success()
             Task {
                 try? await Task.sleep(for: .seconds(2.8))
                 celebrationStart = nil
             }
+        } else if item.isEarning, allEarningDone {
+            // Tier 2: the last earning chore landed — coin arcs to the balance.
+            coinFlight = (item.id, Date())
+            Task {
+                try? await Task.sleep(for: .seconds(0.62))
+                balancePulse += 1
+                try? await Task.sleep(for: .seconds(0.6))
+                coinFlight = nil
+            }
         }
+    }
+
+    private var allEarningDone: Bool {
+        let earning = (today?.items ?? []).filter(\.isEarning)
+        return !earning.isEmpty && earning.allSatisfy(\.isDone)
     }
 
     func raiseHelp(_ item: ChoreItem, reason: String, _ session: SessionStore) async {
@@ -156,7 +175,9 @@ final class TodayStore {
 struct TodayView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var store: TodayStore
+    @State private var moneyPulsing = false
 
     private let title: String
     /// Viewing someone else (parent drill-in) hides Help — it's the kid's act.
@@ -234,9 +255,28 @@ struct TodayView: View {
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
+        .overlayPreferenceValue(CelebrationAnchorsKey.self) { anchors in
+            GeometryReader { proxy in
+                if let flight = store.coinFlight,
+                   session.features.enableConfetti, !reduceMotion,
+                   let source = anchors.checks[flight.choreId],
+                   let target = anchors.balance {
+                    CoinArcLayer(start: flight.start,
+                                 from: proxy[source], to: proxy[target])
+                }
+            }
+            .allowsHitTesting(false)
+        }
         .overlay {
             if let start = store.celebrationStart, session.features.enableConfetti {
-                ConfettiView(start: start)
+                PerfectDayCelebration(start: start)
+            }
+        }
+        .onChange(of: store.balancePulse) {
+            moneyPulsing = true
+            Task {
+                try? await Task.sleep(for: .milliseconds(230))
+                moneyPulsing = false
             }
         }
         .sheet(item: $store.helpTarget) { item in
@@ -292,6 +332,11 @@ struct TodayView: View {
                     }
                 }
                 .font(.subheadline)
+                .scaleEffect(moneyPulsing ? 1.28 : 1, anchor: .leading)
+                .animation(.spring(response: 0.23, dampingFraction: 0.5), value: moneyPulsing)
+                .anchorPreference(key: CelebrationAnchorsKey.self, value: .center) {
+                    CelebrationAnchors(balance: $0)
+                }
 
                 if store.streak > 1 && session.features.enableStreaks {
                     Text("🔥 \(store.streak)-day streak")
@@ -362,6 +407,9 @@ struct ChoreRow: View {
                 onToggle: onToggle,
                 onTerminalTap: isParentActing && item.checkState == .awaitingApproval
                     ? onToggle : nil)
+                .anchorPreference(key: CelebrationAnchorsKey.self, value: .center) {
+                    CelebrationAnchors(checks: [item.id: $0])
+                }
 
             // Help stays a visible affordance — a safety valve the kid can't see
             // isn't one. Raising Help is never hidden behind the check control.

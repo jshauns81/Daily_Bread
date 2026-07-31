@@ -15,7 +15,7 @@ final class KidHomeStore {
     var goal: Goal?
     var streak = 0
     var loading = false
-    var celebrate = false
+    var celebrationStart: Date?
     var helpTarget: ChoreItem?
 
     var doneCount: Int { today?.items.filter(\.isDone).count ?? 0 }
@@ -96,11 +96,11 @@ final class KidHomeStore {
             choreDefinitionId: item.choreDefinitionId, date: today?.date)
         await load(session)
         if progressPercent == 100 {
-            celebrate = true
+            celebrationStart = Date()
             Haptics.success()
             Task {
                 try? await Task.sleep(for: .seconds(2.8))
-                celebrate = false
+                celebrationStart = nil
             }
         }
     }
@@ -164,9 +164,8 @@ struct KidHomeView: View {
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
         .overlay {
-            if store.celebrate && session.features.enableConfetti {
-                ConfettiView(start: Date())
-                    .allowsHitTesting(false)
+            if let start = store.celebrationStart, session.features.enableConfetti {
+                PerfectDayCelebration(start: start)
             }
         }
         .sheet(item: $store.helpTarget) { item in

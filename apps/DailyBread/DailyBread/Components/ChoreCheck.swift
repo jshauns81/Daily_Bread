@@ -40,6 +40,7 @@ struct ChoreCheck: View {
     var onTerminalTap: (() -> Void)? = nil
 
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var haloScale: CGFloat = 1
     @State private var haloOpacity: Double = 0
@@ -151,6 +152,7 @@ struct ChoreCheck: View {
 
     /// Halo blooms to 1.35× and fades over ~320ms.
     private func bloom() {
+        guard !reduceMotion else { return }
         haloScale = 1
         haloOpacity = 0.5
         withAnimation(.easeOut(duration: 0.32)) {
@@ -170,6 +172,7 @@ struct ChoreCheck: View {
     /// Terminal states answer a tap with a shake, not a toggle — the row's caption
     /// carries the reason.
     private func nudge() {
+        guard !reduceMotion else { return }
         Task {
             for i in 1...4 {
                 withAnimation(.easeInOut(duration: 0.06)) { wiggle = i }
