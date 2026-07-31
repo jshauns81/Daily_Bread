@@ -154,8 +154,26 @@ To resume with **Claude Code**, in your Xcode project:
 
 **Status 2026-07-30: Phase 0 is DONE** — four commits on master (fill tokens, DBRarity +
 night, themeBackground rename, DBIcon), iOS + macOS builds green. Every open decision above
-is settled. The only remaining work before the family uses the app is **Phase 1**, honoring
-the Help amendment in §1.1. To resume:
+is settled.
 
-> Pick up Daily Bread. Read `START-HERE.md` and `design_handoff_phase0_phase1/README.md`
-> (as amended), then implement Phase 1 task by task, one commit per task.
+**Status 2026-07-30 (later): Phase 1 is DONE** — four commits on master, one per task,
+iOS + macOS builds green, 205 backend tests green:
+
+- **1.1 `ChoreCheck`** — four states as specced, Help kept as an always-visible
+  `questionmark.circle` affordance on the row (the amendment, honored). `AutoApprove` now
+  crosses the wire so the optimistic tap predicts done vs. awaiting-approval correctly.
+- **1.2 Rainbow year** — one Canvas renderer, card/full/wall; hue from real day-of-year,
+  linear 34→86% ramp, opaque square cells, cell-scaled bloom; Today card opens the full
+  year (wall density on iPad/macOS) with year-at-a-time history and a seamless boundary;
+  the **macOS dock icon is live**. `RainbowDay.bloomLevel` encodes "complete blooms,
+  optionals only add" — both README readings honored (the backend has no optionals yet).
+- **1.3 Celebration ladder** — coin arc → balance pulse on the last earning chore;
+  perfect-day particle system (1200, depth-band blur, radial bloom, synthesized rising
+  chime). Tiers 2–3 respect `enableConfetti`; all tiers respect Reduce Motion (tier 3 →
+  bloom alone, as decided).
+- **1.4 List cleanup** — Earnings → ScrollView+LazyVStack; swipe-bearing screens keep List.
+
+**Ship it.** Remaining from §1.2's "outside the app", deliberately not in Phase 1:
+the **WidgetKit family** (Small/Medium/Large + monochrome Lock Screen + StandBy) is a new
+extension target — build it next, before or alongside Phase 2. App icon artwork still open
+(not a blocker).
