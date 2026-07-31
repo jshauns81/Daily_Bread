@@ -23,6 +23,8 @@ public class TrackerChoreItem
     public bool AllOrNothing { get; init; }
     public decimal Value => EarnValue; // Backward compatibility
     public ChoreStatus Status { get; init; }
+    /// <summary>Whether a child's completion lands as Approved directly (no parent sign-off step).</summary>
+    public bool AutoApprove { get; init; } = true;
     public string? AssignedUserId { get; init; }
     public string? AssignedUserName { get; init; }
     public string? ApprovedByUserName { get; init; }
@@ -1055,6 +1057,7 @@ public class TrackerService : ITrackerService
             Importance = chore.Importance,
             AllOrNothing = chore.AllOrNothing,
             Status = log?.Status ?? ChoreStatus.Pending,
+            AutoApprove = chore.AutoApprove,
             AssignedUserId = chore.AssignedUserId,
             AssignedUserName = chore.AssignedUser?.UserName,
             ApprovedByUserName = log?.ApprovedByUser?.UserName,

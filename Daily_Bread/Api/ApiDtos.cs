@@ -73,7 +73,8 @@ public sealed record ChoreItemDto(
     string? HelpReason,
     DateTime? HelpRequestedAtUtc,
     string? ApprovedByUserName,
-    DateTime? ApprovedAtUtc);
+    DateTime? ApprovedAtUtc,
+    bool AutoApprove);
 
 public sealed record TodayChoresResponse(
     DateOnly Date,

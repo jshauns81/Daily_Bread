@@ -283,4 +283,11 @@ public enum Haptics {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
     }
+
+    /// The check moment. Checking earns a haptic; undo is deliberately silent.
+    public static func rigid() {
+        #if os(iOS)
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        #endif
+    }
 }

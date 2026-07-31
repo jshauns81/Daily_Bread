@@ -50,6 +50,9 @@ public struct ChoreItem: Codable, Hashable, Identifiable, Sendable {
     public var helpRequestedAtUtc: LenientDate?
     public var approvedByUserName: String?
     public var approvedAtUtc: LenientDate?
+    /// Optional for wire tolerance against older servers; absent reads as true
+    /// (the server-side default).
+    public var autoApprove: Bool?
 
     public var id: Int { choreDefinitionId }
 

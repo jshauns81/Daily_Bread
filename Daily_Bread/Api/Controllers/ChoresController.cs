@@ -101,7 +101,8 @@ public class ChoresController : ControllerBase
             i.HelpReason,
             i.HelpRequestedAt,
             i.ApprovedByUserName,
-            i.ApprovedAt)).ToList();
+            i.ApprovedAt,
+            i.AutoApprove)).ToList();
 
         return Ok(new TodayChoresResponse(effectiveDate, targetUserId, targetUserName, dtos));
     }

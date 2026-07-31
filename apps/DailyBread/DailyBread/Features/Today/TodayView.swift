@@ -77,9 +77,15 @@ final class TodayStore {
 
         let original = snapshot.items[index].status
         let completing = !item.isDone
-        snapshot.items[index].status = completing ? "Completed" : "Pending"
+        // Predict the server: auto-approve chores land as Approved (the done
+        // state), the rest as Completed (awaiting approval). Guessing wrong
+        // would flash the dashed waiting ring before every done bloom.
+        snapshot.items[index].status = completing
+            ? ((item.autoApprove ?? true) ? "Approved" : "Completed")
+            : "Pending"
         withAnimation(.snappy) { today = snapshot }
-        Haptics.tick()
+        // Haptic on check only — undo is silent. Don't reward undo.
+        if completing { Haptics.rigid() }
 
         do {
             let result = try await session.client.toggleChore(
@@ -179,7 +185,7 @@ struct TodayView: View {
 
                 Section {
                     ForEach(today.items) { item in
-                        ChoreRow(item: item, allowHelp: isSelf) {
+                        ChoreRow(item: item, allowHelp: isSelf, isParentActing: !isSelf) {
                             Task { await store.toggle(item, session) }
                         } onHelp: {
                             store.helpTarget = item
@@ -302,6 +308,9 @@ struct TodayView: View {
 struct ChoreRow: View {
     let item: ChoreItem
     var allowHelp: Bool = true
+    /// A parent drilled into the kid's day: tapping an awaiting-approval check
+    /// approves it. For the kid it's terminal — the check wiggles instead.
+    var isParentActing: Bool = false
     var onToggle: () -> Void
     var onHelp: () -> Void
 
@@ -327,6 +336,10 @@ struct ChoreRow: View {
                     Text("Approved by \(by)")
                         .font(.caption)
                         .foregroundStyle(DB.gold(scheme))
+                } else if item.checkState == .awaitingApproval {
+                    Text("Done — waiting for approval")
+                        .font(.caption)
+                        .foregroundStyle(DB.gold(scheme))
                 } else if item.scheduleType == "WeeklyFrequency", item.weeklyTargetCount > 0 {
                     Text("\(item.weeklyCompletedCount) of \(item.weeklyTargetCount) this week")
                         .font(.caption)
@@ -342,21 +355,23 @@ struct ChoreRow: View {
                     .foregroundStyle(item.isDone ? DB.gold(scheme).opacity(0.5) : DB.gold(scheme))
             }
 
-            if item.isHelp {
-                Text("HELP")
-                    .font(.caption2.weight(.heavy))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(DB.help(scheme), in: Capsule())
-                    .foregroundStyle(.white)
-            } else {
-                Button(action: onToggle) {
-                    Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
-                        .font(.title2)
-                        .foregroundStyle(item.isDone ? Color.accentColor : Color.secondary)
-                        .contentTransition(.symbolEffect(.replace))
+            ChoreCheck(
+                state: item.checkState,
+                isEarning: item.isEarning,
+                onToggle: onToggle,
+                onTerminalTap: isParentActing && item.checkState == .awaitingApproval
+                    ? onToggle : nil)
+
+            // Help stays a visible affordance — a safety valve the kid can't see
+            // isn't one. Raising Help is never hidden behind the check control.
+            if allowHelp && !item.isDone && !item.isHelp {
+                Button(action: onHelp) {
+                    DBIcon("questionmark.circle", tint: DB.help(scheme))
+                        .frame(width: 34, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Raise Help")
             }
         }
         .contentShape(Rectangle())
