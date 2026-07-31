@@ -55,56 +55,76 @@ struct EarningsView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var store = EarningsStore()
 
+    // No swipe actions anywhere on this screen, so it's authored cards in a
+    // ScrollView — not a List neutralised row by row to host them.
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 14) {
                 balanceCard
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-            }
 
-            if store.rangeLoaded {
-                Section {
+                if store.rangeLoaded {
                     last14Card
-                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                        .listRowBackground(Color.clear)
                 }
-            }
 
-            if session.features.enableGoals {
-                Section("Goals") {
-                    if let goal = store.primaryGoal {
-                        goalCard(goal)
+                if session.features.enableGoals {
+                    sectionHeader("Goals")
+                    VStack(alignment: .leading, spacing: 12) {
+                        if let goal = store.primaryGoal {
+                            goalCard(goal)
+                            Divider()
+                        }
+                        NavigationLink {
+                            GoalsView()
+                        } label: {
+                            Label {
+                                Text(store.goals.isEmpty ? "Set a savings goal" : "Manage goals")
+                            } icon: {
+                                DBIcon("target")
+                            }
+                            .font(.body.weight(.medium))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.accentColor)
                     }
-                    NavigationLink {
-                        GoalsView()
-                    } label: {
-                        Label(store.goals.isEmpty ? "Set a savings goal" : "Manage goals",
-                              systemImage: "target")
-                    }
+                    .glassCard()
                 }
-            }
 
-            if !store.history.isEmpty {
-                Section("Recent") {
-                    ForEach(store.history) { txn in
-                        transactionRow(txn)
+                if !store.history.isEmpty {
+                    sectionHeader("Recent")
+                    VStack(spacing: 10) {
+                        ForEach(store.history) { txn in
+                            transactionRow(txn)
+                            if txn.id != store.history.last?.id {
+                                Divider()
+                            }
+                        }
                     }
+                    .glassCard()
                 }
-            }
 
-            if let error = store.errorMessage {
-                Section {
+                if let error = store.errorMessage {
                     Label(error, systemImage: "wifi.exclamationmark")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
+            .padding()
         }
         .navigationTitle("Earnings")
         .themeBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.caption.weight(.bold))
+            .foregroundStyle(.secondary)
+            .kerning(0.8)
+            .padding(.top, 4)
     }
 
     private var balanceCard: some View {
@@ -200,14 +220,3 @@ struct EarningsView: View {
     }
 }
 
-/// DayDate has no day arithmetic (by design — the server owns "today");
-/// this small helper exists for the chart window only. Do not move into
-/// DayDate — display-side convenience, not a wire concern.
-fileprivate extension DayDate {
-    func addingDays(_ delta: Int) -> DayDate {
-        let calendar = Calendar.current
-        let shifted = calendar.date(byAdding: .day, value: delta, to: displayDate) ?? displayDate
-        let parts = calendar.dateComponents([.year, .month, .day], from: shifted)
-        return DayDate(year: parts.year ?? year, month: parts.month ?? month, day: parts.day ?? day)
-    }
-}
