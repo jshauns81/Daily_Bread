@@ -409,7 +409,8 @@ struct ParentHomeView: View {
                         .font(.caption.weight(.semibold))
                 }
             }
-            YearHeatmapCard(title: "\(child.displayName)'s year", userId: userId)
+            RainbowYearCard(title: "\(child.displayName)'s year", userId: userId,
+                            updatesDockIcon: true)
         }
     }
 

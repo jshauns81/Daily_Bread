@@ -211,8 +211,9 @@ struct TodayView: View {
                 }
 
                 Section {
-                    YearHeatmapCard(title: isSelf ? "Your year" : "The year",
-                                    userId: store.targetUserId)
+                    RainbowYearCard(title: isSelf ? "Your year" : "The year",
+                                    userId: store.targetUserId,
+                                    updatesDockIcon: isSelf && session.currentUser?.isParent != true)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         .listRowBackground(Color.clear)
                 }
