@@ -40,7 +40,19 @@ gold = money, red = Help).
 
 5. **First launch** — the app asks for your server:
    - Simulator or Mac, with the dev server running locally: `http://localhost:5100`
-   - A real phone on your network: `http://<your-Macs-LAN-IP>:5000` or your public HTTPS URL
+   - A real phone on your network: `http://<your-Macs-LAN-IP>:5100` — **but** the
+     default `http` profile binds loopback only, which a phone can never reach.
+     Run the server with the LAN profile instead:
+
+     ```
+     dotnet run --project Daily_Bread --launch-profile lan
+     ```
+
+     (Binds `0.0.0.0:5100`. Don't use port 5000 — macOS's AirPlay Receiver sits
+     on it and answers 403.) If the phone still can't connect, check
+     iOS Settings → Privacy & Security → Local Network → Daily Bread.
+   - A real phone anywhere: your family server's public HTTPS URL — this is the
+     right choice for day-to-day use; the LAN route is only for development.
 
    Then sign in with any account from the web app (dev seed: the admin
    account works; a Child account shows the kid experience).
