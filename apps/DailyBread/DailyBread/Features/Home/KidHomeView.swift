@@ -66,15 +66,35 @@ final class KidHomeStore {
         }
 
         await loadStreak(session)
+        publishWidgetSnapshot()
+    }
+
+    /// Home is the kid's daily driver — the §1.2a widget family must be fed from
+    /// here, not only from the Today tab he may never open.
+    private func publishWidgetSnapshot() {
+        guard today != nil else { return }
+        WidgetBridge.mergeToday(
+            done: doneCount, total: totalCount,
+            earned: earnedToday.display,
+            balance: balance?.display,
+            streak: streak,
+            childName: today?.userName)
     }
 
     /// Consecutive all-complete days ending today (today unfinished doesn't break
     /// it). Same rule as the Today screen.
     private func loadStreak(_ session: SessionStore) async {
         let today = DayDate.todayLocal()
-        let start = DayDate(year: today.month > 2 ? today.year : today.year - 1,
-                            month: max(1, today.month - 2), day: 1)
+        // Reach back at least to January 1st: the same fetch that answers the
+        // streak also feeds the widget's rainbow (WidgetBridge below), and the
+        // widget wants the year to date. Jan/Feb keep the older two-month reach
+        // so a streak crossing the year boundary still counts fully.
+        let streakStart = DayDate(year: today.month > 2 ? today.year : today.year - 1,
+                                  month: max(1, today.month - 2), day: 1)
+        let jan1 = DayDate(year: today.year, month: 1, day: 1)
+        let start = min(streakStart, jan1)
         guard let range = try? await session.client.calendarRange(from: start, to: today) else { return }
+        WidgetBridge.mergeDays(range.days, childName: self.today?.userName)
 
         var count = 0
         for day in range.days.reversed() {

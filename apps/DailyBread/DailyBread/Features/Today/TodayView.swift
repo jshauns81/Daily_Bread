@@ -46,6 +46,18 @@ final class TodayStore {
             errorMessage = error.localizedDescription
         }
         await loadStreak(session)
+        publishWidgetSnapshot()
+    }
+
+    /// The §1.2a widget family renders from what this store just learned.
+    private func publishWidgetSnapshot() {
+        guard today != nil else { return }
+        WidgetBridge.mergeToday(
+            done: doneCount, total: totalCount,
+            earned: earnedToday.display,
+            balance: balance?.display,
+            streak: streak,
+            childName: today?.userName)
     }
 
     /// Streak = consecutive all-complete days ending today (or yesterday if
@@ -101,6 +113,7 @@ final class TodayStore {
                 current.items[i].status = result.status
                 withAnimation(.snappy) { today = current }
             }
+            publishWidgetSnapshot()
             if completing {
                 celebrate(item)
             }

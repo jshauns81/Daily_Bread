@@ -39,6 +39,7 @@ struct SettingsView: View {
                                 themeRaw = theme.rawValue
                                 themeExpanded = false
                             }
+                            WidgetBridge.themeChanged()
                         } label: {
                             themeRow(theme)
                         }
