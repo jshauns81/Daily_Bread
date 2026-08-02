@@ -177,3 +177,31 @@ iOS + macOS builds green, 205 backend tests green:
 the **WidgetKit family** (Small/Medium/Large + monochrome Lock Screen + StandBy) is a new
 extension target — build it next, before or alongside Phase 2. App icon artwork still open
 (not a blocker).
+
+**Status 2026-08-02: the WidgetKit family is BUILT** — new `DailyBreadWidgets` iOS
+extension target (`org.dailybread.app.widgets`), both platform builds green:
+
+- **One renderer, literally** — `RainbowDay` / `RainbowMath` / `RainbowYearGrid` moved
+  into DailyBreadKit; the app's cards, the macOS dock, and the widget draw with the
+  same code. Forgiving ramp everywhere (the widget JSX's `honest` default is
+  superseded by the §1.2 decision).
+- **The widget never talks to the server.** The app writes a `WidgetBridge` snapshot
+  (app group `group.org.dailybread.shared`) from Kid Home, Today, and the rainbow
+  stores, then pokes WidgetKit. The widget's own timeline only rolls at midnight so
+  yesterday's ring can't pose as this morning's.
+- **Kid Home feeds the bridge** — it's the daily driver; a widget fed only from the
+  Today tab would go stale for a kid who checks chores from Home's Next Up card.
+  The streak fetch now reaches back to Jan 1 so one call answers streak *and* rainbow.
+- **Family** — Small: 4 weeks + today's ring · Medium Year: 12 weeks + streak /
+  balance / ring · Large: two 26-week bands + perfect days / balance / streak ·
+  Lock Screen circular / rectangular / inline (monochrome by decree) · StandBy:
+  26 weeks, full colour on black. Cells stay square at every size — grids fit by
+  dropping weeks, never by stretching.
+- **Deferred, additive per §1.2a:** the interactive Medium *Today* kind (needs App
+  Intents + shared-Keychain auth inside the extension process). Parent-flavoured
+  widgets (approvals hero) likewise wait for a later pass.
+
+Verified end-to-end in the kid simulator: launch → Home writes the snapshot (real
+year, counts, balance, theme) → extension embedded with the right extension point.
+To see it: long-press the home screen → **+** → Daily Bread → add. Same on the Lock
+Screen for the accessories.
