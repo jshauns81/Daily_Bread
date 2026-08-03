@@ -192,8 +192,18 @@ struct ChoreEditorSheet: View {
             .labelsHidden()
 
             if isWeekly {
-                Stepper("up to \(weeklyTarget)× a week", value: $weeklyTarget, in: 1...7)
-                    .monospacedDigit()
+                // §2.2: same vocabulary as the day picker twelve lines down —
+                // tap the nth pip. Capped at 6: at 7 it isn't optional any more,
+                // it's daily, and the control shouldn't offer it.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("up to \(min(weeklyTarget, FrequencyPips.cap))× a week")
+                        .font(.subheadline.weight(.medium))
+                        .monospacedDigit()
+                    FrequencyPips(target: $weeklyTarget)
+                    Text("Every day? That's Fixed days with all seven on.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Toggle("Bonus reps allowed", isOn: $isRepeatable)
                 if isTaskKind {
                     Toggle("All-or-nothing pay", isOn: $allOrNothing)
@@ -367,6 +377,39 @@ struct ChoreEditorSheet: View {
         } catch {
             errorMessage = error.localizedDescription
             Haptics.warning()
+        }
+    }
+}
+
+/// §2.2 — how many times a week, in the day picker's own geometry: tap the nth
+/// pip to set the count. Six pips, deliberately: seven times a week is daily,
+/// which is the OTHER schedule rule. A legacy 7 renders as six filled until the
+/// parent touches the control.
+struct FrequencyPips: View {
+    static let cap = 6
+
+    @Environment(\.colorScheme) private var scheme
+    @Binding var target: Int
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(1...Self.cap, id: \.self) { n in
+                let on = n <= min(target, Self.cap)
+                Button {
+                    Haptics.tick()
+                    withAnimation(.snappy) { target = n }
+                } label: {
+                    Text("\(n)")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(width: 36, height: 36)
+                        .background(on ? Color.accentColor : DB.fillOff(scheme),
+                                    in: Circle())
+                        .foregroundStyle(on ? Color.white : Color.primary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(n) times a week")
+                .accessibilityAddTraits(n == min(target, Self.cap) ? .isSelected : [])
+            }
         }
     }
 }
