@@ -179,12 +179,26 @@ struct KidHomeView: View {
         }
         .navigationTitle("Home")
         .toolbar {
+            // Driving sits beside the calendar as a peer, not below it in a
+            // menu — for a kid with a permit these are the two places worth a
+            // shortcut. Same gate as the card: only for a kid who drives.
+            if DrivingCard.shouldShow(store.driving) {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        openingDriving = true
+                    } label: {
+                        Image(systemName: "car.fill")
+                    }
+                    .accessibilityLabel("Driving log")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 NavigationLink {
                     CalendarView(userId: nil, title: "My month")
                 } label: {
                     Image(systemName: "calendar")
                 }
+                .accessibilityLabel("My month")
             }
         }
         .themeBackground()
