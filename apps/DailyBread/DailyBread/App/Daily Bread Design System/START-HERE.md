@@ -233,5 +233,25 @@ assignee (siblings share "Empty Dishwasher" by design — the global check made
 common names uneditable); dev server gets a `lan` profile (`0.0.0.0:5100`) so real
 phones can reach it.
 
-**Next: Phase 3 — YAML theming.** Specced in IMPLEMENTATION.md §3. App icon
-artwork still open (not a blocker).
+**Status 2026-08-02 (evening): Phase 3 theming — engine and sync are IN.**
+
+- **3.A engine** — `ThemeManifest` (§3.2, lenient: only meta.id/meta.name required,
+  typos degrade to the scheme base, malformed YAML reports its line), `ThemeLoader`
+  (never throws; invalid files listed-not-selectable; exports `example.yaml` + the
+  six `builtin-*.yaml` references the app never reads back), `AppTheme` as the one
+  resolved surface, last-known-good fallback with banner, the always-Sunroom Reset
+  row, invariants locked behind `unlock: true`, widgets themed via snapshot palette,
+  Themes folder visible in Files. 8 loader tests pin the can't-brick rules; verified
+  live in the sim (ultraviolet.yaml end-to-end). Typography/icons/motion/radius keys
+  parse but are inert this pass.
+- **3.B server sync** — `ThemeFiles` table (household + slug unique), GET/PUT/DELETE
+  `api/v1/themes` storing YAML verbatim (server never parses); children write by
+  design, overwrite/delete is author-or-parent (5 service tests); `ThemeSync` pushes
+  valid local files (local wins — it's the authoring surface) and pulls server themes
+  into the folder, on bootstrap and picker refresh.
+
+**Remaining in §3:** the two-mode editor sheet (§3.6 Simple | YAML, lossless both
+ways, lint-as-you-type, colour gutter, SF Mono, keyboard accessory bar), preview-
+before-apply (§3.3 rule 7), the contrast warning badge, macOS hot reload, deletion
+sync, and the hidden "Make it your own" achievement. App icon artwork still open
+(not a blocker).
