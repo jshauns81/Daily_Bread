@@ -145,9 +145,13 @@ public class ChoreManagementService : IChoreManagementService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
         
-        // Check for duplicate name
+        // Duplicate names are scoped to the assignee: siblings legitimately share
+        // "Empty Dishwasher" (the seed data does exactly this), so a global check
+        // makes every common chore name unusable after the first kid. The accident
+        // worth blocking is the SAME kid getting the same chore twice.
         var exists = await context.ChoreDefinitions
-            .AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower());
+            .AnyAsync(c => c.AssignedUserId == dto.AssignedUserId
+                        && c.Name.ToLower() == dto.Name.ToLower());
 
         if (exists)
         {
@@ -231,9 +235,12 @@ public class ChoreManagementService : IChoreManagementService
             return ServiceResult.Fail("Chore not found.");
         }
 
-        // Check for duplicate name (excluding current chore)
+        // Duplicate names are scoped to the assignee (see CreateChoreAsync) and
+        // exclude the chore being edited, or renaming-to-itself always fails.
         var exists = await context.ChoreDefinitions
-            .AnyAsync(c => c.Id != dto.Id && c.Name.ToLower() == dto.Name.ToLower());
+            .AnyAsync(c => c.Id != dto.Id
+                        && c.AssignedUserId == dto.AssignedUserId
+                        && c.Name.ToLower() == dto.Name.ToLower());
 
         if (exists)
         {
