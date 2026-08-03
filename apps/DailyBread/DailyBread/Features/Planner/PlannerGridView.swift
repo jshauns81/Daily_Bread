@@ -50,9 +50,6 @@ struct PlannerGridView: View {
     private let gap: CGFloat = 10
     /// Keeps the last column off the scroller.
     private let trailingInset: CGFloat = 10
-    private let nameWidth: CGFloat? = 240
-    /// 240 name + 10 gap + 312 week + 32 padding = 594.
-    private let gridMaxWidth: CGFloat = 600
     /// The phone has no room to spell days; the Mac does, and Sun/Sat and
     /// Tue/Thu stop colliding on one letter.
     private let spellDays = true
@@ -60,10 +57,43 @@ struct PlannerGridView: View {
     private let cell: CGFloat = 32
     private let gap: CGFloat = 3
     private let trailingInset: CGFloat = 0
-    private let nameWidth: CGFloat? = nil
-    private let gridMaxWidth: CGFloat = .infinity
     private let spellDays = false
     #endif
+
+    /// Leading padding, trailing padding, and the horizontal page padding —
+    /// everything between the grid's content and its outer width.
+    private var chrome: CGFloat { 32 + 8 + trailingInset }
+
+    /// Widest leading label actually on screen, measured rather than guessed.
+    @State private var measuredName: CGFloat = 0
+
+    /// The label column sizes to its contents, the way a table column should.
+    /// A fixed 240 was a guess at "wide enough for a long chore name", and on a
+    /// real list it left half the column empty — which reads as the names being
+    /// stranded away from their marks. Clamped so one absurd name can't blow the
+    /// column out, and a family with short names still gets a column wide enough
+    /// to look deliberate.
+    ///
+    /// Left-aligned, not centred: this column is scanned vertically, and
+    /// centring gives it two ragged edges. Sizing it correctly is what closes
+    /// the gap; changing the alignment would only move it.
+    private var nameWidth: CGFloat? {
+        #if os(macOS)
+        return min(max(measuredName, 140), 280)
+        #else
+        return nil
+        #endif
+    }
+
+    /// Hug the content instead of holding a fixed 600 — with a short list the
+    /// grid now sits as a compact, centred block.
+    private var gridMaxWidth: CGFloat {
+        #if os(macOS)
+        return (nameWidth ?? 0) + gap + weekSpan + chrome
+        #else
+        return .infinity
+        #endif
+    }
 
     private var weekSpan: CGFloat { cell * 7 + gap * 6 }
 
@@ -91,6 +121,32 @@ struct PlannerGridView: View {
             .frame(maxWidth: gridMaxWidth)
             .frame(maxWidth: .infinity)
         }
+        .background(alignment: .topLeading) { measuringLayer }
+        .onPreferenceChange(NameWidthKey.self) { measuredName = $0 }
+    }
+
+    /// An invisible copy of every leading label at its natural width, so the
+    /// column can be sized from the whole list rather than whichever rows happen
+    /// to be scrolled into view — a lazy per-row measurement would make the
+    /// column twitch as you scroll. Sits behind the ScrollView, so it never
+    /// contributes to scrollable content.
+    private var measuringLayer: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(chores) { chore in
+                if showAssignee {
+                    assigneeLabel(chore)
+                } else {
+                    nameCell(chore)
+                }
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false)
+        .background(GeometryReader { geo in
+            Color.clear.preference(key: NameWidthKey.self, value: geo.size.width)
+        })
+        .opacity(0)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     // MARK: - Grouping
@@ -123,16 +179,7 @@ struct PlannerGridView: View {
         ForEach(groups) { group in
             groupHeader(group)
             ForEach(group.chores) { chore in
-                row(chore, vPad: 5) {
-                    // Indented past the heading's glyph, and a step down in
-                    // size — at equal size and a 5pt indent the child read as a
-                    // sibling of the chore name rather than a child of it.
-                    Text(chore.assignedUserName ?? "Unassigned")
-                        .font(.subheadline)
-                        .foregroundStyle(chore.isActive ? .primary : .secondary)
-                        .lineLimit(1)
-                        .padding(.leading, 34)
-                }
+                row(chore, vPad: 5) { assigneeLabel(chore) }
             }
             Color.clear.frame(height: 6)
         }
@@ -210,10 +257,12 @@ struct PlannerGridView: View {
             }
 
             if chore.scheduleType == "WeeklyFrequency" {
-                // Matches the cell height. Without it the row collapses to the
-                // text's own height and an "N×/wk" chore sits visibly shorter
-                // than its neighbours, breaking the grid's rhythm mid-table.
-                dayStrip(vPad: vPad) {
+                // Height matches the cell so the row doesn't collapse to its
+                // text and break the table's rhythm mid-list. No today band:
+                // an "N×/wk" chore has no columns, so highlighting one is
+                // meaningless — it rendered as a stray stripe floating in an
+                // otherwise empty row.
+                dayStrip(vPad: vPad, showsToday: false) {
                     Text("\(chore.weeklyTargetCount)×/wk")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -250,16 +299,30 @@ struct PlannerGridView: View {
     /// continuous column.
     private func dayStrip<Content: View>(
         vPad: CGFloat,
+        showsToday: Bool = true,
         @ViewBuilder content: () -> Content
     ) -> some View {
         HStack(spacing: gap) { content() }
             .padding(.vertical, vPad)
             .background(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.dbAccent.opacity(0.09))
-                    .frame(width: cell)
-                    .offset(x: CGFloat(todayIndex) * (cell + gap))
+                if showsToday {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.dbAccent.opacity(0.09))
+                        .frame(width: cell)
+                        .offset(x: CGFloat(todayIndex) * (cell + gap))
+                }
             }
+    }
+
+    /// Indented past the heading's glyph, and a step down in size — at equal
+    /// size and a 5pt indent the child read as a sibling of the chore name
+    /// rather than a child of it.
+    private func assigneeLabel(_ chore: PlannerChore) -> some View {
+        Text(chore.assignedUserName ?? "Unassigned")
+            .font(.subheadline)
+            .foregroundStyle(chore.isActive ? .primary : .secondary)
+            .lineLimit(1)
+            .padding(.leading, 34)
     }
 
     private func nameCell(_ chore: PlannerChore) -> some View {
@@ -314,6 +377,15 @@ struct PlannerGridView: View {
         .help("\(chore.name)\(who) — \(day.full)")
         .accessibilityLabel("\(chore.name)\(who), \(day.full)")
         .accessibilityValue(on ? "Scheduled" : "Off")
+    }
+}
+
+/// Widest leading label in the list — `max` because the column has to fit the
+/// longest one, not the last one measured.
+private struct NameWidthKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
