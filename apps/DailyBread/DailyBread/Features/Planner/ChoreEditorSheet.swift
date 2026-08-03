@@ -130,17 +130,9 @@ struct ChoreEditorSheet: View {
     private var identityCard: some View {
         SheetCard {
             HStack(spacing: 10) {
-                TextField("🧺", text: $icon)
-                    .textFieldStyle(.plain)
-                    .multilineTextAlignment(.center)
-                    .font(.title2)
-                    .frame(width: 46)
-                    .padding(.vertical, 8)
-                    .background(.quaternary.opacity(0.4),
-                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .onChange(of: icon) { _, newValue in
-                        if newValue.count > 2 { icon = String(newValue.prefix(2)) }
-                    }
+                // §2.5: curated grid, not an unbounded field that renders
+                // "asdf" at 40pt in the kid's list every day.
+                EmojiPickerField(icon: $icon, set: .chores)
                 TextField("What's the chore?", text: $name)
                     .textFieldStyle(.plain)
                     .font(.body.weight(.medium))
@@ -365,7 +357,7 @@ struct ChoreEditorSheet: View {
         let write = ChoreWrite(
             name: trimmedName,
             description: trimmedDetails.isEmpty ? nil : trimmedDetails,
-            icon: trimmedIcon.isEmpty ? nil : String(trimmedIcon.prefix(2)),
+            icon: trimmedIcon.isEmpty ? nil : String(trimmedIcon.prefix(1)),
             assignedUserId: assignedUserId.isEmpty ? nil : assignedUserId,
             kind: isTaskKind ? "Task" : "Routine",
             earnValue: isTaskKind ? earn : .zero,

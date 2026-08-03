@@ -235,10 +235,8 @@ struct AchievementEditorSheet: View {
     private var basicsCard: some View {
         SheetCard(title: "Basics") {
             HStack(spacing: 10) {
-                TextField("🏆", text: $icon)
-                    .multilineTextAlignment(.center)
-                    .frame(width: 54)
-                    .sheetFieldBackground()
+                // §2.5: same curated picker as the chore editor, award set.
+                EmojiPickerField(icon: $icon, set: .awards)
                 TextField("Name", text: $name)
                     .sheetFieldBackground()
             }
