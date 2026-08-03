@@ -72,6 +72,28 @@ public final class SessionStore {
         }
     }
 
+    /// Whether driving is worth a place in the shell's navigation: for a parent,
+    /// any child drives; for a child, they do. Off until proven on, so a family
+    /// that never turns driving on never sees it.
+    public var drivingVisible = false
+
+    /// Refreshed on sign-in and foreground rather than on the badge poll — the
+    /// answer only changes when a parent flips a switch in Settings, and a
+    /// navigation item appearing mid-session is worse than one arriving a
+    /// moment late.
+    public func refreshDrivingVisibility() async {
+        guard let user = currentUser else {
+            drivingVisible = false
+            return
+        }
+        if user.isParent {
+            let members = (try? await client.familyMembers()) ?? []
+            drivingVisible = members.contains { $0.drives }
+        } else {
+            drivingVisible = (try? await client.drivingProgress())?.isEnabled ?? false
+        }
+    }
+
     private enum Keys {
         static let serverURL = "db.serverURL"     // UserDefaults (not secret)
         static let access = "accessToken"          // Keychain

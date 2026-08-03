@@ -54,9 +54,13 @@ struct MainView: View {
     /// driving card plus a header shortcut.
     private var sections: [Section] {
         #if os(macOS)
+        // Driving only earns a sidebar row when someone in the house actually
+        // drives — a permanent row for a feature the family switched off is
+        // the same clutter the per-child toggle exists to remove.
+        let driving: [Section] = session.drivingVisible ? [.driving] : []
         return user.isParent
-            ? [.home, .activity, .planner, .approvals, .driving, .settings]
-            : [.kidHome, .today, .earnings, .awards, .driving, .settings]
+            ? [.home, .activity, .planner, .approvals] + driving + [.settings]
+            : [.kidHome, .today, .earnings, .awards] + driving + [.settings]
         #else
         return user.isParent
             ? [.home, .activity, .planner, .approvals, .settings]
@@ -90,8 +94,19 @@ struct MainView: View {
             }
         }
         .onAppear { if selection == nil { selection = sections.first } }
-        .task { await refreshBadge() }
-        .refreshOnForeground { await refreshBadge() }
+        // A parent can switch driving off while sitting on the Driving screen;
+        // don't strand them on a row that no longer exists.
+        .onChange(of: session.drivingVisible) { _, _ in
+            if let selection, !sections.contains(selection) { self.selection = sections.first }
+        }
+        .task {
+            await refreshBadge()
+            await session.refreshDrivingVisibility()
+        }
+        .refreshOnForeground {
+            await refreshBadge()
+            await session.refreshDrivingVisibility()
+        }
         .poll { await refreshBadge() }
         #else
         TabView {
