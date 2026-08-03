@@ -9,6 +9,12 @@ struct MainView: View {
 
     @Environment(SessionStore.self) private var session
 
+    // The sidebar paints itself in the theme accent, and `Color.dbAccent` reads
+    // storage rather than the environment — so the shell has to observe the
+    // theme keys itself or a theme switch would leave stale chrome behind.
+    @AppStorage(ThemeStore.key) private var themeRaw = DBTheme.sunroom.rawValue
+    @AppStorage(ThemeStore.customKey) private var customThemeRaw = ""
+
     private enum Section: String, CaseIterable, Identifiable {
         case kidHome = "Home"
         case today = "Today"
@@ -63,11 +69,23 @@ struct MainView: View {
     var body: some View {
         #if os(macOS)
         NavigationSplitView {
+            // `List(selection:)` keeps the free AppKit behaviour — arrow-key
+            // navigation, the focus ring — that a hand-rolled sidebar throws
+            // away. `.tint` recolours its selection, so the only thing left to
+            // fix is the symbols: multicolour rendering put a tan house next to
+            // a blue car next to a grey gear, three hues the theme never chose.
             List(sections, selection: $selection) { section in
-                Label(section.label, systemImage: section.icon)
-                    .badge(section == .approvals ? session.approvalsWaiting : 0)
-                    .tag(section)
+                Label {
+                    Text(section.label)
+                } icon: {
+                    Image(systemName: section.icon)
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundStyle(section == selection ? Color.white : Color.dbAccent)
+                }
+                .badge(section == .approvals ? session.approvalsWaiting : 0)
+                .tag(section)
             }
+            .tint(Color.dbAccent)
             .navigationTitle("Daily Bread")
         } detail: {
             NavigationStack {
