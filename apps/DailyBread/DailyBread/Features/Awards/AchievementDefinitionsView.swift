@@ -245,13 +245,22 @@ struct AchievementEditorSheet: View {
             TextField("Description", text: $detail, axis: .vertical)
                 .lineLimit(1...3)
                 .sheetFieldBackground()
-            HStack(spacing: 12) {
-                Picker("Rarity", selection: $rarity) {
-                    ForEach(AchievementRarityKind.allCases) { Text($0.label).tag($0) }
+            // §2.4: rarity has a full visual identity (the 0.2 invariants) —
+            // don't reduce it to a grey menu row reading "Rare ⌄". Category is
+            // a genuinely long list and correctly stays a menu.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(AchievementRarityKind.allCases) { kind in
+                        SheetChip(kind.label, selected: rarity == kind, compact: true,
+                                  tint: DBRarity(kind.rawValue).color(scheme)) {
+                            Haptics.tick()
+                            withAnimation(.snappy) { rarity = kind }
+                        }
+                    }
                 }
-                Picker("Category", selection: $category) {
-                    ForEach(AchievementCategoryKind.allCases) { Text($0.label).tag($0) }
-                }
+            }
+            Picker("Category", selection: $category) {
+                ForEach(AchievementCategoryKind.allCases) { Text($0.label).tag($0) }
             }
             .pickerStyle(.menu)
             Stepper("Points: \(points)", value: $points, in: 0...1000, step: 5)

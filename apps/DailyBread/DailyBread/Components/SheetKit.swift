@@ -195,28 +195,33 @@ struct SheetChip: View {
     let label: String
     var selected: Bool
     var compact = false
+    /// nil = the theme accent. §2.4 chips with their own identity (rarity)
+    /// pass the invariant colour instead.
+    var tint: Color?
     var action: () -> Void
 
     init(_ label: String, selected: Bool, compact: Bool = false,
-         action: @escaping () -> Void) {
+         tint: Color? = nil, action: @escaping () -> Void) {
         self.label = label
         self.selected = selected
         self.compact = compact
+        self.tint = tint
         self.action = action
     }
 
     var body: some View {
+        let color = tint ?? Color.accentColor
         Button(action: action) {
             Text(label)
                 .font(.subheadline.weight(selected ? .semibold : .regular))
                 .padding(.horizontal, compact ? 10 : 14)
                 .padding(.vertical, compact ? 6 : 8)
-                .background(selected ? AnyShapeStyle(Color.accentColor.opacity(0.18))
+                .background(selected ? AnyShapeStyle(color.opacity(0.18))
                                      : AnyShapeStyle(DB.fillOff(scheme)),
                             in: Capsule())
                 .overlay(Capsule().strokeBorder(
-                    selected ? Color.accentColor : Color.clear, lineWidth: 1.5))
-                .foregroundStyle(selected ? Color.accentColor : Color.primary)
+                    selected ? color : Color.clear, lineWidth: 1.5))
+                .foregroundStyle(selected ? color : Color.primary)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])

@@ -269,6 +269,13 @@ private struct DriveEditorSheet: View {
         ("15m", 15), ("30m", 30), ("45m", 45), ("1h", 60), ("1h 30m", 90), ("2h", 120)
     ]
 
+    /// §2.4 — the four conditions that matter for a practice log, each with its
+    /// glyph on the surface. Snow covers ice; a menu covered nothing.
+    private static let weatherOptions: [(kind: DrivingWeather, symbol: String)] = [
+        (.clear, "sun.max.fill"), (.rain, "cloud.rain.fill"),
+        (.snow, "snowflake"), (.fog, "cloud.fog.fill")
+    ]
+
     /// The single source of truth for how long the drive was.
     private var effectiveMinutes: Int {
         guard exactTimes else { return durationMinutes }
@@ -288,10 +295,13 @@ private struct DriveEditorSheet: View {
                     SheetCard(title: "How long") { durationHero }
                     SheetCard(title: "Details") {
                         TextField("Supervising adult", text: $supervisor).sheetFieldBackground()
-                        Picker("Weather", selection: $weather) {
-                            ForEach(DrivingWeather.allCases) { Text($0.label).tag($0) }
+                        // §2.4: weather has glyphs — show them inline, not in a menu.
+                        HStack(spacing: 8) {
+                            ForEach(Self.weatherOptions, id: \.kind) { option in
+                                weatherChip(option.kind, option.symbol)
+                            }
+                            Spacer(minLength: 0)
                         }
-                        .pickerStyle(.menu)
                         Picker("Night driving", selection: $nightMode) {
                             Text("Auto").tag(0); Text("Day").tag(1); Text("Night").tag(2)
                         }
@@ -473,6 +483,27 @@ private struct DriveEditorSheet: View {
         let h = minutes / 60, m = minutes % 60
         if h > 0 && m > 0 { return "\(h)h \(m)m" }
         return h > 0 ? "\(h)h" : "\(m)m"
+    }
+
+    private func weatherChip(_ kind: DrivingWeather, _ symbol: String) -> some View {
+        let on = weather == kind
+        return Button {
+            Haptics.tick()
+            withAnimation(.snappy) { weather = kind }
+        } label: {
+            Image(systemName: symbol)
+                .font(.body.weight(.medium))
+                .frame(width: 44, height: 36)
+                .background(on ? AnyShapeStyle(Color.accentColor.opacity(0.18))
+                               : AnyShapeStyle(DB.fillOff(scheme)),
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(on ? Color.accentColor : Color.clear, lineWidth: 1.5))
+                .foregroundStyle(on ? Color.accentColor : Color.secondary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(kind.label)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     // MARK: Data
