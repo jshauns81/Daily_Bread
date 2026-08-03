@@ -13,6 +13,9 @@ final class KidHomeStore {
     var balance: Money?
     var achievements: AchievementsList?
     var goal: Goal?
+    /// Driving hours — surfaced on Home because for a teen chasing a licence
+    /// this is the biggest number in the app (it used to sit 3 taps deep).
+    var driving: DrivingLogProgress?
     var streak = 0
     var loading = false
     var celebrationStart: Date?
@@ -64,6 +67,9 @@ final class KidHomeStore {
             let goals = (try? await session.client.goals()) ?? []
             goal = goals.first { $0.isPrimary } ?? goals.first
         }
+
+        // Cheap, and it decides whether the card appears at all.
+        driving = try? await session.client.drivingProgress()
 
         await loadStreak(session)
         publishWidgetSnapshot()
@@ -136,6 +142,7 @@ struct KidHomeView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
     @State private var store = KidHomeStore()
+    @State private var openingDriving = false
 
     private struct LevelTier {
         let level: Int
@@ -163,6 +170,7 @@ struct KidHomeView: View {
             VStack(spacing: 14) {
                 greeting
                 heroCard(tier)
+                drivingCard
                 goalCard
                 achievementRow
                 nextUpCard
@@ -180,6 +188,9 @@ struct KidHomeView: View {
             }
         }
         .themeBackground()
+        .navigationDestination(isPresented: $openingDriving) {
+            DrivingLogView(mode: .kid)
+        }
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
@@ -192,6 +203,18 @@ struct KidHomeView: View {
             HelpSheet(item: item) { reason in
                 Task { await store.raiseHelp(item, reason: reason, session) }
             }
+        }
+    }
+
+    // MARK: - Driving
+
+    /// Only for a kid who actually drives — hours on the board or a goal set.
+    @ViewBuilder
+    private var drivingCard: some View {
+        if DrivingCard.shouldShow(store.driving), let progress = store.driving {
+            DrivingCard(progress: progress,
+                        onOpen: { openingDriving = true },
+                        onLogged: { await store.load(session) })
         }
     }
 

@@ -229,8 +229,11 @@ struct DrivingLogView: View {
 /// so DURATION is the hero — date and exact times are one tap away, not three
 /// stacked pickers. A parent logging on the child's behalf is auto-approved
 /// server-side and stamped on the row.
-private struct DriveEditorSheet: View {
+struct DriveEditorSheet: View {
     var asParent: Bool
+    /// Preselected child — set when a parent logs from a specific kid's card,
+    /// so the sheet never asks a question the caller already answered.
+    var childUserId: String?
     var onSaved: () async -> Void
 
     @Environment(SessionStore.self) private var session
@@ -256,7 +259,7 @@ private struct DriveEditorSheet: View {
     @State private var exactTimes = false
     @State private var start = Date()
     @State private var end = Date()
-    @State private var childUserId: String?
+    @State private var selectedChildId: String?
     @State private var progress: DrivingLogProgress?
     @State private var supervisor = ""
     @State private var weather: DrivingWeather = .clear
@@ -340,7 +343,7 @@ private struct DriveEditorSheet: View {
     private var canSave: Bool {
         !supervisor.trimmingCharacters(in: .whitespaces).isEmpty
             && effectiveMinutes > 0
-            && (!asParent || childUserId != nil)
+            && (!asParent || selectedChildId != nil)
     }
 
     // MARK: Who
@@ -349,8 +352,8 @@ private struct DriveEditorSheet: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(session.children) { child in
-                    SheetChip(child.userName, selected: childUserId == child.userId) {
-                        childUserId = child.userId
+                    SheetChip(child.userName, selected: selectedChildId == child.userId) {
+                        selectedChildId = child.userId
                         Task { await loadProgress() }
                     }
                 }
@@ -509,9 +512,11 @@ private struct DriveEditorSheet: View {
     // MARK: Data
 
     private func prepare() async {
+        // A caller that already knows the child wins over any picker default.
+        if let childUserId { selectedChildId = childUserId }
         if asParent {
             // Single child: no picker, target them directly (the invariant).
-            if session.children.count == 1 { childUserId = session.children.first?.userId }
+            if selectedChildId == nil, session.children.count == 1 { selectedChildId = session.children.first?.userId }
             // The logging parent supervised, until told otherwise.
             if supervisor.isEmpty { supervisor = session.currentUser?.userName ?? "" }
         }
@@ -519,7 +524,7 @@ private struct DriveEditorSheet: View {
     }
 
     private func loadProgress() async {
-        let target = asParent ? childUserId : nil
+        let target = asParent ? selectedChildId : nil
         guard !asParent || target != nil else { return }
         progress = try? await session.client.drivingProgress(userId: target)
     }
@@ -552,7 +557,7 @@ private struct DriveEditorSheet: View {
         defer { saving = false }
         errorMessage = nil
         let create = DrivingLogCreate(
-            childUserId: asParent ? childUserId : nil,
+            childUserId: asParent ? selectedChildId : nil,
             date: dateChoice.dayDate,
             startTime: times.start,
             endTime: times.end,
