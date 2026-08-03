@@ -16,7 +16,11 @@ final class ApprovalsStore {
         loading = queue == nil
         defer { loading = false }
         do {
-            queue = try await session.client.approvalsQueue()
+            let fetched = try await session.client.approvalsQueue()
+            queue = fetched
+            // The shell's badge can't see this screen's actions; hand it the
+            // count we already have rather than making it re-ask later.
+            session.setApprovalsWaiting(from: fetched)
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription

@@ -26,6 +26,28 @@ public final class SessionStore {
         }
     }
 
+    /// The parent shell's Approvals badge: chores waiting + Helps raised.
+    ///
+    /// It lives here, not in the tab shell, because the number changes from
+    /// screens the shell can't see. Clearing a Help inside Approvals used to
+    /// leave the badge stale until the app was relaunched — the shell only
+    /// recounted on first appearance and on foreground, and an in-app action is
+    /// neither. Anything that learns the true count should write it here.
+    public var approvalsWaiting = 0
+
+    /// Ask the server. Screens that have just loaded the queue should call
+    /// `setApprovalsWaiting(from:)` instead — it costs no extra request.
+    public func refreshApprovalsBadge() async {
+        guard currentUser?.isParent == true else { return }
+        if let queue = try? await client.approvalsQueue() {
+            setApprovalsWaiting(from: queue)
+        }
+    }
+
+    public func setApprovalsWaiting(from queue: ApprovalsQueue) {
+        approvalsWaiting = queue.pendingApprovals.count + queue.helpRequests.count
+    }
+
     /// The household's children — the single source of truth for single-child mode.
     /// Fetched for parents on sign-in/foreground. When there is exactly one child the
     /// whole app presents in the SINGULAR, by name: no child pickers, filters, switchers,

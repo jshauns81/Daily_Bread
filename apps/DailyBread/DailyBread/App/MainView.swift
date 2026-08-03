@@ -47,14 +47,13 @@ struct MainView: View {
     }
 
     @State private var selection: Section?
-    @State private var waitingCount = 0
 
     var body: some View {
         #if os(macOS)
         NavigationSplitView {
             List(sections, selection: $selection) { section in
                 Label(section.label, systemImage: section.icon)
-                    .badge(section == .approvals ? waitingCount : 0)
+                    .badge(section == .approvals ? session.approvalsWaiting : 0)
                     .tag(section)
             }
             .navigationTitle("Daily Bread")
@@ -75,7 +74,7 @@ struct MainView: View {
                 .tabItem {
                     Label(section.label, systemImage: section.icon)
                 }
-                .badge(section == .approvals ? waitingCount : 0)
+                .badge(section == .approvals ? session.approvalsWaiting : 0)
             }
         }
         .task { await refreshBadge() }
@@ -83,11 +82,10 @@ struct MainView: View {
         #endif
     }
 
+    /// Covers the parent who never opens Approvals; in-app changes update the
+    /// badge through SessionStore the moment the queue reloads.
     private func refreshBadge() async {
-        guard user.isParent else { return }
-        if let queue = try? await session.client.approvalsQueue() {
-            waitingCount = queue.pendingApprovals.count + queue.helpRequests.count
-        }
+        await session.refreshApprovalsBadge()
     }
 
     @ViewBuilder
