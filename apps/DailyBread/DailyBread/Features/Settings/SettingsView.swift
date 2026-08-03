@@ -78,6 +78,7 @@ struct SettingsView: View {
                         } label: {
                             themeRow(.builtin(theme), selected: customRaw.isEmpty && themeRaw == theme.rawValue)
                         }
+                        .contentShape(Rectangle())
                         .buttonStyle(.plain)
                     }
 
@@ -88,6 +89,7 @@ struct SettingsView: View {
                             } label: {
                                 themeRow(.custom(palette), selected: customRaw == palette.id)
                             }
+                            .contentShape(Rectangle())
                             .buttonStyle(.plain)
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", role: .destructive) {

@@ -162,6 +162,7 @@ private struct EmojiPickerSheet: View {
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor : Color.clear, lineWidth: 1.5))
         }
+        .contentShape(Rectangle())
         .buttonStyle(.plain)
         .accessibilityLabel(glyph)
     }

@@ -148,6 +148,7 @@ struct RewardClaimsView: View {
                             .font(.subheadline.weight(.medium))
                             .frame(maxWidth: .infinity, minHeight: 38)
                     }
+                    .contentShape(Rectangle())
                     .buttonStyle(.plain)
                     .background(.quaternary.opacity(0.5),
                                 in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -161,6 +162,7 @@ struct RewardClaimsView: View {
                             .frame(maxWidth: .infinity, minHeight: 38)
                             .foregroundStyle(.white)
                     }
+                    .contentShape(Rectangle())
                     .buttonStyle(.plain)
                     .background(Color.accentColor,
                                 in: RoundedRectangle(cornerRadius: 10, style: .continuous))

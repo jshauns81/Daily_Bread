@@ -90,6 +90,7 @@ struct CalendarView: View {
                     .font(.body.weight(.semibold))
                     .foregroundStyle(canGoForward ? Color.accentColor : DB.fillStrong(scheme))
             }
+            .contentShape(Rectangle())
             .buttonStyle(.plain)
             .disabled(!canGoForward)
         }

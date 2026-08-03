@@ -257,6 +257,7 @@ struct ActivityView: View {
                                 .font(.caption2.weight(.semibold))
                                 .foregroundStyle(Color.accentColor)
                         }
+                        .contentShape(Rectangle())
                         .buttonStyle(.plain)
                     }
                 }
@@ -268,6 +269,7 @@ struct ActivityView: View {
                     Image(systemName: "chevron.right")
                         .font(.body.weight(.semibold))
                 }
+                .contentShape(Rectangle())
                 .buttonStyle(.plain)
             }
             .glassCard(padding: 14)

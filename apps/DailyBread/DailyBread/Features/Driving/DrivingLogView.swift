@@ -167,6 +167,7 @@ struct DrivingLogView: View {
                         Text("Decline").font(.subheadline.weight(.medium))
                             .frame(maxWidth: .infinity, minHeight: 38)
                     }
+                    .contentShape(Rectangle())
                     .buttonStyle(.plain)
                     .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .disabled(store.busy)
@@ -175,6 +176,7 @@ struct DrivingLogView: View {
                         Text("Approve").font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity, minHeight: 38).foregroundStyle(.white)
                     }
+                    .contentShape(Rectangle())
                     .buttonStyle(.plain)
                     .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .disabled(store.busy)
@@ -504,6 +506,7 @@ struct DriveEditorSheet: View {
                     .strokeBorder(on ? Color.accentColor : Color.clear, lineWidth: 1.5))
                 .foregroundStyle(on ? Color.accentColor : Color.secondary)
         }
+        .contentShape(Rectangle())
         .buttonStyle(.plain)
         .accessibilityLabel(kind.label)
         .accessibilityAddTraits(on ? .isSelected : [])
@@ -639,6 +642,7 @@ private struct DrivenDatePickSheet: View {
             Button { anchor = MonthMath.addingMonths(anchor, -1) } label: {
                 Image(systemName: "chevron.left").font(.body.weight(.semibold))
             }
+            .contentShape(Rectangle())
             .buttonStyle(.plain)
 
             Spacer()
@@ -649,6 +653,7 @@ private struct DrivenDatePickSheet: View {
                 Image(systemName: "chevron.right").font(.body.weight(.semibold))
                     .foregroundStyle(canGoForward ? Color.accentColor : DB.fillStrong(scheme))
             }
+            .contentShape(Rectangle())
             .buttonStyle(.plain)
             .disabled(!canGoForward)
         }
@@ -681,6 +686,7 @@ private struct DrivenDatePickSheet: View {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .strokeBorder(isToday ? Color.accentColor : Color.clear, lineWidth: 1.5))
         }
+        .contentShape(Rectangle())
         .buttonStyle(.plain)
         .disabled(isFuture)
     }

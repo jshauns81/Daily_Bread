@@ -513,6 +513,7 @@ struct KidHomeView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 11)
                         }
+                        .contentShape(Rectangle())
                         .buttonStyle(.plain)
                         .background(DB.help(scheme).opacity(0.16), in: Capsule())
                         .foregroundStyle(DB.help(scheme))
@@ -524,6 +525,7 @@ struct KidHomeView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 11)
                         }
+                        .contentShape(Rectangle())
                         .buttonStyle(.plain)
                         .background(Color.accentColor, in: Capsule())
                         .foregroundStyle(.white)

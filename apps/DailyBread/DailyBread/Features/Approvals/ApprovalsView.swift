@@ -300,6 +300,10 @@ struct ApprovalsView: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+            // The Spacer is most of this row. Without a hit shape only the
+            // text and the chevron respond and the gap between them is dead —
+            // the exact thing Shaun hit on a Help line.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

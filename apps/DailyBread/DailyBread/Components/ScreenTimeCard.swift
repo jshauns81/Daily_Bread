@@ -47,6 +47,7 @@ struct ScreenTimeCard: View {
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Color.accentColor)
                         }
+                        .contentShape(Rectangle())
                         .buttonStyle(.plain)
                     }
                     if session.currentUser?.isParent == true, userId != nil {
@@ -58,6 +59,7 @@ struct ScreenTimeCard: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(Color.accentColor)
                         }
+                        .contentShape(Rectangle())
                         .buttonStyle(.plain)
                         .accessibilityLabel("Adjust screen time settings")
                     }
