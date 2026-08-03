@@ -9,6 +9,26 @@
 > that says "web remains the admin surface" is obsolete — admin/planner/management all
 > go native.
 
+> **DRIVING DIRECTION (2026-08-02, Shaun's calls):**
+> Driving is a first-class surface, not a Settings sub-page. His son is working
+> toward a licence and it was three taps deep.
+>
+> 1. **Driving log stays SEPARATE from chores.** "Two different things." An earlier
+>    proposal to merge drives into Activity's day timeline is **rejected** — drives
+>    do not become rows in a chore list.
+> 2. **`Settings > Driving approvals` goes away.** Parent driving lives on the
+>    **home screen**, not in Settings.
+> 3. **Settings keeps one driving control: an on/off toggle** for the whole feature,
+>    so it can be switched off in ~a year when the licence is earned. A family
+>    feature flag alongside goals/confetti/streaks.
+> 4. **Parents need CSV export of the driving log** — still outstanding. This is the
+>    artefact a DMV/insurer asks for, so it wants real dates, durations, night hours,
+>    and supervising adult per row.
+>
+> Shipped so far: the kid's Home driving card (hours vs goal, night hours, one-tap
+> "Log a drive") and a `car.fill` shortcut beside the calendar in the Home header,
+> both gated on the child actually driving. Items 2, 3 and 4 remain.
+
 > **BRANCH DEPRECATED (2026-08-02, Shaun's call):** `redesign/ultraviolet` — the
 > 12-commit Blazor redesign (Ultraviolet themes, Instrument Sans, Lucide icon sprite,
 > new shell, redesigned planner/dashboard/kid screens, loaf-mark PWA icons, and an
