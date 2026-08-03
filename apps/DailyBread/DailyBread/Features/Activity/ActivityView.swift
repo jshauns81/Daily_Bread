@@ -343,7 +343,7 @@ struct ActivityView: View {
     private func normalRow(_ item: ChoreItem) -> some View {
         let isGlowing = store.justApprovedId == item.id
         return HStack(spacing: 12) {
-            Text(item.icon ?? "•")
+            Text((item.icon ?? "•").firstGlyph)
                 .font(.title3)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)

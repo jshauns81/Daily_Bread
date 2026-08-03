@@ -117,7 +117,7 @@ struct AchievementsView: View {
 
     private func card(_ achievement: Achievement) -> some View {
         VStack(spacing: 6) {
-            Text(achievement.icon)
+            Text(achievement.icon.firstGlyph)
                 .font(.system(size: 34))
                 .grayscale(achievement.isEarned ? 0 : 1)
                 .opacity(achievement.isEarned ? 1 : 0.55)

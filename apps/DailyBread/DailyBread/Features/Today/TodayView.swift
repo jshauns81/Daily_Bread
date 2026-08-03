@@ -377,7 +377,7 @@ struct ChoreRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(item.icon ?? "🧺")
+            Text((item.icon ?? "🧺").firstGlyph)
                 .font(.title3)
                 .frame(width: 40, height: 40)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))

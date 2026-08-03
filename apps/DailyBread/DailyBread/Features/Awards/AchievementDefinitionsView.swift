@@ -88,7 +88,7 @@ struct AchievementDefinitionsView: View {
 
     private func row(_ def: AchievementDefinition) -> some View {
         HStack(spacing: 12) {
-            Text(def.icon.isEmpty ? "🏆" : def.icon)
+            Text(def.icon.isEmpty ? "🏆" : def.icon.firstGlyph)
                 .font(.title2)
                 .opacity(def.isActive ? 1 : 0.4)
 

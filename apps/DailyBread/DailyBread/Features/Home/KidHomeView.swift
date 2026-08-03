@@ -444,7 +444,7 @@ struct KidHomeView: View {
                     .kerning(1)
 
                 HStack(spacing: 12) {
-                    Text(item.icon ?? "🧺")
+                    Text((item.icon ?? "🧺").firstGlyph)
                         .font(.title2)
                         .frame(width: 46, height: 46)
                         .background(.quaternary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))

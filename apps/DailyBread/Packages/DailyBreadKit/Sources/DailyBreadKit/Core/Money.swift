@@ -66,3 +66,20 @@ public extension Money {
         isNegative ? "−\(Money(-amount).display)" : "+\(display)"
     }
 }
+
+// MARK: - Icon display
+
+public extension String {
+    /// One grapheme cluster, for rendering a server-provided icon.
+    ///
+    /// The seeded achievements carry deliberately multi-emoji icons (🔥🔥🔥
+    /// FireTriple, 💰💰 MoneyBagDouble) and chores saved before the Phase 2.5
+    /// picker could hold two. Rendered raw at 34pt they cram into one medal and
+    /// read as a glitch — Shaun caught this on the web surface in a smoke test.
+    /// The rule shipped with the emoji picker is the rule everywhere a stored
+    /// icon is DISPLAYED: exactly one glyph. Storage is left alone.
+    var firstGlyph: String {
+        guard let first = first else { return "" }
+        return String(first)
+    }
+}
