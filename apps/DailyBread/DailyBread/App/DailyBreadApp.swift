@@ -24,6 +24,8 @@ struct DailyBreadApp: App {
                     // example.yaml + builtin references — the breadcrumb (§3.6).
                     ThemeLoader.exportReferenceThemesIfNeeded()
                     await session.bootstrap()
+                    // §3.1 — pull the family's themes, push local authoring.
+                    await ThemeSync.sync(session.client)
                 }
         }
         #if os(macOS)

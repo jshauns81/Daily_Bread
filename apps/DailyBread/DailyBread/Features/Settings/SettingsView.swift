@@ -187,9 +187,12 @@ struct SettingsView: View {
             ThemeLoader.invalidate()
             userThemes = ThemeLoader.available()
             await session.refreshFeatures()
+            // §3.1 — server themes appear here; local edits go up.
+            await ThemeSync.sync(session.client)
+            userThemes = ThemeLoader.available()
         }
         .refreshable {
-            ThemeLoader.invalidate()
+            await ThemeSync.sync(session.client)
             userThemes = ThemeLoader.available()
         }
     }

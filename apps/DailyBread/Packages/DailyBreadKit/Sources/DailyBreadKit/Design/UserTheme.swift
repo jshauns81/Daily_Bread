@@ -241,6 +241,7 @@ public struct ThemeParseError: Error, Hashable, Sendable, CustomStringConvertibl
 /// invalid with the error — never hidden, never selectable, never a crash.
 public struct LoadedUserTheme: Identifiable, Sendable {
     public var fileName: String
+    public var fileURL: URL?
     public var palette: CustomPalette?
     public var error: String?
 
@@ -312,9 +313,9 @@ public enum ThemeLoader {
     private static func loadFile(_ url: URL) -> LoadedUserTheme {
         let name = url.lastPathComponent
         guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-            return LoadedUserTheme(fileName: name, palette: nil, error: "Couldn't read the file.")
+            return LoadedUserTheme(fileName: name, fileURL: url, palette: nil, error: "Couldn't read the file.")
         }
-        return LoadedUserTheme(fileName: name, palette: nil, error: nil)
+        return LoadedUserTheme(fileName: name, fileURL: url, palette: nil, error: nil)
             .parsed(from: text)
     }
 

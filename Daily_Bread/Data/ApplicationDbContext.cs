@@ -37,6 +37,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ChildWeeklyScreenTimeBudget> ChildWeeklyScreenTimeBudgets => Set<ChildWeeklyScreenTimeBudget>();
     public DbSet<ScreenTimeEntry> ScreenTimeEntries => Set<ScreenTimeEntry>();
     public DbSet<QolShare> QolShares => Set<QolShare>();
+    public DbSet<ThemeFile> ThemeFiles => Set<ThemeFile>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -563,6 +564,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany(c => c.QolShares)
                 .HasForeignKey(e => e.ChildProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ThemeFile configuration (§3.1 — user-authored YAML themes, per household)
+        builder.Entity<ThemeFile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // meta.id is the identity within a family.
+            entity.HasIndex(e => new { e.HouseholdId, e.Slug }).IsUnique();
         });
     }
 }

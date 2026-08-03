@@ -361,6 +361,7 @@ builder.Services.AddScoped<IAchievementRewardClaimService, AchievementRewardClai
 builder.Services.AddScoped<IAchievementBonusService, AchievementBonusService>();
 
 builder.Services.AddScoped<IDrivingLogService, DrivingLogService>();
+builder.Services.AddScoped<IThemeFileService, ThemeFileService>();
 
 builder.Services.AddScoped<IQolShareService, QolShareService>();
 

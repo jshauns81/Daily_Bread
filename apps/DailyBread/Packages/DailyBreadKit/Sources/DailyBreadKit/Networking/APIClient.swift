@@ -447,6 +447,23 @@ public actor APIClient {
         try await sendVoid(path: "api/v1/driving/\(id)/reject", method: "POST", body: body)
     }
 
+    // MARK: - Themes (§3.1 — user themes live on the family's server)
+
+    public func themes() async throws -> [ThemeFileDto] {
+        try await send([ThemeFileDto].self, path: "api/v1/themes")
+    }
+
+    @discardableResult
+    public func putTheme(id: String, yaml: String) async throws -> ThemeFileDto {
+        struct PutBody: Codable { let yaml: String }
+        let body = try encodeBody(PutBody(yaml: yaml))
+        return try await send(ThemeFileDto.self, path: "api/v1/themes/\(id)", method: "PUT", body: body)
+    }
+
+    public func deleteTheme(id: String) async throws {
+        try await sendVoid(path: "api/v1/themes/\(id)", method: "DELETE")
+    }
+
     // MARK: - Screen time
 
     public func screenTime(userId: String? = nil) async throws -> ScreenTimeSummary {
