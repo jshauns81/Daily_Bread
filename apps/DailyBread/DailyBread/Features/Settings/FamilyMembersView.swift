@@ -80,7 +80,7 @@ struct FamilyMembersView: View {
         let isSelf = member.id == session.currentUser?.userId
         return HStack(spacing: 12) {
             Circle()
-                .fill(member.isParent ? Color.accentColor.gradient : DB.gold(scheme).gradient)
+                .fill(member.isParent ? Color.dbAccent.gradient : DB.gold(scheme).gradient)
                 .frame(width: 38, height: 38)
                 .overlay {
                     Text(String(member.userName.prefix(1)).uppercased())

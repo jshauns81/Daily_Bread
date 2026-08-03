@@ -118,7 +118,7 @@ struct SheetActionBar: View {
                 .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
-            .background(canSave ? Color.accentColor : DB.fillStrong(scheme),
+            .background(canSave ? Color.dbAccent : DB.fillStrong(scheme),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .disabled(saving || !canSave)
         }
@@ -163,7 +163,7 @@ struct DayPicker: View {
                     Text(day.letter)
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 36, height: 36)
-                        .background(on ? Color.accentColor : DB.fillOff(scheme),
+                        .background(on ? Color.dbAccent : DB.fillOff(scheme),
                                     in: Circle())
                         .foregroundStyle(on ? Color.white : Color.primary)
                 }
@@ -210,7 +210,7 @@ struct SheetChip: View {
     }
 
     var body: some View {
-        let color = tint ?? Color.accentColor
+        let color = tint ?? Color.dbAccent
         Button(action: action) {
             Text(label)
                 .font(.subheadline.weight(selected ? .semibold : .regular))

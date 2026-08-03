@@ -22,7 +22,7 @@ struct SettingsView: View {
                 Section {
                     HStack(spacing: 12) {
                         Circle()
-                            .fill(Color.accentColor.gradient)
+                            .fill(Color.dbAccent.gradient)
                             .frame(width: 44, height: 44)
                             .overlay {
                                 Text(String(user.userName.prefix(1)).uppercased())
@@ -98,7 +98,7 @@ struct SettingsView: View {
                                 Button("Edit") {
                                     editorTarget = ThemeEditorTarget(palette: palette)
                                 }
-                                .tint(Color.accentColor)
+                                .tint(Color.dbAccent)
                             }
                         } else {
                             // Listed, explained, not selectable (§3.3 rule 3).
@@ -127,7 +127,7 @@ struct SettingsView: View {
                             .padding(.vertical, 4)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.dbAccent)
 
                     if customRaw.isEmpty == false || themeRaw != DBTheme.sunroom.rawValue {
                         // §3.3 rule 6 — the escape hatch is ALWAYS drawn in
@@ -167,6 +167,15 @@ struct SettingsView: View {
                             Text(resolvedTheme.displayName)
                                 .font(.body.weight(.semibold))
                         }
+                        Spacer(minLength: 0)
+                    }
+                    // macOS only toggles a DisclosureGroup from its chevron, so
+                    // the label — swatch, "Theme", the name — was dead. Same
+                    // complaint as the dead row gaps: if it looks like the
+                    // control, it should be the control.
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.2)) { themeExpanded.toggle() }
                     }
                 }
                 .tint(.primary)
@@ -330,15 +339,20 @@ struct SettingsView: View {
 
             Spacer()
 
+            // Selected reads as one filled mark, not a fat donut with a
+            // checkmark crammed inside it.
             ZStack {
-                Circle()
-                    .strokeBorder(selected ? theme.accent(scheme) : DB.fillStrong(scheme),
-                                  lineWidth: selected ? 6 : 1.5)
-                    .frame(width: 22, height: 22)
                 if selected {
+                    Circle()
+                        .fill(theme.accent(scheme))
+                        .frame(width: 22, height: 22)
                     Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .black))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(.white)
+                } else {
+                    Circle()
+                        .strokeBorder(DB.fillStrong(scheme), lineWidth: 1.5)
+                        .frame(width: 22, height: 22)
                 }
             }
         }

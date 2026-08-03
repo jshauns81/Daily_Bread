@@ -45,7 +45,7 @@ struct ScreenTimeCard: View {
                                 Image(systemName: "chevron.right")
                             }
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.dbAccent)
                         }
                         .contentShape(Rectangle())
                         .buttonStyle(.plain)
@@ -57,7 +57,7 @@ struct ScreenTimeCard: View {
                         } label: {
                             Image(systemName: "slider.horizontal.3")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(Color.dbAccent)
                         }
                         .contentShape(Rectangle())
                         .buttonStyle(.plain)
@@ -130,7 +130,7 @@ struct ScreenTimeCard: View {
 
             Text(ScreenTimeFormat.minutes(p.effectiveMinutes))
                 .font(.title3.weight(.bold))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.dbAccent)
             Text("in your pool")
                 .font(.caption2)
                 .foregroundStyle(.secondary)

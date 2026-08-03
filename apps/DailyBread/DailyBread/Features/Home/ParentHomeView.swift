@@ -182,7 +182,7 @@ struct ParentHomeView: View {
             HStack(alignment: .firstTextBaseline) {
                 (Text("\(Greeting.current), ")
                     + Text(session.currentUser?.userName.capitalized ?? "")
-                        .foregroundStyle(Color.accentColor))
+                        .foregroundStyle(Color.dbAccent))
                     .font(.title2.weight(.bold))
                 Spacer()
                 Text(DayDate.todayLocal().longDisplay)

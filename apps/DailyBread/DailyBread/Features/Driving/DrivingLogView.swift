@@ -126,11 +126,11 @@ struct DrivingLogView: View {
                 Spacer()
                 Text(goal != nil ? "\(hours(value)) / \(hours(goal!)) h" : "\(hours(value)) h")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.dbAccent)
             }
             if let goal, goal > 0 {
                 ProgressView(value: min(value, goal), total: goal)
-                    .tint(Color.accentColor)
+                    .tint(Color.dbAccent)
             }
         }
     }
@@ -143,7 +143,7 @@ struct DrivingLogView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: entry.isNightDriving ? "moon.stars.fill" : "car.fill")
-                    .foregroundStyle(entry.isNightDriving ? DB.night(scheme) : Color.accentColor)
+                    .foregroundStyle(entry.isNightDriving ? DB.night(scheme) : Color.dbAccent)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(entry.date.shortDisplay) · \(entry.durationLabel)")
                         .font(.body.weight(.semibold))
@@ -178,7 +178,7 @@ struct DrivingLogView: View {
                     }
                     .contentShape(Rectangle())
                     .buttonStyle(.plain)
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Color.dbAccent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .disabled(store.busy)
                 }
             }
@@ -397,7 +397,7 @@ struct DriveEditorSheet: View {
         VStack(spacing: 12) {
             Text(durationLabel(effectiveMinutes))
                 .font(.system(size: 44, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.dbAccent)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: effectiveMinutes)
                 .frame(maxWidth: .infinity)
@@ -438,7 +438,7 @@ struct DriveEditorSheet: View {
             } label: {
                 Text("Set exact times")
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.dbAccent)
             }
         }
     }
@@ -499,12 +499,12 @@ struct DriveEditorSheet: View {
             Image(systemName: symbol)
                 .font(.body.weight(.medium))
                 .frame(width: 44, height: 36)
-                .background(on ? AnyShapeStyle(Color.accentColor.opacity(0.18))
+                .background(on ? AnyShapeStyle(Color.dbAccent.opacity(0.18))
                                : AnyShapeStyle(DB.fillOff(scheme)),
                             in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(on ? Color.accentColor : Color.clear, lineWidth: 1.5))
-                .foregroundStyle(on ? Color.accentColor : Color.secondary)
+                    .strokeBorder(on ? Color.dbAccent : Color.clear, lineWidth: 1.5))
+                .foregroundStyle(on ? Color.dbAccent : Color.secondary)
         }
         .contentShape(Rectangle())
         .buttonStyle(.plain)
@@ -651,7 +651,7 @@ private struct DrivenDatePickSheet: View {
 
             Button { anchor = MonthMath.addingMonths(anchor, 1) } label: {
                 Image(systemName: "chevron.right").font(.body.weight(.semibold))
-                    .foregroundStyle(canGoForward ? Color.accentColor : DB.fillStrong(scheme))
+                    .foregroundStyle(canGoForward ? Color.dbAccent : DB.fillStrong(scheme))
             }
             .contentShape(Rectangle())
             .buttonStyle(.plain)
@@ -681,10 +681,10 @@ private struct DrivenDatePickSheet: View {
                 .frame(height: 40)
                 .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(isSelected ? Color.accentColor.opacity(0.16) : DB.fillSubtle(scheme)))
+                        .fill(isSelected ? Color.dbAccent.opacity(0.16) : DB.fillSubtle(scheme)))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(isToday ? Color.accentColor : Color.clear, lineWidth: 1.5))
+                        .strokeBorder(isToday ? Color.dbAccent : Color.clear, lineWidth: 1.5))
         }
         .contentShape(Rectangle())
         .buttonStyle(.plain)

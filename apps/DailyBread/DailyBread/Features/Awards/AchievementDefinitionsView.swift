@@ -355,7 +355,7 @@ struct AchievementEditorSheet: View {
             } label: {
                 Text("More options").font(.subheadline.weight(.medium))
             }
-            .tint(Color.accentColor)
+            .tint(Color.dbAccent)
         }
     }
 

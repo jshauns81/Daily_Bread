@@ -86,7 +86,7 @@ struct EarningsView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.dbAccent)
                     }
                     .glassCard()
                 }
@@ -194,7 +194,7 @@ struct EarningsView: View {
                     .foregroundStyle(.secondary)
             }
             ProgressView(value: Double(goal.progressPercent), total: 100)
-                .tint(Color.accentColor)
+                .tint(Color.dbAccent)
             Text("\(goal.progressPercent)% there")
                 .font(.caption)
                 .foregroundStyle(.secondary)

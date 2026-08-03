@@ -156,11 +156,11 @@ private struct EmojiPickerSheet: View {
             Text(glyph)
                 .font(.title2)
                 .frame(width: 44, height: 44)
-                .background(selected ? AnyShapeStyle(Color.accentColor.opacity(0.18))
+                .background(selected ? AnyShapeStyle(Color.dbAccent.opacity(0.18))
                                      : AnyShapeStyle(DB.fillSubtle(scheme)),
                             in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(selected ? Color.accentColor : Color.clear, lineWidth: 1.5))
+                    .strokeBorder(selected ? Color.dbAccent : Color.clear, lineWidth: 1.5))
         }
         .contentShape(Rectangle())
         .buttonStyle(.plain)

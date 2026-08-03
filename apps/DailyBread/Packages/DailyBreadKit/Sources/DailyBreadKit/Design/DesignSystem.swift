@@ -363,3 +363,22 @@ public extension View {
         modifier(Poll(interval: interval, isPaused: isPaused, action: action))
     }
 }
+
+public extension Color {
+    /// The ACTIVE THEME's accent. Use this — never `Color.accentColor`.
+    ///
+    /// On macOS `Color.accentColor` resolves to `NSColor.controlAccentColor`,
+    /// i.e. whatever the user picked in System Settings, and it ignores the
+    /// `.tint()` applied at the app root. iOS honours the tint, so this went
+    /// unnoticed: the Mac app rendered a blue avatar, blue sidebar and blue
+    /// buttons inside a Mulberry theme, while the handful of places that asked
+    /// the theme directly stayed correctly pink.
+    ///
+    /// Cache-first, so this is cheap enough to read during layout: a custom
+    /// theme resolves from ThemeLoader's in-memory palette cache, which the app
+    /// warms at bootstrap.
+    static var dbAccent: Color { ThemeStore.resolvedCurrent.accent() }
+
+    /// The theme's secondary — same reasoning as `dbAccent`.
+    static var dbSecondary: Color { ThemeStore.resolvedCurrent.secondary() }
+}

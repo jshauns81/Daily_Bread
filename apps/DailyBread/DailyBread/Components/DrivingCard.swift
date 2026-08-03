@@ -46,7 +46,7 @@ struct DrivingCard: View {
                     header
                     if progress.totalGoalHours != nil {
                         ProgressView(value: ratio)
-                            .tint(Color.accentColor)
+                            .tint(Color.dbAccent)
                         subtitle
                     }
                     nightLine
@@ -73,9 +73,9 @@ struct DrivingCard: View {
             // The prominent mark: driving gets a real icon, not a list glyph.
             Image(systemName: "car.fill")
                 .font(.title2.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.dbAccent)
                 .frame(width: 44, height: 44)
-                .background(Color.accentColor.opacity(0.14),
+                .background(Color.dbAccent.opacity(0.14),
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
@@ -86,7 +86,7 @@ struct DrivingCard: View {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(hours(progress.totalHours))
                         .font(.system(size: 28, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.dbAccent)
                         .contentTransition(.numericText())
                     if let goal = progress.totalGoalHours {
                         Text("of \(hours(goal)) hours")
@@ -146,7 +146,7 @@ struct DrivingCard: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, minHeight: 40)
-                .background(Color.accentColor,
+                .background(Color.dbAccent,
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)

@@ -112,7 +112,7 @@ struct ScreenTimeSettingsSheet: View {
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity, minHeight: 38)
                             .foregroundStyle(on ? Color.white : Color.secondary)
-                            .background(on ? Color.accentColor : DB.fillOff(scheme),
+                            .background(on ? Color.dbAccent : DB.fillOff(scheme),
                                         in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -133,7 +133,7 @@ struct ScreenTimeSettingsSheet: View {
             SheetField(
                 label: "Each day",
                 value: hoursPerDayLabel,
-                valueColor: Color.accentColor) {
+                valueColor: Color.dbAccent) {
                 Slider(value: dailyBinding, in: 2...12, step: 0.5)
             }
             Toggle(isOn: weekendBonusBinding) {
@@ -153,7 +153,7 @@ struct ScreenTimeSettingsSheet: View {
             SheetField(
                 label: "How firm",
                 value: SmartTuning.word(forConsequence: consequenceBinding.wrappedValue),
-                valueColor: Color.accentColor) {
+                valueColor: Color.dbAccent) {
                 Slider(value: consequenceBinding, in: 0...1)
                 HStack {
                     Text("Gentle").font(.caption2).foregroundStyle(.tertiary)
@@ -235,11 +235,11 @@ struct ScreenTimeSettingsSheet: View {
             DisclosureGroup(isExpanded: $expertOpen) {
                 VStack(spacing: 14) {
                     SheetField(label: "Weekday pool",
-                               value: hoursLabel(weekdayHours), valueColor: Color.accentColor) {
+                               value: hoursLabel(weekdayHours), valueColor: Color.dbAccent) {
                         Slider(value: $weekdayHours, in: 0...60, step: 0.5)
                     }
                     SheetField(label: "Weekend pool",
-                               value: hoursLabel(weekendHours), valueColor: Color.accentColor) {
+                               value: hoursLabel(weekendHours), valueColor: Color.dbAccent) {
                         Slider(value: $weekendHours, in: 0...40, step: 0.5)
                     }
                     SheetField(label: "Weekday — up to \(Int(weekdayPercent))% can be lost") {
@@ -249,7 +249,7 @@ struct ScreenTimeSettingsSheet: View {
                         Slider(value: $weekendPercent, in: 0...100, step: 5)
                     }
                     SheetField(label: "Minutes per importance point",
-                               value: "\(Int(minutesPerPoint)) min", valueColor: Color.accentColor) {
+                               value: "\(Int(minutesPerPoint)) min", valueColor: Color.dbAccent) {
                         Slider(value: $minutesPerPoint, in: 1...30, step: 1)
                     }
                     Text("These are the exact numbers the dials above are set to. Change them here any time — the dials will simply read \"Custom.\"")
@@ -263,7 +263,7 @@ struct ScreenTimeSettingsSheet: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.primary)
             }
-            .tint(Color.accentColor)
+            .tint(Color.dbAccent)
         }
     }
 

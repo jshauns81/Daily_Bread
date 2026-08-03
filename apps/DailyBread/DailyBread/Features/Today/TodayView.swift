@@ -330,7 +330,7 @@ struct TodayView: View {
                 if isSelf {
                     (Text("\(Greeting.current), ")
                         + Text((today.userName ?? "there").capitalized)
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.dbAccent)
                         + Text("."))
                         .font(.headline)
                 }
@@ -448,7 +448,7 @@ struct ChoreRow: View {
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if !item.isHelp {
                 Button(item.isDone ? "Undo" : "Done") { onToggle() }
-                    .tint(item.isDone ? Color.secondary : Color.accentColor)
+                    .tint(item.isDone ? Color.secondary : Color.dbAccent)
             }
         }
         .swipeActions(edge: .trailing) {
@@ -515,7 +515,7 @@ struct ProgressRing: View {
                 .stroke(.quaternary, lineWidth: 7)
             Circle()
                 .trim(from: 0, to: min(1, progress))
-                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                .stroke(Color.dbAccent, style: StrokeStyle(lineWidth: 7, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.snappy, value: progress)
             Text(label)

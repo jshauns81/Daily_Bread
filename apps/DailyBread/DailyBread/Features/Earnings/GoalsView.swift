@@ -133,7 +133,7 @@ struct GoalsView: View {
                     }
                 }
                 ProgressView(value: Double(min(100, max(0, goal.progressPercent))), total: 100)
-                    .tint(goal.isCompleted ? DB.success(scheme) : Color.accentColor)
+                    .tint(goal.isCompleted ? DB.success(scheme) : Color.dbAccent)
                 HStack {
                     Text("\(goal.currentBalance.display) of \(goal.targetAmount.display)")
                         .font(.caption)

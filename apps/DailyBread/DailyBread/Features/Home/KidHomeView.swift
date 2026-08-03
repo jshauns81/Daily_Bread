@@ -243,7 +243,7 @@ struct KidHomeView: View {
         HStack {
             (Text("\(Greeting.current), ")
                 + Text((session.currentUser?.userName ?? "there").capitalized)
-                    .foregroundColor(Color.accentColor))
+                    .foregroundColor(Color.dbAccent))
                 .font(.title2.weight(.bold))
             Spacer()
         }
@@ -314,7 +314,7 @@ struct KidHomeView: View {
                 Spacer()
                 Text("\(store.doneCount) / \(store.totalCount) XP")
                     .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.dbAccent)
                     .monospacedDigit()
             }
 
@@ -323,7 +323,7 @@ struct KidHomeView: View {
                     Capsule().fill(Color.primary.opacity(0.10))
                     Capsule()
                         .fill(LinearGradient(
-                            colors: [Color.accentColor, tier.color],
+                            colors: [Color.dbAccent, tier.color],
                             startPoint: .leading, endPoint: .trailing))
                         .frame(width: max(12, geo.size.width * CGFloat(store.progressPercent) / 100))
                         .animation(.spring(duration: 0.5), value: store.progressPercent)
@@ -405,7 +405,7 @@ struct KidHomeView: View {
                         .foregroundStyle(.secondary)
                     Text(goal.name).font(.subheadline.weight(.semibold))
                     ProgressView(value: min(1, Double(goal.progressPercent) / 100))
-                        .tint(Color.accentColor)
+                        .tint(Color.dbAccent)
                     Text("\(goal.currentBalance.display) of \(goal.targetAmount.display)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -420,7 +420,7 @@ struct KidHomeView: View {
                     Text("Set a savings goal!").font(.subheadline.weight(.semibold))
                     Text("Something to work toward →")
                         .font(.caption)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.dbAccent)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .glassCard()
@@ -459,7 +459,7 @@ struct KidHomeView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text("\(store.achievements?.earnedCount ?? 0)")
                         .font(.title.weight(.heavy))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.dbAccent)
                     Text("/ \(store.achievements?.totalCount ?? 0)")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -482,7 +482,7 @@ struct KidHomeView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("NEXT UP")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.dbAccent)
                     .kerning(1)
 
                 HStack(spacing: 12) {
@@ -532,7 +532,7 @@ struct KidHomeView: View {
                         }
                         .contentShape(Rectangle())
                         .buttonStyle(.plain)
-                        .background(Color.accentColor, in: Capsule())
+                        .background(Color.dbAccent, in: Capsule())
                         .foregroundStyle(.white)
                     }
                     .font(.subheadline.weight(.semibold))

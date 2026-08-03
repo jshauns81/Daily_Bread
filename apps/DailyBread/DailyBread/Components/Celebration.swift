@@ -182,7 +182,7 @@ struct PerfectDayCelebration: View {
     /// Money-gold always participates, whatever the theme.
     private var palette: [Color] {
         [DB.gold(scheme), Color(hex: 0xC98A1E), Color(hex: 0xF0C868),
-         Color.accentColor, DB.success(scheme), DBRarity.epic.color(scheme)]
+         Color.dbAccent, DB.success(scheme), DBRarity.epic.color(scheme)]
     }
 
     // Depth bands: far [0, 0.34), mid [0.34, 0.68), near [0.68, 1]. Blur is

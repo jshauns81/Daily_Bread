@@ -164,7 +164,7 @@ struct RewardClaimsView: View {
                     }
                     .contentShape(Rectangle())
                     .buttonStyle(.plain)
-                    .background(Color.accentColor,
+                    .background(Color.dbAccent,
                                 in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .disabled(store.busy)
                 }

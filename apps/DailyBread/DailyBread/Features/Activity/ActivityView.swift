@@ -252,14 +252,14 @@ struct ActivityView: View {
                     if isToday {
                         Text("Today")
                             .font(.caption2.weight(.bold))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.dbAccent)
                     } else {
                         Button {
                             store.goToToday()
                         } label: {
                             Text("Back to today")
                                 .font(.caption2.weight(.semibold))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(Color.dbAccent)
                         }
                         .contentShape(Rectangle())
                         .buttonStyle(.plain)
@@ -295,7 +295,7 @@ struct ActivityView: View {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption2.weight(.bold))
             }
-            .foregroundStyle(Color.accentColor)
+            .foregroundStyle(Color.dbAccent)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -463,7 +463,7 @@ struct ActivityView: View {
             .buttonStyle(.borderedProminent)
             .font(.caption.weight(.bold))
         }
-        .listRowBackground(Color.accentColor.opacity(0.08))
+        .listRowBackground(Color.dbAccent.opacity(0.08))
     }
 
     private func rejectConfirmRow(_ item: ChoreItem) -> some View {

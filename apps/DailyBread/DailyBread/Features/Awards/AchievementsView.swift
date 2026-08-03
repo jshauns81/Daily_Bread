@@ -148,7 +148,7 @@ struct AchievementsView: View {
                 VStack(spacing: 3) {
                     ProgressView(value: Double(achievement.currentProgress),
                                  total: Double(achievement.targetProgress))
-                        .tint(Color.accentColor)
+                        .tint(Color.dbAccent)
                     Text("\(achievement.currentProgress)/\(achievement.targetProgress)")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)

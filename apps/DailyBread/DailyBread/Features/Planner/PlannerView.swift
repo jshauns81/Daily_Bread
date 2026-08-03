@@ -477,7 +477,7 @@ struct PlannerView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
-                    selected ? Color.accentColor : DB.fillOff(scheme),
+                    selected ? Color.dbAccent : DB.fillOff(scheme),
                     in: Capsule())
                 .foregroundStyle(selected ? Color.white : Color.primary)
         }
@@ -500,7 +500,7 @@ struct PlannerView: View {
                     .font(.body.weight(.semibold))
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color.accentColor)
+            .tint(Color.dbAccent)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 24)

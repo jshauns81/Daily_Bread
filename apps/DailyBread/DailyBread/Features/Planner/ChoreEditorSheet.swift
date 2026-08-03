@@ -413,7 +413,7 @@ struct FrequencyPips: View {
                     Text("\(n)")
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 36, height: 36)
-                        .background(on ? Color.accentColor : DB.fillOff(scheme),
+                        .background(on ? Color.dbAccent : DB.fillOff(scheme),
                                     in: Circle())
                         .foregroundStyle(on ? Color.white : Color.primary)
                 }

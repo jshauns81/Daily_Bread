@@ -55,7 +55,7 @@ struct ChoreCheck: View {
         Button(action: tapped) {
             ZStack {
                 Circle()
-                    .fill(Color.accentColor)
+                    .fill(Color.dbAccent)
                     .frame(width: visual, height: visual)
                     .scaleEffect(haloScale)
                     .opacity(haloOpacity)

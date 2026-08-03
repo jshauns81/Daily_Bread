@@ -88,7 +88,7 @@ struct CalendarView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(canGoForward ? Color.accentColor : DB.fillStrong(scheme))
+                    .foregroundStyle(canGoForward ? Color.dbAccent : DB.fillStrong(scheme))
             }
             .contentShape(Rectangle())
             .buttonStyle(.plain)
@@ -140,10 +140,10 @@ struct CalendarView: View {
             .frame(height: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.16) : DB.fillSubtle(scheme)))
+                    .fill(isSelected ? Color.dbAccent.opacity(0.16) : DB.fillSubtle(scheme)))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(isToday ? Color.accentColor : Color.clear, lineWidth: 1.5))
+                    .strokeBorder(isToday ? Color.dbAccent : Color.clear, lineWidth: 1.5))
         }
         .buttonStyle(.plain)
     }
@@ -160,7 +160,7 @@ struct CalendarView: View {
         if s.missedChores > 0 {
             return DB.help(scheme)
         }
-        return Color.accentColor
+        return Color.dbAccent
     }
 
     // MARK: - Day detail
@@ -170,7 +170,7 @@ struct CalendarView: View {
             Text(date.longDisplay)
                 .font(.subheadline.weight(.semibold))
             HStack(spacing: 18) {
-                stat("\(s.completedChores + s.approvedChores)/\(s.totalChores)", "done", Color.accentColor)
+                stat("\(s.completedChores + s.approvedChores)/\(s.totalChores)", "done", Color.dbAccent)
                 if s.missedChores > 0 {
                     stat("\(s.missedChores)", "missed", DB.help(scheme))
                 }
@@ -209,7 +209,7 @@ struct CalendarView: View {
     private var legend: some View {
         HStack(spacing: 14) {
             legendDot(DB.success(scheme), "All done")
-            legendDot(Color.accentColor, "In progress")
+            legendDot(Color.dbAccent, "In progress")
             legendDot(DB.help(scheme), "Missed")
         }
         .font(.caption2)
