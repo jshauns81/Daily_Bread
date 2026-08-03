@@ -64,6 +64,10 @@ struct DrivingLogView: View {
     @State private var store = DrivingLogStore()
     @State private var logging = false
     @State private var rejecting: DrivingLogEntry?
+    @State private var exportDocument: CSVDocument?
+    @State private var exportName = "driving-log"
+    @State private var exporting = false
+    @State private var exportError: String?
 
     private var showChildName: Bool { session.children.count > 1 }
 
@@ -91,10 +95,24 @@ struct DrivingLogView: View {
         .navigationTitle(mode == .parent ? "Driving approvals" : "Driving log")
         .themeBackground()
         .toolbar {
+            ToolbarItem(placement: .primaryAction) { exportControl }
             // §2.1: parents log drives too — auto-approved, stamped on the row.
             ToolbarItem(placement: .primaryAction) {
                 Button { logging = true } label: { Image(systemName: "plus") }
             }
+        }
+        .fileExporter(
+            isPresented: $exporting,
+            document: exportDocument,
+            contentType: .commaSeparatedText,
+            defaultFilename: exportName
+        ) { _ in }
+        .alert("Couldn't export",
+               isPresented: Binding(get: { exportError != nil },
+                                    set: { if !$0 { exportError = nil } })) {
+            Button("OK", role: .cancel) { exportError = nil }
+        } message: {
+            Text(exportError ?? "")
         }
         .sheet(isPresented: $logging) {
             DriveEditorSheet(asParent: mode == .parent) { await store.load(session, mode: mode) }
@@ -106,7 +124,52 @@ struct DrivingLogView: View {
         }
         .refreshable { await store.load(session, mode: mode) }
         .refreshOnForeground { await store.load(session, mode: mode) }
-        .task { await store.load(session, mode: mode) }
+        .task {
+            await store.load(session, mode: mode)
+            // The parent's export menu is built from the roster.
+            if mode == .parent { await session.refreshChildren() }
+        }
+    }
+
+    /// Hand the log to the DMV. A child exports their own; a parent picks whose
+    /// — the export is per-child because the form is, and the parent's screen
+    /// is a queue across all of them.
+    @ViewBuilder
+    private var exportControl: some View {
+        if mode == .kid {
+            Button {
+                Task { await export(childId: nil, named: session.currentUser?.userName) }
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+            }
+            .accessibilityLabel("Export my driving log")
+        } else if !session.children.isEmpty {
+            Menu {
+                ForEach(session.children) { child in
+                    Button(child.userName) {
+                        Task { await export(childId: child.userId, named: child.userName) }
+                    }
+                }
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+            }
+            .accessibilityLabel("Export a driving log")
+        }
+    }
+
+    private func export(childId: String?, named: String?) async {
+        do {
+            let data = try await session.client.drivingCsv(userId: childId)
+            let who = (named ?? "child")
+                .map { $0.isLetter || $0.isNumber ? $0 : "-" }
+            let stamp = Date.now.formatted(
+                .iso8601.year().month().day().dateSeparator(.dash))
+            exportName = "driving-log-\(String(who))-\(stamp)"
+            exportDocument = CSVDocument(data: data)
+            exporting = true
+        } catch {
+            exportError = error.localizedDescription
+        }
     }
 
     private func progressCard(_ p: DrivingLogProgress) -> some View {
