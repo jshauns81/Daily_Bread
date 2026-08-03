@@ -6,9 +6,8 @@ import DailyBreadKit
 ///
 /// The card answers the only question that matters ("how many hours have I
 /// got?") and puts logging a drive one tap away instead of four. It appears
-/// only for a child who actually drives — data-driven, so it never shows up on
-/// a nine-year-old's Home: either hours are on the board or a parent has set an
-/// hours goal.
+/// only for a child whose parent has switched driving on, so it never shows up
+/// on a nine-year-old's Home.
 struct DrivingCard: View {
     let progress: DrivingLogProgress
     /// Parent drill-in passes the child; nil is the kid looking at their own.
@@ -22,10 +21,11 @@ struct DrivingCard: View {
     @Environment(\.colorScheme) private var scheme
     @State private var logging = false
 
-    /// The card earns its place once there's a goal to chase or hours banked.
+    /// A parent's explicit choice, not a guess from the data. The old rule
+    /// ("hours banked or a goal set") hid the card from the one child who most
+    /// needed it: a new permit holder on day one, with neither.
     static func shouldShow(_ progress: DrivingLogProgress?) -> Bool {
-        guard let p = progress else { return false }
-        return p.totalHours > 0 || (p.totalGoalHours ?? 0) > 0
+        progress?.isEnabled ?? false
     }
 
     private var ratio: Double {

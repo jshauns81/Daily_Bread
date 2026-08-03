@@ -552,11 +552,17 @@ public sealed record DrivingLogEntryDto(
     string? RejectionReason);
 
 /// <summary>Driving-hours progress toward the (optional) goals. Hours are plain numbers.</summary>
+/// <param name="Enabled">
+/// Whether the driving log is switched on for this child. Carried here because
+/// progress is the one driving endpoint a CHILD can call for themselves — the
+/// per-child flag lives on the family-members list, which is Parent-only.
+/// </param>
 public sealed record DrivingLogProgressDto(
     decimal TotalHours,
     decimal? TotalGoalHours,
     decimal NightHours,
-    decimal? NightGoalHours);
+    decimal? NightGoalHours,
+    bool Enabled);
 
 /// <summary>
 /// Log a drive. ChildUserId is null for a child logging their own; a parent
@@ -582,11 +588,22 @@ public sealed record LedgerAdjustRequest(
 
 
 /// <summary>One household member for the family screen (no cross-household data).</summary>
+/// <param name="HasChildProfile">
+/// Has a ChildProfile row — the authoritative signal for per-child settings, and
+/// deliberately not called IsChild: the client already derives that from roles,
+/// and driving needs the profile row, not the role.
+/// </param>
+/// <param name="DrivingEnabled">Per-child driving log switch; always false for a parent.</param>
 public sealed record FamilyMemberDto(
     string Id,
     string UserName,
     IReadOnlyList<string> Roles,
-    bool IsLockedOut);
+    bool IsLockedOut,
+    bool HasChildProfile,
+    bool DrivingEnabled);
 
 /// <summary>Reset a household member's password.</summary>
 public sealed record ResetMemberPasswordRequest(string UserId, string NewPassword);
+
+/// <summary>Turn one child's driving log on or off.</summary>
+public sealed record SetDrivingEnabledRequest(bool Enabled);

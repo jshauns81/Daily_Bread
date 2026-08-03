@@ -322,6 +322,16 @@ public struct FamilyMember: Codable, Hashable, Identifiable, Sendable {
     public var userName: String
     public var roles: [String]
     public var isLockedOut: Bool
+    /// Optional so a phone on an older build still decodes a newer server's
+    /// payload, and vice versa — synthesised Codable treats a missing key as a
+    /// hard failure, and losing the whole family list over one added field is
+    /// not a trade worth making.
+    public var hasChildProfile: Bool?
+    public var drivingEnabled: Bool?
+
+    /// Per-child settings hang off the profile row, not the role.
+    public var canHavePerChildSettings: Bool { hasChildProfile ?? isChild }
+    public var drives: Bool { drivingEnabled ?? false }
 
     public var isParent: Bool { roles.contains("Parent") || roles.contains("Admin") }
     public var isChild: Bool { roles.contains("Child") }

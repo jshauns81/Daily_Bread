@@ -10,6 +10,11 @@ final class ParentHomeStore {
     var loading = false
     var errorMessage: String?
     var heatmapChild: ChildProgress?
+    /// Drives waiting on a parent. Deliberately its own queue, not folded into
+    /// the chore approvals: "did they really drive 90 minutes at night" is a
+    /// different question from "did they empty the dishwasher", and burying it
+    /// under chores is how it got missed.
+    var pendingDrives: [DrivingLogEntry] = []
 
     func load(_ session: SessionStore) async {
         loading = dashboard == nil
@@ -23,6 +28,8 @@ final class ParentHomeStore {
         } catch {
             errorMessage = error.localizedDescription
         }
+        // Never fatal to the dashboard — a driving hiccup shouldn't blank Home.
+        pendingDrives = (try? await session.client.pendingDrivingEntries()) ?? []
     }
 }
 
@@ -41,6 +48,13 @@ struct ParentHomeView: View {
                 if let dash = store.dashboard {
                     greetingCard(dash)
                     statsRow(dash)
+
+                    // Above "Today", not inside it: driving is its own approval
+                    // system, and folding it into the chore surface is exactly
+                    // how it went unnoticed.
+                    if !store.pendingDrives.isEmpty {
+                        drivingApprovals
+                    }
 
                     if dash.childrenProgress.isEmpty && dash.todayTotalChores == 0 {
                         emptyState
@@ -120,6 +134,65 @@ struct ParentHomeView: View {
         return session.children.first {
             $0.userName.caseInsensitiveCompare(balance.displayName) == .orderedSame
         }?.userId
+    }
+
+    /// Drives waiting on a decision. A summary that opens the full log rather
+    /// than approve/reject buttons inline — approving a drive means reading the
+    /// time, the supervisor and whether it counted as night, and a one-line row
+    /// can't show enough to decide honestly.
+    private var drivingApprovals: some View {
+        NavigationLink {
+            DrivingLogView(mode: .parent)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "car.fill")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Color.dbAccent)
+                    .frame(width: 40, height: 40)
+                    .background(Color.dbAccent.opacity(0.14),
+                                in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DRIVING")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .kerning(0.8)
+                    Text(drivingApprovalsSummary)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                }
+
+                Spacer(minLength: 8)
+
+                Text("\(store.pendingDrives.count)")
+                    .font(.subheadline.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 3)
+                    .background(Color.dbAccent, in: Capsule())
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassCard(padding: 14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(drivingApprovalsSummary). Opens the driving log.")
+    }
+
+    private var drivingApprovalsSummary: String {
+        let count = store.pendingDrives.count
+        let names = Set(store.pendingDrives.map(\.childName))
+        if count == 1, let who = names.first {
+            return "\(who) logged a drive"
+        }
+        if names.count == 1, let who = names.first {
+            return "\(who) logged \(count) drives"
+        }
+        return "\(count) drives waiting on you"
     }
 
     /// Wraps a kid card in a NavigationLink to their day.

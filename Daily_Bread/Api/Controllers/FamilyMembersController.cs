@@ -29,17 +29,20 @@ public class FamilyMembersController : ControllerBase
     private readonly IHouseholdGuard _guard;
     private readonly ICurrentUserContext _currentUser;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _db;
 
     public FamilyMembersController(
         IUserManagementService users,
         IHouseholdGuard guard,
         ICurrentUserContext currentUser,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        ApplicationDbContext db)
     {
         _users = users;
         _guard = guard;
         _currentUser = currentUser;
         _userManager = userManager;
+        _db = db;
     }
 
     /// <summary>The caller's household members, parents first.</summary>
@@ -58,14 +61,24 @@ public class FamilyMembersController : ControllerBase
             .Where(u => u.HouseholdId == household)
             .ToListAsync();
 
+        // One query for the whole household rather than one per member.
+        var userIds = users.Select(u => u.Id).ToList();
+        var profiles = await _db.ChildProfiles
+            .Where(p => userIds.Contains(p.UserId))
+            .Select(p => new { p.UserId, p.DrivingEnabled })
+            .ToDictionaryAsync(p => p.UserId, p => p.DrivingEnabled);
+
         foreach (var user in users)
         {
             var roles = await _userManager.GetRolesAsync(user);
+            var isChild = profiles.TryGetValue(user.Id, out var driving);
             members.Add(new FamilyMemberDto(
                 user.Id,
                 user.UserName ?? "",
                 roles.ToList(),
-                user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow));
+                user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow,
+                isChild,
+                isChild && driving));
         }
 
         // Parents/Admins first, then by name — a stable, friendly order.
@@ -131,6 +144,31 @@ public class FamilyMembersController : ControllerBase
         {
             return BadRequest(new ApiError("UnlockFailed", result.ErrorMessage ?? "Could not unlock the account."));
         }
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Turn one child's driving log on or off. Per-child rather than family-wide
+    /// (so it does not live on /family/features): in a house with a teen and a
+    /// nine-year-old, exactly one of them drives.
+    /// </summary>
+    [HttpPut("{userId}/driving")]
+    public async Task<IActionResult> SetDriving(
+        string userId, [FromBody] SetDrivingEnabledRequest request, CancellationToken ct)
+    {
+        var target = await Resolve(userId, ct);
+        if (target.Error != null) return target.Error;
+
+        var profile = await _db.ChildProfiles
+            .FirstOrDefaultAsync(p => p.UserId == target.UserId, ct);
+        if (profile == null)
+        {
+            return BadRequest(new ApiError("NotAChild", "Only a child can have a driving log."));
+        }
+
+        profile.DrivingEnabled = request.Enabled;
+        profile.ModifiedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
         return NoContent();
     }
 

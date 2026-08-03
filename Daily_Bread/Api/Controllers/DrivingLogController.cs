@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Daily_Bread.Api.Controllers;
 
@@ -26,19 +27,22 @@ public class DrivingLogController : ControllerBase
     private readonly IHouseholdGuard _guard;
     private readonly ICurrentUserContext _currentUser;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _db;
 
     public DrivingLogController(
         IDrivingLogService driving,
         IChoreManagementService choreManagement,
         IHouseholdGuard guard,
         ICurrentUserContext currentUser,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        ApplicationDbContext db)
     {
         _driving = driving;
         _choreManagement = choreManagement;
         _guard = guard;
         _currentUser = currentUser;
         _userManager = userManager;
+        _db = db;
     }
 
     private bool CallerIsParent => User.IsInRole("Parent") || User.IsInRole("Admin");
@@ -83,7 +87,12 @@ public class DrivingLogController : ControllerBase
         if (target.Outcome == GuardOutcome.NotFound) return NotFound(new ApiError("UserNotFound", "User not found."));
 
         var p = await _driving.GetProgressAsync(target.User!.Id);
-        return Ok(new DrivingLogProgressDto(p.TotalHours, p.TotalGoalHours, p.NightHours, p.NightGoalHours));
+        var enabled = await _db.ChildProfiles
+            .Where(c => c.UserId == target.User!.Id)
+            .Select(c => c.DrivingEnabled)
+            .FirstOrDefaultAsync(ct);
+        return Ok(new DrivingLogProgressDto(
+            p.TotalHours, p.TotalGoalHours, p.NightHours, p.NightGoalHours, enabled));
     }
 
     /// <summary>The household's drives waiting on a parent. Parent/Admin only.</summary>
@@ -94,6 +103,34 @@ public class DrivingLogController : ControllerBase
         var householdChildIds = await HouseholdChildIdsAsync();
         var all = await _driving.GetPendingApprovalsAsync();
         return Ok(all.Where(e => householdChildIds.Contains(e.ChildUserId)).Select(ToDto).ToList());
+    }
+
+    /// <summary>
+    /// The child's log as a CSV, shaped for a DMV supervised-driving form.
+    /// The builder already existed but was only reachable through the Blazor
+    /// minimal API at /api/driving-log/export, which authenticates by cookie —
+    /// unusable from the native app, which carries a bearer token. Same builder,
+    /// same household guard as every other read here.
+    /// </summary>
+    [HttpGet("export.csv")]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? userId,
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
+        CancellationToken ct)
+    {
+        var target = await _guard.ResolveTargetUserAsync(userId, ct);
+        if (target.Outcome == GuardOutcome.Forbidden) return Forbid(JwtBearerDefaults.AuthenticationScheme);
+        if (target.Outcome == GuardOutcome.NotFound) return NotFound(new ApiError("UserNotFound", "User not found."));
+
+        var entries = await _driving.GetEntriesAsync(target.User!.Id, from, to);
+        var csv = DrivingLogCsvBuilder.Build(entries);
+        // The child's name, not their user id — this file gets emailed to an
+        // instructor or handed across a DMV counter.
+        var who = string.Concat((target.User!.UserName ?? "child")
+            .Select(c => char.IsLetterOrDigit(c) ? c : '-'));
+        var name = $"driving-log-{who}-{DateTime.Now:yyyy-MM-dd}.csv";
+        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", name);
     }
 
     /// <summary>Log a drive. A child logs their own; a parent logs for a child.</summary>

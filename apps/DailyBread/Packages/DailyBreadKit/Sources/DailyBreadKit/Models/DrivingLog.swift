@@ -38,6 +38,16 @@ public struct DrivingLogProgress: Codable, Hashable, Sendable {
     public var totalGoalHours: Double?
     public var nightHours: Double
     public var nightGoalHours: Double?
+    /// Whether the driving log is switched on for this child. Optional so an
+    /// older server (which doesn't send it) still decodes.
+    public var enabled: Bool?
+
+    /// The gate for every driving surface. Falls back to the old data-driven
+    /// rule only when the server didn't say — that rule is why a brand-new
+    /// permit holder, with no hours and no goal yet, could see nothing at all.
+    public var isEnabled: Bool {
+        enabled ?? (totalHours > 0 || (totalGoalHours ?? 0) > 0)
+    }
 }
 
 public struct DrivingLogCreate: Codable, Sendable {

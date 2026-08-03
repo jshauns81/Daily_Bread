@@ -128,6 +128,26 @@ public actor APIClient {
         _ = try await send(Empty.self, path: path, method: method, body: body)
     }
 
+    /// Fetch a non-JSON body (a CSV export). Same auth and 401-refresh path as
+    /// `send`, but hands back raw bytes rather than running them through the
+    /// decoder.
+    private func sendData(path: String, retryOn401: Bool = true) async throws -> Data {
+        let request = try makeRequest(path: path, method: "GET", body: nil, authorized: true)
+        let (data, status) = try await perform(request)
+
+        if status == 401, retryOn401 {
+            try await refreshTokens()
+            return try await sendData(path: path, retryOn401: false)
+        }
+        guard (200...299).contains(status) else {
+            if let payload = try? decoder.decode(ApiErrorPayload.self, from: data) {
+                throw APIError.server(code: payload.code, message: payload.message, status: status)
+            }
+            throw APIError.http(status: status)
+        }
+        return data
+    }
+
     private func encodeBody<B: Encodable>(_ value: B) throws -> Data {
         try encoder.encode(value)
     }
@@ -382,6 +402,14 @@ public actor APIClient {
         try await sendVoid(path: "api/v1/family/members/reset-password", method: "POST", body: body)
     }
 
+    /// Turn one child's driving log on or off. Per-child, not family-wide: in a
+    /// house with a teen and a nine-year-old, exactly one of them drives.
+    public func setMemberDriving(userId: String, enabled: Bool) async throws {
+        struct Body: Codable { let enabled: Bool }
+        let body = try encodeBody(Body(enabled: enabled))
+        try await sendVoid(path: "api/v1/family/members/\(userId)/driving", method: "PUT", body: body)
+    }
+
     public func lockMember(userId: String) async throws {
         try await sendVoid(path: "api/v1/family/members/\(userId)/lock", method: "POST")
     }
@@ -422,6 +450,11 @@ public actor APIClient {
 
     public func drivingEntries(userId: String? = nil) async throws -> [DrivingLogEntry] {
         try await send([DrivingLogEntry].self, path: path("api/v1/driving", [("userId", userId)]))
+    }
+
+    /// The child's log as CSV bytes, shaped for a DMV supervised-driving form.
+    public func drivingCsv(userId: String? = nil) async throws -> Data {
+        try await sendData(path: path("api/v1/driving/export.csv", [("userId", userId)]))
     }
 
     public func drivingProgress(userId: String? = nil) async throws -> DrivingLogProgress {

@@ -41,8 +41,23 @@ public class ChildProfile
     public DateTime? ModifiedAt { get; set; }
 
     /// <summary>
+    /// Whether the driving log exists at all for this child. Off by default:
+    /// only a teen with a permit should ever see it, and lighting it up for a
+    /// six-year-old is noise.
+    ///
+    /// This replaces inferring the feature from data (hours logged or a goal
+    /// set), which had the feature invisible to exactly the child who needed it
+    /// most — a brand-new permit holder with zero hours and no goal yet.
+    /// The migration that adds this column backfills it true for any child with
+    /// existing entries or a configured goal, so nobody loses a log on upgrade.
+    /// </summary>
+    public bool DrivingEnabled { get; set; }
+
+    /// <summary>
     /// Total supervised-driving hours goal (e.g. state permit requirement).
     /// Null = driving log goal not configured for this child (hides the progress bar).
+    /// Independent of <see cref="DrivingEnabled"/>: the log can be on with no
+    /// goal yet, which is the normal state on day one.
     /// </summary>
     public decimal? DrivingGoalTotalHours { get; set; }
 

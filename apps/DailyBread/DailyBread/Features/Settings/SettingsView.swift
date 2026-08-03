@@ -15,6 +15,8 @@ struct SettingsView: View {
     /// confirmed, and backing out restores what was there before.
     @State private var pending: (builtin: String, custom: String)?
     @State private var editorTarget: ThemeEditorTarget?
+    /// Children, for the per-child driving switches. Parent-only fetch.
+    @State private var children: [FamilyMember] = []
 
     var body: some View {
         List {
@@ -195,17 +197,16 @@ struct SettingsView: View {
                 }
             }
 
+            if session.currentUser?.isParent == true, !children.isEmpty {
+                drivingSection
+            }
+
             if session.currentUser?.isParent == true {
                 Section("Manage") {
                     NavigationLink {
                         AchievementDefinitionsView()
                     } label: {
                         Label("Achievements", systemImage: "trophy")
-                    }
-                    NavigationLink {
-                        DrivingLogView(mode: .parent)
-                    } label: {
-                        Label("Driving approvals", systemImage: "car")
                     }
                     NavigationLink {
                         FamilyMembersView()
@@ -246,6 +247,7 @@ struct SettingsView: View {
             ThemeLoader.invalidate()
             userThemes = ThemeLoader.available()
             await session.refreshFeatures()
+            await loadChildren()
             // §3.1 — server themes appear here; local edits go up.
             await ThemeSync.sync(session.client)
             userThemes = ThemeLoader.available()
@@ -372,6 +374,56 @@ struct SettingsView: View {
             return "Show goals to \(name.capitalized)"
         }
         return "Show savings goals"
+    }
+
+    /// Driving is per-child, not family-wide: a house with a teen and a
+    /// nine-year-old wants it on for exactly one of them. With a single child
+    /// this renders as a single switch, which is the whole of the feature.
+    private var drivingSection: some View {
+        Section {
+            ForEach(children) { child in
+                Toggle(isOn: drivingBinding(for: child)) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(child.userName)
+                        Text(child.drives ? "Log, hours and approvals are on"
+                                          : "Hidden everywhere for this child")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        } header: {
+            Text(children.count == 1 ? "Driving" : "Driving by child")
+        } footer: {
+            Text("Turn this off when a child no longer needs the log. Nothing is deleted — their hours are still there if you switch it back on.")
+        }
+    }
+
+    /// Flips locally, saves, and reverts on failure — same contract as the
+    /// family-feature switches.
+    private func drivingBinding(for child: FamilyMember) -> Binding<Bool> {
+        Binding(
+            get: { child.drives },
+            set: { newValue in
+                guard let index = children.firstIndex(where: { $0.id == child.id }) else { return }
+                let previous = children[index].drivingEnabled
+                children[index].drivingEnabled = newValue
+                Task {
+                    do {
+                        try await session.client.setMemberDriving(userId: child.id, enabled: newValue)
+                    } catch {
+                        if let i = children.firstIndex(where: { $0.id == child.id }) {
+                            children[i].drivingEnabled = previous
+                        }
+                    }
+                }
+            })
+    }
+
+    private func loadChildren() async {
+        guard session.currentUser?.isParent == true else { return }
+        guard let members = try? await session.client.familyMembers() else { return }
+        children = members.filter { $0.canHavePerChildSettings }
     }
 
     /// A family-feature switch: flips locally, saves to the server, reverts
