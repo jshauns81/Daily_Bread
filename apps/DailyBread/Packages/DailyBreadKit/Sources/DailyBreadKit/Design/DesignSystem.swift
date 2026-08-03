@@ -317,3 +317,49 @@ public enum Haptics {
         #endif
     }
 }
+
+/// Re-runs an action on an interval while the app is frontmost and the view is
+/// on screen — the app's only live-refresh mechanism.
+///
+/// Daily Bread has no push and no sockets: a screen learns about changes made
+/// elsewhere (the other parent's phone, a kid on the Mac) only when it asks
+/// again. Without this it asks on appear and on foreground, which is why a
+/// chore ticked on the Mac wouldn't show on the phone until you navigated away
+/// and back.
+///
+/// Deliberately cheap and well-behaved:
+/// - Keyed on `scenePhase`, so backgrounding CANCELS the loop rather than
+///   polling a server from a phone in a pocket. Returning restarts it.
+/// - Sleeps first, so it never doubles up with the view's own initial load.
+/// - Cancelled automatically when the view goes away (it's a `.task`).
+/// - `isPaused` lets a screen hold the poll off while a mutation is in flight,
+///   so a refresh can't stomp an optimistic row mid-tap.
+public struct Poll: ViewModifier {
+    @Environment(\.scenePhase) private var scenePhase
+
+    let interval: Duration
+    let isPaused: () -> Bool
+    let action: @Sendable () async -> Void
+
+    public func body(content: Content) -> some View {
+        content.task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: interval)
+                guard !Task.isCancelled, scenePhase == .active else { return }
+                if isPaused() { continue }
+                await action()
+            }
+        }
+    }
+}
+
+public extension View {
+    /// 30s is the compromise: fast enough that handing the iPad over feels live,
+    /// slow enough to be invisible on a home server and a battery.
+    func poll(every interval: Duration = .seconds(30),
+              isPaused: @escaping () -> Bool = { false },
+              _ action: @escaping @Sendable () async -> Void) -> some View {
+        modifier(Poll(interval: interval, isPaused: isPaused, action: action))
+    }
+}

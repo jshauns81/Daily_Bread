@@ -26,6 +26,10 @@ final class TodayStore {
     var coinFlight: (choreId: Int, start: Date)?
     /// Incremented when the coin arrives; the header money line pulses on change.
     var balancePulse = 0
+    /// True while a toggle is in flight. A poll landing mid-tap would replace
+    /// the optimistic row with the server's not-yet-updated one and the check
+    /// would visibly bounce back.
+    var isMutating = false
 
     init(targetUserId: String? = nil) {
         self.targetUserId = targetUserId
@@ -90,6 +94,9 @@ final class TodayStore {
     func toggle(_ item: ChoreItem, _ session: SessionStore) async {
         guard var snapshot = today,
               let index = snapshot.items.firstIndex(where: { $0.id == item.id }) else { return }
+
+        isMutating = true
+        defer { isMutating = false }
 
         let original = snapshot.items[index].status
         let completing = !item.isDone
@@ -266,6 +273,7 @@ struct TodayView: View {
         .navigationTitle(title)
         .themeBackground()
         .refreshable { await store.load(session) }
+        .poll(isPaused: { store.isMutating }) { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
         .overlayPreferenceValue(CelebrationAnchorsKey.self) { anchors in

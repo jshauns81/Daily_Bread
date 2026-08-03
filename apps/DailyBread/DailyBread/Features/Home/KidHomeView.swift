@@ -20,6 +20,8 @@ final class KidHomeStore {
     var loading = false
     var celebrationStart: Date?
     var helpTarget: ChoreItem?
+    /// Held while a chore is being marked done, so a poll can't interleave.
+    var isMutating = false
 
     var doneCount: Int { today?.items.filter(\.isDone).count ?? 0 }
     var totalCount: Int { today?.items.count ?? 0 }
@@ -117,6 +119,8 @@ final class KidHomeStore {
     }
 
     func markDone(_ item: ChoreItem, _ session: SessionStore) async {
+        isMutating = true
+        defer { isMutating = false }
         Haptics.tick()
         _ = try? await session.client.toggleChore(
             choreDefinitionId: item.choreDefinitionId, date: today?.date)
@@ -206,6 +210,7 @@ struct KidHomeView: View {
             DrivingLogView(mode: .kid)
         }
         .refreshable { await store.load(session) }
+        .poll(isPaused: { store.isMutating }) { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
         .overlay {

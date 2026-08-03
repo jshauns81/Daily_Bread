@@ -107,6 +107,9 @@ final class ActivityStore {
         }
     }
 
+    /// Held while a parent action is in flight (see TodayStore.isMutating).
+    var isMutating = false
+
     func approve(_ item: ChoreItem, _ session: SessionStore) async {
         guard let logId = item.choreLogId else { return }
         do {
@@ -208,6 +211,7 @@ struct ActivityView: View {
         .themeBackground()
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
+        .poll(isPaused: { store.isMutating }) { await store.load(session) }
         .task(id: taskKey) {
             withAnimation(.snappy) {
                 confirmingExcuseId = nil

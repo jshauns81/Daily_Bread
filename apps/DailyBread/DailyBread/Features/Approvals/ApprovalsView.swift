@@ -160,6 +160,7 @@ struct ApprovalsView: View {
         .navigationTitle("Approvals")
         .themeBackground()
         .refreshable { await store.load(session) }
+        .poll(isPaused: { store.batchProgress != nil }) { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
         .sheet(item: Binding(

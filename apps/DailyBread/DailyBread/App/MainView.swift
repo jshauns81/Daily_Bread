@@ -65,6 +65,7 @@ struct MainView: View {
         .onAppear { if selection == nil { selection = sections.first } }
         .task { await refreshBadge() }
         .refreshOnForeground { await refreshBadge() }
+        .poll { await refreshBadge() }
         #else
         TabView {
             ForEach(sections) { section in
@@ -79,6 +80,7 @@ struct MainView: View {
         }
         .task { await refreshBadge() }
         .refreshOnForeground { await refreshBadge() }
+        .poll { await refreshBadge() }
         #endif
     }
 
