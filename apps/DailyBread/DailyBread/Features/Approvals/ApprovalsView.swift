@@ -16,11 +16,7 @@ final class ApprovalsStore {
         loading = queue == nil
         defer { loading = false }
         do {
-            let fetched = try await session.client.approvalsQueue()
-            queue = fetched
-            // The shell's badge can't see this screen's actions; hand it the
-            // count we already have rather than making it re-ask later.
-            session.setApprovalsWaiting(from: fetched)
+            queue = try await session.client.approvalsQueue()
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -50,6 +46,14 @@ final class ApprovalsStore {
             Haptics.success()
         }
         await load(session)
+    }
+
+    /// What the shell's badge shows. DERIVED from the queue on purpose: approve()
+    /// and respond() mutate `queue` in place without reloading, so anything that
+    /// has to be told separately will eventually be forgotten — it already was,
+    /// and the badge sat 3 high while the list read correctly.
+    var waitingCount: Int {
+        (queue?.pendingApprovals.count ?? 0) + (queue?.helpRequests.count ?? 0)
     }
 
     var pendingTotal: Money {
@@ -161,6 +165,11 @@ struct ApprovalsView: View {
         .themeBackground()
         .refreshable { await store.load(session) }
         .poll(isPaused: { store.batchProgress != nil }) { await store.load(session) }
+        // Every path that clears something changes `queue`, so watching the
+        // derived count catches all of them — including ones added later.
+        .onChange(of: store.waitingCount, initial: true) { _, count in
+            session.approvalsWaiting = count
+        }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
         .sheet(item: Binding(

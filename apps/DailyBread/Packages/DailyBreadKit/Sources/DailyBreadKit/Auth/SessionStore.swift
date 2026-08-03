@@ -35,8 +35,9 @@ public final class SessionStore {
     /// neither. Anything that learns the true count should write it here.
     public var approvalsWaiting = 0
 
-    /// Ask the server. Screens that have just loaded the queue should call
-    /// `setApprovalsWaiting(from:)` instead — it costs no extra request.
+    /// Ask the server. This is the fallback for a parent who never opens the
+    /// Approvals tab; while that screen is alive it publishes the count itself
+    /// from its queue, which is the only number guaranteed to match the list.
     public func refreshApprovalsBadge() async {
         guard currentUser?.isParent == true else { return }
         if let queue = try? await client.approvalsQueue() {
