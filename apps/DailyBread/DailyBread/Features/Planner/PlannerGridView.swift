@@ -124,11 +124,14 @@ struct PlannerGridView: View {
             groupHeader(group)
             ForEach(group.chores) { chore in
                 row(chore, vPad: 5) {
+                    // Indented past the heading's glyph, and a step down in
+                    // size — at equal size and a 5pt indent the child read as a
+                    // sibling of the chore name rather than a child of it.
                     Text(chore.assignedUserName ?? "Unassigned")
                         .font(.subheadline)
                         .foregroundStyle(chore.isActive ? .primary : .secondary)
                         .lineLimit(1)
-                        .padding(.leading, 26)
+                        .padding(.leading, 34)
                 }
             }
             Color.clear.frame(height: 6)
@@ -150,13 +153,16 @@ struct PlannerGridView: View {
             if let first = group.chores.first { onEdit(first) }
         } label: {
             HStack(spacing: 8) {
-                Text(group.icon).font(.callout)
+                Text(group.icon).font(.body)
                 Text(group.name)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.callout.weight(.semibold))
                     .lineLimit(1)
                 Text("\(group.chores.count)")
-                    .font(.caption2)
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(DB.fillOff(scheme), in: Capsule())
                 Spacer(minLength: 0)
             }
             .contentShape(Rectangle())
@@ -204,11 +210,14 @@ struct PlannerGridView: View {
             }
 
             if chore.scheduleType == "WeeklyFrequency" {
+                // Matches the cell height. Without it the row collapses to the
+                // text's own height and an "N×/wk" chore sits visibly shorter
+                // than its neighbours, breaking the grid's rhythm mid-table.
                 dayStrip(vPad: vPad) {
                     Text("\(chore.weeklyTargetCount)×/wk")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .frame(width: weekSpan)
+                        .frame(width: weekSpan, height: cell)
                 }
             } else {
                 dayStrip(vPad: vPad) {

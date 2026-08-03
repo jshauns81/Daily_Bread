@@ -69,23 +69,20 @@ struct MainView: View {
     var body: some View {
         #if os(macOS)
         NavigationSplitView {
-            // `List(selection:)` keeps the free AppKit behaviour — arrow-key
-            // navigation, the focus ring — that a hand-rolled sidebar throws
-            // away. `.tint` recolours its selection, so the only thing left to
-            // fix is the symbols: multicolour rendering put a tan house next to
-            // a blue car next to a grey gear, three hues the theme never chose.
-            List(sections, selection: $selection) { section in
-                Label {
-                    Text(section.label)
-                } icon: {
-                    Image(systemName: section.icon)
-                        .symbolRenderingMode(.monochrome)
-                        .foregroundStyle(section == selection ? Color.white : Color.dbAccent)
+            // Hand-rolled rows. `.tint` does *not* recolour a macOS sidebar's
+            // selection — verified on screen, the pill stayed system blue in a
+            // mulberry window — and the accent has to follow the theme, so a
+            // static AccentColor asset is out too. Dropping `selection:` costs
+            // arrow-key navigation, so the rows take ⌘1…⌘6 instead, which is
+            // what Mail and Finder bind anyway.
+            List {
+                ForEach(Array(sections.enumerated()), id: \.element) { index, section in
+                    sidebarRow(section, shortcut: index + 1)
+                        .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
-                .badge(section == .approvals ? session.approvalsWaiting : 0)
-                .tag(section)
             }
-            .tint(Color.dbAccent)
             .navigationTitle("Daily Bread")
         } detail: {
             NavigationStack {
@@ -119,6 +116,52 @@ struct MainView: View {
     private func refreshBadge() async {
         await session.refreshApprovalsBadge()
     }
+
+    #if os(macOS)
+    /// One sidebar destination, painted in the theme rather than the system
+    /// accent. Selected reads as a filled accent capsule with white content;
+    /// unselected keeps the symbol accent-tinted and the label primary, so the
+    /// row still scans as a group of six rather than six unrelated glyphs.
+    private func sidebarRow(_ section: Section, shortcut: Int) -> some View {
+        let selected = section == selection
+        let waiting = section == .approvals ? session.approvalsWaiting : 0
+        return Button {
+            selection = section
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: section.icon)
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundStyle(selected ? AnyShapeStyle(.white)
+                                              : AnyShapeStyle(Color.dbAccent))
+                    .frame(width: 20)
+                Text(section.label)
+                Spacer(minLength: 4)
+                if waiting > 0 {
+                    Text("\(waiting)")
+                        .font(.caption.weight(.semibold))
+                        .monospacedDigit()
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(selected ? AnyShapeStyle(.white.opacity(0.25))
+                                             : AnyShapeStyle(Color.dbAccent),
+                                    in: Capsule())
+                        .foregroundStyle(.white)
+                }
+            }
+            .font(.body)
+            .foregroundStyle(selected ? AnyShapeStyle(.white) : AnyShapeStyle(Color.primary))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(selected ? Color.dbAccent : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut(KeyEquivalent(Character("\(shortcut)")), modifiers: .command)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+    #endif
 
     @ViewBuilder
     private func screen(for section: Section) -> some View {
