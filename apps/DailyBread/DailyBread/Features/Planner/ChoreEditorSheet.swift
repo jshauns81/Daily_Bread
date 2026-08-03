@@ -243,19 +243,38 @@ struct ChoreEditorSheet: View {
         }
     }
 
+    /// §2.3 — nobody knows what 7 means on a bare slider, including the parent
+    /// who set it. Five named stakes, stored as the same 0–10 the wire already
+    /// speaks; the name maps to the urgency language the kid actually sees.
+    private static let stakes: [(label: String, value: Int, meaning: String)] = [
+        ("Nice to have", 0, "No screen-time impact."),
+        ("Normal", 2, "A small share of the weekly screen-time budget."),
+        ("Matters", 5, "A real share of the weekly screen-time budget."),
+        ("Big deal", 7, "A big share — shows as getting-tight when it slips."),
+        ("Critical", 10, "The biggest stake — reads as must-do on their list."),
+    ]
+
+    /// Legacy in-between values (a 4 from the old slider) snap to the nearest
+    /// named tier for display; storage only changes when a chip is tapped.
+    private var nearestStake: Int {
+        Self.stakes.min { abs($0.value - importanceInt) < abs($1.value - importanceInt) }!.value
+    }
+
     private var screenTimeCard: some View {
-        SheetCard(title: "Screen time") {
-            SheetField(
-                label: importanceInt == 0 ? "No screen-time impact" : "Importance",
-                value: importanceInt == 0 ? nil : "\(importanceInt) of 10",
-                valueColor: Color.accentColor) {
-                Slider(value: $importance, in: 0...10, step: 1)
+        SheetCard(title: "Stakes") {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Self.stakes, id: \.value) { stake in
+                        SheetChip(stake.label, selected: nearestStake == stake.value, compact: true) {
+                            Haptics.tick()
+                            withAnimation(.snappy) { importance = Double(stake.value) }
+                        }
+                    }
+                }
             }
-            if importanceInt > 0 {
-                Text("Missing it costs a share of the weekly screen-time budget.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text(Self.stakes.first { $0.value == nearestStake }?.meaning ?? "")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

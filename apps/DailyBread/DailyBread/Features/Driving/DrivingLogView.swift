@@ -339,7 +339,7 @@ private struct DriveEditorSheet: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(session.children) { child in
-                    chip(child.userName, selected: childUserId == child.userId) {
+                    SheetChip(child.userName, selected: childUserId == child.userId) {
                         childUserId = child.userId
                         Task { await loadProgress() }
                     }
@@ -352,9 +352,9 @@ private struct DriveEditorSheet: View {
 
     private var dateChips: some View {
         HStack(spacing: 8) {
-            chip("Today", selected: dateChoice == .today) { dateChoice = .today }
-            chip("Yesterday", selected: dateChoice == .yesterday) { dateChoice = .yesterday }
-            chip(pickedLabel, selected: isPicked) { pickingDate = true }
+            SheetChip("Today", selected: dateChoice == .today) { dateChoice = .today }
+            SheetChip("Yesterday", selected: dateChoice == .yesterday) { dateChoice = .yesterday }
+            SheetChip(pickedLabel, selected: isPicked) { pickingDate = true }
             Spacer(minLength: 0)
         }
     }
@@ -392,7 +392,7 @@ private struct DriveEditorSheet: View {
             if !exactTimes {
                 HStack(spacing: 8) {
                     ForEach(Self.presets, id: \.minutes) { preset in
-                        chip(preset.label, selected: durationMinutes == preset.minutes, compact: true) {
+                        SheetChip(preset.label, selected: durationMinutes == preset.minutes, compact: true) {
                             withAnimation(.snappy) { durationMinutes = preset.minutes }
                             Haptics.tick()
                         }
@@ -473,25 +473,6 @@ private struct DriveEditorSheet: View {
         let h = minutes / 60, m = minutes % 60
         if h > 0 && m > 0 { return "\(h)h \(m)m" }
         return h > 0 ? "\(h)h" : "\(m)m"
-    }
-
-    // MARK: Shared chip
-
-    private func chip(_ label: String, selected: Bool, compact: Bool = false,
-                      action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.subheadline.weight(selected ? .semibold : .regular))
-                .padding(.horizontal, compact ? 10 : 14)
-                .padding(.vertical, compact ? 6 : 8)
-                .background(selected ? AnyShapeStyle(Color.accentColor.opacity(0.18))
-                                     : AnyShapeStyle(DB.fillOff(scheme)),
-                            in: Capsule())
-                .overlay(Capsule().strokeBorder(
-                    selected ? Color.accentColor : Color.clear, lineWidth: 1.5))
-                .foregroundStyle(selected ? Color.accentColor : Color.primary)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: Data

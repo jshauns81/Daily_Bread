@@ -185,3 +185,40 @@ extension View {
                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
+
+/// A capsule choice chip — the §2 input surfaces' shared vocabulary (date
+/// chips, duration presets, stakes, child pickers). Selected = accent-tinted
+/// fill with an accent stroke; unselected = quiet fillOff.
+struct SheetChip: View {
+    @Environment(\.colorScheme) private var scheme
+
+    let label: String
+    var selected: Bool
+    var compact = false
+    var action: () -> Void
+
+    init(_ label: String, selected: Bool, compact: Bool = false,
+         action: @escaping () -> Void) {
+        self.label = label
+        self.selected = selected
+        self.compact = compact
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.subheadline.weight(selected ? .semibold : .regular))
+                .padding(.horizontal, compact ? 10 : 14)
+                .padding(.vertical, compact ? 6 : 8)
+                .background(selected ? AnyShapeStyle(Color.accentColor.opacity(0.18))
+                                     : AnyShapeStyle(DB.fillOff(scheme)),
+                            in: Capsule())
+                .overlay(Capsule().strokeBorder(
+                    selected ? Color.accentColor : Color.clear, lineWidth: 1.5))
+                .foregroundStyle(selected ? Color.accentColor : Color.primary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
