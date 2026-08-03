@@ -18,13 +18,21 @@ namespace Daily_Bread.Api.Controllers;
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ThemesController : ControllerBase
 {
+    /// <summary>§3.5 — the hidden achievement a kid finds by authoring a theme.</summary>
+    private const string ThemeAuthorAchievement = "MAKE_IT_YOUR_OWN";
+
     private readonly IThemeFileService _themes;
     private readonly ICurrentUserContext _currentUser;
+    private readonly IAchievementService _achievements;
 
-    public ThemesController(IThemeFileService themes, ICurrentUserContext currentUser)
+    public ThemesController(
+        IThemeFileService themes,
+        ICurrentUserContext currentUser,
+        IAchievementService achievements)
     {
         _themes = themes;
         _currentUser = currentUser;
+        _achievements = achievements;
     }
 
     private bool CallerIsParent => User.IsInRole("Parent") || User.IsInRole("Admin");
@@ -61,6 +69,16 @@ public class ThemesController : ControllerBase
         if (!result.Success)
         {
             return BadRequest(new ApiError("InvalidTheme", result.ErrorMessage ?? "Could not save the theme."));
+        }
+
+        // §3.5 — a child authoring their own theme is the moment worth marking.
+        // AwardAchievementAsync is idempotent (already-earned returns null), so
+        // every later save is a no-op. A parent saving a theme earns nothing:
+        // the achievement is about a kid discovering he can author the app.
+        if (!CallerIsParent)
+        {
+            await _achievements.AwardAchievementAsync(
+                _currentUser.UserId, ThemeAuthorAchievement, notes: result.Data!.Slug);
         }
 
         var t = result.Data!;

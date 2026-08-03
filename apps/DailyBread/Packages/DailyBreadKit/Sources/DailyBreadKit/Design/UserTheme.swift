@@ -104,6 +104,11 @@ public struct CustomPalette: Hashable, Sendable {
     public var cardHex: UInt32
     public var backgroundTopHex: UInt32
     public var backgroundBottomHex: UInt32
+    /// The single colour the file actually authored, when it gave one. The two
+    /// stops above are DERIVED from it, so re-opening a theme in the editor has
+    /// to come back to this — reading `backgroundTopHex` instead would ratchet
+    /// the background lighter on every edit-and-save.
+    public var backgroundBaseHex: UInt32?
     public var onAccentHex: UInt32
     /// §3.4 — only set when the invariants block was explicitly unlocked.
     public var goldHex: UInt32?
@@ -198,11 +203,13 @@ public extension ThemeManifest {
 
         let top: UInt32
         let bottom: UInt32
+        var authoredBase: UInt32?
         if let t = ThemeHex.parse(colors?.background?.top) {
             // One colour given → derive the second stop; both given → honor both.
             if let b = ThemeHex.parse(colors?.background?.bottom) {
                 top = t; bottom = b
             } else {
+                authoredBase = t
                 top = ThemeHex.shiftLightness(t, by: isDark ? 0.035 : 0.02)
                 bottom = ThemeHex.shiftLightness(t, by: isDark ? -0.035 : -0.045)
             }
@@ -223,6 +230,7 @@ public extension ThemeManifest {
             cardHex: ThemeHex.parse(colors?.card) ?? base.card,
             backgroundTopHex: top,
             backgroundBottomHex: bottom,
+            backgroundBaseHex: authoredBase,
             onAccentHex: ThemeHex.parse(colors?.onAccent) ?? base.onAccent,
             goldHex: unlocked ? ThemeHex.parse(invariants?.gold) : nil,
             helpHex: unlocked ? ThemeHex.parse(invariants?.help) : nil)
@@ -350,6 +358,114 @@ public enum ThemeLoader {
         default:
             return "This file isn't valid YAML."
         }
+    }
+
+    // MARK: - Writing (the editor's back end)
+
+    /// Writes `<id>.yaml` into the Themes folder and returns its URL.
+    @discardableResult
+    public static func save(id: String, yaml: String) -> URL? {
+        let url = themesDirectory().appendingPathComponent("\(id).yaml")
+        do {
+            try yaml.write(to: url, atomically: true, encoding: .utf8)
+            invalidate()
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    public static func delete(id: String) {
+        let url = themesDirectory().appendingPathComponent("\(id).yaml")
+        try? FileManager.default.removeItem(at: url)
+        invalidate()
+    }
+
+    // MARK: - Lint (§3.6 — errors that teach)
+
+    public struct LintNote: Identifiable, Hashable, Sendable {
+        public var line: Int?
+        public var message: String
+        /// Fatal notes block Save; advisory ones don't (an unknown key is
+        /// harmless at load time — the value simply doesn't apply).
+        public var isFatal: Bool
+        public var id: String { "\(line ?? -1)-\(message)" }
+    }
+
+    private static let knownKeys: Set<String> = [
+        "meta", "id", "name", "mood", "author", "scheme",
+        "colors", "background", "top", "bottom", "card", "accent", "secondary",
+        "onAccent", "label", "invariants", "unlock", "gold", "help",
+        // Accepted by the schema, inert for now — never warn about these.
+        "typography", "face", "customFile", "scale",
+        "icons", "set", "overrides", "motion", "celebration", "radius", "control"
+    ]
+
+    /// Live lint for the YAML editor: the parse verdict, plus a "did you mean"
+    /// for keys that are almost right. A twelve-year-old debugging his first
+    /// config file should learn something, not just be told no.
+    public static func lint(_ text: String) -> [LintNote] {
+        var notes: [LintNote] = []
+
+        if case .failure(let error) = parse(text) {
+            notes.append(LintNote(line: lineNumber(in: error.message),
+                                  message: error.message, isFatal: true))
+        }
+
+        for (index, raw) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+            let line = String(raw)
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.hasPrefix("#"), let colon = trimmed.firstIndex(of: ":") else { continue }
+            let key = String(trimmed[trimmed.startIndex..<colon])
+                .trimmingCharacters(in: CharacterSet(charactersIn: "- "))
+            guard !key.isEmpty, !key.contains(" "), !knownKeys.contains(key) else { continue }
+
+            if let suggestion = closestKey(to: key) {
+                notes.append(LintNote(
+                    line: index + 1,
+                    message: "`\(key)` isn't a key — did you mean `\(suggestion)`?",
+                    isFatal: false))
+            } else {
+                notes.append(LintNote(
+                    line: index + 1,
+                    message: "`\(key)` isn't a key Daily Bread knows — it'll be ignored.",
+                    isFatal: false))
+            }
+        }
+        return notes
+    }
+
+    private static func lineNumber(in message: String) -> Int? {
+        guard let range = message.range(of: #"Line (\d+)"#, options: .regularExpression) else { return nil }
+        return Int(message[range].dropFirst(5))
+    }
+
+    private static func closestKey(to key: String) -> String? {
+        let lowered = key.lowercased()
+        var best: (key: String, distance: Int)?
+        for candidate in knownKeys {
+            let d = editDistance(lowered, candidate.lowercased())
+            if d <= 2, best == nil || d < best!.distance { best = (candidate, d) }
+        }
+        return best?.key
+    }
+
+    private static func editDistance(_ a: String, _ b: String) -> Int {
+        let a = Array(a), b = Array(b)
+        if a.isEmpty { return b.count }
+        if b.isEmpty { return a.count }
+        var prev = Array(0...b.count)
+        var row = [Int](repeating: 0, count: b.count + 1)
+        for i in 1...a.count {
+            row[0] = i
+            for j in 1...b.count {
+                row[j] = a[i - 1] == b[j - 1]
+                    ? prev[j - 1]
+                    : Swift.min(prev[j - 1], Swift.min(prev[j], row[j - 1])) + 1
+            }
+            prev = row
+        }
+        return prev[b.count]
     }
 
     /// example.yaml is the breadcrumb (§3.6) — deliberately readable, comments

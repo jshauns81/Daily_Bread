@@ -11,6 +11,10 @@ struct SettingsView: View {
     /// §3: user themes from the Themes folder — valid ones selectable, broken
     /// ones listed with their error, never hidden and never selectable.
     @State private var userThemes: [LoadedUserTheme] = []
+    /// §3.3 rule 7 — selecting PREVIEWS live; it isn't persisted until
+    /// confirmed, and backing out restores what was there before.
+    @State private var pending: (builtin: String, custom: String)?
+    @State private var editorTarget: ThemeEditorTarget?
 
     var body: some View {
         List {
@@ -53,10 +57,24 @@ struct SettingsView: View {
                     }
                 }
 
+                if pending != nil {
+                    // §3.3 rule 7 — previewing, not yet persisted.
+                    HStack(spacing: 10) {
+                        Text("Trying it on…")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Keep") { keepPending() }
+                            .font(.footnote.weight(.semibold))
+                        Button("Undo") { revertPending() }
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 DisclosureGroup(isExpanded: $themeExpanded) {
                     ForEach(DBTheme.allCases) { theme in
                         Button {
-                            pick { themeRaw = theme.rawValue; customRaw = "" }
+                            preview { themeRaw = theme.rawValue; customRaw = "" }
                         } label: {
                             themeRow(.builtin(theme), selected: customRaw.isEmpty && themeRaw == theme.rawValue)
                         }
@@ -66,11 +84,20 @@ struct SettingsView: View {
                     ForEach(userThemes) { user in
                         if let palette = user.palette {
                             Button {
-                                pick { customRaw = palette.id }
+                                preview { customRaw = palette.id }
                             } label: {
                                 themeRow(.custom(palette), selected: customRaw == palette.id)
                             }
                             .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing) {
+                                Button("Delete", role: .destructive) {
+                                    Task { await deleteTheme(palette.id) }
+                                }
+                                Button("Edit") {
+                                    editorTarget = ThemeEditorTarget(palette: palette)
+                                }
+                                .tint(Color.accentColor)
+                            }
                         } else {
                             // Listed, explained, not selectable (§3.3 rule 3).
                             HStack(spacing: 10) {
@@ -88,12 +115,33 @@ struct SettingsView: View {
                         }
                     }
 
+                    // §3.6 — the front door: an editor that produces valid YAML
+                    // by construction. Raw files are the advanced route.
+                    Button {
+                        editorTarget = ThemeEditorTarget(palette: nil)
+                    } label: {
+                        Label("Make a theme", systemImage: "paintbrush")
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.accentColor)
+
                     if customRaw.isEmpty == false || themeRaw != DBTheme.sunroom.rawValue {
                         // §3.3 rule 6 — the escape hatch is ALWAYS drawn in
                         // built-in Sunroom colours, never the active theme. The
                         // one intentional exception to "nothing hardcoded".
                         Button {
-                            pick { themeRaw = DBTheme.sunroom.rawValue; customRaw = "" }
+                            // Commits immediately — the escape hatch never asks
+                            // you to confirm your way out of an unusable theme.
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                themeRaw = DBTheme.sunroom.rawValue
+                                customRaw = ""
+                                themeExpanded = false
+                            }
+                            pending = nil
+                            fallbackMessage = ""
+                            WidgetBridge.themeChanged()
                         } label: {
                             Text("Reset to Sunroom")
                                 .font(.subheadline.weight(.semibold))
@@ -195,16 +243,61 @@ struct SettingsView: View {
             await ThemeSync.sync(session.client)
             userThemes = ThemeLoader.available()
         }
+        .sheet(item: $editorTarget) { target in
+            ThemeEditorSheet(editing: target.palette,
+                             seed: resolvedTheme,
+                             author: session.currentUser?.userName ?? "") { savedId in
+                userThemes = ThemeLoader.available()
+                customRaw = savedId
+                pending = nil
+                fallbackMessage = ""
+                WidgetBridge.themeChanged()
+            }
+            .environment(session)
+        }
+        #if os(macOS)
+        // §3.3a — hot reload on macOS: edit the YAML in any editor and the
+        // picker catches up when the window comes back to the front.
+        .onReceive(NotificationCenter.default.publisher(
+            for: NSApplication.didBecomeActiveNotification)) { _ in
+            ThemeLoader.invalidate()
+            userThemes = ThemeLoader.available()
+        }
+        #endif
     }
 
     // MARK: - Theme picker
 
-    private func pick(_ apply: () -> Void) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            apply()
-            themeExpanded = false
-        }
+    /// §3.3 rule 7 — apply live so she can SEE it, but remember what to go back
+    /// to. Nothing is committed to the widgets or the server until "Keep".
+    private func preview(_ apply: () -> Void) {
+        if pending == nil { pending = (themeRaw, customRaw) }
+        withAnimation(.easeInOut(duration: 0.2)) { apply() }
         fallbackMessage = ""
+    }
+
+    private func keepPending() {
+        pending = nil
+        withAnimation(.easeInOut(duration: 0.2)) { themeExpanded = false }
+        WidgetBridge.themeChanged()
+    }
+
+    private func revertPending() {
+        guard let previous = pending else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            themeRaw = previous.builtin
+            customRaw = previous.custom
+        }
+        pending = nil
+    }
+
+    private func deleteTheme(_ id: String) async {
+        // Local file first — the picker must never keep offering a theme the
+        // user just deleted, even if the server is unreachable.
+        ThemeLoader.delete(id: id)
+        if customRaw == id { customRaw = "" }
+        userThemes = ThemeLoader.available()
+        try? await session.client.deleteTheme(id: id)
         WidgetBridge.themeChanged()
     }
 
@@ -218,9 +311,19 @@ struct SettingsView: View {
                 Text(theme.displayName)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
-                Text(theme.mood)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 5) {
+                    Text(theme.mood)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    // §3.3a — advisory contrast badge. Never blocks: it's their
+                    // app, and rule 6 keeps even an unreadable theme escapable.
+                    if case .custom(let palette) = theme, !ThemeContrast.passesAA(palette) {
+                        Image(systemName: "eye.trianglebadge.exclamationmark")
+                            .font(.caption2)
+                            .foregroundStyle(DB.gold(scheme))
+                            .help("Text on cards is hard to read at this contrast.")
+                    }
+                }
             }
 
             Spacer()

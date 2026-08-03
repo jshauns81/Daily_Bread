@@ -953,13 +953,28 @@ public class AchievementService : IAchievementService
             },
             new Achievement
             {
-                Code = "SECRET_SAVER", Name = "Secret Saver", 
+                Code = "SECRET_SAVER", Name = "Secret Saver",
                 Description = "Save up $100 without cashing out",
                 HiddenHint = "Patience is a virtue...",
                 Icon = EmojiConstants.MoneyBag, Category = AchievementCategory.Secret,
                 Rarity = AchievementRarity.Epic, Points = 150, SortOrder = 4,
                 IsHidden = true, IsVisibleBeforeUnlock = false,
                 UnlockConditionType = UnlockConditionType.BalanceReached, UnlockConditionValue = "{\"amount\": 100}"
+            },
+            // §3.5 — the theme-authoring achievement. Awarded by ThemesController
+            // when a child saves a theme of their own, so the condition is Manual
+            // (system-event) rather than anything the evaluator polls for. Nothing
+            // in the app hints at it: the breadcrumb is example.yaml in the
+            // Themes folder, and finding it is the point.
+            new Achievement
+            {
+                Code = "MAKE_IT_YOUR_OWN", Name = "Make It Your Own",
+                Description = "Write your own theme and wear it",
+                HiddenHint = "There's a file in there with your name on it...",
+                Icon = EmojiConstants.Art, Category = AchievementCategory.Secret,
+                Rarity = AchievementRarity.Legendary, Points = 200, SortOrder = 5,
+                IsHidden = true, IsVisibleBeforeUnlock = false, IsLegendary = true,
+                UnlockConditionType = UnlockConditionType.Manual
             },
         });
 
