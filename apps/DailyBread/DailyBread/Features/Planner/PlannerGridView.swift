@@ -18,9 +18,17 @@ struct PlannerGridView: View {
     /// when a chore repeats per child, the trigger for grouped layout.
     var showAssignee: Bool
     var onToggle: (PlannerChore, String) -> Void
+    /// One commit for a whole dragged week — see `PlannerStore.setDays`.
+    var onSetDays: (PlannerChore, [String]) -> Void
     var onEdit: (PlannerChore) -> Void
 
     @Environment(\.colorScheme) private var scheme
+
+    // Drag-to-paint state. Held here rather than per-row because only one row
+    // can be painted at a time, and the row views are rebuilt as it changes.
+    @State private var paintingChoreId: Int?
+    @State private var paintOn = true
+    @State private var paintDays: Set<String> = []
 
     private struct Day {
         let full: String
@@ -269,11 +277,19 @@ struct PlannerGridView: View {
                         .frame(width: weekSpan, height: cell)
                 }
             } else {
-                dayStrip(vPad: vPad) {
+                let strip = dayStrip(vPad: vPad) {
                     ForEach(Array(Self.days.enumerated()), id: \.offset) { _, d in
                         dayCell(chore, day: d)
                     }
                 }
+                #if os(macOS)
+                // macOS only. The Mac scrolls by wheel and trackpad, so a
+                // horizontal drag here has nothing to fight; on iPhone the same
+                // gesture would wrestle the ScrollView for every swipe.
+                strip.gesture(paintGesture(chore))
+                #else
+                strip
+                #endif
             }
         }
         .padding(.leading, 4)
@@ -350,8 +366,46 @@ struct PlannerGridView: View {
 
     // MARK: - Cell
 
+    /// Drag across a row to set a run of days in one gesture — "every weekday"
+    /// was five separate clicks, and setting up a family's week is mostly runs.
+    /// The first cell touched decides the direction: start on an empty day and
+    /// you're painting days on, start on a filled one and you're wiping them —
+    /// the same rule a spreadsheet's drag-select uses.
+    private func paintGesture(_ chore: PlannerChore) -> some Gesture {
+        DragGesture(minimumDistance: 6)
+            .onChanged { value in
+                guard let index = cellIndex(atX: value.location.x) else { return }
+                let day = Self.days[index].full
+                if paintingChoreId != chore.id {
+                    paintingChoreId = chore.id
+                    paintDays = Set(chore.activeDays)
+                    paintOn = !paintDays.contains(day)
+                }
+                let changed = paintOn
+                    ? paintDays.insert(day).inserted
+                    : paintDays.remove(day) != nil
+                if changed { Haptics.tick() }
+            }
+            .onEnded { _ in
+                guard paintingChoreId == chore.id else { return }
+                onSetDays(chore, Self.days.map(\.full).filter { paintDays.contains($0) })
+                paintingChoreId = nil
+            }
+    }
+
+    /// Which column a point falls in. Gaps round into the cell before them, so
+    /// a drag never skips a day by passing through the space between two.
+    private func cellIndex(atX x: CGFloat) -> Int? {
+        guard x >= 0 else { return nil }
+        let index = Int(x / (cell + gap))
+        return (0...6).contains(index) ? index : nil
+    }
+
     private func dayCell(_ chore: PlannerChore, day: Day) -> some View {
-        let on = chore.activeDays.contains(day.full)
+        // Mid-drag the row shows the paint, not the saved value.
+        let on = paintingChoreId == chore.id
+            ? paintDays.contains(day.full)
+            : chore.activeDays.contains(day.full)
         let who = chore.assignedUserName.map { ", \($0)" } ?? ""
         return Button {
             onToggle(chore, day.full)

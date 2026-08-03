@@ -198,6 +198,32 @@ final class PlannerStore {
         }
     }
 
+    /// Commit a whole week at once — the end of a drag across the row.
+    /// Deliberately one write rather than one per day: `toggleDay` fires a full
+    /// chore PUT each time, so painting Mon–Fri through it would send five
+    /// racing writes, each built from its own snapshot of activeDays.
+    func setDays(_ chore: PlannerChore, days: [String], _ session: SessionStore) {
+        guard chore.scheduleType == "SpecificDays",
+              let index = chores.firstIndex(where: { $0.id == chore.id }),
+              days != chores[index].activeDays else { return }
+        let original = chores
+        withAnimation(.snappy) { chores[index].activeDays = days }
+        Haptics.tick()
+
+        let write = Self.write(from: chores[index], activeDays: days)
+        Task {
+            do {
+                let fresh = try await session.client.updateChore(id: chore.id, write)
+                upsert(fresh)
+                errorMessage = nil
+            } catch {
+                withAnimation(.snappy) { self.chores = original }
+                errorMessage = error.localizedDescription
+                Haptics.warning()
+            }
+        }
+    }
+
     /// Rebuild a ChoreWrite from a chore, swapping in new active days.
     static func write(from c: PlannerChore, activeDays: [String]) -> ChoreWrite {
         ChoreWrite(
@@ -406,6 +432,7 @@ struct PlannerView: View {
                     chores: store.visibleChores,
                     showAssignee: store.children.count > 1 && store.selectedChildId == nil,
                     onToggle: { chore, day in store.toggleDay(chore, dayFull: day, session) },
+                    onSetDays: { chore, days in store.setDays(chore, days: days, session) },
                     onEdit: { chore in editorTarget = ChoreEditorTarget(chore: chore) })
             } else if store.loading {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
