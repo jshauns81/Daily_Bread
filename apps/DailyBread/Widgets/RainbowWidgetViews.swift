@@ -28,10 +28,10 @@ struct RainbowWidgetRoot: View {
         default:
             if let data = entry.data {
                 systemTile(data)
-                    .environment(\.colorScheme, standby ? .dark : (data.theme.isDark ? .dark : .light))
+                    .environment(\.colorScheme, standby ? .dark : (data.isDark ? .dark : .light))
                     .containerBackground(for: .widget) {
                         // StandBy strips this anyway; black keeps the removal seamless.
-                        standby ? Color.black : data.theme.cardColor
+                        standby ? Color.black : data.cardColor
                     }
             } else {
                 EmptyTile()
@@ -69,7 +69,7 @@ struct SmallTile: View {
                 if let earned = data.todayEarned {
                     Text(earned)
                         .font(.system(size: 12, weight: .heavy))
-                        .foregroundStyle(DB.gold(scheme))
+                        .foregroundStyle(data.gold(scheme))
                 }
             }
             Spacer(minLength: 0)
@@ -77,7 +77,7 @@ struct SmallTile: View {
                 WidgetRing(progress: data.todayProgress,
                            label: ringLabel,
                            size: 48, stroke: 6,
-                           accent: data.theme.accent())
+                           accent: data.accentColor)
                 FittedGrid(cells: data.cells, size: .widgetSmall, targetWeeks: 4)
             }
             Spacer(minLength: 0)
@@ -109,12 +109,12 @@ struct MediumYearTile: View {
                 if let balance = data.balance {
                     Text(balance)
                         .font(.system(size: 19, weight: .heavy))
-                        .foregroundStyle(DB.gold(scheme))
+                        .foregroundStyle(data.gold(scheme))
                 }
                 Spacer(minLength: 0)
                 HStack(spacing: 8) {
                     WidgetRing(progress: data.todayProgress, label: nil,
-                               size: 26, stroke: 4, accent: data.theme.accent())
+                               size: 26, stroke: 4, accent: data.accentColor)
                     Text(countLine)
                         .font(.system(size: 11.5, weight: .semibold))
                         .foregroundStyle(.secondary)
@@ -147,7 +147,7 @@ struct LargeYearTile: View {
                 }
                 Spacer(minLength: 0)
                 WidgetRing(progress: data.todayProgress, label: ringLabel,
-                           size: 54, stroke: 5, accent: data.theme.accent())
+                           size: 54, stroke: 5, accent: data.accentColor)
             }
             Spacer(minLength: 0)
             BandedGrid(cells: data.cells)
@@ -157,7 +157,7 @@ struct LargeYearTile: View {
                     Eyebrow("BALANCE")
                     Text(data.balance ?? "—")
                         .font(.system(size: 20, weight: .heavy))
-                        .foregroundStyle(DB.gold(scheme))
+                        .foregroundStyle(data.gold(scheme))
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 2) {
@@ -187,7 +187,7 @@ struct StandByTile: View {
                 if let streak = data.streak, streak > 1 {
                     Text("\(streak) day streak")
                         .font(.system(size: 11, weight: .heavy))
-                        .foregroundStyle(DB.gold(.dark))
+                        .foregroundStyle(data.gold(.dark))
                 }
             }
             FittedGrid(cells: data.cells, size: .standby, targetWeeks: 26)

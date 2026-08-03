@@ -46,6 +46,10 @@ targets:
         # server runs without TLS in development. Public servers use HTTPS.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # §3.1: the Themes folder (Documents/Themes) is user-visible in Files —
+        # that's how a YAML theme gets onto an iPhone without a computer.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jshauns.dailybread

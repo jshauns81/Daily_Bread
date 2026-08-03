@@ -25,6 +25,9 @@ public struct WidgetSnapshot: Codable, Sendable {
     public var streak: Int?
     /// DBTheme rawValue — the widget renders true theme surfaces.
     public var theme: String
+    /// §3: set when a custom theme is active — the widget can't read theme
+    /// files, so the resolved surfaces ride the snapshot as hex strings.
+    public var palette: SnapshotPalette?
     /// The local day this was written. A snapshot from yesterday still shows the
     /// grid, but its today-counts are stale and the widget must not present them
     /// as this morning's ring.
@@ -46,6 +49,27 @@ public struct WidgetSnapshot: Codable, Sendable {
         guard let today = days.last(where: { $0.date == generatedOn }) else { return nil }
         let day = RainbowDay(today)
         return (day.requiredDone, day.requiredTotal)
+    }
+}
+
+/// A custom theme's surfaces, flattened for the widget process (§3).
+public struct SnapshotPalette: Codable, Hashable, Sendable {
+    public var name: String
+    public var isDark: Bool
+    public var accent: String
+    public var card: String
+    public var backgroundTop: String
+    public var backgroundBottom: String
+    public var gold: String?
+
+    public init(_ p: CustomPalette) {
+        name = p.name
+        isDark = p.isDark
+        accent = ThemeHex.format(p.accentHex)
+        card = ThemeHex.format(p.cardHex)
+        backgroundTop = ThemeHex.format(p.backgroundTopHex)
+        backgroundBottom = ThemeHex.format(p.backgroundBottomHex)
+        gold = p.goldHex.map(ThemeHex.format)
     }
 }
 
@@ -100,9 +124,20 @@ public enum WidgetBridge {
 
     /// Theme picked in Settings — restamp so the widgets re-skin instantly.
     public static func themeChanged() {
+        ThemeLoader.invalidate()
         guard var s = read() else { return }
-        s.theme = ThemeStore.current.rawValue
+        stampTheme(&s)
         write(s)
+    }
+
+    /// Built-in rawValue always; resolved custom surfaces when one is active.
+    private static func stampTheme(_ s: inout WidgetSnapshot) {
+        s.theme = ThemeStore.current.rawValue
+        if case .custom(let p) = ThemeStore.resolvedCurrent {
+            s.palette = SnapshotPalette(p)
+        } else {
+            s.palette = nil
+        }
     }
 
     /// Rolls a stale snapshot forward to today: yesterday's today-fields must
@@ -118,7 +153,7 @@ public enum WidgetBridge {
             s.todayEarned = nil
             s.generatedOn = today
         }
-        s.theme = ThemeStore.current.rawValue
+        stampTheme(&s)
         return s
     }
 

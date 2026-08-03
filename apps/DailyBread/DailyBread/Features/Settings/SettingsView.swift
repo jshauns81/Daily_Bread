@@ -4,8 +4,13 @@ import DailyBreadKit
 struct SettingsView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
-    @AppStorage("db.theme") private var themeRaw = DBTheme.sunroom.rawValue
+    @AppStorage(ThemeStore.key) private var themeRaw = DBTheme.sunroom.rawValue
+    @AppStorage(ThemeStore.customKey) private var customRaw = ""
+    @AppStorage(ThemeStore.fallbackKey) private var fallbackMessage = ""
     @State private var themeExpanded = false
+    /// §3: user themes from the Themes folder — valid ones selectable, broken
+    /// ones listed with their error, never hidden and never selectable.
+    @State private var userThemes: [LoadedUserTheme] = []
 
     var body: some View {
         List {
@@ -32,34 +37,91 @@ struct SettingsView: View {
             }
 
             Section {
+                if !fallbackMessage.isEmpty {
+                    // §3.3 rule 5 — the dismissible last-known-good banner.
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundStyle(DB.gold(scheme))
+                        Text(fallbackMessage)
+                            .font(.footnote)
+                        Spacer()
+                        Button("OK") {
+                            fallbackMessage = ""
+                            customRaw = ""
+                        }
+                        .font(.footnote.weight(.semibold))
+                    }
+                }
+
                 DisclosureGroup(isExpanded: $themeExpanded) {
                     ForEach(DBTheme.allCases) { theme in
                         Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                themeRaw = theme.rawValue
-                                themeExpanded = false
-                            }
-                            WidgetBridge.themeChanged()
+                            pick { themeRaw = theme.rawValue; customRaw = "" }
                         } label: {
-                            themeRow(theme)
+                            themeRow(.builtin(theme), selected: customRaw.isEmpty && themeRaw == theme.rawValue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    ForEach(userThemes) { user in
+                        if let palette = user.palette {
+                            Button {
+                                pick { customRaw = palette.id }
+                            } label: {
+                                themeRow(.custom(palette), selected: customRaw == palette.id)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            // Listed, explained, not selectable (§3.3 rule 3).
+                            HStack(spacing: 10) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundStyle(DB.help(scheme))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(user.fileName)
+                                        .font(.body.weight(.medium))
+                                    Text(user.error ?? "Invalid theme file.")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+
+                    if customRaw.isEmpty == false || themeRaw != DBTheme.sunroom.rawValue {
+                        // §3.3 rule 6 — the escape hatch is ALWAYS drawn in
+                        // built-in Sunroom colours, never the active theme. The
+                        // one intentional exception to "nothing hardcoded".
+                        Button {
+                            pick { themeRaw = DBTheme.sunroom.rawValue; customRaw = "" }
+                        } label: {
+                            Text("Reset to Sunroom")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color(hex: 0xC7284F))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Color(hex: 0xFFFDF9),
+                                            in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(Color.black.opacity(0.08), lineWidth: 0.5))
                         }
                         .buttonStyle(.plain)
                     }
                 } label: {
                     HStack(spacing: 14) {
-                        ThemeSwatch(theme: currentTheme)
+                        ThemeSwatch(theme: resolvedTheme)
                             .frame(width: 64, height: 44)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Theme")
                                 .font(.caption).foregroundStyle(.secondary)
-                            Text(currentTheme.displayName)
+                            Text(resolvedTheme.displayName)
                                 .font(.body.weight(.semibold))
                         }
                     }
                 }
                 .tint(.primary)
             } footer: {
-                Text("Pick the look you like. It changes everywhere, on every device — switch whenever you feel like a change.")
+                Text("Pick the look you like — or drop a .yaml file in the Themes folder and make your own. It changes everywhere, on every device.")
             }
 
             if session.currentUser?.isParent == true {
@@ -121,15 +183,31 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .themeBackground()
-        .task { await session.refreshFeatures() }
+        .task {
+            ThemeLoader.invalidate()
+            userThemes = ThemeLoader.available()
+            await session.refreshFeatures()
+        }
+        .refreshable {
+            ThemeLoader.invalidate()
+            userThemes = ThemeLoader.available()
+        }
     }
 
     // MARK: - Theme picker
 
+    private func pick(_ apply: () -> Void) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            apply()
+            themeExpanded = false
+        }
+        fallbackMessage = ""
+        WidgetBridge.themeChanged()
+    }
+
     /// One selectable theme: a real preview of the look beside its name.
-    private func themeRow(_ theme: DBTheme) -> some View {
-        let selected = themeRaw == theme.rawValue
-        return HStack(spacing: 14) {
+    private func themeRow(_ theme: AppTheme, selected: Bool) -> some View {
+        HStack(spacing: 14) {
             ThemeSwatch(theme: theme)
                 .frame(width: 76, height: 52)
 
@@ -162,7 +240,9 @@ struct SettingsView: View {
 
     // MARK: - Family features
 
-    private var currentTheme: DBTheme { DBTheme(rawValue: themeRaw) ?? .sunroom }
+    private var resolvedTheme: AppTheme {
+        ThemeStore.resolve(builtinRaw: themeRaw, customId: customRaw)
+    }
 
     /// Single-child mode: name the one child instead of saying "the kids".
     private var goalsSubtitle: String {
@@ -208,7 +288,7 @@ struct SettingsView: View {
 /// A little live preview of a theme — its real background, a floating card with the accent,
 /// a gold coin, and the progress glow. What she taps is what the app becomes.
 private struct ThemeSwatch: View {
-    let theme: DBTheme
+    let theme: AppTheme
 
     var body: some View {
         ZStack {

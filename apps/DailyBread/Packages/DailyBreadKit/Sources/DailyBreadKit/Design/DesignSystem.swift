@@ -193,20 +193,45 @@ public enum DBRarity: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Reads the currently chosen theme from storage (used by the theme-aware modifiers).
-enum ThemeStore {
-    static let key = "db.theme"
-    static var current: DBTheme {
+/// Reads the currently chosen theme from storage (used by the theme-aware
+/// modifiers). §3: selection is two keys — the built-in raw value, and an
+/// optional custom-theme id that wins when set AND loads. A custom id that
+/// fails to resolve falls back to the built-in (last-known-good, §3.3 rule 5)
+/// and records why, so the picker can show a dismissible banner.
+public enum ThemeStore {
+    public static let key = "db.theme"
+    public static let customKey = "db.theme.custom"
+    public static let fallbackKey = "db.theme.fallbackMessage"
+
+    public static var current: DBTheme {
         DBTheme(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .sunroom
+    }
+
+    public static func resolve(builtinRaw: String, customId: String) -> AppTheme {
+        let builtin = AppTheme.builtin(DBTheme(rawValue: builtinRaw) ?? .sunroom)
+        guard !customId.isEmpty else { return builtin }
+        if let palette = ThemeLoader.palette(id: customId) {
+            return .custom(palette)
+        }
+        UserDefaults.standard.set(
+            "The theme \u{201C}\(customId)\u{201D} couldn't be loaded, so you're back on \(builtin.displayName).",
+            forKey: fallbackKey)
+        return builtin
+    }
+
+    public static var resolvedCurrent: AppTheme {
+        resolve(builtinRaw: UserDefaults.standard.string(forKey: key) ?? "",
+                customId: UserDefaults.standard.string(forKey: customKey) ?? "")
     }
 }
 
 /// Card treatment — a soft, elevated surface in the theme's card colour.
 public struct GlassCard: ViewModifier {
     @AppStorage(ThemeStore.key) private var themeRaw = DBTheme.sunroom.rawValue
+    @AppStorage(ThemeStore.customKey) private var customRaw = ""
     var padding: CGFloat
 
-    private var theme: DBTheme { DBTheme(rawValue: themeRaw) ?? .sunroom }
+    private var theme: AppTheme { ThemeStore.resolve(builtinRaw: themeRaw, customId: customRaw) }
 
     public func body(content: Content) -> some View {
         content
@@ -228,8 +253,9 @@ public extension View {
 /// Screen background — the chosen theme's warm gradient.
 public struct ThemeBackground: ViewModifier {
     @AppStorage(ThemeStore.key) private var themeRaw = DBTheme.sunroom.rawValue
+    @AppStorage(ThemeStore.customKey) private var customRaw = ""
 
-    private var theme: DBTheme { DBTheme(rawValue: themeRaw) ?? .sunroom }
+    private var theme: AppTheme { ThemeStore.resolve(builtinRaw: themeRaw, customId: customRaw) }
 
     public func body(content: Content) -> some View {
         content

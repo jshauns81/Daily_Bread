@@ -65,11 +65,29 @@ struct RainbowWidgetData {
     var streak: Int?
     var perfectDays: Int
     var theme: DBTheme
+    /// §3 — set when a custom theme is active; wins over `theme` for surfaces.
+    var palette: SnapshotPalette?
     var childName: String?
 
     var todayProgress: Double? {
         guard let done = todayDone, let total = todayTotal, total > 0 else { return nil }
         return Double(done) / Double(total)
+    }
+
+    // The one surface API the tiles use, custom-first.
+    var isDark: Bool { palette?.isDark ?? theme.isDark }
+    var accentColor: Color {
+        if let hex = ThemeHex.parse(palette?.accent) { return Color(hex: hex) }
+        return theme.accent()
+    }
+    var cardColor: Color {
+        if let hex = ThemeHex.parse(palette?.card) { return Color(hex: hex) }
+        return theme.cardColor
+    }
+    /// Gold means money in every theme — unless explicitly unlocked (§3.4).
+    func gold(_ scheme: ColorScheme) -> Color {
+        if let hex = ThemeHex.parse(palette?.gold) { return Color(hex: hex) }
+        return DB.gold(scheme)
     }
 
     static var current: RainbowWidgetData? {
@@ -85,6 +103,7 @@ struct RainbowWidgetData {
             streak: s.streak,
             perfectDays: s.perfectDaysThisYear,
             theme: DBTheme(rawValue: s.theme) ?? .sunroom,
+            palette: s.palette,
             childName: s.childName)
     }
 
@@ -104,6 +123,6 @@ struct RainbowWidgetData {
         return RainbowWidgetData(
             cells: cells, todayDone: 4, todayTotal: 6, todayEarned: "$4.50",
             balance: "$62.40", streak: 9, perfectDays: 128, theme: .sunroom,
-            childName: nil)
+            palette: nil, childName: nil)
     }
 }
