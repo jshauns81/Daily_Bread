@@ -13,6 +13,20 @@ packages:
   DailyBreadKit:
     path: Packages/DailyBreadKit
 
+# Xcode Cloud only builds SHARED schemes, and xcodegen writes none unless asked —
+# xcodebuild finds "DailyBread" locally only because it auto-creates schemes on
+# the fly, which Cloud does not do. Declaring it here writes a real shared scheme
+# into xcshareddata/xcschemes so Cloud can resolve the name in its workflow.
+schemes:
+  DailyBread:
+    build:
+      targets:
+        DailyBread: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
 targets:
   DailyBread:
     type: application
