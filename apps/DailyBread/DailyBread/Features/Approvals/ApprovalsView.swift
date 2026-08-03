@@ -101,14 +101,31 @@ struct ApprovalsView: View {
     @State private var confirmApproveAll = false
     private let previewCap = 3
 
+    /// macOS windows are tall and the list is otherwise empty, so give the
+    /// placeholder real height to centre inside.
+    private var emptyStateHeight: CGFloat {
+        #if os(macOS)
+        420
+        #else
+        300
+        #endif
+    }
+
     var body: some View {
         List {
             if let queue = store.queue {
                 if queue.isEmpty {
+                    // Sized to the window rather than to its own content, so it
+                    // sits in the middle of the space instead of pinned under
+                    // the title. A List row can only ever be top-aligned — on a
+                    // Mac window that leaves it stranded near the top.
                     ContentUnavailableView(
                         "All caught up",
                         systemImage: "checkmark.seal",
                         description: Text("Nothing needs your approval right now."))
+                        .frame(maxWidth: .infinity, minHeight: emptyStateHeight)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
 
                 if !queue.helpRequests.isEmpty {

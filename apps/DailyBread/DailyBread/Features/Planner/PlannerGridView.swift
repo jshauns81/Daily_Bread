@@ -20,7 +20,13 @@ struct PlannerGridView: View {
     private let days: [(full: String, letter: String)] = [
         ("Sunday", "S"), ("Monday", "M"), ("Tuesday", "T"), ("Wednesday", "W"),
         ("Thursday", "T"), ("Friday", "F"), ("Saturday", "S")]
+    // macOS shows far more rows at once, so the same 32pt cell that reads fine
+    // on a phone becomes a wall. Tighter here, unchanged on iOS.
+    #if os(macOS)
+    private let cell: CGFloat = 26
+    #else
     private let cell: CGFloat = 32
+    #endif
     private let gap: CGFloat = 3
 
     private var weekSpan: CGFloat { cell * 7 + gap * 6 }
@@ -122,19 +128,26 @@ struct PlannerGridView: View {
         return Button {
             onToggle(chore, full)
         } label: {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(on ? Color.dbAccent : DB.fillOff(scheme))
+            // A scheduled cell used to be a SOLID accent block. Across 7 days x
+            // every chore — and Routines are on all seven — that's a slab of
+            // saturated colour, which both looks bad and spends the accent on
+            // something that isn't a button. Same treatment as SheetChip:
+            // tinted fill, accent stroke, accent tick. Legible, and quiet.
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(on ? AnyShapeStyle(Color.dbAccent.opacity(0.18))
+                         : AnyShapeStyle(DB.fillOff(scheme)))
                 .frame(width: cell, height: cell)
                 .overlay {
                     if on {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
+                            .font(.system(size: cell * 0.42, weight: .bold))
+                            .foregroundStyle(Color.dbAccent)
                     }
                 }
                 .overlay {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(on ? 0 : 0.06), lineWidth: 0.5)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(on ? Color.dbAccent : Color.primary.opacity(0.06),
+                                      lineWidth: on ? 1.5 : 0.5)
                 }
         }
         .buttonStyle(.plain)

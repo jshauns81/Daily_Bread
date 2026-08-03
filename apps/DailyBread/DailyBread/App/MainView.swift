@@ -18,6 +18,7 @@ struct MainView: View {
         case activity = "Activity"
         case planner = "Planner"
         case approvals = "Approvals"
+        case driving = "Driving"
         case settings = "Settings"
 
         var id: String { rawValue }
@@ -35,15 +36,26 @@ struct MainView: View {
             case .activity: return "list.bullet.clipboard"
             case .planner: return "checklist"
             case .approvals: return "checkmark.circle"
+            case .driving: return "car.fill"
             case .settings: return "gearshape"
             }
         }
     }
 
+    /// Driving is a first-class destination on macOS, where the sidebar has the
+    /// room — Shaun's call, and it's the surface his son uses most. iPhone keeps
+    /// five tabs: a sixth crowds the bar, and the kid's Home already carries the
+    /// driving card plus a header shortcut.
     private var sections: [Section] {
-        user.isParent
+        #if os(macOS)
+        return user.isParent
+            ? [.home, .activity, .planner, .approvals, .driving, .settings]
+            : [.kidHome, .today, .earnings, .awards, .driving, .settings]
+        #else
+        return user.isParent
             ? [.home, .activity, .planner, .approvals, .settings]
             : [.kidHome, .today, .earnings, .awards, .settings]
+        #endif
     }
 
     @State private var selection: Section?
@@ -101,6 +113,7 @@ struct MainView: View {
         case .activity: ActivityView()
         case .planner: PlannerView()
         case .approvals: ApprovalsView()
+        case .driving: DrivingLogView(mode: user.isParent ? .parent : .kid)
         case .settings: SettingsView()
         }
     }
