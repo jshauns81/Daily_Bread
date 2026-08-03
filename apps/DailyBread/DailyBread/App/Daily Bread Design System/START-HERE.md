@@ -250,8 +250,24 @@ phones can reach it.
   valid local files (local wins — it's the authoring surface) and pulls server themes
   into the folder, on bootstrap and picker refresh.
 
-**Remaining in §3:** the two-mode editor sheet (§3.6 Simple | YAML, lossless both
-ways, lint-as-you-type, colour gutter, SF Mono, keyboard accessory bar), preview-
-before-apply (§3.3 rule 7), the contrast warning badge, macOS hot reload, deletion
-sync, and the hidden "Make it your own" achievement. App icon artwork still open
-(not a blocker).
+- **3.C the editor and the rest** — the §3.6 sheet: `Simple | YAML`, both editing one
+  `ThemeDraft`, so switching is lossless. **A round-trip test caught a real bug**:
+  re-opening a saved theme read the *derived* gradient stop, so the background
+  ratcheted lighter every edit-save; `CustomPalette` now carries the authored
+  background beside the two computed stops. YAML mode bridges UITextView/NSTextView
+  — required by §3.6's own two notes (smart quote/dash substitution silently breaks
+  YAML and SwiftUI can't disable it; the iOS accessory bar must insert at the
+  cursor). Colour gutter, 400ms lint that suggests the key you meant, live preview
+  (split on macOS, pinned strip on iPhone), SF Mono. Plus preview-before-apply
+  (Keep/Undo; Reset commits instantly — the escape hatch never asks you to confirm),
+  advisory contrast badge, swipe edit/delete with server propagation, macOS hot
+  reload, and the hidden legendary **Make It Your Own**, awarded server-side when a
+  *child* saves a theme.
+
+**Phase 3 is DONE.** 214 backend + 32 kit tests green, iOS + macOS builds green.
+
+**Deferred within §3, deliberately:** `typography` / `icons` / `motion` / `radius`
+parse but are inert — the schema accepts them so files don't break when they land.
+App icon artwork still open (not a blocker).
+
+**The whole handoff (Phase 0 → 3) is now built.**
