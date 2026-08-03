@@ -62,7 +62,7 @@ you (or a future me) can't quietly undo it.
 | **Help stays visible** (2026-07-30) | The row keeps its own always-visible Help affordance — §1.1's "absorbs the HELP capsule" is overruled | Help is core to the app; a safety valve the kid can't see isn't one |
 | **Celebrations** | Three tiers: per-chore bloom → coin arc to balance → perfect-day particles | §1.3, built in `ui_kits/kid_app/Celebration.jsx` |
 | **Icon set** | **SF Symbols stays.** Phosphor/Iconoir/Lucide evaluated and rejected | "Icon set" section |
-| **App icon** | Stable identity mark (monstrance). The *living* rainbow goes in widgets + macOS dock | §1.2a |
+| **App icon** | **Shipped 2026-08-02** — Shaun's own monstrance SVG, and it stands until he replaces it. The *living* rainbow stays in widgets + the macOS dock | §1.2a |
 | **Night** | `#5560A8` / `#8D97D8` — the quietest hue in the app | `guidelines/color-night.html` |
 | **Rarity** | `#8A8F98` / `#3B82D6` / `#7A5AF8` / `#E7B44A`, theme-independent | §0.2 |
 | **Themes** | Built-ins compiled in Swift; user themes are YAML that **cannot brick the app** | §3.3 |
@@ -75,11 +75,12 @@ you (or a future me) can't quietly undo it.
 
 Nothing here blocks Phase 0 or Phase 1.
 
-1. **Vector monstrance artwork.** Concept is locked (host constant, 8 fixed rays lighting
-   proportionally). Your uploaded SVG reads as a *sunrise* rather than a monstrance and has
-   baked glow filters that fuzz at small sizes. `guidelines/app-icon/round-8-review.html`
-   compares it against a redraw; `guidelines/app-icon/round-8-render-check.html` proves the
-   render is faithful. **Not a blocker for shipping.**
+1. ~~**Vector monstrance artwork.**~~ **DECIDED 2026-08-02: SHIPPED, and it stands until
+   Shaun replaces it.** His own `dbicon.svg` is the app icon on both platforms — source
+   checked in at `Assets.xcassets/AppIcon.appiconset/source-dbicon.svg`. The earlier
+   review notes (reads as a sunrise, thin rays, the muddy bottom third) are **noted and
+   overruled**: this is his mark, it ships as drawn, and refinement is not to be raised
+   again unless he raises it. Do not offer redraws.
 2. ~~**`ChoreCheck` removes the HELP capsule**~~ **DECIDED 2026-07-30: it doesn't.** Help
    stays a visible affordance on the row — see the Decided table. Overrules §1.1.
 3. ~~**Reduce Motion behaviour** for tier 3~~ **DECIDED 2026-07-30: the default stands** —
