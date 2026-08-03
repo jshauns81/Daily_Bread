@@ -205,3 +205,33 @@ Verified end-to-end in the kid simulator: launch → Home writes the snapshot (r
 year, counts, balance, theme) → extension embedded with the right extension point.
 To see it: long-press the home screen → **+** → Daily Bread → add. Same on the Lock
 Screen for the accessories.
+
+**Status 2026-08-02 (later): Phase 2 is DONE** — five commits, one per task, iOS +
+macOS builds green:
+
+- **2.1 Drive logging** — duration is the hero (44pt value, preset chips, drag to
+  fine-tune, live "brings you to X of 50 hours"); date = Today / Yesterday / Pick…
+  chips with a themed month grid; exact times behind a disclosure as themed fields;
+  **parents log too** — + on Driving approvals, auto-approved server-side (already
+  supported by the API), supervising adult defaults to the logging parent, child
+  chips only in a genuinely multi-child household, row stamped "logged by".
+- **2.2 Frequency pips** — six numbered pips in DayPicker's exact geometry; capped
+  at 6 as decided (7 is daily — the caption points at Fixed days, all seven on).
+- **2.3 Named stakes** — Nice to have / Normal / Matters / Big deal / Critical →
+  0/2/5/7/10, storage unchanged; per-tier meaning lines echo the kid's urgency copy.
+- **2.4 Chip pickers** — rarity as five DBRarity-tinted chips; weather as four
+  inline SF-Symbol chips. Category / Which-chore / Before-hour stay menus (long
+  lists are what menus are for). `SheetChip` joins SheetKit as the shared vocabulary.
+- **2.5 Emoji picker** — the grouped grid from `guidelines/icons-emoji.html` (53
+  glyphs, 7 groups), per-set Recents, free entry validated to one grapheme; same
+  component for achievements with a trophy/streak set.
+
+**Also 2026-08-02, out of band:** bundle ids are `com.jshauns.dailybread(.widgets)`
+(org.dailybread.app is registered to a stranger's team globally — old builds only
+ever worked via the wildcard profile); chore-name uniqueness is now scoped to the
+assignee (siblings share "Empty Dishwasher" by design — the global check made
+common names uneditable); dev server gets a `lan` profile (`0.0.0.0:5100`) so real
+phones can reach it.
+
+**Next: Phase 3 — YAML theming.** Specced in IMPLEMENTATION.md §3. App icon
+artwork still open (not a blocker).
