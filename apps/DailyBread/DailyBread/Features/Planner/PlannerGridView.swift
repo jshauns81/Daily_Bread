@@ -20,14 +20,20 @@ struct PlannerGridView: View {
     private let days: [(full: String, letter: String)] = [
         ("Sunday", "S"), ("Monday", "M"), ("Tuesday", "T"), ("Wednesday", "W"),
         ("Thursday", "T"), ("Friday", "F"), ("Saturday", "S")]
-    // macOS shows far more rows at once, so the same 32pt cell that reads fine
-    // on a phone becomes a wall. Tighter here, unchanged on iOS.
+    // macOS is the primary surface for the Planner — it gets room, not a
+    // tighter version of the phone. A 3pt gap on a wide window packs the seven
+    // columns into a clump hard against the right edge, which is what "snug"
+    // was: not the marks, the spacing.
     #if os(macOS)
-    private let cell: CGFloat = 26
+    private let cell: CGFloat = 36
+    private let gap: CGFloat = 10
+    /// Keeps the last column off the scroller.
+    private let trailingInset: CGFloat = 10
     #else
     private let cell: CGFloat = 32
-    #endif
     private let gap: CGFloat = 3
+    private let trailingInset: CGFloat = 0
+    #endif
 
     private var weekSpan: CGFloat { cell * 7 + gap * 6 }
 
@@ -63,7 +69,8 @@ struct PlannerGridView: View {
             }
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 4)
+        .padding(.leading, 4)
+        .padding(.trailing, 4 + trailingInset)
         .background(.regularMaterial)
     }
 
@@ -91,7 +98,8 @@ struct PlannerGridView: View {
             }
         }
         .padding(.vertical, 7)
-        .padding(.horizontal, 4)
+        .padding(.leading, 4)
+        .padding(.trailing, 4 + trailingInset)
     }
 
     private func nameCell(_ chore: PlannerChore) -> some View {
@@ -128,26 +136,21 @@ struct PlannerGridView: View {
         return Button {
             onToggle(chore, full)
         } label: {
-            // A scheduled cell used to be a SOLID accent block. Across 7 days x
-            // every chore — and Routines are on all seven — that's a slab of
-            // saturated colour, which both looks bad and spends the accent on
-            // something that isn't a button. Same treatment as SheetChip:
-            // tinted fill, accent stroke, accent tick. Legible, and quiet.
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(on ? AnyShapeStyle(Color.dbAccent.opacity(0.18))
-                         : AnyShapeStyle(DB.fillOff(scheme)))
+            // Solid accent + white tick — Shaun picked this over the quieter
+            // variants. The density complaint was spacing, not the mark.
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(on ? Color.dbAccent : DB.fillOff(scheme))
                 .frame(width: cell, height: cell)
                 .overlay {
                     if on {
                         Image(systemName: "checkmark")
-                            .font(.system(size: cell * 0.42, weight: .bold))
-                            .foregroundStyle(Color.dbAccent)
+                            .font(.system(size: cell * 0.4, weight: .bold))
+                            .foregroundStyle(.white)
                     }
                 }
                 .overlay {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(on ? Color.dbAccent : Color.primary.opacity(0.06),
-                                      lineWidth: on ? 1.5 : 0.5)
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(on ? 0 : 0.06), lineWidth: 0.5)
                 }
         }
         .buttonStyle(.plain)
