@@ -9,6 +9,22 @@
 > that says "web remains the admin surface" is obsolete — admin/planner/management all
 > go native.
 
+> **BRANCH DEPRECATED (2026-08-02, Shaun's call):** `redesign/ultraviolet` — the
+> 12-commit Blazor redesign (Ultraviolet themes, Instrument Sans, Lucide icon sprite,
+> new shell, redesigned planner/dashboard/kid screens, loaf-mark PWA icons, and an
+> `IconSystem` migration adding `LucideIconName`/`TileSlot`) — is **deleted, not merged.**
+> It rebuilds the surface this plan retires, and two of its choices were later decided
+> against: SF Symbols stays (Lucide was evaluated and rejected) and Phase 2.5 shipped a
+> curated *emoji* picker, while that branch migrated away from emoji. Merging it would
+> also have landed a July-dated migration behind the current ones with a conflicting EF
+> model snapshot.
+>
+> One thing was salvaged to master first: the multi-emoji icon bug its smoke-test commit
+> fixed on the web — the native app had it too (`String.firstGlyph`).
+>
+> The work is not lost. Tag **`archive/redesign-ultraviolet`** (8ba8bad) holds it:
+> `git checkout -b redesign/ultraviolet archive/redesign-ultraviolet`
+
 
 > Status: **Proposed v1** · Created 2026-07-19
 > Executes the decided direction: native SwiftUI app, backend stays, Blazor web shrinks to an admin surface. PWA/Capacitor and "should we migrate" are closed questions and not revisited here.
