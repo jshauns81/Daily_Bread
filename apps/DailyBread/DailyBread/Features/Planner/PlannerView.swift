@@ -256,14 +256,13 @@ struct PlannerView: View {
 
     private var listContent: some View {
         List {
+            #if os(iOS)
             Section {
-                Picker("", selection: $store.kindFilter) {
-                    ForEach(PlannerKind.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
-                .listRowBackground(Color.clear)
+                kindPicker
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+                    .listRowBackground(Color.clear)
             }
+            #endif
 
             // Single-child families never see a "which child" filter (single-child mode).
             if store.children.count > 1 && !store.chores.isEmpty {
@@ -346,6 +345,10 @@ struct PlannerView: View {
                     EditButton()
                 }
             }
+            #else
+            ToolbarItem(placement: .principal) {
+                kindPicker.frame(width: 200)
+            }
             #endif
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -370,6 +373,9 @@ struct PlannerView: View {
                 } label: {
                     Label("More", systemImage: "ellipsis.circle")
                 }
+                // Without this macOS hangs a disclosure chevron off the
+                // ellipsis, so one menu reads as two controls side by side.
+                .menuIndicator(.hidden)
             }
         }
         .sheet(item: $editorTarget) { target in
@@ -404,17 +410,28 @@ struct PlannerView: View {
         return "No \(kind) yet — add one with +."
     }
 
+    /// Tasks vs Routines. One definition, two homes: inline on the phone,
+    /// in the toolbar on the Mac.
+    private var kindPicker: some View {
+        Picker("", selection: $store.kindFilter) {
+            ForEach(PlannerKind.allCases) { Text($0.label).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+    }
+
     // MARK: - Rows
 
     /// The weekly grid: the schedule at a glance, editable in place.
     private var gridContent: some View {
         VStack(spacing: 12) {
-            Picker("", selection: $store.kindFilter) {
-                ForEach(PlannerKind.allCases) { Text($0.label).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.top, 8)
+            // macOS puts this in the toolbar, where a Mac window's view switcher
+            // belongs — floating it in the content area was an iOS habit.
+            #if os(iOS)
+            kindPicker
+                .padding(.horizontal)
+                .padding(.top, 8)
+            #endif
 
             if store.children.count > 1 && !store.chores.isEmpty {
                 childFilter.padding(.horizontal)
