@@ -3,7 +3,7 @@
 name: DailyBread
 
 options:
-  bundleIdPrefix: org.dailybread
+  bundleIdPrefix: com.jshauns
   deploymentTarget:
     iOS: "18.0"
     macOS: "15.0"
@@ -48,13 +48,13 @@ targets:
           NSAllowsLocalNetworking: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: org.dailybread.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.jshauns.dailybread
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         ENABLE_PREVIEWS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        DEVELOPMENT_TEAM: 779Y3BJZ6L
+        DEVELOPMENT_TEAM: 722W7866NQ
         CODE_SIGN_STYLE: Automatic
         # The app-group entitlement is for the iOS widget bridge; the (unsandboxed)
         # macOS app signs without entitlements, exactly as before.
@@ -80,10 +80,10 @@ targets:
           - group.org.dailybread.shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: org.dailybread.app.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.jshauns.dailybread.widgets
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
-        DEVELOPMENT_TEAM: 779Y3BJZ6L
+        DEVELOPMENT_TEAM: 722W7866NQ
         CODE_SIGN_STYLE: Automatic
         SKIP_INSTALL: YES
