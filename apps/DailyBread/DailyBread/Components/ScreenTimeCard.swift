@@ -114,7 +114,7 @@ struct ScreenTimeCard: View {
 
     /// The name of the child this meter belongs to, for the settings sheet.
     private var childName: String {
-        session.children.first { $0.userId == userId }?.userName.capitalized ?? "This kid"
+        session.children.first { $0.userId == userId }?.name ?? "This kid"
     }
 
     private func pool(_ p: ScreenTimePool, name: String, tag: String) -> some View {

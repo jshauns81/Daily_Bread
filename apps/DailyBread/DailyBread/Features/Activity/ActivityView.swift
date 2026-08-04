@@ -284,7 +284,7 @@ struct ActivityView: View {
     private var childChooser: some View {
         Menu {
             ForEach(session.children) { child in
-                Button(child.userName.capitalized) {
+                Button(child.name) {
                     store.selectedChildId = child.userId
                 }
             }
@@ -302,7 +302,7 @@ struct ActivityView: View {
 
     private var chooserLabel: String {
         let id = store.childId(session)
-        return session.children.first { $0.userId == id }?.userName.capitalized ?? "Child"
+        return session.children.first { $0.userId == id }?.name ?? "Child"
     }
 
     // MARK: - Stat tiles
@@ -380,7 +380,7 @@ struct ActivityView: View {
             return ("“\(item.helpReason ?? "Help raised")”", DB.help(scheme))
         }
         if item.isApproved {
-            let by = item.approvedByUserName.map { " by \($0.capitalized)" } ?? ""
+            let by = item.approvedByUserName.map { " by \($0)" } ?? ""
             return ("Approved\(by)", DB.gold(scheme))
         }
         if item.isSkipped { return ("Excused for the day", .secondary) }
@@ -500,8 +500,8 @@ struct ActivityView: View {
     /// The Help sheet wants a HelpRequest; synthesize one from the row.
     private func helpRequest(_ item: ChoreItem) -> HelpRequest? {
         guard let logId = item.choreLogId else { return nil }
-        let childName = store.day?.userName?.capitalized
-            ?? session.onlyChild?.userName.capitalized
+        let childName = store.day?.userName
+            ?? session.onlyChild?.name
             ?? "Your child"
         return HelpRequest(
             choreLogId: logId,

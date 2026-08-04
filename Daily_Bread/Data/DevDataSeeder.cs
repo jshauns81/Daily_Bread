@@ -123,7 +123,8 @@ public static class DevDataSeeder
                 UserName = username,
                 Email = $"{username}@test.local",
                 EmailConfirmed = true,
-                HouseholdId = householdId
+                HouseholdId = householdId,
+                DisplayName = displayName
             };
 
             var result = await userManager.CreateAsync(user, ParentPassword);
@@ -167,7 +168,8 @@ public static class DevDataSeeder
                 UserName = username,
                 Email = $"{username}@test.local",
                 EmailConfirmed = true,
-                HouseholdId = householdId
+                HouseholdId = householdId,
+                DisplayName = displayName
             };
 
             var result = await userManager.CreateAsync(user, ChildPassword);

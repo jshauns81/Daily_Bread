@@ -1059,8 +1059,9 @@ public class TrackerService : ITrackerService
             Status = log?.Status ?? ChoreStatus.Pending,
             AutoApprove = chore.AutoApprove,
             AssignedUserId = chore.AssignedUserId,
-            AssignedUserName = chore.AssignedUser?.UserName,
-            ApprovedByUserName = log?.ApprovedByUser?.UserName,
+            // Display strings, not join keys — the family's name for them.
+            AssignedUserName = chore.AssignedUser?.DisplayName ?? chore.AssignedUser?.UserName,
+            ApprovedByUserName = log?.ApprovedByUser?.DisplayName ?? log?.ApprovedByUser?.UserName,
             ApprovedAt = log?.ApprovedAt,
             HelpReason = log?.HelpReason,
             HelpRequestedAt = log?.HelpRequestedAt,

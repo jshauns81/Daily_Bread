@@ -398,7 +398,7 @@ struct PlannerView: View {
     }
 
     private var selectedChildName: String {
-        store.children.first(where: { $0.userId == store.selectedChildId })?.userName ?? "them"
+        store.children.first(where: { $0.userId == store.selectedChildId })?.name ?? "them"
     }
 
     /// The "nothing here" line for the current tab (and child, when picked).
@@ -504,7 +504,7 @@ struct PlannerView: View {
             HStack(spacing: 8) {
                 filterChip("Everyone", id: nil)
                 ForEach(store.children) { child in
-                    filterChip(child.userName, id: child.userId)
+                    filterChip(child.name, id: child.userId)
                 }
             }
         }

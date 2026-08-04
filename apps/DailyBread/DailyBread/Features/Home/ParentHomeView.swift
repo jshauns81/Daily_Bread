@@ -132,7 +132,7 @@ struct ParentHomeView: View {
     private func balanceUserId(_ balance: ChildBalance) -> String? {
         if session.children.count == 1 { return session.onlyChild?.userId }
         return session.children.first {
-            $0.userName.caseInsensitiveCompare(balance.displayName) == .orderedSame
+            $0.name.caseInsensitiveCompare(balance.displayName) == .orderedSame
         }?.userId
     }
 
@@ -254,7 +254,7 @@ struct ParentHomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
                 (Text("\(Greeting.current), ")
-                    + Text(session.currentUser?.userName.capitalized ?? "")
+                    + Text(session.currentUser?.name ?? "")
                         .foregroundStyle(Color.dbAccent))
                     .font(.title2.weight(.bold))
                 Spacer()

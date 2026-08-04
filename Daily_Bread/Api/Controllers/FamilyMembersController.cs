@@ -65,20 +65,21 @@ public class FamilyMembersController : ControllerBase
         var userIds = users.Select(u => u.Id).ToList();
         var profiles = await _db.ChildProfiles
             .Where(p => userIds.Contains(p.UserId))
-            .Select(p => new { p.UserId, p.DrivingEnabled })
-            .ToDictionaryAsync(p => p.UserId, p => p.DrivingEnabled);
+            .Select(p => new { p.UserId, p.DrivingEnabled, p.DisplayName })
+            .ToDictionaryAsync(p => p.UserId, p => new { p.DrivingEnabled, p.DisplayName });
 
         foreach (var user in users)
         {
             var roles = await _userManager.GetRolesAsync(user);
-            var isChild = profiles.TryGetValue(user.Id, out var driving);
+            var isChild = profiles.TryGetValue(user.Id, out var profile);
             members.Add(new FamilyMemberDto(
                 user.Id,
                 user.UserName ?? "",
                 roles.ToList(),
                 user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow,
                 isChild,
-                isChild && driving));
+                isChild && profile!.DrivingEnabled,
+                user.DisplayName ?? profile?.DisplayName));
         }
 
         // Parents/Admins first, then by name — a stable, friendly order.

@@ -26,12 +26,12 @@ struct SettingsView: View {
                             .fill(Color.dbAccent.gradient)
                             .frame(width: 44, height: 44)
                             .overlay {
-                                Text(String(user.userName.prefix(1)).uppercased())
+                                Text(String(user.name.prefix(1)).uppercased())
                                     .font(.headline)
                                     .foregroundStyle(.white)
                             }
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(user.userName)
+                            Text(user.name)
                                 .font(.body.weight(.semibold))
                             Text(user.roles.joined(separator: " · "))
                                 .font(.caption)
@@ -84,7 +84,7 @@ struct SettingsView: View {
                         .buttonStyle(.plain)
                     }
 
-                    ForEach(userThemes) { user in
+                    ForEach(visibleThemes) { user in
                         if let palette = user.palette {
                             Button {
                                 preview { customRaw = palette.id }
@@ -101,6 +101,16 @@ struct SettingsView: View {
                                     editorTarget = ThemeEditorTarget(palette: palette)
                                 }
                                 .tint(Color.dbAccent)
+                            }
+                            // The Mac has no swipe — without this, a theme
+                            // could be made there but never removed there.
+                            .contextMenu {
+                                Button("Edit") {
+                                    editorTarget = ThemeEditorTarget(palette: palette)
+                                }
+                                Button("Delete", role: .destructive) {
+                                    Task { await deleteTheme(palette.id) }
+                                }
                             }
                         } else {
                             // Listed, explained, not selectable (§3.3 rule 3).
@@ -181,7 +191,7 @@ struct SettingsView: View {
                 }
                 .tint(.primary)
             } footer: {
-                Text("Pick the look you like — or drop a .yaml file in the Themes folder and make your own. It changes everywhere, on every device.")
+                Text("Pick the look you like — or drop a .yaml file in the Themes folder and make your own. Your themes are yours: they follow you to every device you sign in on.")
             }
 
             if session.currentUser?.isParent == true {
@@ -248,18 +258,18 @@ struct SettingsView: View {
             userThemes = ThemeLoader.available()
             await session.refreshFeatures()
             await loadChildren()
-            // §3.1 — server themes appear here; local edits go up.
-            await ThemeSync.sync(session.client)
+            // §3.1 — my server themes appear here; local edits go up.
+            await ThemeSync.sync(session.client, userId: session.currentUser?.userId)
             userThemes = ThemeLoader.available()
         }
         .refreshable {
-            await ThemeSync.sync(session.client)
+            await ThemeSync.sync(session.client, userId: session.currentUser?.userId)
             userThemes = ThemeLoader.available()
         }
         .sheet(item: $editorTarget) { target in
             ThemeEditorSheet(editing: target.palette,
                              seed: resolvedTheme,
-                             author: session.currentUser?.userName ?? "") { savedId in
+                             author: session.currentUser?.name ?? "") { savedId in
                 userThemes = ThemeLoader.available()
                 customRaw = savedId
                 pending = nil
@@ -304,12 +314,24 @@ struct SettingsView: View {
 
     private func deleteTheme(_ id: String) async {
         // Local file first — the picker must never keep offering a theme the
-        // user just deleted, even if the server is unreachable.
+        // user just deleted, even if the server is unreachable. The server
+        // delete is what carries it to the user's other devices: their next
+        // sync sees the id they once synced is gone and removes their copy.
         ThemeLoader.delete(id: id)
         if customRaw == id { customRaw = "" }
         userThemes = ThemeLoader.available()
         try? await session.client.deleteTheme(id: id)
         WidgetBridge.themeChanged()
+    }
+
+    /// User-bound themes: mine and unowned files; a sibling's synced copies
+    /// on a shared device stay out of my picker (broken files always listed —
+    /// whoever sees the folder should see the error).
+    private var visibleThemes: [LoadedUserTheme] {
+        userThemes.filter { theme in
+            guard let palette = theme.palette else { return true }
+            return ThemeOwnership.isVisible(palette.id, to: session.currentUser?.userId)
+        }
     }
 
     /// One selectable theme: a real preview of the look beside its name.
@@ -373,7 +395,7 @@ struct SettingsView: View {
 
     /// Single-child mode: name the one child instead of saying "the kids".
     private var goalsSubtitle: String {
-        if let name = session.onlyChild?.userName {
+        if let name = session.onlyChild?.name {
             return "Show goals to \(name.capitalized)"
         }
         return "Show savings goals"
@@ -387,7 +409,7 @@ struct SettingsView: View {
             ForEach(children) { child in
                 Toggle(isOn: drivingBinding(for: child)) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(child.userName)
+                        Text(child.name)
                         Text(child.drives ? "Log, hours and approvals are on"
                                           : "Hidden everywhere for this child")
                             .font(.caption)

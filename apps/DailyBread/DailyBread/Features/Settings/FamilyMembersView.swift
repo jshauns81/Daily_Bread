@@ -83,13 +83,13 @@ struct FamilyMembersView: View {
                 .fill(member.isParent ? Color.dbAccent.gradient : DB.gold(scheme).gradient)
                 .frame(width: 38, height: 38)
                 .overlay {
-                    Text(String(member.userName.prefix(1)).uppercased())
+                    Text(String(member.name.prefix(1)).uppercased())
                         .font(.subheadline.weight(.bold)).foregroundStyle(.white)
                 }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(member.userName).font(.body.weight(.medium))
+                    Text(member.name).font(.body.weight(.medium))
                     if isSelf {
                         Text("You").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                     }
@@ -150,7 +150,7 @@ private struct ResetPasswordSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SheetHeader(title: "Reset \(member.userName)'s password")
+            SheetHeader(title: "Reset \(member.name)'s password")
             ScrollView {
                 VStack(spacing: 14) {
                     SheetCard(title: "New password") {

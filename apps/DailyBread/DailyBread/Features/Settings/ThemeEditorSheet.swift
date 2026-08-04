@@ -310,7 +310,7 @@ struct ThemeEditorSheet: View {
 
         var final = draft
         if final.id.isEmpty { final.id = Self.slug(from: final.name) }
-        final.author = session.currentUser?.userName ?? final.author
+        final.author = session.currentUser?.name ?? final.author
 
         // The saved document is the YAML the user was actually looking at when
         // they were in YAML mode — comments and all.

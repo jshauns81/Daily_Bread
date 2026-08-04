@@ -319,7 +319,7 @@ public class PlannerController : ControllerBase
             var user = await _userManager.FindByIdAsync(candidate.Id);
             if (user?.HouseholdId != null && user.HouseholdId == household)
             {
-                children.Add(new AssignableChildDto(candidate.Id, candidate.UserName));
+                children.Add(new AssignableChildDto(candidate.Id, candidate.UserName, user.DisplayName));
             }
         }
 

@@ -225,7 +225,7 @@ struct ChoreEditorSheet: View {
                 Picker("For", selection: $assignedUserId) {
                     Text("Anyone").tag("")
                     ForEach(children) { child in
-                        Text(child.userName).tag(child.userId)
+                        Text(child.name).tag(child.userId)
                     }
                 }
                 .pickerStyle(.menu)

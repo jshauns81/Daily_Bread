@@ -615,7 +615,8 @@ public class ChorePlannerService : IChorePlannerService
                 ActiveDays = chore.ActiveDays,
                 WeeklyTargetCount = chore.WeeklyTargetCount,
                 AssignedUserId = chore.AssignedUserId,
-                AssignedUserName = chore.AssignedUser?.UserName,
+                // Display string, not a join key — the family's name for them.
+                AssignedUserName = chore.AssignedUser?.DisplayName ?? chore.AssignedUser?.UserName,
                 Cells = cells,
                 IsActive = chore.IsActive,
                 WeeklyCompletedCount = weeklyCompleted,
@@ -941,7 +942,8 @@ public class ChorePlannerService : IChorePlannerService
                 ActiveDays = chore.ActiveDays,
                 WeeklyTargetCount = chore.WeeklyTargetCount,
                 AssignedUserId = chore.AssignedUserId,
-                AssignedUserName = chore.AssignedUser?.UserName,
+                // Display string, not a join key — the family's name for them.
+                AssignedUserName = chore.AssignedUser?.DisplayName ?? chore.AssignedUser?.UserName,
                 Cells = cells,
                 IsActive = chore.IsActive,
                 WeeklyCompletedCount = 0,

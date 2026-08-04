@@ -44,7 +44,10 @@ public sealed record ApiUserDto(
     // "younger" | "teen" — drives age-appropriate voice on the client. Defaults
     // to younger so token-issue (which doesn't compute age) stays valid; the
     // authoritative value comes from GET me.
-    string AgeTier = "younger");
+    string AgeTier = "younger",
+    // Same contract as AgeTier: token-issue may omit it, GET me is
+    // authoritative. Clients fall back to UserName when null.
+    string? DisplayName = null);
 
 public sealed record TokenResponse(
     string AccessToken,
@@ -435,7 +438,8 @@ public sealed record DeleteResponse(bool Deleted);
 
 public sealed record AssignableChildDto(
     string UserId,
-    string UserName);
+    string UserName,
+    string? DisplayName = null);
 
 public sealed record AssignableChildrenResponse(IReadOnlyList<AssignableChildDto> Children);
 
@@ -600,7 +604,8 @@ public sealed record FamilyMemberDto(
     IReadOnlyList<string> Roles,
     bool IsLockedOut,
     bool HasChildProfile,
-    bool DrivingEnabled);
+    bool DrivingEnabled,
+    string? DisplayName = null);
 
 /// <summary>Reset a household member's password.</summary>
 public sealed record ResetMemberPasswordRequest(string UserId, string NewPassword);

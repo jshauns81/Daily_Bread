@@ -242,7 +242,7 @@ struct KidHomeView: View {
     private var greeting: some View {
         HStack {
             (Text("\(Greeting.current), ")
-                + Text((session.currentUser?.userName ?? "there").capitalized)
+                + Text(session.currentUser?.name ?? "there")
                     .foregroundColor(Color.dbAccent))
                 .font(.title2.weight(.bold))
             Spacer()

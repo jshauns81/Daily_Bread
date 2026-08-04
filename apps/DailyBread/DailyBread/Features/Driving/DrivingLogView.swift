@@ -138,7 +138,7 @@ struct DrivingLogView: View {
     private var exportControl: some View {
         if mode == .kid {
             Button {
-                Task { await export(childId: nil, named: session.currentUser?.userName) }
+                Task { await export(childId: nil, named: session.currentUser?.name) }
             } label: {
                 Image(systemName: "square.and.arrow.up")
             }
@@ -146,8 +146,8 @@ struct DrivingLogView: View {
         } else if !session.children.isEmpty {
             Menu {
                 ForEach(session.children) { child in
-                    Button(child.userName) {
-                        Task { await export(childId: child.userId, named: child.userName) }
+                    Button(child.name) {
+                        Task { await export(childId: child.userId, named: child.name) }
                     }
                 }
             } label: {
@@ -417,7 +417,7 @@ struct DriveEditorSheet: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(session.children) { child in
-                    SheetChip(child.userName, selected: selectedChildId == child.userId) {
+                    SheetChip(child.name, selected: selectedChildId == child.userId) {
                         selectedChildId = child.userId
                         Task { await loadProgress() }
                     }
@@ -584,7 +584,7 @@ struct DriveEditorSheet: View {
             // Single child: no picker, target them directly (the invariant).
             if selectedChildId == nil, session.children.count == 1 { selectedChildId = session.children.first?.userId }
             // The logging parent supervised, until told otherwise.
-            if supervisor.isEmpty { supervisor = session.currentUser?.userName ?? "" }
+            if supervisor.isEmpty { supervisor = session.currentUser?.name ?? "" }
         }
         await loadProgress()
     }

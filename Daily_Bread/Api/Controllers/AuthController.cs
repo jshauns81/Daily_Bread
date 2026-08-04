@@ -156,15 +156,19 @@ public class AuthController : ControllerBase
 
         // Age tier comes from the child's profile birthdate against family "today".
         DateOnly? birthDate;
+        string? profileName;
         await using (var db = await _contextFactory.CreateDbContextAsync())
         {
-            birthDate = await db.ChildProfiles
+            var profile = await db.ChildProfiles
                 .Where(p => p.UserId == user.Id)
-                .Select(p => p.BirthDate)
+                .Select(p => new { p.BirthDate, p.DisplayName })
                 .FirstOrDefaultAsync();
+            birthDate = profile?.BirthDate;
+            profileName = profile?.DisplayName;
         }
         var ageTier = AgeTiers.Tier(birthDate, _dateProvider.Today);
+        var displayName = user.DisplayName ?? profileName;
 
-        return Ok(new ApiUserDto(user.Id, user.UserName ?? "", roles.ToList(), user.HouseholdId, ageTier));
+        return Ok(new ApiUserDto(user.Id, user.UserName ?? "", roles.ToList(), user.HouseholdId, ageTier, displayName));
     }
 }

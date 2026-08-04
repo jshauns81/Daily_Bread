@@ -74,12 +74,15 @@ public class ChoresController : ControllerBase
             }
 
             targetUserId = target.Id;
-            targetUserName = target.UserName;
+            // The wire's UserName fields are display strings — nothing joins on
+            // them (ids travel separately) — so they carry what the family
+            // calls the person, falling back to the username.
+            targetUserName = target.DisplayName ?? target.UserName;
         }
         else
         {
             var self = await _userManager.FindByIdAsync(targetUserId);
-            targetUserName = self?.UserName;
+            targetUserName = self?.DisplayName ?? self?.UserName;
         }
 
         var effectiveDate = date ?? _dateProvider.Today;

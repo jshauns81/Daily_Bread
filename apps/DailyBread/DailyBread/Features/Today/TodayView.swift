@@ -329,7 +329,7 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: 2) {
                 if isSelf {
                     (Text("\(Greeting.current), ")
-                        + Text((today.userName ?? "there").capitalized)
+                        + Text(today.userName ?? "there")
                             .foregroundStyle(Color.dbAccent)
                         + Text("."))
                         .font(.headline)

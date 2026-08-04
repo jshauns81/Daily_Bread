@@ -13,6 +13,17 @@ public struct ApiUser: Codable, Hashable, Sendable {
     /// "younger" | "teen" — server-computed from the child's birthdate. Optional
     /// for forward/backward compatibility; absent reads as younger.
     public var ageTier: String?
+    /// What the family calls this person ("Emma"). Optional: older servers
+    /// omit it, and login's token response may arrive without it before GET me
+    /// fills it in.
+    public var displayName: String?
+
+    /// The ONLY name the UI should print. Usernames are credentials — they
+    /// surface solely in credential contexts (login, account management).
+    public var name: String {
+        if let displayName, !displayName.isEmpty { return displayName }
+        return userName
+    }
 
     public var isParent: Bool { roles.contains("Parent") || roles.contains("Admin") }
     public var isChild: Bool { roles.contains("Child") }
@@ -230,8 +241,15 @@ public struct AssignableChildren: Codable, Sendable {
 public struct AssignableChild: Codable, Hashable, Identifiable, Sendable {
     public var userId: String
     public var userName: String
+    public var displayName: String?
 
     public var id: String { userId }
+
+    /// Display name first; the username is a credential, not a label.
+    public var name: String {
+        if let displayName, !displayName.isEmpty { return displayName }
+        return userName
+    }
 }
 
 // MARK: - Ledger
@@ -328,6 +346,13 @@ public struct FamilyMember: Codable, Hashable, Identifiable, Sendable {
     /// not a trade worth making.
     public var hasChildProfile: Bool?
     public var drivingEnabled: Bool?
+    public var displayName: String?
+
+    /// Display name first; the username is a credential, not a label.
+    public var name: String {
+        if let displayName, !displayName.isEmpty { return displayName }
+        return userName
+    }
 
     /// Per-child settings hang off the profile row, not the role.
     public var canHavePerChildSettings: Bool { hasChildProfile ?? isChild }
