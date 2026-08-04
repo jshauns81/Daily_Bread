@@ -24,6 +24,10 @@ schemes:
         DailyBread: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - DailyBreadUITests
     archive:
       config: Release
 
@@ -77,6 +81,25 @@ targets:
         # The app-group entitlement is for the iOS widget bridge; the (unsandboxed)
         # macOS app signs without entitlements, exactly as before.
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": ""
+
+  # Simulator-only screen walker (UITests/ScreenWalkerTests.swift) — drives the
+  # app over testmanagerd, which still delivers touches when synthetic mouse
+  # events into the Simulator window get dropped.
+  DailyBreadUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: DailyBread
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jshauns.dailybread.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: 722W7866NQ
+        CODE_SIGN_STYLE: Automatic
+        TEST_TARGET_NAME: DailyBread
 
   DailyBreadWidgets:
     type: app-extension
