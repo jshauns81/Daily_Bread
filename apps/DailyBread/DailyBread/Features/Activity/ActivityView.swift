@@ -385,8 +385,12 @@ struct ActivityView: View {
             return ("“\(item.helpReason ?? "Help raised")”", DB.help(scheme))
         }
         if item.isApproved {
-            let by = item.approvedByUserName.map { " by \($0)" } ?? ""
-            return ("Approved\(by)", DB.gold(scheme))
+            // Auto-approve records the kid as their own approver — "Approved
+            // by <self>" reads wrong, so self-approval is just "Done".
+            if let by = item.approvedByUserName, by != store.day?.userName {
+                return ("Approved by \(by)", DB.gold(scheme))
+            }
+            return ("Done", DB.gold(scheme))
         }
         if item.isSkipped { return ("Excused for the day", .secondary) }
         if item.isMissed { return ("Missed", DB.help(scheme)) }
