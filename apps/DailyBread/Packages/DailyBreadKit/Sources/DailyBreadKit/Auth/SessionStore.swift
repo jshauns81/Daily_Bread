@@ -126,6 +126,14 @@ public final class SessionStore {
     public init() {}
 
     /// Call once at launch: restores server + tokens and lands on the right screen.
+    ///
+    /// Which screen you land on is decided from **local state only** — server
+    /// URL, Keychain tokens, cached user. Nothing here awaits the network.
+    /// It used to: with no cached user it fell through to `client.me()` and
+    /// waited, so a call that stalled before it ever hit the wire left the app
+    /// on a bare spinner with no error, no timeout and no way out. A missing
+    /// cached user now just means signing in again — a worse outcome than a
+    /// silent refresh, and a far better one than a dead launch screen.
     public func bootstrap() async {
         guard let serverURL else {
             state = .needsServer
@@ -133,28 +141,29 @@ public final class SessionStore {
         }
         let access = Keychain.get(Keys.access)
         let refresh = Keychain.get(Keys.refresh)
+        let userJSON = Keychain.get(Keys.user)
+        apiLog.notice("bootstrap: access=\(access != nil, privacy: .public) refresh=\(refresh != nil, privacy: .public) user=\(userJSON != nil, privacy: .public)")
+
         await client.configure(baseURL: serverURL, accessToken: access, refreshToken: refresh)
         await installCallbacks()
 
-        guard refresh != nil else {
+        guard refresh != nil,
+              let userJSON,
+              let user = try? JSONDecoder().decode(ApiUser.self, from: Data(userJSON.utf8))
+        else {
+            apiLog.notice("bootstrap: → needsLogin")
             state = .needsLogin
             return
         }
-        if let userJSON = Keychain.get(Keys.user),
-           let user = try? JSONDecoder().decode(ApiUser.self, from: Data(userJSON.utf8)) {
-            // Optimistic: show the app immediately; a failed call will refresh
-            // or sign out via the callbacks.
-            state = .signedIn(user)
-            await refreshFeatures()
-            await refreshChildren()
-            await refreshCurrentUser()
-        } else if let user = try? await client.me() {
-            persistUser(user)
-            state = .signedIn(user)
-            await refreshFeatures()
-            await refreshChildren()
-        } else {
-            state = .needsLogin
+
+        // Optimistic: show the app immediately. A failed call refreshes the
+        // token or signs out through the callbacks.
+        apiLog.notice("bootstrap: → signedIn as \(user.userName, privacy: .public)")
+        state = .signedIn(user)
+        Task { [weak self] in
+            await self?.refreshFeatures()
+            await self?.refreshChildren()
+            await self?.refreshCurrentUser()
         }
     }
 
@@ -169,9 +178,17 @@ public final class SessionStore {
         let tokens = try await client.login(userName: userName, password: password)
         persist(tokens)
         state = .signedIn(tokens.user)
-        await refreshFeatures()
-        await refreshChildren()
-        await refreshCurrentUser()
+
+        // Everything past this point is enrichment, and none of it gates being
+        // signed in — the token response already carries the user. Awaiting it
+        // here meant one stalled call left a successful login spinning forever
+        // with nothing on screen to say why. Kicked off detached so the sign-in
+        // completes the moment the server says yes.
+        Task { [weak self] in
+            await self?.refreshFeatures()
+            await self?.refreshChildren()
+            await self?.refreshCurrentUser()
+        }
     }
 
     public func signOut() async {

@@ -1,4 +1,12 @@
 import Foundation
+import OSLog
+
+/// Every request in and out. The app previously made its network calls in
+/// total silence, so a call that stalled before it ever reached the wire was
+/// invisible from both sides — the server log showed nothing because nothing
+/// was sent, and the device log showed nothing because nothing was written.
+/// Filter Console.app or `log stream` on subsystem `org.dailybread.api`.
+let apiLog = Logger(subsystem: "org.dailybread.api", category: "http")
 
 public enum APIError: Error, LocalizedError, Sendable {
     case noServerConfigured
@@ -86,6 +94,7 @@ public actor APIClient {
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             return (data, status)
         } catch {
+            apiLog.error("✗ transport \(request.url?.absoluteString ?? "?", privacy: .public) — \(error.localizedDescription, privacy: .public)")
             throw APIError.network(error.localizedDescription)
         }
     }
@@ -98,8 +107,16 @@ public actor APIClient {
         authorized: Bool = true,
         retryOn401: Bool = true
     ) async throws -> T {
-        let request = try makeRequest(path: path, method: method, body: body, authorized: authorized)
+        apiLog.notice("→ \(method, privacy: .public) \(path, privacy: .public)")
+        let request: URLRequest
+        do {
+            request = try makeRequest(path: path, method: method, body: body, authorized: authorized)
+        } catch {
+            apiLog.error("✗ \(method, privacy: .public) \(path, privacy: .public) — not sent: \(String(describing: error), privacy: .public)")
+            throw error
+        }
         let (data, status) = try await perform(request)
+        apiLog.notice("← \(status) \(method, privacy: .public) \(path, privacy: .public)")
 
         if status == 401, authorized, retryOn401 {
             try await refreshTokens()
