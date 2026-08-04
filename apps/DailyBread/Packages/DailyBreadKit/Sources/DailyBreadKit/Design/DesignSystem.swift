@@ -207,16 +207,48 @@ public enum ThemeStore {
         DBTheme(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .sunroom
     }
 
+    // Resolving is on the hottest path in the app: `Color.dbAccent` goes
+    // through it, and that is read dozens of times per render across every
+    // view. Unmemoised it hit the disk — ThemeLoader.palette on a cache miss
+    // re-read the Themes folder and YAML-parsed every file — and, when the
+    // selected custom theme was missing, wrote to UserDefaults as well. Every
+    // time. From inside `body`. That saturated the main thread and the app
+    // stopped painting: a sign-in that had already succeeded never appeared.
+    private nonisolated(unsafe) static var resolvedCache: (builtin: String, custom: String, theme: AppTheme)?
+    private static let resolveLock = NSLock()
+
     public static func resolve(builtinRaw: String, customId: String) -> AppTheme {
-        let builtin = AppTheme.builtin(DBTheme(rawValue: builtinRaw) ?? .sunroom)
-        guard !customId.isEmpty else { return builtin }
-        if let palette = ThemeLoader.palette(id: customId) {
-            return .custom(palette)
+        resolveLock.lock()
+        if let cached = resolvedCache, cached.builtin == builtinRaw, cached.custom == customId {
+            resolveLock.unlock()
+            return cached.theme
         }
-        UserDefaults.standard.set(
-            "The theme \u{201C}\(customId)\u{201D} couldn't be loaded, so you're back on \(builtin.displayName).",
-            forKey: fallbackKey)
-        return builtin
+        resolveLock.unlock()
+
+        let builtin = AppTheme.builtin(DBTheme(rawValue: builtinRaw) ?? .sunroom)
+        let resolved: AppTheme
+        if customId.isEmpty {
+            resolved = builtin
+        } else if let palette = ThemeLoader.palette(id: customId) {
+            resolved = .custom(palette)
+        } else {
+            UserDefaults.standard.set(
+                "The theme \u{201C}\(customId)\u{201D} couldn't be loaded, so you're back on \(builtin.displayName).",
+                forKey: fallbackKey)
+            resolved = builtin
+        }
+
+        resolveLock.lock()
+        resolvedCache = (builtinRaw, customId, resolved)
+        resolveLock.unlock()
+        return resolved
+    }
+
+    /// Drop the memo — the theme files changed underneath us.
+    public static func invalidateResolved() {
+        resolveLock.lock()
+        resolvedCache = nil
+        resolveLock.unlock()
     }
 
     public static var resolvedCurrent: AppTheme {

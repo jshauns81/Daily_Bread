@@ -296,18 +296,36 @@ public enum ThemeLoader {
 
     /// §3.3 rule 4: validation happens at select, not render — a broken file
     /// never becomes the active theme.
+    ///
+    /// The cache is authoritative once built: a *miss* is an answer, not a
+    /// reason to look again. It used to re-scan on every miss — read the whole
+    /// Themes directory and YAML-parse every file — and this is called from
+    /// `DailyBreadApp.theme`, which is called from `body`. So a selected theme
+    /// id that wasn't in the map (a deleted file, a stale id) meant a full disk
+    /// read plus a YAML parse on the main thread for every SwiftUI render. Any
+    /// state change kicked off renders, the renders saturated the main thread,
+    /// and the app stopped painting — a sign-in that had already succeeded just
+    /// sat there. `invalidate()` is the only thing that forces a re-read.
     public static func palette(id: String) -> CustomPalette? {
         lock.lock()
-        let cached = paletteCache?[id]
+        let cache = paletteCache
         lock.unlock()
-        if let cached { return cached }
-        return available().first { $0.palette?.id == id }?.palette
+        if let cache { return cache[id] }
+
+        _ = available()   // populates the cache
+        lock.lock()
+        let fresh = paletteCache?[id]
+        lock.unlock()
+        return fresh
     }
 
     public static func invalidate() {
         lock.lock()
         paletteCache = nil
         lock.unlock()
+        // The resolved-theme memo is derived from these files; dropping one
+        // without the other would serve a stale theme after an edit.
+        ThemeStore.invalidateResolved()
     }
 
     private static func refreshCache(from themes: [LoadedUserTheme]) {
