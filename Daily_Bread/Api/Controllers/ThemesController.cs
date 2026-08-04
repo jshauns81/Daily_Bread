@@ -8,9 +8,13 @@ namespace Daily_Bread.Api.Controllers;
 /// <summary>
 /// §3.1 — user-authored YAML themes, synced through the family's server so a
 /// theme built on the iPad shows up on the Mac. The server stores text and
-/// scopes it to the household; it never parses YAML — the client validates,
-/// where a broken file is harmless by design (§3.3). Children can write
-/// (authorship is the point); overwriting or deleting someone else's theme is
+/// never parses YAML — the client validates, where a broken file is harmless
+/// by design (§3.3). Themes are USER-bound (decided 2026-08-03): the list a
+/// device syncs is the caller's own themes, not the household pool — my
+/// themes follow ME across devices and don't appear in a sibling's picker.
+/// Rows are still household-scoped underneath (slugs unique per family), and
+/// legacy rows with no author remain visible to everyone rather than
+/// vanishing. Overwriting or deleting someone else's theme stays
 /// author-or-parent.
 /// </summary>
 [ApiController]
@@ -51,6 +55,7 @@ public class ThemesController : ControllerBase
 
         var themes = await _themes.ListAsync(household);
         return Ok(themes
+            .Where(t => t.AuthorUserId == null || t.AuthorUserId == _currentUser.UserId)
             .Select(t => new ThemeFileDto(t.Slug, t.Yaml, t.AuthorUserId, t.UpdatedAt))
             .ToList());
     }
