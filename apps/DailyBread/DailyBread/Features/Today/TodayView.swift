@@ -226,7 +226,8 @@ struct TodayView: View {
 
                 Section {
                     ForEach(today.items) { item in
-                        ChoreRow(item: item, allowHelp: isSelf, isParentActing: !isSelf) {
+                        ChoreRow(item: item, childName: today.userName,
+                                 allowHelp: isSelf, isParentActing: !isSelf) {
                             Task { await store.toggle(item, session) }
                         } onHelp: {
                             store.helpTarget = item
@@ -374,6 +375,9 @@ struct TodayView: View {
 
 struct ChoreRow: View {
     let item: ChoreItem
+    /// The day's child. Auto-approve records the kid as their own approver,
+    /// and "Approved by <self>" reads wrong — self-approval is just "Done".
+    var childName: String?
     var allowHelp: Bool = true
     /// A parent drilled into the kid's day: tapping an awaiting-approval check
     /// approves it. For the kid it's terminal — the check wiggles instead.
@@ -400,7 +404,7 @@ struct ChoreRow: View {
                         .font(.caption)
                         .foregroundStyle(DB.help(scheme))
                 } else if item.isApproved, let by = item.approvedByUserName {
-                    Text("Approved by \(by)")
+                    Text(by == childName ? "Done" : "Approved by \(by)")
                         .font(.caption)
                         .foregroundStyle(DB.gold(scheme))
                 } else if item.checkState == .awaitingApproval {

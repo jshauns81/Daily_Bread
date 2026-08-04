@@ -264,15 +264,21 @@ struct ParentHomeView: View {
             }
 
             HStack(spacing: 8) {
-                chip("✦ \(dash.pendingApprovals.count) awaiting approval",
-                     color: DB.gold(scheme),
-                     emphasized: !dash.pendingApprovals.isEmpty)
+                // A zero count is noise, not status — only the done tally
+                // holds a permanent seat.
+                if !dash.pendingApprovals.isEmpty {
+                    chip("✦ \(dash.pendingApprovals.count) awaiting approval",
+                         color: DB.gold(scheme),
+                         emphasized: true)
+                }
                 chip("✓ \(dash.todayCompletedCount + dash.todayApprovedCount) done today",
                      color: .secondary,
                      emphasized: false)
-                chip("! \(dash.helpRequests.count) needs help",
-                     color: DB.help(scheme),
-                     emphasized: !dash.helpRequests.isEmpty)
+                if !dash.helpRequests.isEmpty {
+                    chip("! \(dash.helpRequests.count) needs help",
+                         color: DB.help(scheme),
+                         emphasized: true)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -385,6 +391,11 @@ struct ParentHomeView: View {
                     Text("\(child.pendingChores) left today")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                } else if child.totalChores == 0 {
+                    // 0/0 isn't a finished day — "All done" would be vacuous.
+                    Text("No quests today")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 } else {
                     Text("All done ✨")
                         .font(.caption)
@@ -416,6 +427,9 @@ struct ParentHomeView: View {
                         .foregroundStyle(DB.help(scheme))
                 } else if child.pendingChores > 0 {
                     Text("\(child.pendingChores) left")
+                        .foregroundStyle(.secondary)
+                } else if child.totalChores == 0 {
+                    Text("No quests today")
                         .foregroundStyle(.secondary)
                 } else {
                     Text("All done ✨")
