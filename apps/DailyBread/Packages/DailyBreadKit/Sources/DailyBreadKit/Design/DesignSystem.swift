@@ -201,7 +201,6 @@ public enum DBRarity: String, Codable, CaseIterable, Sendable {
 public enum ThemeStore {
     public static let key = "db.theme"
     public static let customKey = "db.theme.custom"
-    public static let fallbackKey = "db.theme.fallbackMessage"
 
     public static var current: DBTheme {
         DBTheme(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .sunroom
@@ -209,19 +208,28 @@ public enum ThemeStore {
 
     // Resolving is on the hottest path in the app: `Color.dbAccent` goes
     // through it, and that is read dozens of times per render across every
-    // view. Unmemoised it hit the disk — ThemeLoader.palette on a cache miss
-    // re-read the Themes folder and YAML-parsed every file — and, when the
-    // selected custom theme was missing, wrote to UserDefaults as well. Every
-    // time. From inside `body`. That saturated the main thread and the app
-    // stopped painting: a sign-in that had already succeeded never appeared.
-    private nonisolated(unsafe) static var resolvedCache: (builtin: String, custom: String, theme: AppTheme)?
+    // view — so it must be a pure cached read. It has now been the app's
+    // freeze twice. First it hit the disk (ThemeLoader re-scanned the Themes
+    // folder on every cache miss). Then, with a selected theme id that had no
+    // file behind it, it WROTE to UserDefaults from inside `body` — recording
+    // the fallback message for the picker's banner. Mutating state during a
+    // view update is undefined behaviour, and the observed behaviour was the
+    // AttributeGraph re-dirtying itself forever: SettingsView (which showed
+    // that message) re-rendered in a tight loop, the main thread never idled
+    // again, and every touch on the screen was dropped. Caught by sample(1)
+    // with the walker holding Settings open. Resolve never writes anything;
+    // the banner derives its message with fallbackDescription at read time.
+    private nonisolated(unsafe) static var resolvedCache: [String: AppTheme] = [:]
     private static let resolveLock = NSLock()
 
     public static func resolve(builtinRaw: String, customId: String) -> AppTheme {
+        // Both selection keys in one memo key; a dictionary rather than a
+        // single slot so call sites with different pairs can't thrash it.
+        let cacheKey = builtinRaw + "\u{1}" + customId
         resolveLock.lock()
-        if let cached = resolvedCache, cached.builtin == builtinRaw, cached.custom == customId {
+        if let cached = resolvedCache[cacheKey] {
             resolveLock.unlock()
-            return cached.theme
+            return cached
         }
         resolveLock.unlock()
 
@@ -232,22 +240,29 @@ public enum ThemeStore {
         } else if let palette = ThemeLoader.palette(id: customId) {
             resolved = .custom(palette)
         } else {
-            UserDefaults.standard.set(
-                "The theme \u{201C}\(customId)\u{201D} couldn't be loaded, so you're back on \(builtin.displayName).",
-                forKey: fallbackKey)
             resolved = builtin
         }
 
         resolveLock.lock()
-        resolvedCache = (builtinRaw, customId, resolved)
+        resolvedCache[cacheKey] = resolved
         resolveLock.unlock()
         return resolved
+    }
+
+    /// §3.3 rule 5's banner text, derived on demand: non-nil exactly while a
+    /// selected custom theme can't be loaded. Nothing is stored, so the banner
+    /// clears itself the moment the theme file appears (say, via sync) — and
+    /// there's no render-path write to wedge the view graph.
+    public static func fallbackDescription(builtinRaw: String, customId: String) -> String? {
+        guard !customId.isEmpty, ThemeLoader.palette(id: customId) == nil else { return nil }
+        let builtin = AppTheme.builtin(DBTheme(rawValue: builtinRaw) ?? .sunroom)
+        return "The theme \u{201C}\(customId)\u{201D} couldn't be loaded, so you're back on \(builtin.displayName)."
     }
 
     /// Drop the memo — the theme files changed underneath us.
     public static func invalidateResolved() {
         resolveLock.lock()
-        resolvedCache = nil
+        resolvedCache = [:]
         resolveLock.unlock()
     }
 

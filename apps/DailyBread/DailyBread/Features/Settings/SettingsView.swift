@@ -6,7 +6,6 @@ struct SettingsView: View {
     @Environment(\.colorScheme) private var scheme
     @AppStorage(ThemeStore.key) private var themeRaw = DBTheme.sunroom.rawValue
     @AppStorage(ThemeStore.customKey) private var customRaw = ""
-    @AppStorage(ThemeStore.fallbackKey) private var fallbackMessage = ""
     @State private var themeExpanded = false
     /// §3: user themes from the Themes folder — valid ones selectable, broken
     /// ones listed with their error, never hidden and never selectable.
@@ -43,16 +42,17 @@ struct SettingsView: View {
             }
 
             Section {
-                if !fallbackMessage.isEmpty {
-                    // §3.3 rule 5 — the dismissible last-known-good banner.
+                if let fallbackNote {
+                    // §3.3 rule 5 — the last-known-good banner. Derived, not
+                    // stored: it clears itself if the missing file turns up
+                    // (sync), and OK just stops pointing at the broken theme.
                     HStack(alignment: .top, spacing: 10) {
                         Image(systemName: "exclamationmark.triangle")
                             .foregroundStyle(DB.gold(scheme))
-                        Text(fallbackMessage)
+                        Text(fallbackNote)
                             .font(.footnote)
                         Spacer()
                         Button("OK") {
-                            fallbackMessage = ""
                             customRaw = ""
                         }
                         .font(.footnote.weight(.semibold))
@@ -144,7 +144,6 @@ struct SettingsView: View {
                                 themeExpanded = false
                             }
                             pending = nil
-                            fallbackMessage = ""
                             WidgetBridge.themeChanged()
                         } label: {
                             Text("Reset to Sunroom")
@@ -244,7 +243,8 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .themeBackground()
         .task {
-            ThemeLoader.invalidate()
+            // available() reads the folder fresh every call — no need to drop
+            // the resolve memo (and force fallback re-derivation) just to list.
             userThemes = ThemeLoader.available()
             await session.refreshFeatures()
             await loadChildren()
@@ -263,7 +263,6 @@ struct SettingsView: View {
                 userThemes = ThemeLoader.available()
                 customRaw = savedId
                 pending = nil
-                fallbackMessage = ""
                 WidgetBridge.themeChanged()
             }
             .environment(session)
@@ -286,7 +285,6 @@ struct SettingsView: View {
     private func preview(_ apply: () -> Void) {
         if pending == nil { pending = (themeRaw, customRaw) }
         withAnimation(.easeInOut(duration: 0.2)) { apply() }
-        fallbackMessage = ""
     }
 
     private func keepPending() {
@@ -366,6 +364,11 @@ struct SettingsView: View {
 
     private var resolvedTheme: AppTheme {
         ThemeStore.resolve(builtinRaw: themeRaw, customId: customRaw)
+    }
+
+    /// Non-nil while the selected custom theme has no loadable file behind it.
+    private var fallbackNote: String? {
+        ThemeStore.fallbackDescription(builtinRaw: themeRaw, customId: customRaw)
     }
 
     /// Single-child mode: name the one child instead of saying "the kids".

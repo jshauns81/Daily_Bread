@@ -39,12 +39,17 @@ public enum ThemeSync {
 
         // Pull: server themes this device has no file for.
         let localIds = Set(local.compactMap { $0.palette?.id })
+        var pulledAny = false
         for remote in server where !localIds.contains(remote.id) {
             let url = dir.appendingPathComponent("\(remote.id).yaml")
-            try? remote.yaml.write(to: url, atomically: true, encoding: .utf8)
+            if (try? remote.yaml.write(to: url, atomically: true, encoding: .utf8)) != nil {
+                pulledAny = true
+            }
         }
 
-        ThemeLoader.invalidate()
+        // Only a pull changes what this device can load; push-only passes keep
+        // the caches (and everything derived from them) untouched.
+        if pulledAny { ThemeLoader.invalidate() }
         return true
     }
 }
