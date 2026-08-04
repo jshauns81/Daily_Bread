@@ -84,9 +84,8 @@ struct ServerSetupView: View {
 
     private func connect() async {
         errorMessage = nil
-        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespaces)),
-              url.scheme != nil else {
-            errorMessage = "That doesn't look like a URL."
+        guard let url = Self.serverURL(from: urlText) else {
+            errorMessage = "That doesn't look like a server address."
             return
         }
         checking = true
@@ -94,8 +93,48 @@ struct ServerSetupView: View {
         if await session.client.checkHealth(at: url) {
             await session.setServer(url)
         } else {
-            errorMessage = "Couldn't find a Daily Bread server there. Check the address and that the server is running."
+            errorMessage = "Couldn't reach a Daily Bread server at \(url.absoluteString). Check the address, and that the server is running."
         }
+    }
+
+    /// Turn whatever was typed into a URL worth trying.
+    ///
+    /// Two traps, both of which cost an afternoon: the field starts life
+    /// holding "https://", so typing a bare host silently aims TLS at a plain
+    /// HTTP port; and `URL(string: "localhost:5100")` happily parses
+    /// "localhost" as the *scheme*, so a `scheme != nil` check waves it through
+    /// and the failure surfaces as a bare "connection refused" much later.
+    ///
+    /// So: only http and https count as schemes, and a bare host gets one
+    /// chosen for it — http for a home server (localhost, a .local name, or a
+    /// LAN IP), https for anything else, since a real domain should be TLS.
+    static func serverURL(from typed: String) -> URL? {
+        var text = typed.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return nil }
+
+        if let separator = text.range(of: "://") {
+            let scheme = text[text.startIndex..<separator.lowerBound].lowercased()
+            guard scheme == "http" || scheme == "https" else { return nil }
+            text = scheme + text[separator.lowerBound...]
+        } else {
+            text = (isLocal(text) ? "http://" : "https://") + text
+        }
+
+        guard let url = URL(string: text), url.host?.isEmpty == false else { return nil }
+        return url
+    }
+
+    /// A server on this machine or this house's network — the normal case for
+    /// Daily Bread, and never TLS.
+    private static func isLocal(_ text: String) -> Bool {
+        let host = text.split(separator: "/").first.map(String.init) ?? text
+        let name = host.split(separator: ":").first.map(String.init)?.lowercased() ?? host
+        if name == "localhost" || name.hasSuffix(".local") { return true }
+        let parts = name.split(separator: ".")
+        guard parts.count == 4, parts.allSatisfy({ UInt8($0) != nil }) else { return false }
+        return name.hasPrefix("10.") || name.hasPrefix("192.168.")
+            || (UInt8(parts[0]) == 172 && (16...31).contains(Int(parts[1]) ?? 0))
+            || name.hasPrefix("127.")
     }
 }
 

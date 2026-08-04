@@ -23,7 +23,8 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://0.0.0.0:5100",
+      "_comment": "Both stacks on purpose. 0.0.0.0 binds IPv4 ONLY, but 'localhost' resolves to ::1 first — curl falls back to IPv4 and hides it, URLSession does not, so an iOS client pointed at http://localhost:5100 fails with 'connection refused' while the server looks perfectly healthy.",
+      "applicationUrl": "http://0.0.0.0:5100;http://[::]:5100",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
