@@ -27,6 +27,9 @@ final class KidHomeStore {
     var totalCount: Int { today?.items.count ?? 0 }
     var pendingCount: Int { today?.items.filter { !$0.isDone && !$0.isHelp }.count ?? 0 }
     var isRestDay: Bool { totalCount == 0 }
+    /// Nil `today` is the only honest "first fetch hasn't answered" signal —
+    /// a loaded day with zero chores is a real rest day, not a loading state.
+    var isAwaitingFirstLoad: Bool { today == nil }
 
     var progressPercent: Int {
         totalCount == 0 ? 0 : Int((Double(doneCount) / Double(totalCount) * 100).rounded())
@@ -173,11 +176,19 @@ struct KidHomeView: View {
         ScrollView {
             VStack(spacing: 14) {
                 greeting
-                heroCard(tier)
-                drivingCard
-                goalCard
-                achievementRow
-                nextUpCard
+                Group {
+                    heroCard(tier)
+                    drivingCard
+                    goalCard
+                    achievementRow
+                    nextUpCard
+                }
+                // Cold launch: hold the cards as quiet placeholders until the
+                // first fetch answers — zeroed defaults ("LVL 0 · STARTER",
+                // 0/0 badges) read as data, and to a kid that reads as broken.
+                // The greeting stays live: the name comes from the session,
+                // not the network.
+                .redacted(reason: store.isAwaitingFirstLoad ? .placeholder : [])
             }
             .padding()
         }
@@ -536,6 +547,36 @@ struct KidHomeView: View {
                         .foregroundStyle(.white)
                     }
                     .font(.subheadline.weight(.semibold))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassCard()
+        } else if store.isAwaitingFirstLoad {
+            // Quest-card silhouette for the loading hold. The strings never
+            // display — the redaction above turns them into shapes, they only
+            // set sizes. Neutral pills stand in for Help/Done: a placeholder
+            // must not look tappable.
+            VStack(alignment: .leading, spacing: 12) {
+                Text("NEXT UP")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.dbAccent)
+                    .kerning(1)
+                HStack(spacing: 12) {
+                    Text("🧺")
+                        .font(.title2)
+                        .frame(width: 46, height: 46)
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Loading your quests").font(.body.weight(.semibold))
+                        Text("Hang tight")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                HStack(spacing: 10) {
+                    Capsule().fill(Color.primary.opacity(0.08)).frame(height: 40)
+                    Capsule().fill(Color.primary.opacity(0.08)).frame(height: 40)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
