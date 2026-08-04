@@ -74,25 +74,40 @@ struct SettingsView: View {
                 }
 
                 DisclosureGroup(isExpanded: $themeExpanded) {
-                    ForEach(DBTheme.allCases) { theme in
-                        Button {
-                            preview { themeRaw = theme.rawValue; customRaw = "" }
-                        } label: {
-                            themeRow(.builtin(theme), selected: customRaw.isEmpty && themeRaw == theme.rawValue)
-                        }
-                        .contentShape(Rectangle())
-                        .buttonStyle(.plain)
-                    }
-
+                    // Yours first — they're the personal ones, and burying
+                    // them under six built-ins is how nobody found Delete.
                     ForEach(visibleThemes) { user in
                         if let palette = user.palette {
-                            Button {
-                                preview { customRaw = palette.id }
-                            } label: {
-                                themeRow(.custom(palette), selected: customRaw == palette.id)
+                            HStack(spacing: 8) {
+                                Button {
+                                    preview { customRaw = palette.id }
+                                } label: {
+                                    themeRow(.custom(palette), selected: customRaw == palette.id)
+                                }
+                                .contentShape(Rectangle())
+                                .buttonStyle(.plain)
+
+                                // Edit/Delete live behind a VISIBLE control.
+                                // Swipe stays as an iOS shortcut, but hidden
+                                // gestures can't be the only door — the app's
+                                // own author couldn't find it.
+                                Menu {
+                                    Button("Edit") {
+                                        editorTarget = ThemeEditorTarget(palette: palette)
+                                    }
+                                    Button("Delete", role: .destructive) {
+                                        Task { await deleteTheme(palette.id) }
+                                    }
+                                } label: {
+                                    Image(systemName: "ellipsis.circle")
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 32, height: 32)
+                                        .contentShape(Rectangle())
+                                }
+                                .menuIndicator(.hidden)
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Theme options")
                             }
-                            .contentShape(Rectangle())
-                            .buttonStyle(.plain)
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", role: .destructive) {
                                     Task { await deleteTheme(palette.id) }
@@ -101,16 +116,6 @@ struct SettingsView: View {
                                     editorTarget = ThemeEditorTarget(palette: palette)
                                 }
                                 .tint(Color.dbAccent)
-                            }
-                            // The Mac has no swipe — without this, a theme
-                            // could be made there but never removed there.
-                            .contextMenu {
-                                Button("Edit") {
-                                    editorTarget = ThemeEditorTarget(palette: palette)
-                                }
-                                Button("Delete", role: .destructive) {
-                                    Task { await deleteTheme(palette.id) }
-                                }
                             }
                         } else {
                             // Listed, explained, not selectable (§3.3 rule 3).
@@ -127,6 +132,16 @@ struct SettingsView: View {
                             }
                             .padding(.vertical, 4)
                         }
+                    }
+
+                    ForEach(DBTheme.allCases) { theme in
+                        Button {
+                            preview { themeRaw = theme.rawValue; customRaw = "" }
+                        } label: {
+                            themeRow(.builtin(theme), selected: customRaw.isEmpty && themeRaw == theme.rawValue)
+                        }
+                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
                     }
 
                     // §3.6 — the front door: an editor that produces valid YAML

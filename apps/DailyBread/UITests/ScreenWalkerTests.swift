@@ -65,6 +65,72 @@ final class ScreenWalkerTests: XCTestCase {
         snap(app, "settings-after-hold")
     }
 
+    /// Repro: deleting a user theme via the row's context menu, then a
+    /// relaunch to prove it doesn't resurrect through sync.
+    func testDeleteUserTheme() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let settings = app.buttons["Settings"]
+        guard settings.waitForExistence(timeout: 10) else {
+            throw XCTSkip("No signed-in session on this device.")
+        }
+        settings.tap()
+        pause(1.5)
+
+        app.staticTexts["Theme"].tap()   // expand the picker
+        pause(1.0)
+        snap(app, "del-1-picker-open")
+
+        // User themes sit at the top now, but scroll a little anyway — a
+        // lazy List doesn't expose off-screen rows to accessibility at all
+        // (which is exactly how the first version of this test got fooled).
+        let target = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS[c] 'copy'")).firstMatch
+        var attempts = 0
+        while !target.exists && attempts < 4 {
+            app.swipeUp()
+            pause(0.5)
+            attempts += 1
+        }
+        guard target.exists else {
+            snap(app, "del-x-no-user-theme")
+            throw XCTSkip("No user theme with 'copy' in its name to delete.")
+        }
+        let name = target.label
+
+        let row = app.cells.containing(
+            NSPredicate(format: "label CONTAINS[c] 'copy'")).firstMatch
+        let options = (row.exists ? row.buttons["Theme options"] : app.buttons["Theme options"])
+        guard options.waitForExistence(timeout: 3) else {
+            snap(app, "del-x-no-options-button")
+            return XCTFail("No visible Theme options button on the row")
+        }
+        options.tap()
+        pause(0.8)
+        snap(app, "del-2-options-menu")
+
+        let delete = app.buttons["Delete"]
+        guard delete.waitForExistence(timeout: 3) else {
+            snap(app, "del-x-no-menu")
+            return XCTFail("Options menu has no Delete item")
+        }
+        delete.tap()
+        pause(1.5)
+        snap(app, "del-3-after-delete")
+        XCTAssertFalse(app.staticTexts[name].exists, "Row still present after delete")
+
+        // Resurrection check: relaunch → Settings → expanded picker.
+        app.terminate()
+        app.launch()
+        _ = app.buttons["Settings"].waitForExistence(timeout: 10)
+        app.buttons["Settings"].tap()
+        pause(2.0)
+        app.staticTexts["Theme"].tap()
+        pause(1.5)
+        snap(app, "del-4-after-relaunch")
+        XCTAssertFalse(app.staticTexts[name].exists, "Theme resurrected after relaunch")
+    }
+
     /// One swipe up per tab: catches content below the fold without turning
     /// the walk into a flaky scroll marathon.
     private func scrollAndSnap(_ app: XCUIApplication, _ name: String) {
