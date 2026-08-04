@@ -281,23 +281,28 @@ struct ActivityView: View {
     }
 
     /// Multi-child only — single-child mode never shows a chooser.
+    /// The Spacer owns the leading alignment: a greedy frame on the Menu
+    /// itself gets resolved against the list's full-bleed width, not the
+    /// inset row, and iOS shoves the label's first glyph off the screen edge.
     private var childChooser: some View {
-        Menu {
-            ForEach(session.children) { child in
-                Button(child.name) {
-                    store.selectedChildId = child.userId
+        HStack {
+            Menu {
+                ForEach(session.children) { child in
+                    Button(child.name) {
+                        store.selectedChildId = child.userId
+                    }
                 }
+            } label: {
+                HStack(spacing: 6) {
+                    Text(chooserLabel)
+                        .font(.subheadline.weight(.semibold))
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2.weight(.bold))
+                }
+                .foregroundStyle(Color.dbAccent)
             }
-        } label: {
-            HStack(spacing: 6) {
-                Text(chooserLabel)
-                    .font(.subheadline.weight(.semibold))
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.bold))
-            }
-            .foregroundStyle(Color.dbAccent)
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var chooserLabel: String {
