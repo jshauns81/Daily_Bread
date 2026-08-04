@@ -100,6 +100,9 @@ struct SheetActionBar: View {
                 Text("Cancel")
                     .font(.body.weight(.medium))
                     .frame(maxWidth: .infinity, minHeight: 44)
+                    // A stretched frame is transparent to hit-testing on
+                    // macOS — without this, only the word is clickable.
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .background(.quaternary.opacity(0.5),
@@ -116,6 +119,7 @@ struct SheetActionBar: View {
                 }
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .foregroundStyle(.white)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .background(canSave ? Color.dbAccent : DB.fillStrong(scheme),

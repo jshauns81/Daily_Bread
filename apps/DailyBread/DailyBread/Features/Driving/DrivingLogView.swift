@@ -687,6 +687,8 @@ private struct DrivenDatePickSheet: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
+                    .frame(minWidth: 64, minHeight: 36)
+                    .contentShape(Rectangle())
                 Spacer()
             }
             .padding()

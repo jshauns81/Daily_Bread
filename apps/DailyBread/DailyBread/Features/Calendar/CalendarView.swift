@@ -75,6 +75,9 @@ struct CalendarView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.body.weight(.semibold))
+                    // A bare glyph is a ~16pt target; give it a real one.
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
@@ -89,8 +92,9 @@ struct CalendarView: View {
                 Image(systemName: "chevron.right")
                     .font(.body.weight(.semibold))
                     .foregroundStyle(canGoForward ? Color.dbAccent : DB.fillStrong(scheme))
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
             .buttonStyle(.plain)
             .disabled(!canGoForward)
         }

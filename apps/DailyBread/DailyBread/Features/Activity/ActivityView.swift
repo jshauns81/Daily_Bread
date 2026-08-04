@@ -164,7 +164,9 @@ struct ActivityView: View {
             Section {
                 dayNavigator
                     .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
+                    // List rows clip; the card's radius-10 shadow needs room
+                    // inside the row or it gets sheared at the edges.
+                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 14, trailing: 0))
             }
 
             if let weekStart = store.weekStart, store.date < weekStart {
@@ -181,7 +183,7 @@ struct ActivityView: View {
                     Section {
                         statTiles(day)
                             .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets())
+                            .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 14, trailing: 0))
                     }
                     Section {
                         // Server owns the order — never re-sort client-side.
