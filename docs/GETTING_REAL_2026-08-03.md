@@ -34,6 +34,10 @@ TestFlight is available today.
 - Wire the Xcode Cloud workflow: push to master → build → TestFlight
   internal group. From then on updates PUSH: Shaun merges, phones update
   themselves. No cables, ever.
+- The workflow must select the **beta Xcode version**: stable Xcode's actool
+  crashes compiling the Icon Composer app icon (argument-order bug, confirmed
+  2026-08-03 by bisection; beta compiles it in any order). Shaun builds with
+  Xcode-beta locally, so Cloud has to match.
 - TestFlight builds expire after 90 days — irrelevant while we're iterating
   weekly. The endgame (App Store unlisted/private distribution) is a later
   decision, not a blocker.

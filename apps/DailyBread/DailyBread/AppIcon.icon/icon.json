@@ -1,0 +1,60 @@
+{
+  "fill": {
+    "automatic-gradient": "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+  },
+  "groups": [
+    {
+      "blend-mode": "normal",
+      "blur-material": 0.67,
+      "layers": [
+        {
+          "glass": true,
+          "image-name": "Daily Bread team library.svg",
+          "name": "Daily Bread team library",
+          "position-specializations": [
+            {
+              "value": {
+                "scale": 0.71,
+                "translation-in-points": [
+                  0,
+                  -11.600000000000023
+                ]
+              }
+            },
+            {
+              "idiom": "watchOS",
+              "value": {
+                "scale": 0.8,
+                "translation-in-points": [
+                  0,
+                  16.995223128434986
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "lighting": "combined",
+      "refractivity": {
+        "depth": 0.6173046875,
+        "enabled": true,
+        "strength": -0.7333984375
+      },
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 1.6
+      },
+      "specular": "inside",
+      "translucency": {
+        "enabled": true,
+        "value": 0.18
+      }
+    }
+  ],
+  "supported-platforms": {
+    "circles": [
+      "watchOS"
+    ],
+    "squares": "shared"
+  }
+}

@@ -41,6 +41,14 @@ targets:
       - path: DailyBread
         excludes:
           - "App/Daily Bread Design System"
+          - "AppIcon.icon"
+      # Shaun's Icon Composer icon (Liquid Glass). It shares the AppIcon name
+      # with the asset-catalog set on purpose: OS 26+ renders this one, older
+      # systems fall back to the classic set. A document package, so it must
+      # be forced to file treatment or xcodegen would explode it into sources.
+      - path: DailyBread/AppIcon.icon
+        type: file
+        buildPhase: resources
     dependencies:
       - package: DailyBreadKit
       # The §1.2a widget family is iOS-only: the Mac's outside-the-app rainbow
