@@ -1,0 +1,31 @@
+# BreadBox — Shaun's one-window admin panel for the Daily Bread workflow.
+# Self-contained on purpose: its own project so it can never disturb the
+# app's project, scheme sharing, or Xcode Cloud. Regenerate with `xcodegen`
+# in this folder; the .xcodeproj is generated and never committed.
+name: BreadBox
+
+options:
+  bundleIdPrefix: com.jshauns
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+
+targets:
+  BreadBox:
+    type: application
+    platform: macOS
+    sources:
+      - path: BreadBox
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jshauns.breadbox
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 722W7866NQ
+        # No sandbox and no entitlements — the whole point is running git,
+        # docker, dotnet and xcodebuild on Shaun's behalf.
