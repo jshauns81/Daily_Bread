@@ -14,6 +14,13 @@ struct DailyBreadApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                // A restored-narrow window squeezed the sidebar until every
+                // label was an ellipsis. defaultSize only applies to a FIRST
+                // launch; a floor applies to every one, including a window
+                // macOS restores from a previous session.
+                #if os(macOS)
+                .frame(minWidth: 860, minHeight: 560)
+                #endif
                 .environment(session)
                 .themedTint(theme)
                 // The chosen theme owns the whole appearance: a dark theme forces

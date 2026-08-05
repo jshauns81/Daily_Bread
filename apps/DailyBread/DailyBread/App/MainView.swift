@@ -68,6 +68,11 @@ struct MainView: View {
         #endif
     }
 
+    /// Everything except Settings, which the macOS sidebar pins to its foot.
+    private var navigationSections: [Section] {
+        sections.filter { $0 != .settings }
+    }
+
     @State private var selection: Section?
 
     var body: some View {
@@ -80,12 +85,22 @@ struct MainView: View {
             // arrow-key navigation, so the rows take ⌘1…⌘6 instead, which is
             // what Mail and Finder bind anyway.
             List {
-                ForEach(Array(sections.enumerated()), id: \.element) { index, section in
+                ForEach(Array(navigationSections.enumerated()), id: \.element) { index, section in
                     sidebarRow(section, shortcut: index + 1)
                         .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                 }
+            }
+            // Settings sits at the foot of the sidebar, not in the flow of
+            // places you go — the same shelf Mail and Finder put their
+            // housekeeping on. safeAreaInset keeps the List's sidebar
+            // styling while pinning the row to the bottom.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                sidebarRow(.settings, shortcut: sections.count)
+                    .padding(.horizontal, 6)
+                    .padding(.top, 6)
+                    .padding(.bottom, 10)
             }
             .navigationTitle("Daily Bread")
             // Shaun's first prod launch opened with the sidebar squeezed until

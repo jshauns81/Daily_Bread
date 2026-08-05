@@ -564,58 +564,89 @@ private struct PlannerChoreRow: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
+        // macOS: NOT a Button. A Button consumes the press-and-drag before the
+        // List's reorder ever sees it, which is why dragging a row did nothing
+        // there — and a dependable order is the whole point of this screen for
+        // a kid with ADHD. A tap gesture leaves the drag to the List.
+        // iOS keeps the Button: reordering happens in edit mode (EditButton),
+        // where buttons are inert anyway, so there's no conflict to solve and
+        // the press feedback is worth keeping.
+        #if os(macOS)
+        content
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onTap)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint("Opens this chore's editor")
+        #else
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                Text(iconText)
-                    .font(.title3)
-                    .frame(width: 40, height: 40)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .opacity(chore.isActive ? 1 : 0.45)
+            content.contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        #endif
+    }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(chore.name)
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(chore.isActive ? .primary : .secondary)
-                        if !chore.isActive {
-                            Text("Off")
-                                .font(.caption2.weight(.heavy))
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 2)
-                                .background(DB.fillOff(scheme), in: Capsule())
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Text(caption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+    private var content: some View {
+        HStack(spacing: 12) {
+            #if os(macOS)
+            // Say out loud that rows move. macOS has no EditButton, so without
+            // a handle the affordance is invisible.
+            Image(systemName: "line.3.horizontal")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+            #endif
 
-                Spacer()
+            Text(iconText)
+                .font(.title3)
+                .frame(width: 40, height: 40)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .opacity(chore.isActive ? 1 : 0.45)
 
-                VStack(alignment: .trailing, spacing: 3) {
-                    if chore.isTask {
-                        Text(chore.earnValue.display)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(DB.gold(scheme).opacity(chore.isActive ? 1 : 0.5))
-                    } else {
-                        Text("Routine")
-                            .font(.caption2.weight(.bold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(chore.name)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(chore.isActive ? .primary : .secondary)
+                    if !chore.isActive {
+                        Text("Off")
+                            .font(.caption2.weight(.heavy))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
                             .background(DB.fillOff(scheme), in: Capsule())
                             .foregroundStyle(.secondary)
                     }
-                    if chore.importance > 0 {
-                        Text("📺 \(chore.importance)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
+                }
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 3) {
+                if chore.isTask {
+                    Text(chore.earnValue.display)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(DB.gold(scheme).opacity(chore.isActive ? 1 : 0.5))
+                } else {
+                    Text("Routine")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(DB.fillOff(scheme), in: Capsule())
+                        .foregroundStyle(.secondary)
+                }
+                if chore.importance > 0 {
+                    Text("📺 \(chore.importance)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        // A floor so a row can't render collapsed while the List is still
+        // measuring — the "everything is squashed until I switch tabs" look.
+        .frame(minHeight: 48)
     }
 
     private var iconText: String {

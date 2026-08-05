@@ -74,6 +74,32 @@ struct RainbowYearCard: View {
     @Environment(SessionStore.self) private var session
     @State private var store = RainbowYearStore()
     @State private var showingFullYear = false
+    /// Measured card width — how much year we can actually show (macOS).
+    @State private var gridWidth: CGFloat = 0
+
+    /// The phone has room for a quarter; a Mac window has room for the year,
+    /// so it draws at the denser `.full` cell rather than squeezing 52 weeks
+    /// of `.card` cells into a column that can't hold them.
+    private var gridSize: RainbowYearGrid.Size {
+        #if os(macOS)
+        return .full
+        #else
+        return .card
+        #endif
+    }
+
+    /// As many weeks as fit, up to a full year and change. Charmaine's first
+    /// question about this card was "why is it so short" — on a wide window
+    /// the honest answer was "no reason", so now it fills the width it has.
+    private var weeksToShow: Int {
+        #if os(macOS)
+        guard gridWidth > 0 else { return 12 }
+        let step = gridSize.cell + gridSize.gap
+        return min(53, max(12, Int(gridWidth / step)))
+        #else
+        return 12
+        #endif
+    }
 
     var body: some View {
         Button {
@@ -90,7 +116,15 @@ struct RainbowYearCard: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    RainbowYearGrid(cells: store.cells(lastWeeks: 12), size: .card)
+                    RainbowYearGrid(cells: store.cells(lastWeeks: weeksToShow), size: gridSize)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background {
+                            GeometryReader { proxy in
+                                Color.clear
+                                    .onAppear { gridWidth = proxy.size.width }
+                                    .onChange(of: proxy.size.width) { _, new in gridWidth = new }
+                            }
+                        }
 
                     // No less→more legend — a rainbow has nothing to explain.
                     if store.perfectDaysThisYear > 0 {
