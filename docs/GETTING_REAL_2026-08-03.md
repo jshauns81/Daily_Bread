@@ -5,7 +5,16 @@ minutes", no "son, hand me your phone". That decomposes into five phases,
 ordered so each one unlocks the next and nothing waits on Apple until it
 has to.
 
-## R1 — The server moves off the laptop (first, no Apple dependencies)
+## R1 — The server moves off the laptop ✅ SHIPPED 2026-08-04, 21:56
+
+Deployed by Shaun via `./deploy.sh rebuild` after the rehearsal below.
+Verified live: `/api/v1/health` → Healthy, protected API → 401 (JWT
+challenge, was a 302 to Blazor login), web app → 200 untouched. The
+box's uncommitted local work survives as `archive/unraid-local-2026-08-04`;
+its two good ideas (pre-migrate auto-backup in deploy.sh, unpublished
+5432) were ported to master first. JWT_SIGNING_KEY is set, so phone
+sessions survive future redeploys. Native devices connect by typing
+`dailybread.simmserv.org` on the connect screen.
 
 **Revised 2026-08-04 — the home already exists.** Production runs today at
 `https://dailybread.simmserv.org`: Unraid, the repo's own compose file
