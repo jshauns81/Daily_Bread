@@ -19,6 +19,11 @@ deploy.sh — the missing piece is a home.
 - **Before exposure**: a security pass (SECURITY.md review, login rate
   limiting, JWT secret from env not appsettings, confirm the driving CSV and
   themes endpoints enforce auth), plus a DB backup job.
+- **JWT_SIGNING_KEY is not optional on Unraid** (learned 2026-08-04): without
+  it the server generates an ephemeral key at boot and EVERY family device is
+  signed out on EVERY container restart. Set it once in the container env and
+  tokens survive redeploys. (The local dev server run from a worktree has no
+  .env and hits exactly this — that's how the parent sim lost its session.)
 - **Updates**: start with deploy.sh by hand; graduate to image-build on push
   + auto-pull when that gets old.
 
