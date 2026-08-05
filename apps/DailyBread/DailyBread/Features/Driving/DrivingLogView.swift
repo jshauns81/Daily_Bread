@@ -92,7 +92,9 @@ struct DrivingLogView: View {
                 }
             }
         }
-        .navigationTitle(mode == .parent ? "Driving approvals" : "Driving log")
+        // One name everywhere: the sidebar/tab says "Driving", so the screen
+        // does too (sweep #7). The mode still changes what the screen *does*.
+        .navigationTitle("Driving")
         .themeBackground()
         .toolbar {
             ToolbarItem(placement: .primaryAction) { exportControl }

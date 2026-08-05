@@ -131,6 +131,27 @@ final class ScreenWalkerTests: XCTestCase {
         XCTAssertFalse(app.staticTexts[name].exists, "Theme resurrected after relaunch")
     }
 
+    /// Sweep #8 probe: scroll Awards all the way down and capture the resting
+    /// state. A mid-scroll frame passing under the floating tab bar is by
+    /// design; the bug (if real) is the LAST row still buried when the scroll
+    /// view has nothing left to give.
+    func testAwardsBottomClearance() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let awards = app.buttons["Awards"]
+        guard awards.waitForExistence(timeout: 10), awards.isHittable else {
+            throw XCTSkip("No Awards tab — parent shell or signed out.")
+        }
+        awards.tap()
+        pause(1.5)
+        for _ in 0..<8 {
+            app.swipeUp()
+            pause(0.4)
+        }
+        pause(1.0)   // let the rubber-band settle
+        snap(app, "awards-bottom")
+    }
+
     /// One swipe up per tab: catches content below the fold without turning
     /// the walk into a flaky scroll marathon.
     private func scrollAndSnap(_ app: XCUIApplication, _ name: String) {
