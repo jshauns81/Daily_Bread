@@ -427,6 +427,14 @@ public actor APIClient {
         try await sendVoid(path: "api/v1/family/members/\(userId)/driving", method: "PUT", body: body)
     }
 
+    /// Set what the family calls a member — shown everywhere in place of the
+    /// username. Always a real name; renaming to the username IS the reset.
+    public func setMemberDisplayName(userId: String, displayName: String) async throws {
+        struct Body: Codable { let displayName: String }
+        let body = try encodeBody(Body(displayName: displayName))
+        try await sendVoid(path: "api/v1/family/members/\(userId)/display-name", method: "PUT", body: body)
+    }
+
     public func lockMember(userId: String) async throws {
         try await sendVoid(path: "api/v1/family/members/\(userId)/lock", method: "POST")
     }

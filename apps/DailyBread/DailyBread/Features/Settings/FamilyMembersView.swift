@@ -48,6 +48,7 @@ struct FamilyMembersView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var store = FamilyMembersStore()
     @State private var resetting: FamilyMember?
+    @State private var renaming: FamilyMember?
 
     var body: some View {
         List {
@@ -70,6 +71,9 @@ struct FamilyMembersView: View {
         .themeBackground()
         .sheet(item: $resetting) { member in
             ResetPasswordSheet(member: member) { Task { await store.load(session) } }
+        }
+        .sheet(item: $renaming) { member in
+            RenameMemberSheet(member: member) { Task { await store.load(session) } }
         }
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
@@ -107,6 +111,11 @@ struct FamilyMembersView: View {
 
             Menu {
                 Button {
+                    renaming = member
+                } label: {
+                    Label("Rename", systemImage: "pencil")
+                }
+                Button {
                     resetting = member
                 } label: {
                     Label("Reset password", systemImage: "key")
@@ -132,6 +141,79 @@ struct FamilyMembersView: View {
             .disabled(store.busy)
         }
         .padding(.vertical, 4)
+    }
+}
+
+/// Set what the family calls a member — the name every screen shows in place
+/// of the login username.
+private struct RenameMemberSheet: View {
+    let member: FamilyMember
+    var onSaved: () -> Void
+
+    @Environment(SessionStore.self) private var session
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
+
+    @State private var name: String
+    @State private var saving = false
+    @State private var errorMessage: String?
+
+    init(member: FamilyMember, onSaved: @escaping () -> Void) {
+        self.member = member
+        self.onSaved = onSaved
+        _name = State(initialValue: member.name)
+    }
+
+    private var trimmed: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            SheetHeader(title: "Rename \(member.name)")
+            ScrollView {
+                VStack(spacing: 14) {
+                    SheetCard(title: "Name") {
+                        TextField("Name", text: $name)
+                            .sheetFieldBackground()
+                        Text("Shown everywhere in the app. Signing in still uses the username (\(member.userName)).")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    if let errorMessage {
+                        Label(errorMessage, systemImage: "exclamationmark.circle")
+                            .font(.footnote).foregroundStyle(DB.help(scheme))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.horizontal).padding(.top, 4)
+            }
+            SheetActionBar(saveTitle: "Save name", saving: saving,
+                           canSave: !trimmed.isEmpty && trimmed.count <= 50,
+                           onCancel: { dismiss() }, onSave: { Task { await save() } })
+                .padding()
+        }
+        .themeBackground()
+        #if os(macOS)
+        .frame(minWidth: 420, idealWidth: 460, minHeight: 320, idealHeight: 340)
+        #endif
+        #if os(iOS)
+        .presentationDetents([.medium])
+        #endif
+    }
+
+    private func save() async {
+        saving = true
+        defer { saving = false }
+        errorMessage = nil
+        do {
+            try await session.client.setMemberDisplayName(userId: member.id, displayName: trimmed)
+            Haptics.success()
+            onSaved()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+            Haptics.warning()
+        }
     }
 }
 

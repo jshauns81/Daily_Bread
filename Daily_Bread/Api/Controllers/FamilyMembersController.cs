@@ -173,6 +173,52 @@ public class FamilyMembersController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Set what the family calls a member. Writes the canonical
+    /// ApplicationUser.DisplayName and keeps the legacy ChildProfile copy in
+    /// step, so readers that still prefer the profile agree with ones that
+    /// read the user.
+    /// </summary>
+    [HttpPut("{userId}/display-name")]
+    public async Task<IActionResult> SetDisplayName(
+        string userId, [FromBody] SetDisplayNameRequest request, CancellationToken ct)
+    {
+        var name = request.DisplayName?.Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            return BadRequest(new ApiError("MissingName", "Enter a name."));
+        }
+        if (name.Length > 50)
+        {
+            return BadRequest(new ApiError("NameTooLong", "Keep the name under 50 characters."));
+        }
+
+        var target = await Resolve(userId, ct);
+        if (target.Error != null) return target.Error;
+
+        var user = await _userManager.FindByIdAsync(target.UserId!);
+        if (user == null)
+        {
+            return NotFound(new ApiError("UserNotFound", "User not found."));
+        }
+        user.DisplayName = name;
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new ApiError("RenameFailed", "Could not save the name."));
+        }
+
+        var profile = await _db.ChildProfiles
+            .FirstOrDefaultAsync(p => p.UserId == target.UserId, ct);
+        if (profile != null)
+        {
+            profile.DisplayName = name;
+            profile.ModifiedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+        }
+        return NoContent();
+    }
+
     /// <summary>Resolve a target member to the caller's household, or an error result.</summary>
     private async Task<(string? UserId, ActionResult? Error)> Resolve(string? userId, CancellationToken ct)
     {

@@ -612,3 +612,11 @@ public sealed record ResetMemberPasswordRequest(string UserId, string NewPasswor
 
 /// <summary>Turn one child's driving log on or off.</summary>
 public sealed record SetDrivingEnabledRequest(bool Enabled);
+
+/// <summary>
+/// Set what the family calls a member. Always a real name — "clear back to
+/// username" isn't a state: ChildProfile.DisplayName is non-nullable, so a
+/// cleared user-level name would just resurrect whatever the profile held.
+/// Renaming to the username is typing the username.
+/// </summary>
+public sealed record SetDisplayNameRequest(string DisplayName);
