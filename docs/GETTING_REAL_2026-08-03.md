@@ -7,25 +7,32 @@ has to.
 
 ## R1 — The server moves off the laptop (first, no Apple dependencies)
 
-Today the backend is `dotnet run` on a MacBook: the family's app dies when
-the lid closes. The repo already carries a Dockerfile, compose files, and
-deploy.sh — the missing piece is a home.
+**Revised 2026-08-04 — the home already exists.** Production runs today at
+`https://dailybread.simmserv.org`: Unraid, the repo's own compose file
+(app container built from source + postgres:16 on an appdata volume,
+DataProtection keys persisted), exposed through the existing Cloudflare
+Tunnel. What's deployed is the pre-API web-app build — `/api/v1/health`
+302s to the Blazor login — so R1 is a **refresh**, not a build-out.
 
-- **Host on the Unraid box** (Docker: API container + Postgres container,
-  appdata-backed volume so Unraid's backup covers the family's data).
-- **Expose through the existing Cloudflare Tunnel** as
-  `https://<subdomain>.<domain>` — TLS for free, no port forwarding, and the
-  app's connect field finally gets to keep its `https://`.
-- **Before exposure**: a security pass (SECURITY.md review, login rate
-  limiting, JWT secret from env not appsettings, confirm the driving CSV and
-  themes endpoints enforce auth), plus a DB backup job.
-- **JWT_SIGNING_KEY is not optional on Unraid** (learned 2026-08-04): without
-  it the server generates an ephemeral key at boot and EVERY family device is
-  signed out on EVERY container restart. Set it once in the container env and
-  tokens survive redeploys. (The local dev server run from a worktree has no
-  .env and hits exactly this — that's how the parent sim lost its session.)
-- **Updates**: start with deploy.sh by hand; graduate to image-build on push
-  + auto-pull when that gets old.
+Verified ahead of deploy day (2026-08-04): current master's image builds
+clean (`docker build .`, .NET 9, 453MB), `Program` still accepts the
+compose file's `DATABASE_URL` form, startup runs `MigrateAsync()` so the
+schema upgrade is automatic, and compose now REQUIRES `JWT_SIGNING_KEY`
+(without it every phone signs out on every redeploy; the compose var
+fails loud instead of silently minting an ephemeral key).
+
+Deploy day, on the Unraid console (`/mnt/user/appdata/Daily_Bread`):
+
+1. `mkdir -p backups && docker exec dailybread-postgres pg_dump -U dailybread dailybread > backups/pre-native-$(date +%F).sql`
+2. `echo "JWT_SIGNING_KEY=$(openssl rand -base64 48)" >> .env` (once, forever)
+3. `./deploy.sh rebuild --verbose` (pulls master, rebuilds, migrations run at boot)
+4. `curl https://dailybread.simmserv.org/api/v1/health` → `Healthy`
+5. Each device: connect screen → `dailybread.simmserv.org` → sign in.
+   Web logins survive (cookie keys persist in the /keys volume).
+
+Still worth doing soon after: the security pass (SECURITY.md review, login
+rate limiting, confirm driving CSV + themes endpoints enforce auth) and a
+scheduled backup job around step 1's pattern.
 
 ## R2 — iPhones get the app through TestFlight (the no-cables answer)
 
