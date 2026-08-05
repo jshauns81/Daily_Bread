@@ -131,6 +131,32 @@ case "$COMMAND" in
     DEPLOY_DESC="$(git log -1 --pretty=format:'%s' 2>/dev/null)"
     log_always "Deploying commit: ${DEPLOY_SHA} - ${DEPLOY_DESC}"
 
+    # --- Pre-migrate safety backup -----------------------------------------
+    # The app auto-applies EF migrations on boot (Program.cs MigrateAsync). Snapshot
+    # the DB first, while postgres is still up, so a bad migration is recoverable.
+    # Best-effort: warns on failure (or aborts under DEPLOY_STRICT=1, matching the
+    # drift guard above). A missing DB on first install is not fatal.
+    log "Backing up database before migrate..."
+    (
+      set +e
+      [ -f .env ] && { set -a; . ./.env; set +a; }
+      if docker ps --format '{{.Names}}' | grep -q '^dailybread-postgres$'; then
+        mkdir -p db-backups
+        BACKUP_FILE="db-backups/dailybread_pre_deploy_${DEPLOY_SHA:-unknown}_$(date +%Y%m%d_%H%M%S).sql"
+        if docker exec dailybread-postgres pg_dump -U "${POSTGRES_USER:-dailybread}" "${POSTGRES_DB:-dailybread}" > "$BACKUP_FILE" 2>/dev/null && [ -s "$BACKUP_FILE" ]; then
+          log_always "Database backed up to ${BACKUP_FILE}"
+          # Retain only the 20 most recent pre-deploy snapshots.
+          ls -1t db-backups/dailybread_pre_deploy_*.sql 2>/dev/null | tail -n +21 | xargs -r rm -f
+        else
+          rm -f "$BACKUP_FILE"
+          log_always "${YELLOW}WARNING: pre-migrate DB backup failed.${NC}"
+          [ "${DEPLOY_STRICT:-0}" = "1" ] && { log_always "${RED}DEPLOY_STRICT=1 - aborting deploy (no backup).${NC}"; exit 1; }
+        fi
+      else
+        log_always "${YELLOW}No running dailybread-postgres container - skipping pre-migrate backup (first install?).${NC}"
+      fi
+    ) || exit 1
+
     log "Stopping containers..."
     run $COMPOSE_CMD down
 

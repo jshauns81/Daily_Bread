@@ -48,8 +48,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-dailybread}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # No host port mapping: the DB is only reached over dailybread-net by the app,
+    # and by deploy.sh via `docker exec`. Publishing 5432 to the host LAN would
+    # expose the database (with the .env password) to the local network.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dailybread} -d ${POSTGRES_DB:-dailybread}"]
       interval: 5s
