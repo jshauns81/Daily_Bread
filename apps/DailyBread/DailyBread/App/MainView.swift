@@ -88,6 +88,10 @@ struct MainView: View {
                 }
             }
             .navigationTitle("Daily Bread")
+            // Shaun's first prod launch opened with the sidebar squeezed until
+            // "Approvals" was literally "…" — give the column a floor that fits
+            // the longest label plus a count badge.
+            .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 280)
         } detail: {
             NavigationStack {
                 screen(for: selection ?? sections[0])
