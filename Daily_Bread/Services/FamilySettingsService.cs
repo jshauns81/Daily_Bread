@@ -99,6 +99,9 @@ public class FamilySettingsService : IFamilySettingsService
         {
             existing.WeekStartDay = settings.WeekStartDay;
             existing.CashOutThreshold = settings.CashOutThreshold;
+            // EnableGoals was missing from this copy list — the API's goals
+            // toggle round-tripped 200 OK while silently changing nothing.
+            existing.EnableGoals = settings.EnableGoals;
             existing.EnableConfetti = settings.EnableConfetti;
             existing.EnableStreaks = settings.EnableStreaks;
             existing.ModifiedAt = DateTime.UtcNow;

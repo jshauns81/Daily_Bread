@@ -15,16 +15,24 @@ namespace Daily_Bread.Api.Controllers;
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;
+    private readonly ICurrentUserContext _currentUser;
 
-    public DashboardController(IDashboardService dashboardService)
+    public DashboardController(IDashboardService dashboardService, ICurrentUserContext currentUser)
     {
         _dashboardService = dashboardService;
+        _currentUser = currentUser;
     }
 
     [HttpGet("parent")]
     public async Task<ActionResult<ParentDashboardResponse>> Parent(CancellationToken ct)
     {
-        var data = await _dashboardService.GetParentDashboardAsync();
+        // Scope everything to the caller's family. A household-less caller gets
+        // an empty dashboard, not everyone's — the unscoped call leaked every
+        // family's balances and help texts (2026-08-04 audit).
+        await _currentUser.InitializeAsync();
+        var data = _currentUser.HouseholdId == null
+            ? new ParentDashboardData()
+            : await _dashboardService.GetParentDashboardAsync(_currentUser.HouseholdId);
 
         return Ok(new ParentDashboardResponse(
             data.TodayCompletedCount,

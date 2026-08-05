@@ -45,6 +45,14 @@ public interface IHouseholdGuard
     /// address chores by definition + date — a log row may not exist yet.
     /// </summary>
     Task<bool> ChoreDefinitionIsInCallerHouseholdAsync(int choreDefinitionId, CancellationToken ct = default);
+
+    /// <summary>
+    /// True if the chore definition is assigned to exactly this user. The
+    /// strictest chore guard: assignment IS ownership, so this closes both
+    /// cross-household writes and same-household mis-binding (toggling chore A
+    /// while naming sibling B). Unknown definition → false, never an oracle.
+    /// </summary>
+    Task<bool> ChoreDefinitionIsAssignedToAsync(int choreDefinitionId, string userId, CancellationToken ct = default);
 }
 
 public class HouseholdGuard : IHouseholdGuard
@@ -145,5 +153,18 @@ public class HouseholdGuard : IHouseholdGuard
             .FirstOrDefaultAsync(ct);
 
         return targetHousehold != null && targetHousehold == callerHousehold;
+    }
+
+    public async Task<bool> ChoreDefinitionIsAssignedToAsync(
+        int choreDefinitionId, string userId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            return false;
+        }
+
+        await using var db = await _contextFactory.CreateDbContextAsync(ct);
+        return await db.ChoreDefinitions
+            .AnyAsync(cd => cd.Id == choreDefinitionId && cd.AssignedUserId == userId, ct);
     }
 }

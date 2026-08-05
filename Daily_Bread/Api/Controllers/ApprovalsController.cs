@@ -36,7 +36,15 @@ public class ApprovalsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApprovalsResponse>> Queue(CancellationToken ct)
     {
-        var dashboard = await _dashboardService.GetParentDashboardAsync();
+        // Household-scoped like the dashboard: a family-less caller sees an
+        // empty queue, never another family's (2026-08-04 audit).
+        await _currentUser.InitializeAsync();
+        if (_currentUser.HouseholdId == null)
+        {
+            return Ok(new ApprovalsResponse(new List<ApprovalItemDto>(), new List<HelpRequestDto>()));
+        }
+
+        var dashboard = await _dashboardService.GetParentDashboardAsync(_currentUser.HouseholdId);
 
         var approvals = dashboard.PendingApprovals.Select(a => new ApprovalItemDto(
             a.ChoreLogId, a.ChoreDefinitionId, a.ChoreName, a.ChildName, a.ChildUserId, a.EarnValue)).ToList();

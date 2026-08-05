@@ -195,7 +195,14 @@ public interface IDashboardService
     /// <summary>
     /// Gets dashboard data for a parent user.
     /// </summary>
-    Task<ParentDashboardData> GetParentDashboardAsync();
+    /// <summary>
+    /// The parent dashboard. <paramref name="householdId"/> scopes every
+    /// constituent query (logs, names, balances, earnings, potential) to one
+    /// family — the API MUST pass the caller's household (2026-08-04 audit:
+    /// the unscoped form handed any parent every family's balances and help
+    /// texts). Null = unscoped, for the single-family Blazor pages only.
+    /// </summary>
+    Task<ParentDashboardData> GetParentDashboardAsync(Guid? householdId = null);
 
     /// <summary>
     /// Gets dashboard data for a child user.
@@ -283,7 +290,7 @@ public class DashboardService : IDashboardService
         _logger = logger;
     }
 
-    public async Task<ParentDashboardData> GetParentDashboardAsync()
+    public async Task<ParentDashboardData> GetParentDashboardAsync(Guid? householdId = null)
     {
         var today = _dateProvider.Today;
 
@@ -301,24 +308,39 @@ public class DashboardService : IDashboardService
         // - All for today (for stats)
         // - Recent completed/approved (for activity feed)
         // IMPORTANT: Use AsNoTracking() to ensure we get fresh data from database
-        var allRelevantLogs = await context.ChoreLogs
+        var logsQuery = context.ChoreLogs
             .AsNoTracking()
             .Include(cl => cl.ChoreDefinition)
                 .ThenInclude(cd => cd.AssignedUser)
             .Include(cl => cl.ApprovedByUser)
-            .Where(cl => 
+            .Where(cl =>
                 cl.Status == ChoreStatus.Completed ||  // Pending approvals
                 cl.Status == ChoreStatus.Help ||       // Help requests
                 cl.Date == today ||                    // Today's stats
-                (cl.Status == ChoreStatus.Approved && cl.ApprovedAt != null)) // Recent activity
-            .ToListAsync();
+                (cl.Status == ChoreStatus.Approved && cl.ApprovedAt != null)); // Recent activity
+
+        // One filter here scopes everything derived from these logs — approvals,
+        // help queue, today's stats, per-child progress, recent activity.
+        if (householdId != null)
+        {
+            logsQuery = logsQuery.Where(cl =>
+                cl.ChoreDefinition.AssignedUser != null
+                && cl.ChoreDefinition.AssignedUser.HouseholdId == householdId);
+        }
+
+        var allRelevantLogs = await logsQuery.ToListAsync();
         
         _logger.LogDebug("Parent dashboard: Loaded {Count} relevant ChoreLogs in single query", allRelevantLogs.Count);
 
         // Display names for approval/help items: prefer the child's profile
         // DisplayName ("Noah") over the login username ("noah_test").
-        var displayNamesByUserId = await context.ChildProfiles
-            .AsNoTracking()
+        var namesQuery = context.ChildProfiles.AsNoTracking();
+        if (householdId != null)
+        {
+            namesQuery = namesQuery.Where(p =>
+                context.Users.Any(u => u.Id == p.UserId && u.HouseholdId == householdId));
+        }
+        var displayNamesByUserId = await namesQuery
             .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
 
         string ChildDisplayName(string? userId, string? fallback) =>
@@ -373,7 +395,7 @@ public class DashboardService : IDashboardService
             .ToList();
 
         // Get children balances (still needs separate call - different table)
-        var childProfiles = await _profileService.GetAllChildProfilesAsync();
+        var childProfiles = await _profileService.GetAllChildProfilesAsync(householdId: householdId);
         var childrenBalances = childProfiles.Select(p => new ChildBalanceSummary
         {
             ProfileId = p.ProfileId,
@@ -385,9 +407,15 @@ public class DashboardService : IDashboardService
         // Earned this week, per day: positive chore-earning ledger entries within the
         // current week, across all children (mirrors the child weekly-earnings calc).
         var startOfThisWeek = today.AddDays(-(int)today.DayOfWeek);
-        var weekEarningsByDate = await context.LedgerTransactions
+        var earningsQuery = context.LedgerTransactions
             .Where(t => t.Amount > 0 && t.Type == TransactionType.ChoreEarning)
-            .Where(t => t.TransactionDate >= startOfThisWeek && t.TransactionDate <= today)
+            .Where(t => t.TransactionDate >= startOfThisWeek && t.TransactionDate <= today);
+        if (householdId != null)
+        {
+            earningsQuery = earningsQuery.Where(t =>
+                context.Users.Any(u => u.Id == t.UserId && u.HouseholdId == householdId));
+        }
+        var weekEarningsByDate = await earningsQuery
             .GroupBy(t => t.TransactionDate)
             .Select(g => new { Date = g.Key, Amount = g.Sum(x => x.Amount) })
             .ToListAsync();
@@ -405,7 +433,7 @@ public class DashboardService : IDashboardService
 
         // Same week/scope as ThisWeekEarnings above (current week, all children) - the
         // hero's reward-progress denominator.
-        var weeklyPotential = await _chorePlannerService.GetWeeklyPotentialAsync();
+        var weeklyPotential = await _chorePlannerService.GetWeeklyPotentialAsync(householdId: householdId);
 
         // Get recent activity - pass pre-loaded logs to avoid re-querying
         var recentActivity = await GetRecentActivityAsync(10, allRelevantLogs);

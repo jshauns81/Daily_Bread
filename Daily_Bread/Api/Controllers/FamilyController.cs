@@ -6,8 +6,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace Daily_Bread.Api.Controllers;
 
 /// <summary>
-/// Family-level feature switches. Anyone signed in can read them (the app
-/// needs to know what to show); only parents can change them.
+/// Family-level feature switches. Household members can read them (the app
+/// needs to know what to show); only parents can change them. There is ONE
+/// FamilySettings row for the deployment (no HouseholdId column yet — noted
+/// as schema debt in the 2026-08-04 audit), so until it grows one, membership
+/// in a household is the gate: an account outside every family neither reads
+/// nor writes the switches that drive everyone's week math.
 /// </summary>
 [ApiController]
 [Route("api/v1/family")]
@@ -15,15 +19,23 @@ namespace Daily_Bread.Api.Controllers;
 public class FamilyController : ControllerBase
 {
     private readonly IFamilySettingsService _settingsService;
+    private readonly ICurrentUserContext _currentUser;
 
-    public FamilyController(IFamilySettingsService settingsService)
+    public FamilyController(IFamilySettingsService settingsService, ICurrentUserContext currentUser)
     {
         _settingsService = settingsService;
+        _currentUser = currentUser;
     }
 
     [HttpGet("features")]
     public async Task<ActionResult<FamilyFeaturesDto>> Features(CancellationToken ct)
     {
+        await _currentUser.InitializeAsync();
+        if (_currentUser.HouseholdId == null)
+        {
+            return Forbid(JwtBearerDefaults.AuthenticationScheme);
+        }
+
         var settings = await _settingsService.GetSettingsAsync();
         return Ok(new FamilyFeaturesDto(
             settings.EnableGoals,
@@ -38,6 +50,12 @@ public class FamilyController : ControllerBase
         [FromBody] FamilyFeaturesDto request,
         CancellationToken ct)
     {
+        await _currentUser.InitializeAsync();
+        if (_currentUser.HouseholdId == null)
+        {
+            return Forbid(JwtBearerDefaults.AuthenticationScheme);
+        }
+
         var settings = await _settingsService.GetSettingsAsync();
         settings.EnableGoals = request.EnableGoals;
         settings.EnableConfetti = request.EnableConfetti;

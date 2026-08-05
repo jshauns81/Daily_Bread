@@ -15,8 +15,11 @@ namespace Daily_Bread.Api.Controllers;
 /// stored JSON by AchievementConditionJson, so clients never hand-author it.
 ///
 /// Achievements are global (no per-household field), so editing is gated to
-/// Parent/Admin. On a single-family server that's simply "your family's badges";
-/// a multi-tenant deployment would want an Admin-only gate here instead.
+/// Parent/Admin — AND to callers who actually belong to a household (2026-08-04
+/// audit): a parent-role account with no family must not be able to read or
+/// rewrite every family's badge definitions, reward amounts included. The real
+/// multi-tenant fix is a HouseholdId on Achievement; until then this controller
+/// fails closed for the family-less.
 /// </summary>
 [ApiController]
 [Route("api/v1/achievements/definitions")]
@@ -24,15 +27,33 @@ namespace Daily_Bread.Api.Controllers;
 public class AchievementDefinitionsController : ControllerBase
 {
     private readonly IAchievementManagementService _mgmt;
+    private readonly ICurrentUserContext _currentUser;
 
-    public AchievementDefinitionsController(IAchievementManagementService mgmt)
+    public AchievementDefinitionsController(IAchievementManagementService mgmt, ICurrentUserContext currentUser)
     {
         _mgmt = mgmt;
+        _currentUser = currentUser;
+    }
+
+    /// <summary>Null when the caller may author definitions; otherwise the refusal.</summary>
+    private async Task<ActionResult?> RequireHouseholdAsync()
+    {
+        await _currentUser.InitializeAsync();
+        return _currentUser.HouseholdId == null
+            ? Forbid(JwtBearerDefaults.AuthenticationScheme)
+            : null;
     }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AchievementDefinitionDto>>> List()
     {
+        // Same fail-closed shape as the family list: no household, no data.
+        await _currentUser.InitializeAsync();
+        if (_currentUser.HouseholdId == null)
+        {
+            return Ok(new List<AchievementDefinitionDto>());
+        }
+
         var all = await _mgmt.GetAllAchievementsAsync(includeInactive: true);
         return Ok(all.Select(ToDto).ToList());
     }
@@ -40,6 +61,11 @@ public class AchievementDefinitionsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<AchievementDefinitionDto>> Create([FromBody] AchievementDefinitionWriteDto body)
     {
+        if (await RequireHouseholdAsync() is { } refused)
+        {
+            return refused;
+        }
+
         var (dto, error) = ToServiceDto(body, id: 0);
         if (error != null)
         {
@@ -58,6 +84,11 @@ public class AchievementDefinitionsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] AchievementDefinitionWriteDto body)
     {
+        if (await RequireHouseholdAsync() is { } refused)
+        {
+            return refused;
+        }
+
         var (dto, error) = ToServiceDto(body, id);
         if (error != null)
         {
@@ -76,6 +107,11 @@ public class AchievementDefinitionsController : ControllerBase
     [HttpPost("{id:int}/toggle-active")]
     public async Task<IActionResult> ToggleActive(int id)
     {
+        if (await RequireHouseholdAsync() is { } refused)
+        {
+            return refused;
+        }
+
         var result = await _mgmt.ToggleActiveAsync(id);
         if (!result.Success)
         {

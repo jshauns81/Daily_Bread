@@ -25,7 +25,13 @@ public interface IChildProfileService
     /// <summary>
     /// Gets all child profiles.
     /// </summary>
-    Task<List<ChildProfileSummary>> GetAllChildProfilesAsync(bool includeInactive = false);
+    /// <summary>
+    /// Child profiles with balances. <paramref name="householdId"/> restricts
+    /// to one family's children (join through AspNetUsers — ChildProfile has
+    /// no household column of its own); null = unscoped, single-family Blazor
+    /// pages only. API callers must pass the caller's household.
+    /// </summary>
+    Task<List<ChildProfileSummary>> GetAllChildProfilesAsync(bool includeInactive = false, Guid? householdId = null);
 
     /// <summary>
     /// Gets a child profile by ID.
@@ -98,10 +104,10 @@ public class ChildProfileService : IChildProfileService
         _contextFactory = contextFactory;
     }
 
-    public async Task<List<ChildProfileSummary>> GetAllChildProfilesAsync(bool includeInactive = false)
+    public async Task<List<ChildProfileSummary>> GetAllChildProfilesAsync(bool includeInactive = false, Guid? householdId = null)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
-        
+
         var query = context.ChildProfiles
             .Include(p => p.LedgerAccounts)
             .AsQueryable();
@@ -109,6 +115,12 @@ public class ChildProfileService : IChildProfileService
         if (!includeInactive)
         {
             query = query.Where(p => p.IsActive);
+        }
+
+        if (householdId != null)
+        {
+            query = query.Where(p =>
+                context.Users.Any(u => u.Id == p.UserId && u.HouseholdId == householdId));
         }
 
         var profiles = await query.ToListAsync();

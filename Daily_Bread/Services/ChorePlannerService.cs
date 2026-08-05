@@ -333,7 +333,7 @@ public interface IChorePlannerService
     /// </summary>
     /// <param name="weekStart">Start of the week (Sunday). Null = current week.</param>
     /// <param name="userId">Optional: filter to a specific user's chores. Null = all children.</param>
-    Task<decimal> GetWeeklyPotentialAsync(DateOnly? weekStart = null, string? userId = null);
+    Task<decimal> GetWeeklyPotentialAsync(DateOnly? weekStart = null, string? userId = null, Guid? householdId = null);
 
     /// <summary>
     /// Gets printable chart data for all children for a week.
@@ -381,7 +381,7 @@ public class ChorePlannerService : IChorePlannerService
         return ChoreScheduleHelper.GetWeekStartDate(date);
     }
 
-    public async Task<decimal> GetWeeklyPotentialAsync(DateOnly? weekStart = null, string? userId = null)
+    public async Task<decimal> GetWeeklyPotentialAsync(DateOnly? weekStart = null, string? userId = null, Guid? householdId = null)
     {
         var today = _dateProvider.Today;
         var start = weekStart ?? GetWeekStart(today);
@@ -391,13 +391,15 @@ public class ChorePlannerService : IChorePlannerService
 
         // Active chores only, scoped to the same date-range/assignment rules GetPlannerDataAsync
         // uses (includeInactive defaults to false there too) - no Include() needed since we never
-        // touch AssignedUser, and no OrderBy since we only sum.
+        // touch AssignedUser, and no OrderBy since we only sum. The household filter keeps the
+        // dashboard's potential from counting other families' chores (2026-08-04 audit).
         var chores = await context.ChoreDefinitions
             .AsNoTracking()
             .Where(c => c.IsActive)
             .Where(c => c.StartDate == null || c.StartDate <= end)
             .Where(c => c.EndDate == null || c.EndDate >= start)
             .Where(c => string.IsNullOrEmpty(userId) || c.AssignedUserId == userId)
+            .Where(c => householdId == null || (c.AssignedUser != null && c.AssignedUser.HouseholdId == householdId))
             .ToListAsync();
 
         if (chores.Count == 0)

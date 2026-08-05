@@ -130,6 +130,14 @@ public class ChoresController : ControllerBase
             return NotFound(new ApiError("UserNotFound", "User not found."));
         }
 
+        // The chore must be the target's own. Without this, the guard resolves
+        // the ACTOR while the chore id roams free — a caller could toggle (and
+        // on approve, mint earnings against) another household's chore.
+        if (!await _guard.ChoreDefinitionIsAssignedToAsync(choreDefinitionId, target.User!.Id, ct))
+        {
+            return NotFound(new ApiError("NotFound", "Chore not found."));
+        }
+
         var date = request.Date ?? _dateProvider.Today;
         var isParent = _currentUser.IsInRole("Parent") || _currentUser.IsInRole("Admin");
 
@@ -156,6 +164,14 @@ public class ChoresController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Reason))
         {
             return BadRequest(new ApiError("ReasonRequired", "A reason is required when raising Help."));
+        }
+
+        // "Self only" is a promise, not a comment: without this check anyone
+        // could flip a stranger's chore to Help — and the tracker then pushes
+        // the attacker's text to that household's parents by name.
+        if (!await _guard.ChoreDefinitionIsAssignedToAsync(choreDefinitionId, _currentUser.UserId, ct))
+        {
+            return NotFound(new ApiError("NotFound", "Chore not found."));
         }
 
         var date = request.Date ?? _dateProvider.Today;

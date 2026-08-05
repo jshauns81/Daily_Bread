@@ -202,4 +202,37 @@ public sealed class HouseholdGuardTests : IAsyncLifetime
         var guard = CreateGuard(new FakeCurrentUser(ParentId, HomeId, "Parent"));
         Assert.False(await guard.ChoreDefinitionIsInCallerHouseholdAsync(999999));
     }
+
+    // ---------- ChoreDefinitionIsAssignedToAsync ----------
+    // Assignment IS ownership: this is what keeps toggle/help from acting on
+    // another family's chores (2026-08-04 audit LEAK-3/4).
+
+    [Fact]
+    public async Task Chore_Assigned_To_User_Is_Allowed()
+    {
+        var guard = CreateGuard(new FakeCurrentUser(ChildId, HomeId, "Child"));
+        Assert.True(await guard.ChoreDefinitionIsAssignedToAsync(_homeChoreId, ChildId));
+    }
+
+    [Fact]
+    public async Task Chore_Assigned_To_Someone_Else_Is_Denied()
+    {
+        var guard = CreateGuard(new FakeCurrentUser(ChildId, HomeId, "Child"));
+        Assert.False(await guard.ChoreDefinitionIsAssignedToAsync(_homeChoreId, SiblingId));
+        Assert.False(await guard.ChoreDefinitionIsAssignedToAsync(_outsiderChoreId, ChildId));
+    }
+
+    [Fact]
+    public async Task Unknown_Chore_Assignment_Is_Denied()
+    {
+        var guard = CreateGuard(new FakeCurrentUser(ChildId, HomeId, "Child"));
+        Assert.False(await guard.ChoreDefinitionIsAssignedToAsync(999999, ChildId));
+    }
+
+    [Fact]
+    public async Task Empty_User_Assignment_Is_Denied()
+    {
+        var guard = CreateGuard(new FakeCurrentUser(ChildId, HomeId, "Child"));
+        Assert.False(await guard.ChoreDefinitionIsAssignedToAsync(_homeChoreId, ""));
+    }
 }

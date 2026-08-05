@@ -28,6 +28,13 @@ public class CreateUserRequest
     public required string Password { get; set; }
     public required string Role { get; set; }
     public string? DisplayName { get; set; } // For Child role - creates ChildProfile
+    /// <summary>
+    /// Household the new member joins. When null, CreateUserAsync falls back to
+    /// the deployment's single active household if exactly one exists — the
+    /// 2026-08-04 audit found users were created household-less by default,
+    /// invisible to every guarded surface and visible to every fail-open one.
+    /// </summary>
+    public Guid? HouseholdId { get; set; }
 }
 
 /// <summary>
@@ -179,12 +186,33 @@ public class UserManagementService : IUserManagementService
             return ServiceResult<string>.Fail($"Username '{request.UserName}' is already taken.");
         }
 
+        // Every Parent/Child belongs to a household. Caller's choice wins; with
+        // no choice, a single-household deployment (the normal case for this
+        // app) assigns its one family, so members never float outside every
+        // guard. Multiple households and no explicit pick → stays null rather
+        // than guessing.
+        var householdId = request.HouseholdId;
+        if (householdId == null)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            var activeHouseholds = await context.Households
+                .Where(h => h.IsActive)
+                .Select(h => h.Id)
+                .Take(2)
+                .ToListAsync();
+            if (activeHouseholds.Count == 1)
+            {
+                householdId = activeHouseholds[0];
+            }
+        }
+
         // Create the user
         var user = new ApplicationUser
         {
             UserName = request.UserName,
             Email = request.Email,
-            EmailConfirmed = true // Skip email confirmation for admin-created users
+            EmailConfirmed = true, // Skip email confirmation for admin-created users
+            HouseholdId = householdId
         };
 
         var createResult = await _userManager.CreateAsync(user, request.Password);

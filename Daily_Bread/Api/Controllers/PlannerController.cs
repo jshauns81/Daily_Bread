@@ -398,20 +398,25 @@ public class PlannerController : ControllerBase
     }
 
     /// <summary>
-    /// A chore is household-visible when unassigned, or when its assigned
-    /// user isn't in a DIFFERENT household. An assigned user with a null
-    /// HouseholdId (legacy rows) stays visible rather than orphaning the
-    /// chore for every parent. Relies on the AssignedUser navigation the
-    /// service Include()s on all read paths.
+    /// A chore is household-visible ONLY when its assignee is in the caller's
+    /// household. This used to fail open — unassigned chores and null-household
+    /// assignees were visible (and editable, and deletable) to every parent in
+    /// every family, which the 2026-08-04 audit flagged as the worst leak in
+    /// the API: post-migration accounts default to a null household, so the
+    /// "legacy edge case" was actually the common case. Now it fails closed
+    /// like HouseholdGuard. A chore stranded by a truly household-less
+    /// assignee is repaired by fixing the USER's household, not by showing
+    /// the chore to strangers. (Proper fix remains a HouseholdId column on
+    /// ChoreDefinition so unassigned chores have an owner at all.)
     /// </summary>
     private static bool IsHouseholdVisible(ChoreDefinition chore, Guid? callerHouseholdId)
     {
-        if (chore.AssignedUserId == null)
+        if (callerHouseholdId == null || chore.AssignedUserId == null)
         {
-            return true;
+            return false;
         }
 
         var assignedHousehold = chore.AssignedUser?.HouseholdId;
-        return assignedHousehold == null || assignedHousehold == callerHouseholdId;
+        return assignedHousehold == callerHouseholdId;
     }
 }
