@@ -1,5 +1,5 @@
-# Build stage - Use .NET 9 SDK
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Build stage - Use .NET 10 SDK
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy project file and restore dependencies first (for better caching)
@@ -11,8 +11,8 @@ COPY . .
 WORKDIR /src/Daily_Bread
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
-# Runtime stage - Use .NET 9 runtime
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+# Runtime stage - Use .NET 10 runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # Copy published app   
