@@ -207,69 +207,88 @@ public class WeeklyReconciliationService : IWeeklyReconciliationService
         var weekEnd = await _familySettingsService.GetWeekEndForDateAsync(weekEndDate);
         var nextWeekStart = weekEnd.AddDays(1);
 
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        // This context only resolves the execution strategy from the configured
+        // provider options - it's never used for a query.
+        await using var strategyContext = await _contextFactory.CreateDbContextAsync();
 
-        var childProfile = await context.ChildProfiles
-            .Include(p => p.User)
-            .Include(p => p.LedgerAccounts.Where(a => a.IsActive && a.IsDefault))
-            .FirstOrDefaultAsync(p => p.UserId == userId);
+        // The DbContext has EnableRetryOnFailure configured (Program.cs), which forbids
+        // a user-started transaction the strategy can't replay. The whole unit - reads,
+        // payout, screen-time reduction, commit - runs inside the strategy so a transient
+        // failure retries all of it. Mirrors ApproveClaimAsync / UpdateStatusAtomicallyAsync;
+        // this was the one transaction site that missed the pattern, and it only surfaced
+        // against production data, because it takes a real routine-payout backlog to reach
+        // the transaction at all.
+        var strategy = strategyContext.Database.CreateExecutionStrategy();
 
-        if (childProfile == null)
+        return await strategy.ExecuteAsync(async () =>
         {
-            return new WeeklyReconciliationResult
+            // A FRESH context per attempt, retries included: EF doesn't reset the change
+            // tracker between execution-strategy retries, and a stale tracker re-adding
+            // the payout row would credit the child twice (see ApproveClaimAsync).
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var childProfile = await context.ChildProfiles
+                .Include(p => p.User)
+                .Include(p => p.LedgerAccounts.Where(a => a.IsActive && a.IsDefault))
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+
+            if (childProfile == null)
             {
-                UserId = userId,
-                UserName = "Unknown",
-                WeekStart = weekStart,
-                WeekEnd = weekEnd
-            };
-        }
+                return new WeeklyReconciliationResult
+                {
+                    UserId = userId,
+                    UserName = "Unknown",
+                    WeekStart = weekStart,
+                    WeekEnd = weekEnd
+                };
+            }
 
-        var weekLogs = await context.ChoreLogs
-            .Include(l => l.ChoreDefinition)
-            .Where(l => l.ChoreDefinition.AssignedUserId == userId)
-            .Where(l => l.Date >= weekStart && l.Date <= weekEnd)
-            .ToListAsync();
+            var weekLogs = await context.ChoreLogs
+                .Include(l => l.ChoreDefinition)
+                .Where(l => l.ChoreDefinition.AssignedUserId == userId)
+                .Where(l => l.Date >= weekStart && l.Date <= weekEnd)
+                .ToListAsync();
 
-        var pricing = await _pricingService.GetWeekPricingAsync(childProfile.Id, weekStart);
+            var pricing = await _pricingService.GetWeekPricingAsync(childProfile.Id, weekStart);
 
-        var missCounts = await CountMissesAsync(context, childProfile, weekLogs, pricing, weekStart, weekEnd);
+            var missCounts = await CountMissesAsync(context, childProfile, weekLogs, pricing, weekStart, weekEnd);
 
-        await using var transaction = await context.Database.BeginTransactionAsync();
+            await using var transaction = await context.Database.BeginTransactionAsync();
 
-        try
-        {
-            var (payout, creditedInstances, totalInstances) = await ApplyRoutinePayoutAsync(
-                context, childProfile, weekLogs, weekEnd);
-
-            var (weekdayLost, weekendLost, addedPerInverse, reductions) =
-                await ApplyScreenTimeReductionAsync(
-                    context, childProfile, pricing, missCounts, weekStart, nextWeekStart);
-
-            await context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return new WeeklyReconciliationResult
+            try
             {
-                UserId = userId,
-                UserName = childProfile.DisplayName,
-                WeekStart = weekStart,
-                WeekEnd = weekEnd,
-                RoutinePayout = payout,
-                RoutineInstancesCredited = creditedInstances,
-                RoutineInstancesTotal = totalInstances,
-                WeekdayMinutesLost = weekdayLost,
-                WeekendMinutesLost = weekendLost,
-                InverseFillAddedMinutesPerRoutine = addedPerInverse,
-                ScreenTimeReductions = reductions
-            };
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Failed to reconcile week for user {UserId}", userId);
-            throw;
-        }
+                var (payout, creditedInstances, totalInstances) = await ApplyRoutinePayoutAsync(
+                    context, childProfile, weekLogs, weekEnd);
+
+                var (weekdayLost, weekendLost, addedPerInverse, reductions) =
+                    await ApplyScreenTimeReductionAsync(
+                        context, childProfile, pricing, missCounts, weekStart, nextWeekStart);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new WeeklyReconciliationResult
+                {
+                    UserId = userId,
+                    UserName = childProfile.DisplayName,
+                    WeekStart = weekStart,
+                    WeekEnd = weekEnd,
+                    RoutinePayout = payout,
+                    RoutineInstancesCredited = creditedInstances,
+                    RoutineInstancesTotal = totalInstances,
+                    WeekdayMinutesLost = weekdayLost,
+                    WeekendMinutesLost = weekendLost,
+                    InverseFillAddedMinutesPerRoutine = addedPerInverse,
+                    ScreenTimeReductions = reductions
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to reconcile week for user {UserId}", userId);
+                throw;
+            }
+        });
     }
 
     /// <summary>
