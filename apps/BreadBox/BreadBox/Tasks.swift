@@ -92,6 +92,67 @@ enum Catalog {
             confirm: "This wipes the LOCAL dev database (users, chores, history) and rebuilds it empty. A backup is taken first, and the seeder repopulates test data on the next server start. The Unraid/production database is untouched."),
     ]
 
+    /// The family's live server. Everything here talks to Unraid over SSH;
+    /// the one write is the deploy, and it confirms first.
+    static let production: [TaskSpec] = [
+        TaskSpec(
+            id: "prod-status",
+            title: "Status",
+            script: """
+            echo "— deployed:"
+            ssh \(Config.prodHost) 'cd \(Config.prodDir) && git log --oneline -1'
+            echo "— local origin/master:"
+            cd \(Config.checkout) && git fetch origin -q 2>/dev/null; git log --oneline -1 origin/master
+            echo "— containers:"
+            ssh \(Config.prodHost) 'docker ps --format "{{.Names}} {{.Status}}" | grep dailybread'
+            echo "— health:"
+            curl -s -m 8 \(Config.prodHealthURL.absoluteString); echo
+            echo "— schema:"
+            ssh \(Config.prodHost) 'docker exec \(Config.prodDbContainer) psql -U dailybread -d dailybread -t -A \
+              -c "SELECT \\"MigrationId\\" FROM \\"__EFMigrationsHistory\\" ORDER BY 1 DESC LIMIT 1;"'
+            """),
+        TaskSpec(
+            id: "prod-deploy",
+            title: "Deploy master…",
+            script: """
+            set -e
+            ssh \(Config.prodHost) 'cd \(Config.prodDir) && git pull origin master && ./deploy.sh rebuild --verbose'
+            echo "— waiting for health…"
+            for i in $(seq 1 40); do
+              sleep 3
+              if [ "$(curl -s -m 5 \(Config.prodHealthURL.absoluteString) || true)" = "Healthy" ]; then
+                echo "Healthy — the family is on the new build."
+                exit 0
+              fi
+            done
+            echo "Not healthy after 2 minutes — read the deploy output above."
+            exit 1
+            """,
+            confirm: """
+            Deploys origin/master to the family's live server at \
+            dailybread.simmserv.org. The app is down for the couple of minutes \
+            it takes to rebuild the container, and migrations apply on boot. \
+            deploy.sh takes its own database backup first (db-backups/ on the \
+            box, 20 kept). Nobody should be mid-chore.
+            """),
+        TaskSpec(
+            id: "prod-backup",
+            title: "Back up prod DB",
+            script: """
+            mkdir -p "\(Config.backups)"
+            STAMP=$(date +%Y%m%d-%H%M%S)
+            OUT="\(Config.backups)/prod-$STAMP.sql.gz"
+            ssh \(Config.prodHost) 'docker exec \(Config.prodDbContainer) pg_dump -U dailybread dailybread' \
+              | gzip > "$OUT"
+            echo "Backed up: $OUT ($(du -h "$OUT" | cut -f1))"
+            """,
+            revealOnSuccess: Config.backups),
+        TaskSpec(
+            id: "prod-logs",
+            title: "Tail prod log",
+            script: "ssh \(Config.prodHost) 'docker logs --tail 40 \(Config.prodAppContainer) 2>&1'"),
+    ]
+
     static let checks: [TaskSpec] = [
         TaskSpec(
             id: "walk-kid",

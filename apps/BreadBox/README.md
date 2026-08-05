@@ -22,22 +22,35 @@ exactly as it does in Ghostty.
 
 - **Git** — status, `pull --rebase --autostash` + project regen (the safe
   dance for this repo's rebase-pull config), push.
-- **Server** — start the LAN profile in the background (logs to
+- **Dev server** — start the LAN profile in the background (logs to
   `~/Library/Logs/DailyBread-server.log`), stop it, tail the log. Secrets
   come from the repo's `.env`, parsed at launch and never printed.
-- **Database** — timestamped `pg_dump` backups into `~/DailyBreadBackups`
+- **Dev database** — timestamped `pg_dump` backups into `~/DailyBreadBackups`
   (revealed in Finder), apply EF migrations, and a confirm-gated **local
   dev reset** that backs up first, drops and recreates the dev database,
   migrates, and lets the seeder repopulate on next server start. It cannot
-  reach the Unraid/production database.
+  reach the production database.
+- **Production** — the family's live server at `dailybread.simmserv.org`
+  (Unraid, over the `unraid` SSH alias). **Status** prints the deployed
+  commit next to local `origin/master`, the containers, health, and the
+  newest applied migration — the four things worth knowing before shipping.
+  **Deploy master…** confirms first, then pulls and runs the box's own
+  `deploy.sh rebuild` (which takes its own pre-migrate backup, keeping 20)
+  and polls health until the family is on the new build. **Back up prod DB**
+  streams a `pg_dump` straight into `~/DailyBreadBackups`. **Tail prod log**
+  is `docker logs` on the app container. Deploy is the only write.
 - **Checks** — run the screen walker on either simulator (screenshots land
   in `~/Desktop/DailyBread Walks` and open automatically) and a both-platform
   build check.
 
-The header shows live status: server health, the Postgres container, and
-the checkout's branch position. One task runs at a time, streaming into the
-log pane — an admin panel that lets "reset the database" race "back up the
-database" is a trap, not a tool.
+The header shows live status: dev server health, the dev Postgres container,
+**Live** (production health through the tunnel), and the checkout's branch
+position. One task runs at a time, streaming into the log pane — an admin
+panel that lets "reset the database" race "back up the database" is a trap,
+not a tool.
+
+Production buttons need the `unraid` host in `~/.ssh/config` with key auth;
+that is the only setup they assume.
 
 ## Configuration
 

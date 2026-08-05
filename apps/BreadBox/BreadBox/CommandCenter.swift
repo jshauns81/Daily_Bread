@@ -35,7 +35,19 @@ enum Config {
     static let kidSim = "C3D85F83-F11F-47A6-9C07-3CBE4199CF64"
     static let parentSim = "B2BA5196-62C3-40E4-82B0-3C0F79C776CD"
     static let dbContainer = "dailybread-postgres-dev"
-    static let healthURL = URL(string: "http://127.0.0.1:5100/api/v1/health")!
+    static let devHealthURL = URL(string: "http://127.0.0.1:5100/api/v1/health")!
+
+    // ── Production: the family's real server (Unraid + Cloudflare Tunnel) ──
+    // Live since 2026-08-04. This is the box holding six months of real
+    // chore history; everything here is deliberately explicit rather than
+    // discovered, and the only write is a confirm-gated deploy.
+    /// SSH alias from ~/.ssh/config.
+    static let prodHost = "unraid"
+    /// The deployment checkout — deploy.sh, .env, and db-backups/ live here.
+    static let prodDir = "/mnt/user/appdata/Daily_Bread"
+    static let prodDbContainer = "dailybread-postgres"
+    static let prodAppContainer = "dailybread-app"
+    static let prodHealthURL = URL(string: "https://dailybread.simmserv.org/api/v1/health")!
 }
 
 /// Runs one task at a time and streams its output into the log. Serialized on
@@ -51,6 +63,8 @@ final class CommandCenter {
     // Status row — refreshed on a timer and after every task.
     var serverUp = false
     var postgresUp = false
+    /// The family's live server, not this laptop's.
+    var prodUp = false
     var gitSummary = "checking…"
 
     var isBusy: Bool { runningTask != nil }
@@ -143,19 +157,22 @@ final class CommandCenter {
     // MARK: - Status row
 
     func refreshStatus() async {
-        async let health: Bool = Self.checkHealth()
+        async let health: Bool = Self.checkHealth(Config.devHealthURL, timeout: 2)
+        // The tunnel round-trip deserves longer than a loopback call.
+        async let prod: Bool = Self.checkHealth(Config.prodHealthURL, timeout: 6)
         async let docker: Bool = Self.shellSucceeds("docker inspect -f '{{.State.Running}}' \(Config.dbContainer) 2>/dev/null | grep -q true")
         async let git: String = Self.shellOutput(
             "cd \(Config.checkout) && git fetch origin -q 2>/dev/null; " +
             "git status -sb | head -1")
         serverUp = await health
+        prodUp = await prod
         postgresUp = await docker
         gitSummary = await git.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    nonisolated private static func checkHealth() async -> Bool {
-        var request = URLRequest(url: Config.healthURL)
-        request.timeoutInterval = 2
+    nonisolated private static func checkHealth(_ url: URL, timeout: TimeInterval) async -> Bool {
+        var request = URLRequest(url: url)
+        request.timeoutInterval = timeout
         guard let (_, response) = try? await URLSession.shared.data(for: request),
               let http = response as? HTTPURLResponse else { return false }
         return http.statusCode == 200

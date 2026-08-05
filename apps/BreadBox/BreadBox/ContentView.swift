@@ -11,8 +11,9 @@ struct ContentView: View {
 
             HStack(alignment: .top, spacing: 14) {
                 group("Git", systemImage: "arrow.triangle.branch", specs: Catalog.git)
-                group("Server", systemImage: "server.rack", specs: Catalog.server)
-                group("Database", systemImage: "cylinder.split.1x2", specs: Catalog.database)
+                group("Dev server", systemImage: "server.rack", specs: Catalog.server)
+                group("Dev database", systemImage: "cylinder.split.1x2", specs: Catalog.database)
+                group("Production", systemImage: "house.and.flag", specs: Catalog.production)
                 group("Checks", systemImage: "checkmark.seal", specs: Catalog.checks)
             }
             .padding(14)
@@ -41,8 +42,9 @@ struct ContentView: View {
             Text("🍞 BreadBox")
                 .font(.title3.weight(.bold))
             Spacer()
-            statusDot("Server", up: center.serverUp)
+            statusDot("Dev", up: center.serverUp)
             statusDot("Postgres", up: center.postgresUp)
+            statusDot("Live", up: center.prodUp)
             Text(center.gitSummary)
                 .font(.caption.monospaced())
                 .foregroundStyle(.secondary)
