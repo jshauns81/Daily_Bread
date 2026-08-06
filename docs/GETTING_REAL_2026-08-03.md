@@ -79,11 +79,16 @@ strangers; a family doesn't need them.
      `com.jshauns.dailybread` and `com.jshauns.dailybread.widgets`, each
      with the App Groups capability assigned to that group.
    - App Store Connect → Add Apps → **New App**: iOS, a globally-unique
-     name ("Daily Bread" is taken by the devotional — any placeholder
-     works; the phone's icon label stays "Daily Bread" from
-     `CFBundleDisplayName`, and the store name is changeable long before
-     any App Store release), Bundle ID `com.jshauns.dailybread` (the
-     explicit one, never a wildcard), SKU `dailybread`, Full Access.
+     name ("Daily Bread" is taken by the devotional — the phone's icon
+     label stays "Daily Bread" from `CFBundleDisplayName` regardless),
+     Bundle ID `com.jshauns.dailybread` (the explicit one, never a
+     wildcard), SKU `dailybread`, Full Access.
+   - **Done 2026-08-05:** record created as **"Daily Bread - Chore
+     Tracker"**, iOS + macOS platforms both on the record (the Mac side
+     stays dormant until the R3 sandbox decision). The main App ID turned
+     out to already exist — Xcode had auto-registered it (the `XC` prefix
+     in the dropdown) — so only the app group and the widgets ID needed
+     checking by hand.
 2. App page → **Xcode Cloud** tab → edit the workflow: the action must be
    **Archive — iOS** (not just Build) with deployment preparation
    **TestFlight (Internal Testing Only)**, plus a post-action **TestFlight
