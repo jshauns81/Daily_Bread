@@ -15,12 +15,13 @@ enum Catalog {
             """),
         TaskSpec(
             id: "git-pull",
-            title: "Pull + regen project",
+            title: "Pull + regen projects",
             script: """
             cd \(Config.checkout)
             git pull --rebase --autostash
             cd apps/DailyBread && xcodegen generate
-            echo "Project regenerated — reopen Xcode-beta if it was open."
+            cd ../BreadBox && xcodegen generate
+            echo "Both projects regenerated — reopen Xcode if it was open."
             """),
         TaskSpec(
             id: "git-push",

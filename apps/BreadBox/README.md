@@ -20,8 +20,10 @@ exactly as it does in Ghostty.
 
 ## What the buttons do
 
-- **Git** — status, `pull --rebase --autostash` + project regen (the safe
-  dance for this repo's rebase-pull config), push.
+- **Git** — status, `pull --rebase --autostash` + regen of BOTH generated
+  projects, DailyBread's and BreadBox's own (the 2026-08-05 icon taught us
+  that a pulled project.yml change is invisible until its project is
+  regenerated), push.
 - **Dev server** — start the LAN profile in the background (logs to
   `~/Library/Logs/DailyBread-server.log`), stop it, tail the log. Secrets
   come from the repo's `.env`, parsed at launch and never printed.
