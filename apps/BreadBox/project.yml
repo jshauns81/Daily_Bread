@@ -16,6 +16,15 @@ targets:
     platform: macOS
     sources:
       - path: BreadBox
+    # A classic .icns rather than an Icon Composer document on purpose: it
+    # compiles with any Xcode (no beta-actool dependency for the admin tool)
+    # and one drawn file is the right amount of icon for a personal panel.
+    # CFBundleIconFile has no INFOPLIST_KEY_ equivalent, so a real Info.plist
+    # carries it; Xcode still generates and merges the rest of the keys.
+    info:
+      path: BreadBox/Info.plist
+      properties:
+        CFBundleIconFile: AppIcon
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jshauns.breadbox
