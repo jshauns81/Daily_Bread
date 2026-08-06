@@ -108,6 +108,13 @@ enum Catalog {
             ssh \(Config.prodHost) 'docker ps --format "{{.Names}} {{.Status}}" | grep dailybread'
             echo "— health:"
             curl -s -m 8 \(Config.prodHealthURL.absoluteString); echo
+            echo "— web boot (the 2026-08-06 outage was invisible to /health):"
+            JS=$(curl -s -m 8 https://dailybread.simmserv.org/ | grep -oE 'src="[^"]*blazor[.]web[^"]*"' | head -1 | cut -d'"' -f2)
+            if [ -z "$JS" ]; then echo "  no blazor script tag in the page — web app is NOT rendering"; else
+              case "$JS" in /*) ;; *) JS="/$JS";; esac
+              CODE=$(curl -s -m 8 -o /dev/null -w "%{http_code}" "https://dailybread.simmserv.org$JS")
+              echo "  $JS → HTTP $CODE (200 = web app boots; 302 = the black-screen failure)"
+            fi
             echo "— schema:"
             ssh \(Config.prodHost) 'docker exec \(Config.prodDbContainer) psql -U dailybread -d dailybread -t -A \
               -c "SELECT \\"MigrationId\\" FROM \\"__EFMigrationsHistory\\" ORDER BY 1 DESC LIMIT 1;"'
@@ -122,7 +129,16 @@ enum Catalog {
             for i in $(seq 1 40); do
               sleep 3
               if [ "$(curl -s -m 5 \(Config.prodHealthURL.absoluteString) || true)" = "Healthy" ]; then
-                echo "Healthy — the family is on the new build."
+                echo "Healthy — checking the web app boots too (health alone hid the 2026-08-06 outage)…"
+                JS=$(curl -s -m 8 https://dailybread.simmserv.org/ | grep -oE 'src="[^"]*blazor[.]web[^"]*"' | head -1 | cut -d'"' -f2)
+                case "$JS" in "");; /*);; *) JS="/$JS";; esac
+                CODE=$(curl -s -m 8 -o /dev/null -w "%{http_code}" "https://dailybread.simmserv.org$JS")
+                if [ -n "$JS" ] && [ "$CODE" = "200" ]; then
+                  echo "Web app boots ($JS → 200) — the family is on the new build."
+                else
+                  echo "API is Healthy but the WEB APP IS NOT BOOTING (script: ${JS:-none} → HTTP ${CODE:-n/a})."
+                  exit 1
+                fi
                 exit 0
               fi
             done
