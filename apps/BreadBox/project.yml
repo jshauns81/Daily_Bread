@@ -16,15 +16,13 @@ targets:
     platform: macOS
     sources:
       - path: BreadBox
-    # A classic .icns rather than an Icon Composer document on purpose: it
-    # compiles with any Xcode (no beta-actool dependency for the admin tool)
-    # and one drawn file is the right amount of icon for a personal panel.
-    # CFBundleIconFile has no INFOPLIST_KEY_ equivalent, so a real Info.plist
-    # carries it; Xcode still generates and merges the rest of the keys.
+    # The app icon lives in Assets.xcassets/AppIcon.appiconset and is compiled
+    # by actool. ASSETCATALOG_COMPILER_APPICON_NAME points the build at it, and
+    # actool writes CFBundleIconName/CFBundleIconFile into the generated
+    # Info.plist for us — this is the App Store-validated path and the one that
+    # feeds the tinted/Liquid Glass icon variants, unlike a loose .icns.
     info:
       path: BreadBox/Info.plist
-      properties:
-        CFBundleIconFile: AppIcon
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jshauns.breadbox
@@ -32,6 +30,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         CODE_SIGN_STYLE: Automatic
