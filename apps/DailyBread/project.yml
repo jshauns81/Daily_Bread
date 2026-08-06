@@ -73,6 +73,9 @@ targets:
         CFBundleDisplayName: Daily Bread
         UILaunchScreen: {}
         ITSAppUsesNonExemptEncryption: false
+        # Mac App Store/TestFlight refuses archives without a category
+        # (ITMS-90242, build 100). Family chore board = productivity.
+        LSApplicationCategoryType: public.app-category.productivity
         # Dev convenience: allow http://localhost / LAN addresses while the
         # server runs without TLS in development. Public servers use HTTPS.
         NSAppTransportSecurity:
