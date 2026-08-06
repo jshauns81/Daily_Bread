@@ -81,6 +81,19 @@ targets:
         # that's how a YAML theme gets onto an iPhone without a computer.
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
+        # Support every orientation rather than requiring full screen — keeps the
+        # iPad build eligible for multitasking/Stage Manager and clears the
+        # "All interface orientations must be supported" warning. iPad = all four;
+        # iPhone = portrait + both landscape (upside-down omitted, the usual set).
+        "UISupportedInterfaceOrientations~iphone":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jshauns.dailybread
