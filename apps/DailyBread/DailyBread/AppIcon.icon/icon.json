@@ -1,51 +1,31 @@
 {
-  "features" : [
-    "refractivity",
-    "specular-location"
-  ],
-  "fill" : {
-    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+  "fill": {
+    "automatic-gradient": "extended-srgb:0.00000,0.53333,1.00000,1.00000"
   },
-  "groups" : [
+  "groups": [
     {
-      "blend-mode" : "plus-darker",
-      "layers" : [
-
-      ],
-      "lighting" : "combined",
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.6
-      },
-      "specular" : "inside",
-      "translucency" : {
-        "enabled" : true,
-        "value" : 0.2
-      }
-    },
-    {
-      "blend-mode" : "normal",
-      "blur-material" : 1,
-      "layers" : [
+      "blend-mode": "normal",
+      "blur-material": 1,
+      "layers": [
         {
-          "glass" : true,
-          "image-name" : "Daily Bread team library.svg",
-          "name" : "Daily Bread team library",
-          "position-specializations" : [
+          "glass": true,
+          "image-name": "Daily Bread team library.svg",
+          "name": "Daily Bread team library",
+          "position-specializations": [
             {
-              "value" : {
-                "scale" : 0.71,
-                "translation-in-points" : [
+              "value": {
+                "scale": 0.71,
+                "translation-in-points": [
                   0,
                   -11.600000000000023
                 ]
               }
             },
             {
-              "idiom" : "watchOS",
-              "value" : {
-                "scale" : 0.8,
-                "translation-in-points" : [
+              "idiom": "watchOS",
+              "value": {
+                "scale": 0.8,
+                "translation-in-points": [
                   0,
                   16.995223128434986
                 ]
@@ -54,55 +34,55 @@
           ]
         }
       ],
-      "lighting" : "individual",
-      "refractivity-specializations" : [
+      "lighting": "individual",
+      "refractivity-specializations": [
         {
-          "value" : {
-            "depth" : 0.948984375,
-            "enabled" : true,
-            "strength" : -1
+          "value": {
+            "depth": 0.948984375,
+            "enabled": true,
+            "strength": -1
           }
         },
         {
-          "appearance" : "light",
-          "value" : {
-            "depth" : 0.948984375,
-            "enabled" : true,
-            "strength" : -1
+          "appearance": "light",
+          "value": {
+            "depth": 0.948984375,
+            "enabled": true,
+            "strength": -1
           }
         },
         {
-          "appearance" : "dark",
-          "value" : {
-            "depth" : 0.57078125,
-            "enabled" : false,
-            "strength" : 0.098203125
+          "appearance": "dark",
+          "value": {
+            "depth": 0.57078125,
+            "enabled": false,
+            "strength": 0.098203125
           }
         },
         {
-          "idiom" : "square",
-          "value" : {
-            "depth" : 0.6846875,
-            "enabled" : true,
-            "strength" : 0.0911328125
+          "idiom": "square",
+          "value": {
+            "depth": 0.6846875,
+            "enabled": true,
+            "strength": 0.0911328125
           }
         }
       ],
-      "shadow" : {
-        "kind" : "layer-color",
-        "opacity" : 0
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0
       },
-      "specular" : "outside",
-      "translucency" : {
-        "enabled" : true,
-        "value" : 0
+      "specular": true,
+      "translucency": {
+        "enabled": true,
+        "value": 0
       }
     }
   ],
-  "supported-platforms" : {
-    "circles" : [
+  "supported-platforms": {
+    "circles": [
       "watchOS"
     ],
-    "squares" : "shared"
+    "squares": "shared"
   }
 }

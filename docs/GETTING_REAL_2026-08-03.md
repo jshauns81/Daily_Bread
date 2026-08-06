@@ -93,9 +93,23 @@ strangers; a family doesn't need them.
    **Archive — iOS** (not just Build) with deployment preparation
    **TestFlight (Internal Testing Only)**, plus a post-action **TestFlight
    Internal Testing** pointed at the tester group from step 3.
-   In the workflow's **Environment**, select the **beta Xcode** — stable
-   actool crashes on the Icon Composer icon (argument-order bug, confirmed
-   2026-08-03 by bisection). Cloud manages build numbers itself.
+   The workflow's **Environment** can stay on **Latest Release** — see the
+   root-cause below. Cloud manages build numbers itself.
+
+   **The actool crash, root-caused 2026-08-05** (kills the "argument-order"
+   theory of 2026-08-03): every Cloud build since #72 died with
+   `attempt to insert nil object` because the icon was authored in the
+   **Xcode 27 beta's Icon Composer**, which writes two things stable
+   Xcode 26 cannot parse — `"specular": "inside"/"outside"` (26 expects a
+   boolean) and a top-level `"features"` array. Stable actool maps them to
+   nil and crashes in the `--output-partial-info-plist` path, which is why
+   bare actool runs pass and xcodebuild runs die. Found by local bisection
+   against stable 26.6 (17F113), the exact build Cloud runs; 18 actool
+   invocations, three poisons, one shared root. icon.json now stays in the
+   26-compatible dialect (boolean specular, no features array, refractivity
+   tuning intact — that part parses fine everywhere). **Rule until Cloud
+   offers Xcode 27: when editing the icon in Icon Composer, set the
+   document type to the iOS 26 format before saving.**
 3. App page → **TestFlight** tab → Internal Testing → **+** → group
    "Family". Add Shaun. To add Charmaine: **Users and Access → +** first
    (any modest role — Customer Support is fine, tick "internal tester"),
