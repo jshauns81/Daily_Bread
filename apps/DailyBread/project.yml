@@ -42,6 +42,11 @@ targets:
         excludes:
           - "App/Daily Bread Design System"
           - "AppIcon.icon"
+          # Shaun's in-progress Icon Composer pack lives untracked in his
+          # checkout; without this exclude every regen sweeps it into the
+          # target as a second icon document. Excluded until it replaces
+          # AppIcon.icon deliberately.
+          - "DB_iconpack.icon"
       # Shaun's Icon Composer icon (Liquid Glass). It shares the AppIcon name
       # with the asset-catalog set on purpose: OS 26+ renders this one, older
       # systems fall back to the classic set. A document package, so it must

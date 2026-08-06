@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  Privacy manifest (App Store upload validation checks this — ITMS-91053).
+
+  The app phones home to exactly one place: the family's own self-hosted
+  server, whichever host they typed on the connect screen. No tracking, no
+  third-party SDKs, no analytics.
+
+  Required-reason APIs: UserDefaults only, and only UserDefaults.standard —
+  the (non-secret) server URL, theme picks, and theme-sync bookkeeping.
+  CA92.1 = "defaults accessible only to the app itself". Tokens live in the
+  Keychain, which needs no declaration. If anyone ever adds
+  UserDefaults(suiteName:) against the app group, that becomes reason 1C8F.1
+  and belongs here.
+-->
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

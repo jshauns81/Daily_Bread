@@ -45,23 +45,63 @@ scheduled backup job around step 1's pattern.
 
 ## R2 — iPhones get the app through TestFlight (the no-cables answer)
 
-Xcode Cloud already builds this repo (fixed 2026-08-02: post-clone xcodegen
-+ shared scheme), which means the paid developer program is active — so
-TestFlight is available today.
+**Repo preflight ✅ done 2026-08-05** — what upload validation checks is
+already in the tree:
 
-- One-time in App Store Connect (Shaun's Apple ID, ~20 min): create the app
-  record for `com.jshauns.dailybread`, make an internal-tester group, invite
-  the family's Apple IDs; everyone installs the TestFlight app once.
-- Wire the Xcode Cloud workflow: push to master → build → TestFlight
-  internal group. From then on updates PUSH: Shaun merges, phones update
-  themselves. No cables, ever.
-- The workflow must select the **beta Xcode version**: stable Xcode's actool
-  crashes compiling the Icon Composer app icon (argument-order bug, confirmed
-  2026-08-03 by bisection; beta compiles it in any order). Shaun builds with
-  Xcode-beta locally, so Cloud has to match.
-- TestFlight builds expire after 90 days — irrelevant while we're iterating
-  weekly. The endgame (App Store unlisted/private distribution) is a later
-  decision, not a blocker.
+- Privacy manifests (`PrivacyInfo.xcprivacy`) in the app **and** the widget
+  extension: `UserDefaults` declared with reason CA92.1, tracking `false`,
+  nothing collected. This is what ITMS-91053 emails are about.
+- `ITSAppUsesNonExemptEncryption: false` was already in Info.plist — no
+  export-compliance question on every build.
+- The 1024 marketing icon exists in the classic fallback set; the Icon
+  Composer icon carries its own. No privacy-permission strings needed —
+  the app uses no camera, location, or photo APIs.
+- The arm64 **device** slice compiles (first time it was ever built —
+  everything before ran on simulators and the Mac). Verified with
+  `CODE_SIGNING_ALLOWED=NO`; local signing state untouched. Xcode Cloud
+  signs in the cloud with ASC-managed certs — nothing on the Mac changes.
+- `ci_scripts/ci_post_clone.sh` still generates the project on Cloud.
+
+**The strategy: everyone is an INTERNAL tester.** Internal builds skip Beta
+App Review entirely — no reviewer needs a demo account on the family's real
+server, nothing is publicly linkable, and every green build is on the phones
+minutes after Cloud finishes. External groups/public links exist for
+strangers; a family doesn't need them.
+
+**Shaun's App Store Connect session (~20 min, his Apple ID):**
+
+1. appstoreconnect.apple.com → My Apps. The record for
+   `com.jshauns.dailybread` likely exists already (Xcode Cloud setup created
+   it). If it doesn't: **+ → New App**. Heads-up: the public name
+   "Daily Bread" is almost certainly taken (the devotional app) — pick any
+   placeholder like "Daily Bread (Simmons)"; the name under the icon on the
+   phone stays "Daily Bread" (`CFBundleDisplayName`), and the store name is
+   changeable long before any App Store release.
+2. App page → **Xcode Cloud** tab → edit the workflow: the action must be
+   **Archive — iOS** (not just Build) with deployment preparation
+   **TestFlight (Internal Testing Only)**, plus a post-action **TestFlight
+   Internal Testing** pointed at the tester group from step 3.
+   In the workflow's **Environment**, select the **beta Xcode** — stable
+   actool crashes on the Icon Composer icon (argument-order bug, confirmed
+   2026-08-03 by bisection). Cloud manages build numbers itself.
+3. App page → **TestFlight** tab → Internal Testing → **+** → group
+   "Family". Add Shaun. To add Charmaine: **Users and Access → +** first
+   (any modest role — Customer Support is fine, tick "internal tester"),
+   then add her to the group. Kids' phones don't need their own invites at
+   all: install TestFlight on the kid's phone and **sign TestFlight itself
+   into a parent's Apple ID** — TestFlight's sign-in is separate from the
+   device's App Store account, and one Apple ID can run TestFlight on many
+   devices. (If a kid's Apple ID is 13+, inviting it directly also works.)
+4. Start a build: press **Start Build** in the workflow, or just push to
+   master. ~20 min later the build lands in the internal group and phones
+   get the install/update banner in TestFlight.
+5. Each phone, once: install **TestFlight** from the App Store → accept →
+   install Daily Bread → connect screen → `dailybread.simmserv.org` →
+   sign in. From then on updates push themselves.
+
+TestFlight builds expire after 90 days — irrelevant while we iterate
+weekly; any new master push resets the clock. The endgame (App Store
+unlisted/private distribution) is a later decision, not a blocker.
 
 ## R3 — The Mac (the wife's 75% surface)
 
