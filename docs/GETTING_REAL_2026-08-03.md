@@ -70,13 +70,20 @@ strangers; a family doesn't need them.
 
 **Shaun's App Store Connect session (~20 min, his Apple ID):**
 
-1. appstoreconnect.apple.com → My Apps. The record for
-   `com.jshauns.dailybread` likely exists already (Xcode Cloud setup created
-   it). If it doesn't: **+ → New App**. Heads-up: the public name
-   "Daily Bread" is almost certainly taken (the devotional app) — pick any
-   placeholder like "Daily Bread (Simmons)"; the name under the icon on the
-   phone stays "Daily Bread" (`CFBundleDisplayName`), and the store name is
-   changeable long before any App Store release.
+1. **Reality check 2026-08-05: there was no app record** — My Apps was
+   empty, so the 2026-08-02 Cloud fix never fully onboarded, and the
+   identifiers weren't registered either (simulator and unsandboxed-Mac
+   builds never register App IDs). The working order:
+   - developer.apple.com → Identifiers: register the **App Group**
+     `group.org.dailybread.shared`, then explicit App IDs
+     `com.jshauns.dailybread` and `com.jshauns.dailybread.widgets`, each
+     with the App Groups capability assigned to that group.
+   - App Store Connect → Add Apps → **New App**: iOS, a globally-unique
+     name ("Daily Bread" is taken by the devotional — any placeholder
+     works; the phone's icon label stays "Daily Bread" from
+     `CFBundleDisplayName`, and the store name is changeable long before
+     any App Store release), Bundle ID `com.jshauns.dailybread` (the
+     explicit one, never a wildcard), SKU `dailybread`, Full Access.
 2. App page → **Xcode Cloud** tab → edit the workflow: the action must be
    **Archive — iOS** (not just Build) with deployment preparation
    **TestFlight (Internal Testing Only)**, plus a post-action **TestFlight
