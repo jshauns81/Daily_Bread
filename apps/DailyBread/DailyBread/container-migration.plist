@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  One-time move into the sandbox container on first sandboxed launch.
+  Preferences migrate automatically (they're keyed by bundle id); this
+  folder is named "DailyBread", which the automatic migration ignores.
+  It holds Themes/ — server-synced, so even a failed migration only costs
+  a re-sync, but moving it preserves any local-only YAML drafts.
+-->
+<dict>
+	<key>Move</key>
+	<array>
+		<string>${Library}/Application Support/DailyBread</string>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  R3(a), signed off by Shaun 2026-08-05: the Mac app rides TestFlight, which
+  requires the App Sandbox (ITMS-90296, build 100). Least privilege — the
+  app is a plain SwiftUI client:
+
+  - network.client: talks to the family server (dailybread.simmserv.org, or
+    LAN during development).
+  - user-selected files: the driving-CSV exporter and YAML theme import go
+    through open/save panels; this is what lets a panel choice grant access.
+
+  Deliberately NOT here: the app group (iOS-only widget bridge), and any
+  file access beyond what a panel grants. BreadBox stays unsandboxed and
+  unshipped — that freedom was never this app's.
+-->
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+</dict>
+</plist>

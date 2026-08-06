@@ -129,20 +129,31 @@ TestFlight builds expire after 90 days — irrelevant while we iterate
 weekly; any new master push resets the clock. The endgame (App Store
 unlisted/private distribution) is a later decision, not a blocker.
 
-## R3 — The Mac (the wife's 75% surface)
+## R3 — The Mac (the wife's 75% surface) ✅ DECIDED & SHIPPED 2026-08-05
 
-TestFlight for Mac requires App Sandbox, and the Mac app is deliberately
-unsandboxed today. Two roads:
+**Shaun chose road (a): sandbox it** — same evening build 100 put iOS on
+TestFlight and the Mac archive bounced with ITMS-90296 (sandbox required)
++ ITMS-90242 (missing category). What shipped:
 
-a) **Sandbox it** and ride the same TestFlight train as iOS. Likely cheap:
-   themes live in the app's own container, exports go through the user-picked
-   save panel — both sandbox-native patterns. Needs an entitlements change,
-   which is gated on Shaun's explicit sign-off by standing rule.
-b) **Developer ID + notarized download + Sparkle auto-updates.** No sandbox,
-   but a whole second update mechanism to own.
+- `Config/DailyBread-macOS.entitlements` (committed, hand-written):
+  `app-sandbox` + `network.client` + `files.user-selected.read-write`,
+  nothing else. iOS keeps its generated entitlements (widget app group);
+  the two platforms now have deliberately different entitlement files.
+- `LSApplicationCategoryType: public.app-category.productivity`.
+- `container-migration.plist` in the Mac bundle: moves
+  `~/Library/Application Support/DailyBread` (Themes/) into the container
+  on first sandboxed launch — the automatic migration only handles
+  bundle-id-named paths, and this folder isn't one.
 
-Recommendation: evaluate (a) first; only fall back to (b) if sandboxing
-breaks something real.
+Migration story for existing Macs: preferences (server URL, theme picks)
+migrate automatically; Keychain sessions survive (same signing identity);
+themes move via the manifest, and they're server-synced anyway, so the
+worst case is a re-sync. First locally-run sandboxed build performs the
+move — after that, the old unsandboxed folder is no longer consulted.
+
+Rejected road (b), Developer ID + Sparkle: a second update mechanism to
+own, preserving freedoms (shell-out, open filesystem) this plain SwiftUI
+client never uses.
 
 ## R4 — Face ID (app feature, after distribution works)
 

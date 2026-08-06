@@ -107,9 +107,11 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         DEVELOPMENT_TEAM: 722W7866NQ
         CODE_SIGN_STYLE: Automatic
-        # The app-group entitlement is for the iOS widget bridge; the (unsandboxed)
-        # macOS app signs without entitlements, exactly as before.
-        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": ""
+        # iOS keeps the generated entitlements (app group for the widget
+        # bridge). macOS gets its own committed file: sandboxed as of
+        # 2026-08-05 (R3a, Shaun's sign-off) because Mac TestFlight requires
+        # it — see Config/DailyBread-macOS.entitlements for the rationale.
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Config/DailyBread-macOS.entitlements
 
   # Simulator-only screen walker (UITests/ScreenWalkerTests.swift) — drives the
   # app over testmanagerd, which still delivers touches when synthetic mouse
