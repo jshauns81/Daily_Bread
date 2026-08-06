@@ -129,7 +129,15 @@ TestFlight builds expire after 90 days — irrelevant while we iterate
 weekly; any new master push resets the clock. The endgame (App Store
 unlisted/private distribution) is a later decision, not a blocker.
 
-## R3 — The Mac (the wife's 75% surface) ✅ DECIDED & SHIPPED 2026-08-05
+## R3 — The Mac (the wife's 75% surface) ✅ SHIPPED & INSTALLED 2026-08-06
+
+**Verified end-to-end 2026-08-06:** build 106's Mac archive passed ITMS
+validation clean (build 100's two rejections both answered), and the
+native sandboxed Mac app installed on Shaun's Mac via TestFlight. One
+gotcha for the record: the first build of a new platform needed a one-time
+add to the internal group in the TestFlight tab's macOS section — until
+then, TestFlight on the Mac only offers the iOS-on-Apple-silicon variant,
+which looks like "the iOS version is persisting."
 
 **Shaun chose road (a): sandbox it** — same evening build 100 put iOS on
 TestFlight and the Mac archive bounced with ITMS-90296 (sandbox required)
