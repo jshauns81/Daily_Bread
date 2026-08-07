@@ -497,15 +497,37 @@ touch (so it never delays, cancels or consumes one), on macOS a passive
 `NSEvent` local monitor that returns every event unchanged. The idle timer
 still gets fed; the buttons never know.
 
-Still open after this pass: **macOS keychain prompts.** Shaun sees occasional
-"approve with your Mac password" dialogs, which is the file-based keychain's
-ACL prompt, most likely fallout from sandboxing the Mac app in R3a — items
-written by the unsandboxed build carry an ACL the sandboxed one does not
-match. If a token write fails there, the Mac keeps re-presenting a stale token;
-the server fix above now makes that survivable rather than catastrophic, but
-the prompts themselves are unexplained and unfixed. The real fix is likely
-`kSecUseDataProtectionKeychain` on macOS, which is the same
-`keychain-access-groups` decision job 2 is already waiting on.
+### The "Mac password" prompts are codesign, not the app (2026-08-07)
+
+Corrected same day: the first guess here was a runtime keychain ACL problem
+from the R3a sandbox. Wrong. Shaun described the prompt as asking to **sign**
+something, naming `com.jshauns.dailybread`, appearing "three or four" times,
+and happening long before any of this — which is `codesign` reaching for the
+signing identity's private key during an **Xcode build**, once per signed
+binary (app, then widget extension, then embedded frameworks). Nothing to do
+with the app at runtime.
+
+The fix is a keychain ACL choice that only Shaun can make, and the standing
+signing rules mean nobody else touches it: answer that prompt with **Always
+Allow** rather than Allow. Allow authorises exactly one use, so every build
+asks again. Note there are **two** valid `Apple Development` certificates in
+his login keychain (`jshauns@gmail.com` and `Jimmie Simmons`, both
+`OU=722W7866NQ`, so both correct for this project) — each has its own private
+key with its own ACL, so whichever Xcode selects has to be granted separately.
+Consolidating to one is his call, not a repo change.
+
+What the login keychain also shows, read-only: three orphaned items under
+`com.example.dailybread.tokens`, the service name used before d080080 renamed
+it to `org.dailybread.tokens`. Dead weight from a pre-rename build. Harmless
+unless an old locally-built copy of the app is ever launched, in which case it
+would reach for them and could prompt. Left in place — deleting items from
+Shaun's keychain is his call.
+
+And: `org.dailybread.tokens` is **absent entirely** from the login keychain,
+which is consistent with the Mac having no saved session — exactly the reported
+symptom. It does not by itself prove writes are failing, because he was signed
+out when this was checked. The decisive test is one sign-in: if the item then
+exists, writes are fine and the sign-in loop above was the whole story.
 
 Not yet on TestFlight: shipping is a push to master, and that is Shaun's call.
 
