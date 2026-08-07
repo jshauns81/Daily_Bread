@@ -22,16 +22,21 @@ public interface IApiTokenService
 
     /// <summary>
     /// Validates and rotates a refresh token. Returns null if the token is
-    /// unknown/expired. Reuse of an already-rotated token revokes every active
-    /// token for that user (theft containment) and returns null.
+    /// unknown/expired. A token rotated within the grace window is treated as
+    /// a client that never received the reply and re-synced, not as theft;
+    /// genuine reuse revokes the sessions that existed when the token died.
     /// </summary>
     Task<TokenResponse?> RefreshAsync(string refreshToken, CancellationToken ct = default);
 
     /// <summary>Revokes a specific refresh token (logout), if it exists.</summary>
     Task RevokeAsync(string refreshToken, CancellationToken ct = default);
 
-    /// <summary>Revokes every active refresh token for a user.</summary>
-    Task RevokeAllForUserAsync(string userId, CancellationToken ct = default);
+    /// <summary>
+    /// Revokes active refresh tokens for a user. With <paramref name="issuedAtOrBefore"/>
+    /// set, only tokens created at or before that instant — leaving sessions
+    /// started later alone.
+    /// </summary>
+    Task RevokeAllForUserAsync(string userId, DateTime? issuedAtOrBefore = null, CancellationToken ct = default);
 }
 
 public static class ApiJwt
@@ -99,6 +104,13 @@ public class ApiTokenService : IApiTokenService
         _logger = logger;
     }
 
+    /// How long after rotation a client may still present the old token and be
+    /// re-synced rather than treated as a thief. Covers a dropped response, a
+    /// retry, and an app killed between the reply and the Keychain write —
+    /// all of which are ordinary on a phone and none of which are theft.
+    private TimeSpan ReuseGraceWindow =>
+        TimeSpan.FromSeconds(_config.GetValue("Api:Jwt:ReuseGraceSeconds", 60));
+
     private int AccessTokenMinutes => _config.GetValue("Api:Jwt:AccessTokenMinutes", 15);
     private int RefreshTokenDays => _config.GetValue("Api:Jwt:RefreshTokenDays", 90);
     private string Issuer => _config.GetValue("Api:Jwt:Issuer", "DailyBread")!;
@@ -140,12 +152,41 @@ public class ApiTokenService : IApiTokenService
             return null;
         }
 
-        if (stored.RevokedAtUtc != null)
+        if (stored.RevokedAtUtc is { } revokedAt)
         {
-            // Reuse of a rotated/revoked token → possible theft. Contain it.
-            _logger.LogWarning("Refresh token reuse detected for user {UserId}; revoking all tokens", stored.UserId);
-            await RevokeAllForUserAsync(stored.UserId, ct);
-            return null;
+            // A token rotated moments ago is overwhelmingly a client that never
+            // received the reply — a dropped response, a retry, an app killed
+            // between the answer and the Keychain write. Follow the chain to
+            // whatever replaced it and rotate THAT, so the client comes back in
+            // sync. Possession was proven legitimate seconds earlier.
+            var replacement = DateTime.UtcNow - revokedAt <= ReuseGraceWindow
+                              && stored.ReplacedByTokenHash != null
+                ? await _db.RefreshTokens
+                    .Include(t => t.User)
+                    .FirstOrDefaultAsync(
+                        t => t.TokenHash == stored.ReplacedByTokenHash && t.RevokedAtUtc == null, ct)
+                : null;
+
+            if (replacement == null)
+            {
+                // Genuine reuse → contain it, but only back to the moment this
+                // token died. Revoking sessions created AFTER that is what
+                // turned one stale token into an endless sign-in loop: a dead
+                // token on the Mac kept revoking the session just created on
+                // the phone, which stranded the phone, which re-signed in, and
+                // round it went. A session started after the leak cannot be
+                // the leak.
+                _logger.LogWarning(
+                    "Refresh token reuse detected for user {UserId}; revoking sessions issued on or before {RevokedAt:o}",
+                    stored.UserId, revokedAt);
+                await RevokeAllForUserAsync(stored.UserId, revokedAt, ct);
+                return null;
+            }
+
+            _logger.LogInformation(
+                "Refresh token replayed {Age:0.0}s after rotation for user {UserId}; re-rotating its replacement",
+                (DateTime.UtcNow - revokedAt).TotalSeconds, stored.UserId);
+            stored = replacement;
         }
 
         if (DateTime.UtcNow >= stored.ExpiresAtUtc)
@@ -193,11 +234,15 @@ public class ApiTokenService : IApiTokenService
         }
     }
 
-    public async Task RevokeAllForUserAsync(string userId, CancellationToken ct = default)
+    public async Task RevokeAllForUserAsync(
+        string userId, DateTime? issuedAtOrBefore = null, CancellationToken ct = default)
     {
-        var active = await _db.RefreshTokens
-            .Where(t => t.UserId == userId && t.RevokedAtUtc == null)
-            .ToListAsync(ct);
+        var query = _db.RefreshTokens.Where(t => t.UserId == userId && t.RevokedAtUtc == null);
+        if (issuedAtOrBefore is { } cutoff)
+        {
+            query = query.Where(t => t.CreatedAtUtc <= cutoff);
+        }
+        var active = await query.ToListAsync(ct);
         foreach (var token in active)
         {
             token.RevokedAtUtc = DateTime.UtcNow;

@@ -439,6 +439,74 @@ keeps rendering its last snapshot** — balance, streak, today's earnings, child
 name — from the app-group file regardless of the gate. That is pre-existing and
 read-only, not something R4 introduced, but it is not nothing.
 
+### The sign-in loop, root-caused 2026-08-07 — and it was never R4
+
+Shaun's first evening on the R4 build: "the auto/token/cache is simply not
+retaining auth between sessions", on **both** devices, with and without job 2.
+He also said it had been happening for a while — which was right, and the
+reason is on the server, not in any of the code above.
+
+`ApiTokenService.RefreshAsync` treated any already-rotated refresh token as
+theft and called `RevokeAllForUserAsync`, which revoked **every active token
+the user owned on every device, including ones issued seconds earlier**. That
+turns one stale token into a self-sustaining loop:
+
+1. Some device presents a rotated token — a raced refresh, a retried request,
+   or a reply that arrived after the app was killed, all ordinary on a phone.
+2. The server revokes everything. The Mac *and* the phone are signed out.
+3. He signs in on the phone. Fresh token.
+4. The Mac, still holding its dead token, refreshes — and revokes the phone's
+   brand-new session. Back to 3, forever.
+
+Production had **28 of these revocations in 24 hours**, all on his account. The
+`RefreshTokens` rows show the original trigger plainly: six tokens created in
+the same second (14:58:06 on 2026-08-06), which is one client firing six
+concurrent refreshes — the missing in-flight dedupe R4 had already fixed
+client-side. But fixing the client only stops *that* device racing; the loop
+needed the server to stop being able to sustain it.
+
+Two changes, both in `ApiTokenService`:
+
+- **A 60-second grace window** (`Api:Jwt:ReuseGraceSeconds`). A token replayed
+  within it is a client that never got the reply, so the chain is followed to
+  its replacement and *that* is rotated — the client comes back in sync instead
+  of being signed out. Possession was proven legitimate seconds earlier.
+- **Containment no longer reaches forward in time.** Genuine reuse revokes only
+  tokens created at or before the compromised token's own revocation. A session
+  started after the leak cannot be the leak, and that single clause is what
+  makes the loop impossible.
+
+Three tests pin it, including `Refresh_Reuse_Leaves_A_Session_Created_After_The_Leak_Alone`.
+The old test asserted the buggy behaviour ("revokes everything, including the
+fresh one") and was replaced. 223 pass. **This is a server fix: it needs a
+deploy, not a TestFlight build.**
+
+### Also 2026-08-07 — the Planner taps R4 broke
+
+Same evening: the Planner's New, mode-switch and Edit controls, plus the task
+and routine rows, needed two or three taps. The cause was R4's own idle-timer
+plumbing — `.simultaneousGesture(DragGesture(minimumDistance: 0))` over the
+whole shell, whose comment claimed buttons underneath "behave exactly as they
+did". They did not: SwiftUI still arbitrates that drag against every button
+below it. The completeness critic had flagged this exact modifier as the change
+most likely to hurt, before Shaun ever saw it.
+
+Replaced by `ActivityReporter`, which observes one layer down where it cannot
+compete: on iOS a `UIGestureRecognizer` that fails itself the instant it sees a
+touch (so it never delays, cancels or consumes one), on macOS a passive
+`NSEvent` local monitor that returns every event unchanged. The idle timer
+still gets fed; the buttons never know.
+
+Still open after this pass: **macOS keychain prompts.** Shaun sees occasional
+"approve with your Mac password" dialogs, which is the file-based keychain's
+ACL prompt, most likely fallout from sandboxing the Mac app in R3a — items
+written by the unsandboxed build carry an ACL the sandboxed one does not
+match. If a token write fails there, the Mac keeps re-presenting a stale token;
+the server fix above now makes that survivable rather than catastrophic, but
+the prompts themselves are unexplained and unfixed. The real fix is likely
+`kSecUseDataProtectionKeychain` on macOS, which is the same
+`keychain-access-groups` decision job 2 is already waiting on.
+
 Not yet on TestFlight: shipping is a push to master, and that is Shaun's call.
 
 ## R5 — Notifications & messaging (last, biggest server lift)

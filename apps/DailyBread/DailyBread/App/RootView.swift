@@ -27,14 +27,12 @@ struct RootView: View {
                         // of continuous use — taking MainView's `selection`
                         // with it, so they also lose their place.
                         //
-                        // A zero-distance drag recognised *simultaneously*
-                        // fires on any touch anywhere without consuming it, so
-                        // buttons, scrolling and the row gestures underneath
-                        // behave exactly as they did.
-                        .simultaneousGesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { _ in session.parentGate.touch() }
-                        )
+                        // This observes UIKit/AppKit events directly rather
+                        // than layering a SwiftUI gesture over the shell: see
+                        // ActivityReporter for what that cost the Planner.
+                        .reportsActivity(to: ParentGateActivity {
+                            session.parentGate.touch()
+                        })
                 }
             }
         }

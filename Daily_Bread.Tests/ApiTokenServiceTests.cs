@@ -134,23 +134,74 @@ public sealed class ApiTokenServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Refresh_Reuse_Of_A_Rotated_Token_Revokes_Everything()
+    public async Task Refresh_Replayed_Within_The_Grace_Window_Resyncs_Instead_Of_Signing_Out()
     {
         var service = CreateService();
         var first = await service.IssueTokensAsync(Kid(), null);
         var second = await service.RefreshAsync(first.RefreshToken);
         Assert.NotNull(second);
 
-        // Replay the already-rotated token: theft containment must kick in.
+        // The client never received `second` — dropped response, retry, or an
+        // app killed between the reply and the Keychain write — so it presents
+        // the old token again moments later. That is not theft.
+        var resync = await service.RefreshAsync(first.RefreshToken);
+        Assert.NotNull(resync);
+        Assert.NotEqual(second!.RefreshToken, resync!.RefreshToken);
+
+        // And it can carry on with what it just received.
+        Assert.NotNull(await service.RefreshAsync(resync.RefreshToken));
+    }
+
+    [Fact]
+    public async Task Refresh_Reuse_After_The_Grace_Window_Revokes_The_Sessions_That_Existed()
+    {
+        var service = CreateService();
+        var first = await service.IssueTokensAsync(Kid(), null);
+        var second = await service.RefreshAsync(first.RefreshToken);
+        Assert.NotNull(second);
+        await AgeRotationAsync(first.RefreshToken, second!.RefreshToken, TimeSpan.FromMinutes(10));
+
         var replay = await service.RefreshAsync(first.RefreshToken);
         Assert.Null(replay);
 
-        // Every token for the user is now revoked, including the fresh one.
-        var active = await _db.RefreshTokens.CountAsync(t => t.RevokedAtUtc == null);
-        Assert.Equal(0, active);
+        // The session alive when the token leaked is contained.
+        Assert.Null(await service.RefreshAsync(second.RefreshToken));
+    }
 
-        var thirdAttempt = await service.RefreshAsync(second!.RefreshToken);
-        Assert.Null(thirdAttempt);
+    /// <summary>
+    /// The loop that signed this family out for days: a dead token on one
+    /// device revoked the session the user had just created on another, which
+    /// stranded that device, which signed in again, forever. A session started
+    /// after the leak cannot be the leak.
+    /// </summary>
+    [Fact]
+    public async Task Refresh_Reuse_Leaves_A_Session_Created_After_The_Leak_Alone()
+    {
+        var service = CreateService();
+        var mac = await service.IssueTokensAsync(Kid(), "Mac");
+        var macRotated = await service.RefreshAsync(mac.RefreshToken);
+        Assert.NotNull(macRotated);
+        await AgeRotationAsync(mac.RefreshToken, macRotated!.RefreshToken, TimeSpan.FromMinutes(10));
+
+        // The phone signs in fresh, after the Mac's token already died.
+        var phone = await service.IssueTokensAsync(Kid(), "iPhone");
+
+        // The Mac replays its stale token and is correctly refused.
+        Assert.Null(await service.RefreshAsync(mac.RefreshToken));
+
+        // The phone, signed in later, must still be signed in.
+        Assert.NotNull(await service.RefreshAsync(phone.RefreshToken));
+    }
+
+    /// <summary>Backdates a completed rotation so it sits outside the grace window.</summary>
+    private async Task AgeRotationAsync(string presented, string replacement, TimeSpan age)
+    {
+        var when = DateTime.UtcNow - age;
+        var old = await _db.RefreshTokens.SingleAsync(t => t.TokenHash == ApiJwt.HashToken(presented));
+        old.RevokedAtUtc = when;
+        var current = await _db.RefreshTokens.SingleAsync(t => t.TokenHash == ApiJwt.HashToken(replacement));
+        current.CreatedAtUtc = when;
+        await _db.SaveChangesAsync();
     }
 
     [Fact]

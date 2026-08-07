@@ -129,7 +129,8 @@ public class AuthController : ControllerBase
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (userId != null)
             {
-                await _tokenService.RevokeAllForUserAsync(userId, ct);
+                // Sign out everywhere: no cutoff, every session goes.
+                await _tokenService.RevokeAllForUserAsync(userId, null, ct);
             }
         }
         return NoContent();
