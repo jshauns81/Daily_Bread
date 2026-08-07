@@ -39,6 +39,7 @@ public actor APIClient {
     private var baseURL: URL?
     private var accessToken: String?
     private var refreshToken: String?
+    private var refreshInFlight: Task<Void, Error>?
 
     /// Persist rotated tokens (Keychain) — set by SessionStore.
     public var onTokensRotated: (@Sendable (TokenResponse) -> Void)?
@@ -169,7 +170,26 @@ public actor APIClient {
         try encoder.encode(value)
     }
 
+    /// One refresh at a time, shared by every caller that lands on a 401.
+    ///
+    /// The badge poll and a screen's load genuinely run at the same time, so two
+    /// 401s used to enter `performRefresh()` together, read the same refresh
+    /// token, and present it twice. The server treats a re-presented rotated
+    /// token as theft and revokes every token the user owns — one race signed
+    /// the family out on all their devices.
+    ///
+    /// The actor serializes everything up to the first `await`, so the
+    /// check-and-set below is atomic, and a `Task` started inside an actor
+    /// method inherits its isolation, so `performRefresh()` still runs here.
     private func refreshTokens() async throws {
+        if let existing = refreshInFlight { return try await existing.value }
+        let task = Task { try await self.performRefresh() }
+        refreshInFlight = task
+        defer { refreshInFlight = nil }
+        try await task.value
+    }
+
+    private func performRefresh() async throws {
         guard let refreshToken else {
             onSessionExpired?()
             throw APIError.notAuthenticated
@@ -188,6 +208,11 @@ public actor APIClient {
             self.refreshToken = tokens.refreshToken
             onTokensRotated?(tokens)
         } catch {
+            // Can't reach the server ≠ signed out. Only a rejection from
+            // /auth/refresh ends a session; a dropped connection must not —
+            // it used to, so a Wi-Fi blip deleted the Keychain tokens and
+            // dropped a working session to the login screen.
+            if case APIError.network = error { throw error }
             onSessionExpired?()
             throw APIError.notAuthenticated
         }

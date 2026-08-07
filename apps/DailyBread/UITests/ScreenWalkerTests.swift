@@ -14,12 +14,20 @@ import XCTest
 /// Screenshots land in the result bundle as attachments.
 final class ScreenWalkerTests: XCTestCase {
 
+    /// Stands the parent gate down for the walk. An environment variable, not a
+    /// launch argument and not a defaults key: it matches the DB_TEST_CELEBRATION
+    /// precedent, cannot be set by `open -a … --args`, and is read only inside
+    /// `#if DEBUG` — UI tests build Debug, TestFlight builds Release, so the
+    /// bypass cannot exist in a shipped binary.
+    private static let gateBypass = "DB_DISABLE_PARENT_GATE"
+
     override func setUpWithError() throws {
         continueAfterFailure = true
     }
 
     func testWalkEveryScreen() throws {
         let app = XCUIApplication()
+        app.launchEnvironment[Self.gateBypass] = "1"
         app.launch()
 
         // Give bootstrap a beat to pick its screen.
@@ -55,6 +63,7 @@ final class ScreenWalkerTests: XCTestCase {
     /// from outside can catch the pinned main thread in the act.
     func testSettingsHold() throws {
         let app = XCUIApplication()
+        app.launchEnvironment[Self.gateBypass] = "1"
         app.launch()
         let settings = app.buttons["Settings"]
         guard settings.waitForExistence(timeout: 10) else {
@@ -69,6 +78,7 @@ final class ScreenWalkerTests: XCTestCase {
     /// relaunch to prove it doesn't resurrect through sync.
     func testDeleteUserTheme() throws {
         let app = XCUIApplication()
+        app.launchEnvironment[Self.gateBypass] = "1"
         app.launch()
         let settings = app.buttons["Settings"]
         guard settings.waitForExistence(timeout: 10) else {
@@ -121,6 +131,7 @@ final class ScreenWalkerTests: XCTestCase {
 
         // Resurrection check: relaunch → Settings → expanded picker.
         app.terminate()
+        app.launchEnvironment[Self.gateBypass] = "1"
         app.launch()
         _ = app.buttons["Settings"].waitForExistence(timeout: 10)
         app.buttons["Settings"].tap()
@@ -137,6 +148,7 @@ final class ScreenWalkerTests: XCTestCase {
     /// view has nothing left to give.
     func testAwardsBottomClearance() throws {
         let app = XCUIApplication()
+        app.launchEnvironment[Self.gateBypass] = "1"
         app.launch()
         let awards = app.buttons["Awards"]
         guard awards.waitForExistence(timeout: 10), awards.isHittable else {
@@ -150,6 +162,34 @@ final class ScreenWalkerTests: XCTestCase {
         }
         pause(1.0)   // let the rubber-band settle
         snap(app, "awards-bottom")
+    }
+
+    /// The gate itself, launched WITHOUT the bypass. Without this, a silently
+    /// broken wall looks identical to a working one in every other screenshot.
+    ///
+    /// Needs biometry enrolled on the simulator (Features → Face ID →
+    /// Enrolled) — the gate defaults off on a device that has none, which is
+    /// correct behaviour and would read here as a missing wall.
+    func testParentGateWall() throws {
+        let app = XCUIApplication()
+        app.launch()
+        _ = app.buttons.firstMatch.waitForExistence(timeout: 10)
+
+        guard !app.textFields["Username"].exists else {
+            throw XCTSkip("No signed-in session on this device.")
+        }
+        guard !app.buttons["Today"].exists else {
+            throw XCTSkip("Child shell — the gate never engages for a kid.")
+        }
+
+        let locked = app.staticTexts["Daily Bread is locked"]
+        let intro = app.staticTexts["Parent screens are protected"]
+        XCTAssertTrue(locked.waitForExistence(timeout: 5) || intro.exists,
+                      "Parent session showed no wall — is biometry enrolled on this simulator?")
+        snap(app, "gate-wall")
+        XCTAssertFalse(app.buttons["Approvals"].exists, "Approvals reachable past the wall")
+        XCTAssertTrue(app.buttons["Sign in with your password"].exists,
+                      "The wall must always offer a way out")
     }
 
     /// One swipe up per tab: catches content below the fold without turning

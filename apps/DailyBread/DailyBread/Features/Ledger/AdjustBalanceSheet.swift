@@ -83,6 +83,8 @@ struct AdjustBalanceSheet: View {
                 .padding()
         }
         .themeBackground()
+        // The idle timer must not tear down a half-typed reason.
+        .parentGateHold()
         #if os(macOS)
         .frame(minWidth: 420, idealWidth: 460, minHeight: 420, idealHeight: 460)
         #endif

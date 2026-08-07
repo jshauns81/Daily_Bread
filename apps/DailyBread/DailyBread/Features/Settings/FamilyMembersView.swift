@@ -256,6 +256,7 @@ private struct ResetPasswordSheet: View {
                 .padding()
         }
         .themeBackground()
+        .parentGateHold()
         #if os(macOS)
         .frame(minWidth: 420, idealWidth: 460, minHeight: 320, idealHeight: 340)
         #endif
@@ -265,6 +266,25 @@ private struct ResetPasswordSheet: View {
     }
 
     private func save() async {
+        // Rename and Reset password are the only row actions not self-excluded,
+        // so this one reaches a *parent's* password — a full account takeover
+        // from a picked-up phone, and the one action that outlives the grant
+        // that opened the wall. Adjusting a balance deliberately does not step
+        // up: taxing routine money edits is how a security feature gets
+        // switched off.
+        //
+        // `ifEngagedFor` is load-bearing, not defensive. Asked unconditionally,
+        // this blocks the reset outright on an iPad with no passcode — where
+        // there is no prompt to answer and no wall has ever appeared — and
+        // raises an unexplained login-password sheet on a Mac without Touch ID
+        // where the gate defaults off.
+        if let me = session.currentUser {
+            guard await session.parentGate.requireFresh(
+                reason: "reset a family member's password", ifEngagedFor: me) == .success else {
+                errorMessage = "Couldn't confirm it's you."
+                return
+            }
+        }
         saving = true
         defer { saving = false }
         errorMessage = nil

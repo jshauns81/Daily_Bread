@@ -163,7 +163,7 @@ Rejected road (b), Developer ID + Sparkle: a second update mechanism to
 own, preserving freedoms (shell-out, open filesystem) this plain SwiftUI
 client never uses.
 
-## R4 — Face ID (app feature, after distribution works)
+## R4 — Face ID (app feature, after distribution works) ✅ BUILT & VERIFIED 2026-08-06
 
 Two distinct jobs, both LocalAuthentication:
 
@@ -175,6 +175,271 @@ Two distinct jobs, both LocalAuthentication:
   stay frictionless.
 
 Needs only NSFaceIDUsageDescription — no entitlement, no server work.
+
+### Built 2026-08-06 — decisions and why
+
+The threat model, stated so the code can be judged against it: a bright child
+holding a parent's already-unlocked phone, who has watched the device passcode
+typed a hundred times, and who gets another try every release. What ships is a
+**local presence lock on an already-authenticated session, not an
+authorization boundary** — the server's JWT roles remain the real one.
+(`Daily_Bread/Services/BiometricAuthService.cs` is dead WebAuthn scaffolding
+with a confusingly adjacent name. Unrelated, no callers, untouched.)
+
+**Biometry only where biometry is enrolled; the device passcode deliberately
+refused.** `authenticate` evaluates `.deviceOwnerAuthenticationWithBiometrics`
+with `localizedFallbackTitle = ""`, so no "Enter Passcode" button renders.
+Accepting the passcode would make the gate decorative against the one
+adversary it exists for, and would let a child fail Face ID five times on
+purpose and walk in. It is also forced by job 2: a `.biometryCurrentSet` item
+is not satisfied by a context evaluated for `.deviceOwnerAuthentication`.
+`.deviceOwnerAuthentication` is used on exactly one path — a Mac or iPhone with
+a password but no enrolled biometry, where the gate defaults **off**.
+
+The stranding risk that refusal creates is **accepted**: a parent whose sensor
+fails is not locked out, because "Sign in with your password" and "Change
+server" are drawn on every state of the wall and are never gated. The account
+password is the stronger credential, so a griefing child who signs a parent out
+costs one password entry and gains no capability.
+
+**Gate default-on for parents with enrolled biometry**, with an explanatory
+first-encounter panel ("Parent screens are protected") that does **not**
+auto-prompt, and with **no skip button**. Between a TestFlight update
+installing and the parent first opening the app there is a window in which a
+child could tap "Not now"; a one-tap permanent disable sitting on an unlocked
+phone is the exact hole the feature closes. The way off is inside, past a
+match, in Settings → Security. `.ownerPasscodeOnly` and no-passcode devices
+default off; a device with no passcode never engages the gate at all.
+
+**`.biometryCurrentSet` over `.userPresence`.** `.userPresence` accepts the
+device passcode, which in this family makes job 2 a no-op. `.biometryCurrentSet`
+alone, with no `.or, .devicePasscode` leg, plus
+`kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly` so the item stays out of
+backups, off a restored device, and evaporates if the passcode is removed. The
+consequence — a new face or finger invalidates the item — is announced in the
+Settings footer *before* the switch is flipped, and surfaces as one explained
+re-login, never a silent logout.
+
+**Job 2 is iOS-only.** The blocker is macOS, not the design: nothing today sets
+`kSecUseDataProtectionKeychain`, so the Mac's generic-password items live in
+the file-based keychain, where the iOS `SecAccessControl` semantics do not
+apply. Opting into the data-protection keychain on macOS needs a
+`keychain-access-groups` entitlement, and moving existing items into it is a
+migration, not a flag flip. The Mac app has been sandboxed since R3a on Shaun's
+sign-off; **lifting this is gated on his sign-off too**, and is not R4's to
+take. The flag is set explicitly in `ProtectedKeychain` anyway so it is already
+in the right place if that day comes.
+
+**The wall sits above `MainView`, in `RootView`.** `MainView` is never
+constructed while locked, so its `.task`, `.poll` and `.refreshOnForeground`
+never run — the 30 s Approvals badge poll stops hitting the network and none of
+the app's own views render (the Home-screen widget is a separate process and
+keeps showing its last snapshot; see the correction at the end of this
+section). Pushed `NavigationStack` destinations cannot
+outlive a re-lock, presented sheets go with the subtree, and ⌘1…⌘N reach
+nothing. The decisive argument is that **`ParentHomeView` is a hub, not a
+leaf**: it reaches `ActivityView(userId:)` (another child's day, fully
+mutable), `RewardClaimsView(mode: .parent)` (approving credits cash),
+`CalendarView(userId:)`, `DrivingLogView(mode: .parent)` and
+`AdjustBalanceSheet`. Gating destinations individually means enumerating those
+and re-enumerating them every release. Deep links, App Intents and `onOpenURL`
+do not exist today; when one is added it lands above the wall and is gated by
+construction. **The one gap the seam does not close for free**, recorded in
+`DailyBreadApp.swift`: there is no macOS `Settings` scene and no `.commands`
+today, and either would be a second door onto `SettingsView` needing its own
+`isLocked` check.
+
+**Two `APIClient` fixes landed first, before any biometric code existed.** Both
+were live bugs whose symptoms would have read as Face ID bugs once R4 shipped.
+(a) `refreshTokens()` had no in-flight dedupe, so two concurrent 401s both
+presented the same refresh token and `ApiTokenService.RefreshAsync` treated the
+loser as theft and revoked every token the user owns — one race signed the
+family out on all their devices. (b) The refresh catch was unconditional, so a
+Wi-Fi blip fired `onSessionExpired()` and deleted the Keychain tokens; only a
+rejection from `/auth/refresh` ends a session now, and `APIError.network`
+rethrows untouched.
+
+**Operational note, not code: iOS Password AutoFill.** The password escape
+hatch is only as strong as whether the Daily Bread password sits in a shared
+iCloud Keychain — AutoFill will fill it behind the device passcode, which the
+child knows. This vector is **not created by this feature**: the same
+credential signs in to the web app at dailybread.simmserv.org from any browser.
+It is not closable in the client, so it belongs here as a household practice —
+keep parents' Daily Bread passwords out of any keychain the kids' devices
+share.
+
+Step-up: `ResetPasswordSheet.save()` requires a fresh match (30 s window)
+because Rename and Reset password are the only row actions not self-excluded,
+so resetting a *parent's* password is a full account takeover that outlives the
+grant that opened the wall. `AdjustBalanceSheet` deliberately does **not** step
+up — taxing routine money edits is how a security feature gets switched off.
+
+### Corrected 2026-08-06, after adversarial review — where the spec was wrong
+
+Thirteen blocking defects came out of review. Four of them were the spec's own
+instructions, and those are the ones worth recording, because the code now
+deliberately departs from the design above.
+
+**The default-on gate is written down, not inferred.** The spec had
+`db.parentGate.<userId>` absent meaning "default by capability", with `setEnabled`
+the only writer. That made the whole feature evaporate on a capability downgrade:
+the child who knows the passcode opens Settings → Face ID & Passcode → Reset
+Face ID, `isEnabled` falls back through the table to false, and the wall never
+renders again — no prompt, no credential, no signal. `bind(to:)` and a first
+successful `unlock` now materialise an explicit `true`. Only the `true` answer is
+written; storing an explicit `false` for a device with nothing enrolled would
+freeze it off, so enrolling Face ID later would no longer arm the gate.
+
+**Fail-open on `capability == .none` is now conditional.** §7.2 had the gate
+disengage outright on a device with no passcode. That made *removing the
+passcode* — four taps, with a passcode the adversary is assumed to know — the
+cheapest route through the wall, cheaper than any other, and silent. A device
+that never hosted the gate still fails open; a device where the gate was
+explicitly on keeps the wall, `authenticate` answers `.unavailable`, the wall
+says so in words, and the password sign-in underneath it is the way back in.
+
+**"Every trigger is a no-op while `authenticating`" was wrong for `.background`.**
+It is right for `.inactive`, which the Face ID sheet raises itself. On
+`.background` it turned the strongest re-lock trigger in the design into a
+fail-open, and the feature opened the window itself: a parent who swipes home
+while the Settings rehearsal or the password-reset step-up is up backgrounds the
+app with the grant still open and no cover, LocalAuthentication cancels, and
+nothing re-examines the phase afterwards. Locking under a live prompt costs
+nothing, because the wall is what you come back to either way. `.active` also
+clears the cover unconditionally now — guarded, a cover raised before an
+evaluation sat over a live app with nothing left to remove it.
+
+**`policy.idleGrace` was not an idle timer.** Nothing called `touch()`, so the
+grace was an absolute grant lifetime that expired mid-use: five minutes into a
+run through Approvals the shell was torn down mid-scroll, taking `MainView`'s
+`selection` with it, so the parent also lost their place. `RootView` now reports
+activity with a zero-distance `simultaneousGesture` over `MainView` — it fires on
+any touch without consuming it — and the expiry task loops on a `lastActivity`
+deadline instead of sleeping once, so reporting activity is one stored write.
+
+Four more corrections worth naming, all in the same spirit — the mechanism was
+right and the edges were not. The `ProtectedKeychain.write` rotation path deleted
+the sealed item before adding its replacement, and the item is unwritable while
+the device is locked, so a rotation landing in the runway between the screen
+locking and the app suspending destroyed the only copy of the refresh token; the
+add is attempted first now and the delete only happens on `errSecDuplicateItem`,
+and `persistRotated` checks the status instead of discarding it — on failure the
+session degrades to the plain `AfterFirstUnlock` items and says so in Settings
+rather than dying or lying. `enableProtectedSession` / `disableProtectedSession`
+read the tokens before the biometric sheet and wrote them after, so a rotation
+landing during those seconds sealed a token the server had already revoked, which
+it answers by signing out every device the household owns; both now reconcile
+against the last rotated pair without an intervening `await`. The step-up in
+`ResetPasswordSheet` was unconditional, which made resetting a password
+*impossible* on a device the gate never engages on — it takes `ifEngagedFor:`
+now. And the privacy cover was applied to every session including children's, so
+on the kitchen iPad in Split View a child's chore list was replaced by the splash
+the moment they touched the app beside it; `isCovered` is only ever set for a
+parent past the wall. A parent's own session in Split View still covers when
+unfocused, which is the feature working rather than a bug.
+
+### What a parent sees when it goes wrong
+
+Every failure resolves to an inline row under the Unlock button, never an alert
+— the app has exactly one alert and this does not become its second — and
+"Sign in with your password" and "Change server" are drawn under every one of
+these states, ungated. There is no state in which a parent is stuck.
+
+A **non-match** says "That didn't match. Try again." and leaves the button live.
+A **cancel** says nothing at all: dismissing a sheet is a choice, and an error
+row that fires every time somebody dismisses one teaches people to ignore error
+rows. Cancelling also deliberately does not re-arm the auto-prompt, because
+auto-prompting on cancel is a loop with no way out. **Five failures** (Apple's
+counter, not ours) gives "Face ID is locked. Unlock your iPhone with its
+passcode, then try again." — recovery is the OS's own, and there is no in-app
+passcode button precisely because that would let a child fail five times on
+purpose and walk in. A device that **cannot evaluate at all** — no biometry
+enrolled, the gate explicitly on — says "This device can't check who you are.
+Sign in with your password.", which is the fail-closed answer that keeps
+removing the passcode from being the cheapest way through. Any **other LAError**
+lands on "Couldn't check who you are. Try again, or sign in with your password."
+
+Two failures are quiet on purpose. A **`.biometryCurrentSet` invalidation**
+(job 2, someone enrolled a new face or finger) shows no error row; it surfaces
+as one re-login, and the Settings footer states that consequence *before* the
+switch is flipped rather than after. And if the sealed-item write fails during
+a token rotation, the session **degrades to the plain `AfterFirstUnlock` items
+and says so in Settings** — it does not die, and it does not claim protection
+it no longer has.
+
+### Verified 2026-08-06 — the gate, and what it actually said
+
+Regenerated from `project.yml` and confirmed landing inside the worktree
+(`Created project at …/worktrees/daily-bread-macos-ios-status-012ba0/apps/DailyBread/DailyBread.xcodeproj`),
+then built both slices unsigned: **iOS `generic/platform=iOS` BUILD SUCCEEDED**
+and **macOS `platform=macOS,arch=arm64` BUILD SUCCEEDED**. The usage string was
+checked in the *built* bundle rather than in the spec —
+`plutil -p …/Debug-iphoneos/DailyBread.app/Info.plist` prints
+`NSFaceIDUsageDescription`, so the key survives generation into the product.
+`git diff` on the committed `apps/DailyBread/DailyBread/Info.plist` after
+regeneration is exactly the two intentional lines and nothing else, which is
+the check that matters here: xcodegen owns that file, so drift between it and
+the spec would be silently overwritten on the next generate.
+
+Tests: **221 passed / 0 failed** in `Daily_Bread.Tests`, unchanged and expected
+— R4 is client-only and touches no server code. **74 passed / 0 failed** in
+`DailyBreadKit`, of which **42 are the new `ParentGateTests`** covering the
+capability table, the default-on materialisation, the conditional fail-open,
+and the re-lock triggers.
+
+What is deliberately **not** in this: job 2 stays **iOS-only** until Shaun
+signs off on the `keychain-access-groups` entitlement the Mac would need to
+opt into the data-protection keychain, plus the item migration that follows —
+the flag is already set in `ProtectedKeychain` for the day that happens. The
+macOS `Settings` scene and `.commands` remain **unbuilt**, which is what keeps
+`SettingsView` behind a single door; adding either needs its own `isLocked`
+check, and that is recorded in `DailyBreadApp.swift` where somebody would trip
+over it. `AdjustBalanceSheet` takes **no step-up** by design, because taxing
+routine money edits is how a security feature gets switched off. And the
+iCloud Keychain AutoFill vector is a **household practice, not a code fix** —
+the same password signs in to the web app from any browser.
+
+**What this verification did NOT cover, stated plainly so nobody reads the
+green checks as more than they are: no biometric path has been executed on any
+device or simulator.** Every `LocalAuthentication` and protected-Keychain line
+is compile-verified only; the 42 gate tests drive injected closures, never real
+hardware. Face ID enrollment, the five-failure lockout, and
+`.biometryCurrentSet` invalidation are OS behaviours a unit test can only stub.
+`testParentGateWall` exists but has never run — it skips on a signed-out
+simulator, and its own failure message admits it cannot distinguish "gate
+broken" from "biometry not enrolled". The first real Face ID prompt in this
+project's history will happen on Shaun's phone.
+
+Two more honest edges. `SessionStore` is untestable by construction —
+`Keychain` and `ProtectedKeychain` are static enums with no injection seam — so
+the repairs most likely to strand a session (the add-before-delete write, the
+rotation degrade path, the `lastRotated` reconciliation) carry no tests. And
+`APIClient` has no test file at all, though its two fixes change session
+lifetime for **every** user including the kids.
+
+### Corrected 2026-08-06, after the completeness pass — macOS re-lock
+
+The first implementation claimed in a code comment that "locking your Mac locks
+parent mode" while observing only `screensDidSleep` (display sleep) and
+`sessionDidResignActive` (fast user switching). Neither fires for ⌃⌘Q or a hot
+corner with the display still lit — the actual walk-away gesture. The
+distributed `com.apple.screenIsLocked` notification is now observed alongside
+both, and `NSWindow.willCloseNotification` (filtered to real windows, since
+sheets and panels are NSWindows too) hard-locks on ⌘W — closing the last window
+does not end the process, so reopening from the Dock used to land back inside
+an unlocked shell. This mattered more than it looks: the Mac is Charmaine's
+75% surface.
+
+Both are wired and both slices still build; like everything else here, neither
+has been exercised against a real screen lock yet.
+
+One overstatement corrected in the same pass: "nothing renders to be
+screenshotted" is true of the app's own views, but the **Home-screen widget
+keeps rendering its last snapshot** — balance, streak, today's earnings, child
+name — from the app-group file regardless of the gate. That is pre-existing and
+read-only, not something R4 introduced, but it is not nothing.
+
+Not yet on TestFlight: shipping is a push to master, and that is Shaun's call.
 
 ## R5 — Notifications & messaging (last, biggest server lift)
 

@@ -71,6 +71,10 @@ targets:
       path: DailyBread/Info.plist
       properties:
         CFBundleDisplayName: Daily Bread
+        # LocalAuthentication needs no entitlement — only this string, which iOS
+        # shows in the Face ID sheet. There is no equivalent key for Touch ID or
+        # for macOS; both are covered by the localizedReason passed at evaluation.
+        NSFaceIDUsageDescription: Daily Bread uses Face ID to confirm it's you before showing approvals, money and family settings.
         UILaunchScreen: {}
         ITSAppUsesNonExemptEncryption: false
         # Mac App Store/TestFlight refuses archives without a category

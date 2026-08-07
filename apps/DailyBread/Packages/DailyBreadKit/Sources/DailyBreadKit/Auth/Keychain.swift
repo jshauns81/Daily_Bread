@@ -4,6 +4,15 @@ import Security
 
 private let keychainLog = Logger(subsystem: "org.dailybread.api", category: "keychain")
 
+/// The outcome of a Keychain read, with the four cases a caller has to tell
+/// apart: something is there, nothing is there, the user said no, or it broke.
+public enum KeychainRead: Sendable, Equatable {
+    case value(String)
+    case missing
+    case cancelled
+    case failed(OSStatus)
+}
+
 /// Minimal Keychain wrapper for token storage. Tokens never touch
 /// UserDefaults; only the (non-secret) server URL lives there.
 public enum Keychain {
@@ -34,6 +43,14 @@ public enum Keychain {
     }
 
     public static func get(_ key: String) -> String? {
+        if case .value(let value) = read(key) { return value }
+        return nil
+    }
+
+    /// `get` with the OSStatus kept. It used to be discarded, so "the user
+    /// cancelled, stay put" and "nothing is stored, sign in again" arrived at
+    /// the caller as the same `nil`.
+    public static func read(_ key: String) -> KeychainRead {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -42,9 +59,18 @@ public enum Keychain {
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
         var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        switch status {
+        case errSecSuccess:
+            guard let data = result as? Data,
+                  let value = String(data: data, encoding: .utf8) else {
+                return .failed(status)
+            }
+            return .value(value)
+        case errSecItemNotFound: return .missing
+        case errSecUserCanceled: return .cancelled
+        default: return .failed(status)
+        }
     }
 
     public static func delete(_ key: String) {

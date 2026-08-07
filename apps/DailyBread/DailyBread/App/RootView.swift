@@ -13,10 +13,40 @@ struct RootView: View {
                 ServerSetupView()
             case .needsLogin:
                 LoginView()
+            case .locked(let user):
+                GateWallView(mode: .session(user))
             case .signedIn(let user):
-                MainView(user: user)
+                if session.parentGate.isLocked(for: user) {
+                    GateWallView(mode: .shell(user))
+                } else {
+                    MainView(user: user)
+                        // What makes `policy.idleGrace` an idle timer rather
+                        // than an absolute grant lifetime. Nothing else in the
+                        // shell reports activity, and without this the wall
+                        // drops across a parent mid-scroll every five minutes
+                        // of continuous use — taking MainView's `selection`
+                        // with it, so they also lose their place.
+                        //
+                        // A zero-distance drag recognised *simultaneously*
+                        // fires on any touch anywhere without consuming it, so
+                        // buttons, scrolling and the row gestures underneath
+                        // behave exactly as they did.
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { _ in session.parentGate.touch() }
+                        )
+                }
             }
         }
+        #if os(iOS)
+        // `isCovered` is only ever set for a parent session past the wall, so
+        // this cannot reach a child's screen or the login form.
+        .overlay {
+            if session.parentGate.isCovered {
+                PrivacyCoverView()
+            }
+        }
+        #endif
         #if DEBUG
         .celebrationTestLoop()
         #endif
@@ -160,6 +190,15 @@ struct LoginView: View {
             }
 
             VStack(spacing: 12) {
+                // Explains a sign-out nobody asked for — an invalidated
+                // biometric enrolment must never read as a mystery logout.
+                if let note = session.signInNote {
+                    Text(note)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
                 TextField("Username", text: $userName)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.username)
@@ -213,6 +252,10 @@ struct LoginView: View {
         defer { busy = false }
         do {
             try await session.login(userName: userName, password: password)
+            session.clearSignInNote()
+            // A password is a stronger proof of presence than the gate asks
+            // for, so signing in must not land straight on the wall.
+            session.parentGate.grantPresenceEstablished()
         } catch {
             errorMessage = error.localizedDescription
             password = ""

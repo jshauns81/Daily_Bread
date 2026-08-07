@@ -16,6 +16,11 @@ struct SettingsView: View {
     @State private var editorTarget: ThemeEditorTarget?
     /// Children, for the per-child driving switches. Parent-only fetch.
     @State private var children: [FamilyMember] = []
+    @State private var securityError: String?
+    /// Optimistic switch positions, held only until the prompt behind them
+    /// resolves. Non-nil beats the stored answer.
+    @State private var pendingGateEnabled: Bool?
+    @State private var pendingSessionProtected: Bool?
 
     var body: some View {
         List {
@@ -209,6 +214,10 @@ struct SettingsView: View {
                 Text("Pick the look you like — or drop a .yaml file in the Themes folder and make your own. Your themes are yours: they follow you to every device you sign in on.")
             }
 
+            if let user = session.currentUser, user.isParent {
+                securitySection(user)
+            }
+
             if session.currentUser?.isParent == true {
                 Section {
                     featureToggle("Savings goals", goalsSubtitle, \.enableGoals)
@@ -396,6 +405,137 @@ struct SettingsView: View {
         .contentShape(Rectangle())
         .padding(.vertical, 4)
     }
+
+    // MARK: - Security
+
+    /// Both switches live inside the parent region, and therefore behind the
+    /// wall — a child cannot turn the gate off. Settings itself stays
+    /// ungated for children, so no biometric prompt ever appears in front of a
+    /// kid's theme picker.
+    private func securitySection(_ user: ApiUser) -> some View {
+        let gate = session.parentGate
+        let capable = gate.capability.canAuthenticate
+        let on = gate.isEnabled(for: user)
+        let enrolled: Bool
+        if case .biometry = gate.capability { enrolled = true } else { enrolled = false }
+        return Section {
+            // Operable whenever the gate is ON, even on a device that has since
+            // lost its passcode. Off-and-disabled there would be a wall with no
+            // switch to answer it — the parent's only remaining way out of
+            // their own app would be signing out on every launch.
+            Toggle(isOn: Binding(
+                get: { pendingGateEnabled ?? on },
+                set: { newValue in
+                    // Optimistic, like every other switch on this screen: the
+                    // rehearsal below is a Face ID sheet, and a toggle that
+                    // snaps back before the sheet even appears reads as broken.
+                    pendingGateEnabled = newValue
+                    Task { await setGateEnabled(newValue, for: user) }
+                })
+            ) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Require \(gate.capability.displayName)")
+                    Text("Approvals, money and family settings")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .disabled(!capable && !on)
+
+            Button("Lock now") { gate.lockNow() }
+                .disabled(!on)
+
+            #if os(iOS)
+            // A .biometryCurrentSet item cannot be created, let alone opened,
+            // without enrolled biometry — so the row is shown and explained
+            // rather than hidden, but it is only ever operable with it.
+            Toggle(isOn: Binding(
+                get: { pendingSessionProtected ?? session.isSessionProtected },
+                set: { newValue in
+                    pendingSessionProtected = newValue
+                    Task { await setSessionProtection(newValue) }
+                })
+            ) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Protect my session")
+                    Text("Keep the saved sign-in behind \(gate.capability.displayName)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .disabled(!enrolled)
+            #endif
+
+            if let note = session.securityNote {
+                Label(note, systemImage: "exclamationmark.circle")
+                    .font(.footnote).foregroundStyle(DB.help(scheme))
+            }
+
+            if let securityError {
+                Label(securityError, systemImage: "exclamationmark.circle")
+                    .font(.footnote).foregroundStyle(DB.help(scheme))
+            }
+        } header: {
+            Text("Security")
+        } footer: {
+            Text(securityFooter)
+        }
+    }
+
+    private func setGateEnabled(_ on: Bool, for user: ApiUser) async {
+        securityError = nil
+        session.clearSecurityNote()
+        let outcome = await session.parentGate.setEnabled(on, for: user)
+        pendingGateEnabled = nil
+        // nil means the device cannot host the gate at all and the flag was
+        // force-written off; the footer already explains that. Cancelling is a
+        // choice, not a failure, and says nothing.
+        guard let outcome, outcome != .success, outcome != .cancelled else { return }
+        securityError = "Couldn't confirm it's you, so this stayed off."
+    }
+
+    private var securityFooter: String {
+        switch session.parentGate.capability {
+        case .none:
+            #if os(macOS)
+            return "Set a login password on this Mac to use this."
+            #else
+            return "Set a passcode on this iPhone to use this."
+            #endif
+        case .ownerPasscodeOnly:
+            #if os(macOS)
+            return "This Mac has no Touch ID, so Daily Bread will ask for your login password."
+            #else
+            return "This iPhone has no enrolled biometry, so Daily Bread will ask for your passcode."
+            #endif
+        case .biometry, .biometryLockedOut:
+            let name = session.parentGate.capability.displayName
+            var text = "Parent screens stay locked until it's you. If you ever can't unlock, sign out and back in with your password."
+            #if os(iOS)
+            // Said BEFORE the switch is flipped, so the one re-login an
+            // invalidated enrolment costs was announced in advance.
+            text += "\n\nYour saved sign-in can be kept behind \(name) too, so it works only when you're here. If you add a new face or fingerprint, you'll sign in again."
+            #endif
+            return text
+        }
+    }
+
+    #if os(iOS)
+    private func setSessionProtection(_ on: Bool) async {
+        securityError = nil
+        session.clearSecurityNote()
+        let result = on ? await session.enableProtectedSession()
+                        : await session.disableProtectedSession()
+        pendingSessionProtected = nil
+        if case .failure(let outcome) = result {
+            // Cancelling is a choice, not a failure: the switch snaps back and
+            // says nothing. `.invalidated` has already cleared the session and
+            // put its own explanation on the sign-in screen.
+            if outcome != .cancelled && outcome != .invalidated {
+                securityError = on ? "Couldn't protect the session on this device."
+                                   : "Couldn't turn session protection off."
+            }
+        }
+    }
+    #endif
 
     // MARK: - Family features
 
