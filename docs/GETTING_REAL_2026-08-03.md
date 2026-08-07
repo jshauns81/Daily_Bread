@@ -507,14 +507,37 @@ signing identity's private key during an **Xcode build**, once per signed
 binary (app, then widget extension, then embedded frameworks). Nothing to do
 with the app at runtime.
 
-The fix is a keychain ACL choice that only Shaun can make, and the standing
-signing rules mean nobody else touches it: answer that prompt with **Always
-Allow** rather than Allow. Allow authorises exactly one use, so every build
-asks again. Note there are **two** valid `Apple Development` certificates in
-his login keychain (`jshauns@gmail.com` and `Jimmie Simmons`, both
-`OU=722W7866NQ`, so both correct for this project) — each has its own private
-key with its own ACL, so whichever Xcode selects has to be granted separately.
-Consolidating to one is his call, not a repo change.
+**"Always Allow" does not fix it**, which Shaun established by trying it, and
+the reason is worth writing down because it is not obvious. Dumping the ACL
+(`security dump-keychain -a`) showed the signing key's `sign` authorisation
+trusting `com.apple.dt.Xcode` and `com.apple.security.codesign` by *identifier*
+— and three past grants pinned by **cdhash**:
+
+```
+requirement: cdhash H"f0ebef5afd9f85c4b9a0d855e1eeb43c0ba98489"
+requirement: cdhash H"72d51006398cf9474f1bb474d25a701767894443"
+requirement: cdhash H"457bfb9a198fa50b82f67f6509e822087d52f8d1"
+```
+
+A cdhash is a hash of a binary's exact code signature. When macOS cannot
+identify the requester by a stable rule it pins the grant to that hash, and
+**every rebuild changes the hash**, so the grant matches nothing and the prompt
+returns. Each "Always Allow" adds another dead entry. That is why Xcode and
+codesign never prompt (granted by identifier, survives updates) while locally
+built apps always do.
+
+**Resolved 2026-08-07 by Shaun**, since keychain trust is his to change by
+standing rule: the development keys' Access Control set to *Allow all
+applications to access this item*. Confirmed after the fact — those
+authorisation blocks now carry no requirement list. The tradeoff, stated
+plainly: any program running as him can now use those keys to sign without
+asking. On a single-developer machine that is the usual trade, and it is the
+only setting that survives a rebuild.
+
+The two `Apple Development` certificates (`jshauns@gmail.com` and
+`Jimmie Simmons`, both `OU=722W7866NQ`) are Xcode 26.6 and Xcode 27 each
+requesting their own under automatic signing. Same team, cosmetic duplication,
+nothing to consolidate.
 
 What the login keychain also shows, read-only: three orphaned items under
 `com.example.dailybread.tokens`, the service name used before d080080 renamed
