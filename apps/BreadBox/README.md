@@ -4,19 +4,25 @@ The one-window admin panel for the Daily Bread workflow: every recurring
 incantation from the project's life as a button, so nothing has to be
 re-found in scrollback again.
 
-## First run
+## Install
 
 ```
-cd apps/BreadBox
-xcodegen generate
-open BreadBox.xcodeproj
+apps/BreadBox/install.sh
 ```
 
-Run it once from Xcode, then keep it in the Dock (Product → Show Build
-Folder in Finder → drag BreadBox.app wherever you like). It is macOS-only,
-unsandboxed on purpose — its whole job is running git, docker, dotnet and
-xcodebuild on your behalf through a login shell, so everything resolves
-exactly as it does in Ghostty.
+Generates the project, builds Release, and puts a real copy in
+`/Applications` — then open it once and pin it to the Dock. Run the same
+command after any change to BreadBox; it quits a running copy first, so
+the only manual step is relaunching.
+
+Launching from Xcode works too, but leaves the app in DerivedData where a
+Clean Build Folder deletes it out from under the Dock icon. Pass a
+different destination as the first argument (`install.sh ~/Applications`)
+if you would rather keep it out of `/Applications`.
+
+BreadBox is macOS-only and unsandboxed on purpose — its whole job is
+running git, docker, dotnet and xcodebuild on your behalf through a login
+shell, so everything resolves exactly as it does in Ghostty.
 
 ## What the buttons do
 
