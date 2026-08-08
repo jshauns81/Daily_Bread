@@ -20,17 +20,19 @@ final class EarningsStore {
         defer { loading = false }
         do {
             async let balanceTask = session.client.balance()
-            async let summaryTask = session.client.ledgerSummary()
             async let goalsTask = session.client.goals()
             async let historyTask = session.client.history(limit: 30)
             balance = try await balanceTask
-            summary = try await summaryTask
             goals = try await goalsTask
             history = try await historyTask.transactions
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+        // Enrichment, never a dependency: a server without the summary route
+        // (prod before the ledger deploy) must not blank the screen that
+        // worked yesterday — the hero simply shows no threshold bar or tiles.
+        summary = try? await session.client.ledgerSummary()
         await loadLast14(session)
     }
 
