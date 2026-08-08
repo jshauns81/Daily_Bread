@@ -37,7 +37,6 @@ struct ParentHomeView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
     @State private var store = ParentHomeStore()
-    @State private var adjusting: AdjustBalanceTarget?
 
     var body: some View {
         ScrollView {
@@ -122,11 +121,6 @@ struct ParentHomeView: View {
         .refreshable { await store.load(session) }
         .refreshOnForeground { await store.load(session) }
         .task { await store.load(session) }
-        .sheet(item: $adjusting) { target in
-            AdjustBalanceSheet(target: target) { _ in
-                Task { await store.load(session) }
-            }
-        }
     }
 
     /// The userId behind a balance row. Single-child: the only child. Otherwise
@@ -502,10 +496,13 @@ struct ParentHomeView: View {
 
     private func balancesCard(_ dash: ParentDashboard) -> some View {
         VStack(spacing: 0) {
+            // A balance row opens the kid's whole money picture — history,
+            // lifetime totals, and the two writes (adjust, cash-out) — not a
+            // bare adjust sheet. "Cash out ready" is a door now, not a sticker.
             ForEach(dash.childrenBalances) { child in
-                Button {
+                NavigationLink {
                     if let userId = balanceUserId(child) {
-                        adjusting = AdjustBalanceTarget(userId: userId, name: child.displayName, balance: child.balance)
+                        LedgerView(userId: userId, displayName: child.displayName)
                     }
                 } label: {
                     HStack(spacing: 8) {
@@ -522,7 +519,7 @@ struct ParentHomeView: View {
                         Text(child.balance.display)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(DB.gold(scheme))
-                        Image(systemName: "slider.horizontal.3")
+                        Image(systemName: "chevron.right")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }

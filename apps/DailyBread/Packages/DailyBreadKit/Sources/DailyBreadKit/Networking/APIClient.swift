@@ -363,11 +363,31 @@ public actor APIClient {
     }
 
     /// Parent add/subtract on a child's balance. `amount` is signed (a negative
-    /// Money subtracts). `description` is the audited reason. Returns the fresh balance.
-    public func adjustBalance(userId: String, amount: Money, description: String) async throws -> Balance {
-        struct Body: Codable { let userId: String; let amount: Money; let description: String }
-        let body = try encodeBody(Body(userId: userId, amount: amount, description: description))
+    /// Money subtracts). `description` is the audited reason. `kind` keeps the
+    /// transaction typed — "Bonus" or "Penalty" (magnitude; the sign is the
+    /// meaning) or nil for a plain adjustment. Returns the fresh balance.
+    public func adjustBalance(userId: String, amount: Money, description: String,
+                              kind: String? = nil) async throws -> Balance {
+        struct Body: Codable {
+            let userId: String; let amount: Money; let description: String; let kind: String?
+        }
+        let body = try encodeBody(Body(userId: userId, amount: amount,
+                                       description: description, kind: kind))
         return try await send(Balance.self, path: "api/v1/ledger/adjust", method: "POST", body: body)
+    }
+
+    /// Records that money left the ledger — bookkeeping only; the actual
+    /// transfer happens in the family's banking app. Nil userId = self, which
+    /// is how a child records their own cash-out. The server enforces the
+    /// rules (positive, within balance, over the family threshold).
+    public func cashOut(userId: String?, amount: Money, note: String? = nil) async throws -> Balance {
+        struct Body: Codable { let userId: String?; let amount: Money; let note: String? }
+        let body = try encodeBody(Body(userId: userId, amount: amount, note: note))
+        return try await send(Balance.self, path: "api/v1/ledger/cashout", method: "POST", body: body)
+    }
+
+    public func ledgerSummary(userId: String? = nil) async throws -> LedgerSummary {
+        try await send(LedgerSummary.self, path: path("api/v1/ledger/summary", [("userId", userId)]))
     }
 
     public func goals(userId: String? = nil) async throws -> [Goal] {

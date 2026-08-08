@@ -273,6 +273,21 @@ public struct LedgerHistory: Codable, Sendable {
     public var transactions: [LedgerTransaction]
 }
 
+/// The money picture behind the history: lifetime totals by type, the family
+/// threshold, and whether the balance clears it.
+public struct LedgerSummary: Codable, Sendable {
+    public var userId: String
+    public var balance: Money
+    public var cashOutThreshold: Money
+    public var canCashOut: Bool
+    public var totalEarnings: Money
+    public var totalDeductions: Money
+    public var totalBonuses: Money
+    public var totalPenalties: Money
+    public var totalPaidOut: Money
+    public var transactionCount: Int
+}
+
 // MARK: - Goals
 
 public struct Goal: Codable, Hashable, Identifiable, Sendable {

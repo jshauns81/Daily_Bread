@@ -7,6 +7,7 @@ import DailyBreadKit
 @Observable
 final class EarningsStore {
     var balance: Balance?
+    var summary: LedgerSummary?
     var goals: [Goal] = []
     var history: [LedgerTransaction] = []
     var last14: [DaySummary] = []
@@ -19,9 +20,11 @@ final class EarningsStore {
         defer { loading = false }
         do {
             async let balanceTask = session.client.balance()
+            async let summaryTask = session.client.ledgerSummary()
             async let goalsTask = session.client.goals()
             async let historyTask = session.client.history(limit: 30)
             balance = try await balanceTask
+            summary = try await summaryTask
             goals = try await goalsTask
             history = try await historyTask.transactions
             errorMessage = nil
@@ -54,6 +57,7 @@ struct EarningsView: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.colorScheme) private var scheme
     @State private var store = EarningsStore()
+    @State private var cashingOut: CashOutTarget?
 
     // No swipe actions anywhere on this screen, so it's authored cards in a
     // ScrollView — not a List neutralised row by row to host them.
@@ -128,18 +132,78 @@ struct EarningsView: View {
     }
 
     private var balanceCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("BALANCE")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.secondary)
-                .kerning(1)
-            Text(store.balance?.balance.display ?? "—")
-                .font(.system(size: 42, weight: .bold, design: .rounded))
-                .foregroundStyle(DB.gold(scheme))
-                .contentTransition(.numericText())
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("BALANCE")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .kerning(1)
+                Text(store.balance?.balance.display ?? "—")
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .foregroundStyle(DB.gold(scheme))
+                    .contentTransition(.numericText())
+            }
+
+            // The web's My Balance always answered "how close am I to cashing
+            // out, and where has my money gone" — same answers, same card.
+            if let summary = store.summary {
+                if summary.canCashOut {
+                    Button {
+                        cashingOut = CashOutTarget(
+                            userId: nil,
+                            possessive: "your",
+                            balance: summary.balance,
+                            threshold: summary.cashOutThreshold)
+                    } label: {
+                        Label("Record a cash-out", systemImage: "banknote")
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.dbAccent)
+                } else if !summary.cashOutThreshold.isZero {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ProgressView(value: min(max(thresholdFraction(summary), 0), 1))
+                            .tint(Color.dbAccent)
+                        Text("Cash-out unlocks at \(summary.cashOutThreshold.display).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                HStack(spacing: 0) {
+                    lifetimeStat("EARNED", summary.totalEarnings.display, DB.gold(scheme))
+                    lifetimeStat("MISSED", summary.totalDeductions.display, DB.help(scheme))
+                    lifetimeStat("PAID OUT", summary.totalPaidOut.display, Color.dbAccent)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard(padding: 18)
+        .sheet(item: $cashingOut) { target in
+            CashOutSheet(target: target) { _ in
+                Task { await store.load(session) }
+            }
+        }
+    }
+
+    private func thresholdFraction(_ summary: LedgerSummary) -> Double {
+        let threshold = NSDecimalNumber(decimal: summary.cashOutThreshold.amount).doubleValue
+        guard threshold > 0 else { return 1 }
+        return NSDecimalNumber(decimal: summary.balance.amount).doubleValue / threshold
+    }
+
+    private func lifetimeStat(_ label: String, _ value: String, _ color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+                .kerning(0.6)
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Daily earnings, last two weeks. Gold bars — money is always gold.

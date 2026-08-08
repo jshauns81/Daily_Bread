@@ -54,8 +54,21 @@ public class LedgerController : ControllerBase
         if (target.Outcome == GuardOutcome.NotFound) return NotFound(new ApiError("UserNotFound", "User not found."));
 
         await _currentUser.InitializeAsync();
-        var result = await _payout.AddAdjustmentAsync(
-            target.User!.Id, request.Amount, _currentUser.UserId, request.Description.Trim());
+        // Kind keeps the ledger honest: the stats tiles report Bonus and
+        // Penalty separately, so collapsing them into Adjustment (what the
+        // first native sheet did) silently zeroed two of the six numbers.
+        // Bonus and Penalty take the magnitude — their sign is their meaning.
+        var reason = request.Description.Trim();
+        var result = request.Kind?.Trim().ToLowerInvariant() switch
+        {
+            "bonus" => await _payout.AddBonusAsync(
+                target.User!.Id, Math.Abs(request.Amount), _currentUser.UserId, reason),
+            "penalty" => await _payout.AddPenaltyAsync(
+                target.User!.Id, Math.Abs(request.Amount), _currentUser.UserId, reason),
+            null or "" or "adjustment" => await _payout.AddAdjustmentAsync(
+                target.User!.Id, request.Amount, _currentUser.UserId, reason),
+            _ => ServiceResult.Fail($"Unknown adjustment kind '{request.Kind}'."),
+        };
         if (!result.Success)
         {
             return BadRequest(new ApiError("AdjustFailed", result.ErrorMessage ?? "Could not adjust the balance."));
@@ -63,6 +76,61 @@ public class LedgerController : ControllerBase
 
         var balance = await _ledgerService.GetUserBalanceAsync(target.User!.Id);
         return Ok(new BalanceResponse(target.User!.Id, balance));
+    }
+
+    /// <summary>
+    /// Record a cash-out — bookkeeping only; the actual money moves in the
+    /// family's banking app. Parents may record one for any household child,
+    /// and a child may record their own (the web's My Balance allowed the
+    /// same). PayoutService enforces the real rules: positive amount, within
+    /// balance, balance at or over the family threshold.
+    /// </summary>
+    [HttpPost("cashout")]
+    public async Task<ActionResult<BalanceResponse>> CashOut(
+        [FromBody] LedgerCashOutRequest request, CancellationToken ct)
+    {
+        var target = await _guard.ResolveTargetUserAsync(request.UserId, ct);
+        if (target.Outcome == GuardOutcome.Forbidden) return Forbid(JwtBearerDefaults.AuthenticationScheme);
+        if (target.Outcome == GuardOutcome.NotFound) return NotFound(new ApiError("UserNotFound", "User not found."));
+
+        await _currentUser.InitializeAsync();
+        var result = await _payout.ProcessCashOutAsync(
+            target.User!.Id, request.Amount, _currentUser.UserId,
+            string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim());
+        if (!result.Success)
+        {
+            return BadRequest(new ApiError("CashOutFailed", result.ErrorMessage ?? "Could not record the cash-out."));
+        }
+
+        var balance = await _ledgerService.GetUserBalanceAsync(target.User!.Id);
+        return Ok(new BalanceResponse(target.User!.Id, balance));
+    }
+
+    /// <summary>
+    /// The money picture behind the history: lifetime totals by type, the
+    /// family's cash-out threshold, and whether the balance clears it.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<ActionResult<LedgerSummaryResponse>> Summary(
+        [FromQuery] string? userId, CancellationToken ct)
+    {
+        var target = await _guard.ResolveTargetUserAsync(userId, ct);
+        if (target.Outcome == GuardOutcome.Forbidden) return Forbid(JwtBearerDefaults.AuthenticationScheme);
+        if (target.Outcome == GuardOutcome.NotFound) return NotFound(new ApiError("UserNotFound", "User not found."));
+
+        var stats = await _ledgerService.GetUserTransactionStatsAsync(target.User!.Id);
+        var threshold = await _payout.GetCashOutThresholdAsync();
+        return Ok(new LedgerSummaryResponse(
+            target.User!.Id,
+            stats.NetBalance,
+            threshold,
+            stats.NetBalance >= threshold,
+            stats.TotalEarnings,
+            stats.TotalDeductions,
+            stats.TotalBonuses,
+            stats.TotalPenalties,
+            stats.TotalPayouts,
+            stats.TransactionCount));
     }
 
     [HttpGet("balance")]

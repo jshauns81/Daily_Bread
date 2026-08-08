@@ -18,11 +18,34 @@ struct AdjustBalanceSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
 
+    /// Typed, because the ledger stats report Bonus and Penalty separately —
+    /// the first cut of this sheet posted everything as Adjustment and
+    /// silently zeroed two of the web ledger's six lifetime tiles.
+    private enum Kind: String, CaseIterable, Identifiable {
+        case bonus = "Bonus"
+        case penalty = "Penalty"
+        case correction = "Correction"
+        var id: String { rawValue }
+        /// The wire value; a plain correction stays untyped.
+        var wire: String? { self == .correction ? nil : rawValue }
+    }
+
+    @State private var kind: Kind = .bonus
     @State private var subtract = false
     @State private var amountText = ""
     @State private var reason = ""
     @State private var saving = false
     @State private var errorMessage: String?
+
+    /// Bonus adds, Penalty subtracts — the type IS the sign. Only a
+    /// correction asks which way.
+    private var isSubtracting: Bool {
+        switch kind {
+        case .bonus: return false
+        case .penalty: return true
+        case .correction: return subtract
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,15 +63,22 @@ struct AdjustBalanceSheet: View {
                     }
 
                     SheetCard(title: "Change") {
-                        Picker("", selection: $subtract) {
-                            Text("Add").tag(false)
-                            Text("Subtract").tag(true)
+                        Picker("", selection: $kind) {
+                            ForEach(Kind.allCases) { Text($0.rawValue).tag($0) }
                         }
                         .pickerStyle(.segmented)
 
+                        if kind == .correction {
+                            Picker("", selection: $subtract) {
+                                Text("Add").tag(false)
+                                Text("Subtract").tag(true)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+
                         HStack(spacing: 6) {
-                            Text(subtract ? "−$" : "+$")
-                                .foregroundStyle(subtract ? DB.help(scheme) : DB.gold(scheme))
+                            Text(isSubtracting ? "−$" : "+$")
+                                .foregroundStyle(isSubtracting ? DB.help(scheme) : DB.gold(scheme))
                                 .font(.body.weight(.semibold))
                             TextField("0.00", text: $amountText)
                                 #if os(iOS)
@@ -101,7 +131,7 @@ struct AdjustBalanceSheet: View {
 
     private var newBalancePreview: Money? {
         guard let amount else { return nil }
-        let delta = subtract ? -amount : amount
+        let delta = isSubtracting ? -amount : amount
         return Money(target.balance.amount + delta)
     }
 
@@ -117,10 +147,12 @@ struct AdjustBalanceSheet: View {
         saving = true
         defer { saving = false }
         errorMessage = nil
-        let signed = subtract ? -amount : amount
+        // Bonus/Penalty send the magnitude — the kind carries the sign.
+        let signed = kind == .correction ? (subtract ? -amount : amount) : amount
         do {
             let fresh = try await session.client.adjustBalance(
-                userId: target.userId, amount: Money(signed), description: trimmedReason)
+                userId: target.userId, amount: Money(signed),
+                description: trimmedReason, kind: kind.wire)
             Haptics.success()
             onSaved(fresh.balance)
             dismiss()

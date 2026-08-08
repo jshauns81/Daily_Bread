@@ -65,6 +65,16 @@ public extension Money {
     var signedDisplay: String {
         isNegative ? "−\(Money(-amount).display)" : "+\(display)"
     }
+
+    /// A fraction of this amount, rounded to whole cents — the cash-out
+    /// sheet's 25/50/75% quick-fill. Plain rounding, not banker's: a kid
+    /// checking the math on paper expects $0.125 → $0.13.
+    func share(_ fraction: Decimal) -> Money {
+        var raw = amount * fraction
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &raw, 2, .plain)
+        return Money(rounded)
+    }
 }
 
 // MARK: - Icon display

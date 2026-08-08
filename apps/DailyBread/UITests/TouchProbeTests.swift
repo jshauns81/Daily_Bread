@@ -176,4 +176,64 @@ final class TouchProbeTests: XCTestCase {
                       "Kid card did not open the checkable TodayView")
         print("PROBE-DRILLIN title=\(app.navigationBars.firstMatch.identifier)")
     }
+
+    /// Her ask, end to end on the seeded family: the balance row opens the
+    /// ledger, the lifetime tiles render, and recording a cash-out writes a
+    /// typed Payout line into the history — bookkeeping only, but real
+    /// bookkeeping (this mutates the DEV database by one $1 payout).
+    func testLedgerAndCashOut() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["DB_DISABLE_PARENT_GATE"] = "1"
+        app.launch()
+        _ = app.buttons.firstMatch.waitForExistence(timeout: 5)
+        guard !app.textFields["Username"].exists else {
+            throw XCTSkip("No signed-in session on this device.")
+        }
+        guard app.buttons["Approvals"].waitForExistence(timeout: 5) else {
+            throw XCTSkip("Not the parent shell.")
+        }
+
+        app.buttons["Home"].tap()
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 1.5))
+
+        // The balances card sits below the fold with four kids. The balance
+        // row's label starts "Emma," — the Today card starts "0/0," and the
+        // heatmap card starts "Emma's", so the comma keeps this unambiguous.
+        let emmaBalance = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Emma,'")).firstMatch
+        var scrolls = 0
+        while !emmaBalance.exists && scrolls < 4 {
+            app.swipeUp()
+            RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.4))
+            scrolls += 1
+        }
+        guard emmaBalance.waitForExistence(timeout: 3) else {
+            throw XCTSkip("No Emma balance row on Home.")
+        }
+        emmaBalance.tap()
+
+        XCTAssertTrue(app.navigationBars["Emma's money"].waitForExistence(timeout: 5),
+                      "Balance row did not open the ledger")
+        XCTAssertTrue(app.staticTexts["EARNED"].waitForExistence(timeout: 5),
+                      "Ledger summary tiles never rendered")
+
+        let cashOut = app.buttons["Record a cash-out"]
+        guard cashOut.waitForExistence(timeout: 3) else {
+            print("PROBE-LEDGER view verified; under threshold, write not exercised")
+            return
+        }
+        cashOut.tap()
+        let field = app.textFields["0.00"]
+        XCTAssertTrue(field.waitForExistence(timeout: 4), "Cash-out sheet did not open")
+        field.tap()
+        field.typeText("1.00")
+        app.buttons["Record"].tap()
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 2.5))
+
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'Cash out'")).firstMatch
+                .waitForExistence(timeout: 5),
+            "No Payout line in the history after recording")
+        print("PROBE-LEDGER cash-out recorded and visible in history")
+    }
 }

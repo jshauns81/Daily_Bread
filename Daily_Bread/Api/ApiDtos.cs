@@ -584,11 +584,38 @@ public sealed record DrivingLogCreateRequest(
     string? RouteNotes);
 
 
-/// <summary>Parent balance adjustment. Amount signed (negative subtracts); Description is the audited reason.</summary>
+/// <summary>
+/// Parent balance adjustment. Amount signed (negative subtracts); Description
+/// is the audited reason. Kind ("Bonus" | "Penalty" | absent = plain
+/// adjustment) keeps the transaction typed — the web's ledger stats report on
+/// Bonus and Penalty separately, and an untyped adjustment erases that.
+/// </summary>
 public sealed record LedgerAdjustRequest(
     string UserId,
     [property: JsonConverter(typeof(MoneyStringConverter))] decimal Amount,
-    string Description);
+    string Description,
+    string? Kind = null);
+
+/// <summary>
+/// Records that money left the ledger — bookkeeping only. The actual transfer
+/// happens in the family's banking app, outside Daily Bread entirely.
+/// </summary>
+public sealed record LedgerCashOutRequest(
+    string? UserId,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal Amount,
+    string? Note = null);
+
+public sealed record LedgerSummaryResponse(
+    string UserId,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal Balance,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal CashOutThreshold,
+    bool CanCashOut,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal TotalEarnings,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal TotalDeductions,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal TotalBonuses,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal TotalPenalties,
+    [property: JsonConverter(typeof(MoneyStringConverter))] decimal TotalPaidOut,
+    int TransactionCount);
 
 
 /// <summary>One household member for the family screen (no cross-household data).</summary>
