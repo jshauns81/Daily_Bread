@@ -139,8 +139,16 @@ struct MainView: View {
                 .badge(section == .approvals ? session.approvalsWaiting : 0)
             }
         }
-        .task { await refreshBadge() }
-        .refreshOnForeground { await refreshBadge() }
+        .task {
+            await refreshBadge()
+            // The Mac branch always refreshed this for its sidebar; the phone
+            // never did because nothing consumed it — now Home's driving row does.
+            await session.refreshDrivingVisibility()
+        }
+        .refreshOnForeground {
+            await refreshBadge()
+            await session.refreshDrivingVisibility()
+        }
         .poll { await refreshBadge() }
         #endif
     }

@@ -132,4 +132,48 @@ final class TouchProbeTests: XCTestCase {
         add(report)
         print("TOUCH-PROBE-REPORT\n" + results.joined(separator: "\n"))
     }
+
+    /// The 2026-08-07 family asks, wired and verified: a kid card on parent
+    /// Home opens the CHECKABLE day (TodayView — the co-checkoff surface),
+    /// and a quiet week still shows a way into the driving log.
+    func testParentHomeDrillInOpensCheckableDay() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["DB_DISABLE_PARENT_GATE"] = "1"
+        app.launch()
+        _ = app.buttons.firstMatch.waitForExistence(timeout: 5)
+        guard !app.textFields["Username"].exists else {
+            throw XCTSkip("No signed-in session on this device.")
+        }
+        guard app.buttons["Approvals"].waitForExistence(timeout: 5) else {
+            throw XCTSkip("Not the parent shell.")
+        }
+        app.buttons["Home"].tap()
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 1.5))
+
+        // Which driving surface Home offers (either is correct; none is the bug).
+        let approvalsCard = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS 'Opens the driving log'")).firstMatch
+        let quietRow = app.buttons["Driving log. Hours and history."]
+        print("PROBE-DRIVING approvalsCard=\(approvalsCard.exists) quietRow=\(quietRow.exists)")
+        XCTAssertTrue(approvalsCard.exists || quietRow.exists,
+                      "Parent Home offers no way into the driving log")
+
+        // A kid's Today card ends "…quests today" whatever the progress reads.
+        var card = app.buttons.matching(
+            NSPredicate(format: "label ENDSWITH 'quests today'")).firstMatch
+        if !card.exists {
+            card = app.buttons.matching(
+                NSPredicate(format: "label CONTAINS 'Emma'")).firstMatch
+        }
+        guard card.waitForExistence(timeout: 3) else {
+            throw XCTSkip("No kid card found on Home to drill into.")
+        }
+        card.tap()
+
+        let todayTitle = app.navigationBars.matching(
+            NSPredicate(format: "identifier ENDSWITH \"'s today\"")).firstMatch
+        XCTAssertTrue(todayTitle.waitForExistence(timeout: 5),
+                      "Kid card did not open the checkable TodayView")
+        print("PROBE-DRILLIN title=\(app.navigationBars.firstMatch.identifier)")
+    }
 }

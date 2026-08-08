@@ -54,6 +54,8 @@ struct ParentHomeView: View {
                     // how it went unnoticed.
                     if !store.pendingDrives.isEmpty {
                         drivingApprovals
+                    } else if showsQuietDrivingRow {
+                        drivingQuietRow
                     }
 
                     if dash.childrenProgress.isEmpty && dash.todayTotalChores == 0 {
@@ -183,6 +185,54 @@ struct ParentHomeView: View {
         .accessibilityLabel("\(drivingApprovalsSummary). Opens the driving log.")
     }
 
+    /// iPhone-only: the Mac reaches the log from its sidebar row, but the
+    /// phone's only entry was the approvals card above — which exists solely
+    /// while a drive is pending, so a quiet week left no way into the driving
+    /// log at all (the 2026-08-07 report from the family).
+    private var showsQuietDrivingRow: Bool {
+        #if os(iOS)
+        session.drivingVisible
+        #else
+        false
+        #endif
+    }
+
+    private var drivingQuietRow: some View {
+        NavigationLink {
+            DrivingLogView(mode: .parent)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "car.fill")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Color.dbAccent)
+                    .frame(width: 40, height: 40)
+                    .background(Color.dbAccent.opacity(0.14),
+                                in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DRIVING")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .kerning(0.8)
+                    Text("Hours and history")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassCard(padding: 14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Driving log. Hours and history.")
+    }
+
     private var drivingApprovalsSummary: String {
         let count = store.pendingDrives.count
         let names = Set(store.pendingDrives.map(\.childName))
@@ -195,12 +245,19 @@ struct ParentHomeView: View {
         return "\(count) drives waiting on you"
     }
 
-    /// Wraps a kid card in a NavigationLink to their day.
+    /// Wraps a kid card in a NavigationLink to their checkable day.
+    ///
+    /// TodayView, not ActivityView: this card's promise is "parent can toggle
+    /// for them" — the co-checkoff, parent and kid walking the list together —
+    /// and TodayView is the surface that can actually complete a chore (the
+    /// server honours the chore's own auto-approve for a parent's toggle,
+    /// exactly as the web tracker did). Per-date adjudication — approve,
+    /// excuse, miss, any day — lives in the Activity tab's own child picker.
     @ViewBuilder
     private func drillIn(_ child: ChildProgress, @ViewBuilder content: () -> some View) -> some View {
         if let userId = child.userId {
             NavigationLink {
-                ActivityView(userId: userId, title: "\(child.displayName)'s day")
+                TodayView(userId: userId, title: "\(child.displayName)'s today")
             } label: {
                 content()
             }
