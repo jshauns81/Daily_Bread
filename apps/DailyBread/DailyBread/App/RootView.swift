@@ -167,11 +167,14 @@ struct ServerSetupView: View {
 }
 
 struct LoginView: View {
+    private enum Field { case username, password }
+
     @Environment(SessionStore.self) private var session
     @State private var userName = ""
     @State private var password = ""
     @State private var busy = false
     @State private var errorMessage: String?
+    @FocusState private var focusedField: Field?
 
     var body: some View {
         VStack(spacing: 24) {
@@ -200,6 +203,7 @@ struct LoginView: View {
                 TextField("Username", text: $userName)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.username)
+                    .focused($focusedField, equals: .username)
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -208,6 +212,7 @@ struct LoginView: View {
                 SecureField("Password", text: $password)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.password)
+                    .focused($focusedField, equals: .password)
                     .onSubmit { Task { await signIn() } }
 
                 if let errorMessage {
@@ -245,6 +250,12 @@ struct LoginView: View {
 
     private func signIn() async {
         guard !busy else { return }
+        // Start the keyboard down NOW, so its teardown overlaps the network
+        // call instead of overlapping the shell mounting. Half of the iOS 26
+        // wedge fix — the other half is the `.loading` beat in
+        // `SessionStore.login`, which holds the TabView swap until this
+        // dismissal has finished.
+        focusedField = nil
         errorMessage = nil
         busy = true
         defer { busy = false }

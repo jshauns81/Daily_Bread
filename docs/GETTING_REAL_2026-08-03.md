@@ -554,6 +554,63 @@ exists, writes are fine and the sign-in loop above was the whole story.
 
 Not yet on TestFlight: shipping is a push to master, and that is Shaun's call.
 
+## 2026-08-07 — the dead buttons: iOS 26 wedges a TabView mounted during keyboard teardown
+
+The report, from the first family rollout: on the wife's phone (iOS 26.6,
+first run ever) "loooots of buttons" did nothing while the tab bar kept
+working; Shaun's phone had been getting flakier in the same era his sign-in
+loop forced constant re-logins. Those two facts turned out to be one bug.
+
+**Mechanism.** iOS 26's floating tab bar assembles its Liquid Glass layers
+(scroll pocket, `AdditionalDimmingOverlay`) from scene and keyboard state
+sampled at mount time. `RootView` swaps `LoginView` straight to `MainView`'s
+TabView the moment `login()` returns — while the password keyboard is still
+tearing down — and a TabView built inside that window can bake dead hit
+testing: sometimes the tab bar (taps don't switch), sometimes a whole tab's
+content (controls visibly rendered but absent from the accessibility tree and
+deaf to real touches). Nothing recomputes the wedged state except a scene
+relaunch, which is why force-quit + reopen always healed it, and why restored
+sessions — which mount the shell from the `.loading` interstitial — never
+wedged. Apple has acknowledged the family without our exact member: iOS 26.0
+known issues 151126350 (workaround: "quit the app then re-launch it") and
+156174227 (hierarchy-assembly timing breaking a tab's controls); keyboard
+teardown timing changed in 26 (26.4 fixed "KeyboardNotification might not
+send"); and the dimming-overlay subsystem is being removed outright in the
+iOS 27 betas. No 26.x point release fixes it.
+
+**Evidence path, false trails included.** The R4 `.simultaneousGesture` eater
+was already dead (ActivityReporter, `deaa41c`) and the shipped build carried
+that fix, so this was something new. An XCUITest fresh-install probe on an
+erased 26.5 sim reproduced the wife's state intermittently; a
+sign-out→sign-in cycle probe made it samplable. Two instrument bugs nearly
+poisoned the read: probe v1 never verified the tab switch happened (reported
+Planner controls "missing" while staring at Home), and the system
+save-password sheet re-offers on every sign-in and eats taps until dismissed.
+With both fixed, the pre-fix baseline read: every post-sign-in shell needed
+2 taps on the tab bar; every restored-session shell was clean.
+
+**Fix (`SessionStore.login` + `LoginView`).** Make the sign-in path
+relaunch-shaped: `LoginView` resigns keyboard focus the instant Sign In is
+tapped (teardown overlaps the network call), and `login()` publishes
+`.loading` for a 500 ms beat before `.signedIn`, so the TabView always mounts
+from a settled scene — the same route app launch takes, which never wedged.
+iOS-only; the Mac path is untouched. Probes live in `apps/DailyBread/UITests/`
+(`FreshInstallProbeTests`, `SignInCycleProbeTests`) and assert one-tap
+response on every surface class.
+
+**Verified 2026-08-07 on the fixed build (26.5 sim).** Six sign-out→sign-in
+cycles: tab bar, Planner toolbar, and segmented picker one-tap on every
+cycle; the fresh-install first process one-tap clean as well. A third
+instrument, `TouchProbeTests`, runs the same probes against whatever session
+a device already holds. All three skip themselves when no dev server
+answers, so Xcode Cloud's test phase never sees them red. Same-night sim
+lore, for whoever debugs here next: the save-password sheet eats every tap
+until dismissed (a probe that doesn't clear it measures the scrim); Face ID
+enrollment survives `simctl erase` and Matching Face is ⌥⌘M with the
+Simulator app frontmost; and a runner that dies by bare SIGKILL or
+"mig server died" is CoreSimulator rot — `simctl shutdown all`, kill
+CoreSimulatorService, reboot the device, rerun.
+
 ## R5 — Notifications & messaging (last, biggest server lift)
 
 "Messaging" splits into two products; decide separately:

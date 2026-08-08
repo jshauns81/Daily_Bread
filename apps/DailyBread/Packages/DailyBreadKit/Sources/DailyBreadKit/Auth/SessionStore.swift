@@ -265,6 +265,22 @@ public final class SessionStore {
         persist(tokens)
         signInNote = nil
         parentGate.bind(to: tokens.user)
+        #if os(iOS)
+        // Mount the shell the way a relaunch does: from a settled scene, never
+        // straight out of the login form. iOS 26's floating tab bar assembles
+        // its glass layers from scene and keyboard state sampled at mount
+        // time; built while the login keyboard is still tearing down, it can
+        // come up with dead hit testing — tab bar or all tab content, varies —
+        // and nothing short of a relaunch recomputes it (the wedge that hit
+        // the family on 2026-08-07; Apple's release notes acknowledge the
+        // sibling bugs 151126350 / 156174227 with "quit the app then
+        // re-launch it"). LoginView resigns the keyboard as Sign In is
+        // tapped; this interstitial beat holds the swap until that teardown
+        // is over, which is exactly what the launch path does by showing
+        // `.loading` first.
+        state = .loading
+        try? await Task.sleep(for: .milliseconds(500))
+        #endif
         state = .signedIn(tokens.user)
 
         // Everything past this point is enrichment, and none of it gates being
